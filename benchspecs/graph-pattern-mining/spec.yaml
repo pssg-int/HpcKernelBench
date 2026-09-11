@@ -1,0 +1,312 @@
+kernel: graph-pattern-mining
+summary: >
+  Counting (not full enumeration) the number of occurrences of a fixed,
+  unlabeled subgraph pattern — triangles, k-cliques, 4-node motifs, and a
+  handful of named 5-7 vertex shapes — in a large simple undirected graph,
+  measured as steady-state search kernel time with one-shot graph
+  preprocessing (CSR build, orientation, any auxiliary index) reported
+  separately, never folded silently into per-pattern time.
+operation: >
+  count(G, P) = number of distinct (up to automorphism) vertex subsets of
+  simple undirected graph G = (V,E) that are isomorphic to pattern P;
+  G given as CSR/edge-list, P given as a small fixed adjacency list
+  (3-7 vertices). Full match enumeration/listing is explicitly OUT of scope
+  for the core variants (see notes_on_fairness).
+
+pattern_set:
+  clique_ladder: >
+    K3 (triangle), K4, K5, K6, K7 — cross-verified common denominator: this
+    exact k=3..7 clique-counting ladder is run explicitly by name in GLumin
+    (CliqueSolver k=4,5,6,7), GraphFold (CF4-CF7 + TC), and VSGM (-kc 3..7),
+    and triangle (K3) additionally appears in cuTS's and STMatch's query
+    sets and GraphSet's brute-force-checked test suite.
+  four_motif_census: >
+    the 6 non-isomorphic connected graphlets on 4 labeled-position vertices
+    (standard graphlet/orbit census; GraphFold's MC4 and GraphSet's
+    motif_counting both count this exact set): 4-path (0-1,1-2,2-3),
+    4-star/claw (center 0 to 1,2,3), tailed-triangle/paw (triangle
+    {0,1,2} + pendant edge 2-3), 4-cycle C4 (0-1,1-2,2-3,3-0), diamond
+    (K4 minus one edge, e.g. all of K4 on {0,1,2,3} except 2-3), and K4
+    (already in the clique ladder — counted once).
+  named_5v_plus: >
+    house (VSGM-confirmed name; 5v/6e: 4-cycle 0-1,1-2,2-3,3-0 plus a
+    triangle roof on edge 0-1, i.e. vertex 4 connected to 0 and 1),
+    5-cycle/pentagon (5v/5e: 0-1,1-2,2-3,3-4,4-0), near-5-clique (K5 minus
+    one edge, VSGM-confirmed name), near-6-clique (K6 minus one edge,
+    VSGM-confirmed name), near-7-clique (K7 minus one edge, VSGM-confirmed
+    name).
+  rationale: >
+    the ten surveyed artifacts define patterns almost entirely as unnamed
+    numbered files (P1.g...P33.g) or adjacency-matrix bit-strings with no
+    shape documentation in-repo (see survey.md Divergences) — this spec
+    only includes patterns whose topology could be pinned down exactly,
+    either via the cross-verified clique ladder or VSGM's human-readable
+    names, rather than guessing at an undocumented Pn.g.
+
+variants:
+  - id: gpm-kernel-small-f32
+    claim: >
+      steady-state counting-kernel time for small patterns (3-4 vertices:
+      the clique ladder K3-K4 plus the full 4-motif census), preprocessing
+      excluded and reported separately — the scope every one of the 8
+      in-scope papers already uses for its smallest patterns (GraphFold TC,
+      GLumin P4, cuTS/STMatch triangle-in-query-set, GraphSet
+      motif_counting).
+    inputs:
+      suite: "SNAP (Stanford Network Analysis Project) + one GPM-community graph"
+      selection: >
+        undirected, simple (self-loops/multi-edges removed, symmetrized if
+        directed) graphs used in >=3 of the 8 in-scope surveyed artifacts'
+        run scripts, spanning small to billion-edge scale; excludes graphs
+        used by only 1-2 artifacts (avoids restating a single paper's
+        cherry-picked set as "the" GPM suite).
+      recommended_subset:
+        - {name: email-Enron, vertices: 36692, edges: 183831, used_by: [GraphSet, STMatch, cuTS]}
+        - {name: wiki-Vote, vertices: 7115, edges: 103689, used_by: [GraphSet, STMatch, cuTS-wiki-Talk-variant]}
+        - {name: mico, vertices: 100000, edges: 1080156, used_by: [GLumin, GraphFold, GraphSet, STMatch]}
+        - {name: loc-gowalla, vertices: 196591, edges: 950327, used_by: [GraphSet, cuTS]}
+        - {name: com-youtube.ungraph, vertices: 1134890, edges: 2987624, used_by: [GLumin, GraphSet, STMatch]}
+        - {name: cit-Patents, vertices: 3774768, edges: 16518948, used_by: [GLumin, GraphFold, GraphSet]}
+        - {name: soc-LiveJournal1, vertices: 4847571, edges: 68993773, used_by: [GraphFold, GraphSet, STMatch, Fringe-SGC]}
+        - {name: com-orkut.ungraph, vertices: 3072441, edges: 117185083, used_by: [GLumin, GraphFold, GraphSet, STMatch-default-off]}
+        - {name: com-friendster.ungraph, vertices: 65608366, edges: 1806067135, used_by: [GraphSet, STMatch-default-off-needs-64bit-index, GraphFold, VSGM-sole-dataset]}
+      patterns: "clique_ladder{K3,K4} + four_motif_census (5 distinct patterns: triangle already = K3)"
+    protocol:
+      format: "CSR (given; parse/build not timed, matches all 8 papers)"
+      warmup: 1
+      reps: 5
+      statistic: "median (report min/max)"
+      timer: "device-side events (CUDA events) for GPU kernels; std::chrono steady_clock (or equivalent monotonic clock) for CPU kernels — one timestamp pair per repetition, never a batched multi-iteration mean"
+      timing_scope: "kernel search only; graph load, CSR build, DAG orientation/degree-ordering, and H2D transfer excluded"
+      preprocessing_reported: >
+        separately, once per graph (not per pattern): parse+CSR build,
+        orientation (DAG construction to avoid double-counting
+        automorphisms), and any auxiliary index (e.g. GLumin's LUT / partial
+        adjacency-matrix restoration) if the tested system builds one.
+      timeout: >
+        1800s wall-clock per (graph, pattern) cell. If a single run exceeds
+        300s, do not attempt further reps for that cell — record that one
+        sample as both min and median, flagged single-sample=true (rerunning
+        a near-timeout combinatorial search 5x is wasted budget, not rigor).
+        A cell that exceeds the 1800s timeout, or exceeds a declared memory
+        budget (80GB single-GPU / 256GB host), is recorded DNF (did-not-
+        finish), never as 0 or omitted silently; DNF cells are excluded from
+        aggregate statistics (report coverage %, e.g. "38/45 cells
+        completed").
+      deviation_from_surveyed_practice: >
+        all 8 in-scope artifacts run each (graph, pattern) cell exactly once
+        with no warmup and no repetition (see survey.md Divergences) — this
+        spec requires warmup + repeated per-iteration device-side timestamps
+        and reports median/min/max instead of a single uncontextualized
+        number, with the timeout-aware single-sample exception above so the
+        protocol stays practical at billion-edge scale.
+    metric:
+      primary: "time (ms), median"
+      secondary: "edges processed per second = |E| / time_kernel (GEPS; follows Fringe-SGC's edges/s convention, the only surveyed paper reporting a throughput unit at all)"
+    correctness: >
+      exact match required (counts are exact integers; no floating-point
+      tolerance applies). For K3/K4 and the 4-motif census on
+      email-Enron/wiki-Vote/mico/cit-Patents/com-youtube/soc-LiveJournal1/
+      com-orkut: cross-validate against GraphSet's gtest hardcoded reference
+      counts where the (graph, pattern) pair overlaps (the only surveyed
+      artifact with a real oracle), else against a brute-force/NetworkX
+      exact subgraph-count reference (feasible at this pattern size even on
+      the larger graphs, since K3/K4/4-motifs are countable via
+      sort-merge/set-intersection in near-linear time, unlike the >=5-vertex
+      patterns below). For com-friendster: cross-validate between >=2
+      independently-implemented systems in the suite (GraphSet's own
+      brute-force triangle counter, or two of the harness's own tested
+      artifacts) since no single-machine brute-force reference is feasible
+      at 1.8B edges — a run is only "correct" if all cross-checked systems
+      agree exactly.
+
+  - id: gpm-kernel-large-f32
+    claim: >
+      steady-state counting-kernel time for the harder combinatorial
+      regime (5-7 vertex patterns: K5/K6/K7 and the named non-clique
+      shapes), where papers diverge most in what "handles large patterns"
+      means (Fringe-SGC's whole premise is that "current SGC approaches can
+      only handle very small patterns because computational load increases
+      exponentially with pattern size") — same input suite and protocol as
+      gpm-kernel-small-f32, isolated as its own variant because DNF/timeout
+      rates are expected to be far higher here, and that rate is itself
+      part of what the benchmark should surface.
+    inputs:
+      suite: "same as gpm-kernel-small-f32"
+      selection: "same as gpm-kernel-small-f32"
+      recommended_subset: "same 9-graph list as gpm-kernel-small-f32"
+      patterns: "clique_ladder{K5,K6,K7} + named_5v_plus (5 distinct patterns: house, C5, near-5-clique, near-6-clique, near-7-clique)"
+    protocol:
+      format: "CSR (given; parse/build not timed)"
+      warmup: 1
+      reps: 5
+      statistic: "median (report min/max)"
+      timer: "same as gpm-kernel-small-f32"
+      timing_scope: "kernel search only; identical scope to gpm-kernel-small-f32"
+      preprocessing_reported: "separately, once per graph — same accounting as gpm-kernel-small-f32"
+      timeout: >
+        same 1800s/300s-single-sample rule as gpm-kernel-small-f32; DNF is
+        an EXPECTED, informative outcome here (e.g. K7 or near-7-clique on
+        com-friendster is exactly the regime Fringe-SGC's authors say
+        existing SGC frameworks cannot complete) — report coverage % as a
+        first-class result of this variant, not just a footnote.
+    metric:
+      primary: "time (ms), median"
+      secondary: "edges processed per second = |E| / time_kernel (GEPS)"
+    correctness: >
+      exact match required. For patterns/graphs small enough for a
+      brute-force/NetworkX oracle (K5 on email-Enron/wiki-Vote/mico; house/
+      C5/near-5-clique on the same small graphs) use that oracle directly.
+      For larger (graph, pattern) combinations, cross-validate between >=2
+      independently-implemented systems in the suite, as in
+      gpm-kernel-small-f32. A combination with no feasible oracle AND only
+      one working implementation in the harness should be marked
+      unverified in the report, not silently trusted.
+
+  - id: gpm-e2e-preproc
+    claim: >
+      end-to-end time including one-shot graph preprocessing (parse+CSR
+      build, orientation/degree-ordering, and any auxiliary index the
+      tested system builds), amortized over k repeated pattern-counting
+      calls on the same loaded graph — the realistic usage pattern every
+      one of the 8 in-scope artifacts' own scripts actually exercises (each
+      loads one graph once, then runs multiple pattern queries against it:
+      GLumin runs {P1,P2,P5,P6} per load, GraphFold runs TC+CF4-7+MC4 per
+      load, cuTS runs all 33 patterns per graph, VSGM runs 19 patterns +
+      k-clique/k-motif sweeps against its single friendster load) — yet
+      none of them state this amortization count explicitly, they just
+      run the multi-pattern loop and report each cell's number as if
+      preprocessing weren't shared. This variant makes the amortization
+      count k explicit instead of leaving it implicit in a driver script.
+    inputs:
+      suite: "same as gpm-kernel-small-f32"
+      selection: "same as gpm-kernel-small-f32"
+      recommended_subset: "same 9-graph list as gpm-kernel-small-f32"
+      patterns: "k=10: clique_ladder{K3..K7} + four_motif_census (5 distinct, dedup K4) — the full small+large clique ladder, matching the realistic multi-pattern-per-load usage the surveyed scripts exercise"
+    protocol:
+      format: "input is raw edge-list/mtx; parse+CSR build+orientation IS timed once per graph"
+      warmup: 1
+      reps: "k=10 post-preprocessing pattern-count calls per graph (one call per pattern in the k=10 set above); report both amortized (incl. 1/k of preprocessing) and pure-kernel time per call"
+      statistic: median
+      timer: "device-side events (or std::chrono) for each of the k kernel calls; same monotonic clock for the one-shot preprocessing timestamp"
+      timing_scope: "preprocessing (once) + k kernel calls; H2D of the graph structure included in preprocessing, D2H of each count is negligible (a handful of integers) and excluded"
+      preprocessing_reported: "both standalone (ms, once) AND amortized-per-call (preprocessing_ms / k added to each call's reported time)"
+      timeout: "1800s per individual kernel call, same DNF handling as the other variants; preprocessing itself is capped at 1800s separately (a graph whose preprocessing alone exceeds this is marked DNF for the whole variant on that graph)"
+    metric:
+      primary: "time (ms), amortized per call = preprocessing_ms/k + kernel_ms"
+      secondary: "preprocessing_ms standalone; edges processed per second (GEPS), amortized"
+    correctness: "same tolerance/oracle rules as gpm-kernel-small-f32/gpm-kernel-large-f32, checked post-preprocessing for each of the k calls"
+
+notes_on_fairness:
+  - >
+    GraphSet's own GPU timer includes CUDA managed-memory allocation and the
+    H2D copy inside the same clock as the search kernel (`context->init` is
+    inside the timed region in `gpu/gpu_graph.cu`), while STMatch, cuTS,
+    GraphFold, and GLumin all explicitly start their clock after H2D
+    transfer completes. This spec's kernel-only variants follow the
+    4-artifact majority (transfer excluded) — GraphSet's own reported
+    numbers measure a superset of what this spec calls "kernel-only" and
+    should not be compared directly against the other three without
+    re-timing under this spec's scope.
+  - >
+    Every one of the 8 in-scope artifacts times exactly one run per
+    (graph, pattern) cell with no warmup and no repetition (see survey.md
+    Divergences) — the single biggest methodological gap found across this
+    project's tracks so far, worse than e.g. spmm where at least
+    batched-mean timing is universal. This spec fixes it with an explicit
+    warmup+repeat protocol, but adds a timeout-aware single-sample
+    exception (protocol.timeout in each variant) because a naive "always
+    run 5+ reps" rule is not practical when a single cell can already
+    approach the 1800s timeout at billion-edge/7-clique scale — the fix
+    has to be honest about where repetition is actually affordable.
+  - >
+    Correctness checking is essentially absent across the track: only
+    GraphSet (gtest hardcoded references + brute-force triangle counter),
+    cuTS (GSI cross-diff), and INFINEL (opt-in verification mode, not used
+    in this spec's core variants) have any automated correctness path; the
+    other 5 in-scope artifacts (STMatch, GraphFold, GLumin, VSGM,
+    Fringe-SGC) rely on eyeballing printed counts. This spec makes a
+    correctness gate mandatory before any timing counts, using exact-match
+    (not a floating-point tolerance, since match counts are exact
+    integers) against either a brute-force/NetworkX oracle (small
+    graphs/patterns) or cross-validation between >=2 independently
+    implemented systems (large graphs/patterns where no single-machine
+    oracle is feasible).
+  - >
+    INFINEL's full-match-LISTING workload (not counting) is architecturally
+    different — its own numbers show 2TB of output for RMAT27 triangle
+    listing — and is deliberately excluded from the core counting variants
+    above rather than forced into a shared "time" metric that would compare
+    incommensurable things (counting kernels never materialize output;
+    listing kernels are IO-bound on the output itself). See open_questions.
+  - >
+    DTMiner (temporal motif mining) and VertexSurge (variable-length path
+    queries) are excluded entirely from this spec's variants: neither
+    counts occurrences of a FIXED pattern shape in a static graph, which is
+    the operation this spec measures. Forcing them into the same variants
+    as the other 8 would misrepresent what's being compared. See
+    open_questions for a possible future track split.
+  - >
+    com-friendster (1.81B edges) is used by only 4 of 8 in-scope artifacts,
+    and one of those (STMatch) ships it commented out by default with a
+    documented buildability caveat (needs a 64-bit edge-index type change).
+    It is kept in recommended_subset anyway, not because a majority of
+    papers exercise it by default, but because it is the single graph that
+    actually stresses the "billion-edge" claim several of these papers'
+    titles/abstracts make (VSGM's entire evaluation is built around it) —
+    dropping it would let the suite quietly avoid testing the scale regime
+    the track's own papers are named for.
+
+open_questions:
+  - >
+    Whether a future `graph-pattern-mining-listing` variant/track should
+    cover INFINEL's full-match-enumeration workload (distinct metric:
+    output GB/s or output-write-bandwidth-bound time, not a counting-kernel
+    GEPS number) — deferred here since it needs a fundamentally different
+    memory/output-buffer protocol than the counting variants, and only 1 of
+    10 surveyed papers targets it.
+  - >
+    Whether DTMiner (temporal motif mining) and VertexSurge (variable-
+    length path matching) warrant their own track(s) rather than being
+    folded into graph-pattern-mining at all — both were in the track's
+    input file but measure a different operation (see notes_on_fairness).
+    Their survey facts are recorded in survey.md for completeness but no
+    variant above exercises them.
+  - >
+    Exact vertex/edge counts for several graphs (mico, and everything in
+    GraphFold/GLumin/Fringe-SGC's own suites) are not restated inside the
+    respective repos — the counts used in recommended_subset are the
+    standard SNAP-published sizes for the same-named public datasets, not
+    independently re-verified against each artifact's own preprocessed
+    copy (self-loop/multi-edge removal could shift edge counts slightly
+    from the raw SNAP download).
+  - >
+    Whether the four_motif_census and named_5v_plus pattern definitions
+    given in pattern_set above exactly match what any given surveyed
+    artifact's own unlabeled `Pn.g`/bit-string pattern files encode was NOT
+    independently verified topology-by-topology (only the clique ladder,
+    which is explicitly named in code/CLI flags across 3 artifacts, is
+    fully cross-verified) — see survey.md's "Pattern-set naming is
+    inconsistent" divergence. Implementers should treat pattern_set's
+    adjacency-list definitions as this spec's own canonical definitions,
+    not as a guaranteed reproduction of any single paper's exact P7.g.
+  - >
+    No warmup/repeat/timeout numbers from any surveyed artifact could
+    anchor this spec's protocol defaults (warmup=1, reps=5, 1800s timeout,
+    300s single-sample cutoff), since none of the 8 in-scope artifacts do
+    more than a single run — these are the harness designer's own
+    practical choices, not inherited from the literature, and should be
+    revisited once Phase 2 has real wall-clock data for how long typical
+    cells actually take on the target measurement machine.
+
+evidence:
+  conf/sc/ShiZWCZHYC23: "mico/patents/orkut/livejournal/friendster; p1-p6 (5-7v) + size-4 motifs + k=4,5 clique; gettimeofday single-run; GPU timer includes alloc+H2D; gtest hardcoded refs + brute-force TC checker; seconds; GSI/cuTS baselines."
+  conf/sc/WeiJ22: "wiki-Vote/Enron/youtube/LiveJournal (orkut/friendster commented out); 24 patterns 5-7v; cudaEvent single-run; kernel-only post-H2D; no automated correctness; ms; cuTS/GSI/Dryadic baselines."
+  conf/sc/XiangKSHS21: "6 SNAP graphs (Enron/gowalla/wiki-Talk/roadNet-CA/PA/TX); 33 patterns x 6 graphs; cudaEvent single-run; kernel-only post-orientation+H2D; cross-diffed vs GSI; ms+match_count CSV; GSI baseline."
+  conf/ppopp/LinMSZXT24: "11 graphs + friendster subset; TC/CF4-7/MC4/P1-8(=G2Miner gallery); wtime() single-run; kernel-only post-orientation+H2D; manual count comparison only; seconds; G2Miner (reimplemented) baseline."
+  conf/ppopp/CaoMLT25: "mico + external patents/youtube/pokec/135-graph set; P1-24 incl. CliqueSolver k=4-7; gettimeofday single-run; kernel-only post-H2D; no automated correctness; seconds; G2Miner/GraphFold/AutoMine each vs own +LUT variant."
+  conf/ppopp/ParkOK24: "RMAT24-27 + LiveJournal/Orkut/Friendster/Twitter; triangle LISTING (not counting); stop_watch single-run; explicit dual kernel-only/e2e mode via CLI flag; opt-in verification mode vs sample graph; seconds; no baseline binary in repo."
+  conf/sc/JiangZJLZLC22: "single dataset com-friendster (1.81B edges); 19 named patterns + k-clique/k-motif sweeps; TimeMeasurer single-run; timer covers view-materialization+transfer+match, excludes offline clustering preproc; no automated correctness; microseconds; no baseline scripted in-repo."
+  conf/sc/BradleyAB25: "8 graphs (.egr, DIMACS9/Galois/SNAP/SuiteSparse sourced); core{vertex,edge,triangle,wedge}+fringe patterns; CPUTimer single-run; kernel-only, preprocess is separate process; algorithmic automorphism-count correctness; edges/s throughput (geomean across graphs) - only throughput-metric paper surveyed; no baseline, self-comparison only."
+  conf/ppopp/Hou0H00YL00L026: "OUT OF SCOPE (temporal motifs): 4 temporal graphs by path, 13 temporal motif queries with time-window Delta; std::chrono single-run; excludes load+block-map preproc; no correctness check; ms+count+preprocess_ms+peak_rss; no baseline, thread-scaling sweep only."
+  conf/asplos/XieZLCJ024: "OUT OF SCOPE (variable-length path queries): 9 graphs incl. Twitter2010/LDBC/Rabobank; variable-length knows*..k expansions, not fixed-shape patterns; internal profiler single-run; excludes load+VLGPM-index import; no cross-tool correctness check; ms QueryUsedTime; Kuzu implied baseline, not executed in-repo."

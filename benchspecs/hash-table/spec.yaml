@@ -1,0 +1,307 @@
+kernel: hash-table
+summary: >
+  Concurrent/parallel hash-table performance under three distinct workload
+  families found in this track's literature (bulk build-probe join,
+  bulk counting/upsert, general dynamic CRUD), measured as operations per
+  second at controlled load factor and key distribution, with memory
+  overhead reported as a function of load factor rather than left implicit.
+operation: >
+  table[K] -> V; open-addressing (linear probing) or equivalent collision
+  scheme; K, V fixed-width (integer or fixed-length byte string) unless a
+  variant states otherwise; concurrent multi-threaded or single-GPU-kernel
+  access as specified per variant.
+
+variants:
+  - id: hash-table-build-probe-kernel
+    claim: >
+      steady-state GPU build+probe throughput for a static, rebuilt-per-call
+      hash table (join-style usage: bulk insert once, then bulk lookup),
+      no delete path, preprocessing (relation generation/H2D transfer)
+      excluded but reported separately
+    inputs:
+      suite: >
+        union of (a) SNAP/DIMACS-style real relations used by >=1 track
+        paper and (b) synthetic uniform and Zipfian(skewness=0.99) key
+        generators (the latter matching Clevel-Hashing's own choice, for
+        cross-variant comparability with hash-table-crud-mixed-ops)
+      selection: >
+        real relations: named graphs/relations with >=1e4 and <=5e8 rows,
+        drawn from the ones actually used by ShovonGMK23 plus 2 larger
+        controls for a size-scaling point; synthetic: 32-bit or 64-bit
+        integer keys, uniform-random and Zipfian(0.99) generators, key
+        counts in {1e5, 1e6, 1e7, 1e8}
+      recommended_subset:
+        - "CA-HepTh (SNAP, 51,971 rows)"
+        - "SF.cedge (223,001 rows)"
+        - "ego-Facebook (SNAP, 88,234 rows)"
+        - "wiki-Vote (SNAP, 103,689 rows)"
+        - "p2p-Gnutella04 (SNAP, 39,994 rows)"
+        - "loc-Brightkite (SNAP, 214,078 rows)"
+        - "delaunay_n16 (196,575 rows)"
+        - "usroads (165,435 rows, largest real instance in the track)"
+        - "synthetic-uniform-1e7 (1e7 uniform-random 64-bit keys)"
+        - "synthetic-zipf099-1e7 (1e7 Zipfian(0.99) 64-bit keys, YCSB-style generator)"
+        - "synthetic-uniform-1e8 (1e8 uniform-random 64-bit keys, large-size control)"
+      key_type: "32-bit or 64-bit integer key, 32-bit integer value (matches ShovonGMK23's Entity{key,value})"
+      dense_operand: "N/A"
+    protocol:
+      load_factor_sweep: [0.25, 0.4, 0.5, 0.75, 0.9]
+      table_sizing: "power-of-2 slot count = next_pow2(ceil(num_keys / target_load_factor)), matching ShovonGMK23's sizing rule; report the DEFAULT 0.4 point as the headline number for cross-paper comparison, since that is the only value the surveyed paper actually used"
+      collision_scheme: "open addressing, linear probing (disclose probe-sequence choice if not linear)"
+      hash_function: "disclose explicitly (e.g. Murmur3); must be identical across all implementations under comparison"
+      warmup: 1 (full build+probe pass, discarded)
+      reps: 5 (minimum; matches Clevel-Hashing's own repetition count, the only literature precedent in this track)
+      statistic: "median, report min/max"
+      timer: "device-side events (CUDA/HIP events) around build and probe kernels SEPARATELY; host-side wall clock around H2D/D2H transfer, reported but not counted in the kernel-only number"
+      timing_scope: "kernel-only: build phase (100% insert of num_keys) then probe phase (100% lookup of the same num_keys, or a disclosed probe-key set if different from the inserted set); H2D/D2H transfer of the input relation and any preprocessing (relation generation, sorting) excluded from the timed region but reported separately, once"
+      preprocessing_reported: "separately: relation load/generation time, H2D transfer time, one-shot per dataset"
+    metric:
+      primary: "Mops/s, computed separately for build (insert-only) and probe (lookup-only) phases — NEVER blended into one number, since the surveyed paper itself reports build rate in isolation"
+      secondary: "memory_overhead = table_bytes / (num_keys * (key_bytes + value_bytes)) - 1, computed at each swept load-factor point"
+    correctness: >
+      every inserted key must be found by a subsequent probe with the
+      correct value (exact integer match, no tolerance); validated against
+      an independent CPU reference (e.g. std::unordered_map) build+probe on
+      the same key set; any probe returning a wrong value or a false
+      not-found invalidates that repetition.
+
+  - id: hash-table-counting-upsert
+    claim: >
+      steady-state throughput of a fixed-capacity counting/aggregation hash
+      table under bulk find-or-increment-or-insert operations (the DEDUKT
+      k-mer-counting workload shape), isolated from any surrounding
+      communication/partitioning phase, which is reported separately
+    inputs:
+      suite: >
+        real genomic k-mer streams (matching DEDUKT's exact dataset list)
+        plus a synthetic skewed-key generator standing in for k-mer
+        frequency skew, since DEDUKT never runs a synthetic control
+      selection: >
+        real: the 6 named genomic datasets DEDUKT evaluates, at k=17 (fixed,
+        matching the paper); synthetic: Zipfian(0.99) 64-bit integer keys as
+        a stand-in for skewed k-mer frequency, at the same total-key-count
+        scale as the smallest and largest real datasets for a controlled
+        comparison
+      recommended_subset:
+        - "E. coli 30X (Escherichia coli MG1655, 792 MB fastq, ~412M k-mers at k=17)"
+        - "P. aeruginosa 30X (Pseudomonas aeruginosa PAO1, 360 MB fastq)"
+        - "A. baumannii 30X (Acinetobacter baumannii, 249 MB fastq, ~129M k-mers)"
+        - "C. elegans 40X (Caenorhabditis elegans Bristol, 8.90 GB fastq, ~4.7B k-mers)"
+        - "H. sapien 54X (Homo sapiens, 317 GB fastq, ~167B k-mers, largest instance in the track)"
+        - "synthetic-zipf099-keycount-matched-to-A.baumannii (129M keys, controlled skew for comparison against the smallest real dataset)"
+        - "synthetic-zipf099-keycount-matched-to-C.elegans (4.7B keys, controlled skew for comparison against a mid-size real dataset)"
+      key_type: "64-bit key (2-bit-packed k-mer for k<=32), 32-bit value (frequency counter)"
+      dense_operand: "N/A"
+    protocol:
+      load_factor_sweep: [0.1, 0.25, 0.5, 0.75]
+      table_sizing: >
+        fixed slot count per swept target load factor = ceil(distinct_key_count_estimate / target_load_factor),
+        REPLACING DEDUKT's own undisclosed-load-factor fixed
+        536,870,912-slot constant so the load-factor axis becomes
+        controllable and comparable to the other two variants
+      collision_scheme: "open addressing, linear probing (matches DEDUKT's disclosed choice)"
+      hash_function: "MurmurHash3 (matches DEDUKT's disclosed choice)"
+      warmup: 1 (discarded)
+      reps: 5
+      statistic: "median, report min/max"
+      timer: "device-side events around the counting kernel only"
+      timing_scope: >
+        kernel-only: the upsert kernel processing a pre-parsed, pre-resident
+        (on-device) k-mer/key stream; k-mer PARSING from raw reads and any
+        inter-node/inter-GPU EXCHANGE are explicitly excluded from this
+        number and reported as separate one-shot phases, mirroring DEDUKT's
+        own Fig. 9 (counting-kernel-only) vs Fig. 6 (end-to-end) split
+      preprocessing_reported: "separately: parsing time, exchange/communication time (if a distributed configuration is used), each as its own number"
+    metric:
+      primary: "M keys/s (keys processed per second, whether the op resolves to an insert or an increment) — matches DEDUKT's Gk-mers/s unit, scaled down for smaller inputs"
+      secondary: "load_imbalance_ratio = max_partition_key_count / avg_partition_key_count, when run in a partitioned/distributed configuration (matches DEDUKT's Table III definition exactly)"
+    correctness: >
+      final key->count histogram must exactly match an independent
+      single-threaded CPU reference counting pass over the same key stream
+      (exact integer counts, no tolerance); any mismatched count or
+      missing/extra key invalidates that repetition.
+
+  - id: hash-table-crud-mixed-ops
+    claim: >
+      concurrent throughput of a general-purpose, dynamically-resizable
+      hash table under configurable read/insert/update/delete ratios,
+      following the YCSB load+run-phase convention that is this track's
+      only literature precedent for a full CRUD op mix
+    inputs:
+      suite: "YCSB-generated workload traces (matching Clevel-Hashing's own methodology exactly, since it is the only paper in the track exercising this op profile)"
+      selection: >
+        fixed-length 15-byte keys, 15-byte values (matching Clevel-Hashing
+        exactly, to keep the op-mix comparison isolated from key/value-size
+        effects); both Zipfian(skewness=0.99) and uniform-random key
+        distributions REQUIRED (the surveyed paper asserts but never shows
+        uniform-distribution numbers — this variant closes that gap)
+      recommended_subset:
+        - "Load-A (0% read / 100% write, insert-only population phase)"
+        - "Workload-A (50% read / 50% write)"
+        - "Workload-B (95% read / 5% write)"
+        - "Workload-C (100% read / 0% write)"
+        - "Workload-D (delete-heavy: 50% read / 25% insert / 25% delete, added by this spec since none of the surveyed A/B/C letters exercises delete despite the table under test supporting it)"
+      key_type: "15-byte fixed string key, 15-byte fixed string value"
+      dense_operand: "N/A"
+      size_classes: >
+        micro (64K initial capacity, 16M load-phase inserts, 16M run-phase
+        ops — matches Clevel-Hashing's micro-benchmark scale exactly);
+        macro (256K initial capacity, 64M load-phase inserts, 64M run-phase
+        ops — matches Clevel-Hashing's macro-benchmark scale exactly)
+    protocol:
+      load_factor_sweep: >
+        REQUIRED, measured every 10,000 insertions during an insert-only
+        phase (Clevel-Hashing's own protocol, adopted verbatim); report the
+        maximum load factor reached before the implementation's resizing
+        mechanism triggers, since this is the primary point of comparison
+        across competing designs in the surveyed paper (CCEH<=45%,
+        P-CLHT<=84%, level-hashing family ~86%, on-demand-allocation
+        designs ~100% by construction)
+      thread_counts: "[1, 2, 4, 8, 16, 36] (36 = Clevel-Hashing's single-NUMA-node thread ceiling; report NUMA pinning explicitly)"
+      warmup: "load phase is unmeasured for throughput purposes but IS the warmup (matches Clevel-Hashing exactly); no separate discard-run beyond this"
+      reps: 5 (matches Clevel-Hashing's disclosed repetition count exactly — the only named statistic in this track's literature)
+      statistic: "mean of 5 runs (matches the surveyed paper's own choice; report min/max alongside for outlier visibility, which the surveyed paper itself does not do)"
+      timer: "clock_gettime(CLOCK_MONOTONIC) or equivalent monotonic wall-clock around the entire run-phase for throughput; per-operation timestamping (optional compile-time mode) for the isolated single-op-type latency micro-benchmarks"
+      timing_scope: >
+        run-phase only for the headline ops/sec number; load phase timed
+        separately and never blended into run-phase throughput
+      preprocessing_reported: "load-phase (population) time reported separately, once per size class"
+      single_op_path_required: >
+        a true single-operation API (one key in, one result out, no
+        pre-batched trace) must be exercised at least once for a
+        latency-only measurement, distinct from the batch-trace-driven
+        throughput runs — matches Clevel-Hashing's `clevel_hash_cli`,
+        the only genuine single-op path in this track's artifacts
+    metric:
+      primary: "Mops/s, blended across the workload's disclosed read:write ratio (matches Clevel-Hashing's own metric definition)"
+      secondary: >
+        per-op-type average latency in microseconds (search-positive,
+        search-negative, update, delete, insert measured in isolation,
+        matching Clevel-Hashing's micro-benchmark decomposition), plus
+        memory_overhead = 1/load_factor - 1 at the measured maximum load
+        factor
+    correctness: >
+      every op's result must match an independent single-threaded reference
+      implementation replaying the same trace (found/not-found for
+      read/delete, correct prior value for update, no lost updates under
+      concurrency); a single reader/writer lock bug class specifically
+      (concurrent resize racing with search, as the surveyed paper found
+      and patched in a competitor) must be checked via a stress test that
+      triggers resizing concurrently with all four op types.
+
+notes_on_fairness:
+  - >
+    The track's three papers benchmark three non-interchangeable operation
+    profiles (build-then-probe with no delete; upsert-only with no plain
+    read; full CRUD) — collapsing them into one "op-mix ratio" parameter
+    would misrepresent two of the three papers' actual workloads, so the
+    spec keeps them as separate variants rather than one parameterized
+    variant with an op-mix knob.
+  - >
+    Load factor is swept and reported by only 1 of 3 papers (Clevel-Hashing)
+    despite being cheap to measure and central to every hash-table design's
+    memory/throughput tradeoff; the other two either fix it silently
+    (ShovonGMK23: 0.4, undisclosed as a design choice in the paper text,
+    only recoverable from the artifact's `main()`) or never compute it at
+    all despite having the numbers to do so (DEDUKT). All three spec
+    variants make a load-factor sweep mandatory, following Clevel-Hashing's
+    10K-insertion-interval sampling protocol.
+  - >
+    Only Clevel-Hashing names a repeated-trial statistic (mean of 5 runs).
+    ShovonGMK23's own reproducibility table shows single-run numbers
+    diverging from its paper's published numbers by 10-60%+ on several
+    datasets with no explanation offered — direct evidence that single-run
+    GPU timing is unreliable for this class of kernel. The spec fixes 5
+    repetitions with median+min/max as the floor across all three variants,
+    using Clevel-Hashing's repetition count since it is the only precedent,
+    but reporting median (not the surveyed paper's mean) to reduce
+    sensitivity to the kind of outlier runs ShovonGMK23's own numbers
+    suggest are common.
+  - >
+    Memory overhead is never reported as an absolute quantity by any of
+    the three papers; Clevel-Hashing's load-factor curve is the closest
+    proxy (memory overhead ∝ 1/load_factor - 1) and is adopted directly as
+    the spec's memory-overhead definition, computed at each swept
+    load-factor point in every variant, rather than left as a design
+    detail invisible to the benchmark.
+  - >
+    Key distribution is asserted but not shown for the uniform case in
+    Clevel-Hashing ("results using uniformly distributed workloads are
+    similar... but not shown"), and neither ShovonGMK23 nor DEDUKT runs a
+    synthetic distribution at all despite DEDUKT explicitly measuring the
+    downstream *effect* of its real data's skew (load-imbalance ratio).
+    The spec requires both uniform and Zipfian(0.99) synthetic key sets in
+    every variant that supports synthetic keys, specifically to test
+    Clevel-Hashing's own unshown claim rather than assume it generalizes.
+  - >
+    ShovonGMK23's build-only "Hashtable rate" and DEDUKT's counting-kernel-
+    only "Gk-mers/s" (Fig. 9, explicitly excluding the exchange module) are
+    both good practice — isolating the hash table's own cost from
+    surrounding pipeline phases — and are adopted as the model for every
+    variant's `timing_scope`/`preprocessing_reported` split, in contrast to
+    the headline pipeline-speedup numbers both papers ALSO report, which
+    must never be confused with the kernel-only numbers.
+
+open_questions:
+  - >
+    DEDUKT's effective per-table load factor across its 6 datasets and
+    varying node/GPU counts was never computed by the paper itself; this
+    spec's load-factor-sweep protocol for hash-table-counting-upsert
+    REPLACES DEDUKT's fixed undisclosed-ratio capacity constant with an
+    explicit swept target, so results under this spec are not directly
+    comparable to DEDUKT's own published numbers without also re-deriving
+    what load factor DEDUKT's fixed constant implied for each dataset
+    (roughly 2%-53% by back-of-envelope calculation from Table III, not
+    independently confirmed).
+  - >
+    It is not confirmed whether ShovonGMK23's in-paper published TC-pipeline
+    numbers used the same load_factor=0.4 default found in the artifact's
+    `tc_cuda.cu main()`, since the hash table there is rebuilt fresh (with
+    a `load_factor` argument) on every one of up to 606 fixed-point
+    iterations and only the top-level default was inspected, not every
+    call site.
+  - >
+    Clevel-Hashing's assertion that uniform-key results are "similar" to
+    its reported Zipfian(0.99) results has no supporting numbers in the
+    reachable fulltext; this spec's requirement to run both distributions
+    (rather than only Zipfian, as the surveyed paper effectively does) is
+    designed to test this claim for the specific implementations under
+    benchmark, not to assume it holds in general.
+  - >
+    No paper in this track runs its hash table on both a GPU and a
+    CPU+persistent-memory platform, so the spec cannot fix one hardware
+    baseline across all three variants; hash-table-build-probe-kernel and
+    hash-table-counting-upsert default to GPU (matching their two source
+    papers), hash-table-crud-mixed-ops defaults to CPU+PM-or-DRAM (matching
+    Clevel-Hashing) — a genuinely cross-platform comparison would require
+    new measurement infrastructure beyond what any surveyed paper attempts.
+
+evidence:
+  conf/usenix/ShovonGMK23: >
+    open-addressing linear-probing GPU hash join, Murmur3-style hash,
+    load_factor=0.4 hardcoded default (never swept), bulk build-then-probe
+    with no delete/single-op path, build-only "Hashtable rate" (keys/s)
+    reported separately from end-to-end TC-iteration time, 18 real SNAP/
+    DIMACS/road-network relations (7K-410K rows), no warmup/repeated-trial
+    statistic disclosed, single-run reproducibility table shows 10-60%+
+    discrepancy vs paper's own published numbers on some datasets, A100 GPU.
+  conf/ipps/NisaPEOBY21: >
+    open-addressing linear-probing counting hash table (find-or-increment-
+    or-insert only), MurmurHash3, fixed 536,870,912-slot capacity per local
+    table (load factor never computed by the paper), 6 real genomic
+    datasets (792MB-317GB fastq, k=17), explicitly-measured key skew via a
+    load-imbalance ratio (1.16x-2.37x) but no synthetic uniform control,
+    counting-kernel-only throughput (Gk-mers/s, excl. exchange) isolated
+    from end-to-end speedup-only pipeline numbers, no warmup/repetition/
+    statistic disclosed, results explicitly exclude I/O, Summit (V100 GPUs,
+    up to 768).
+  conf/usenix/ChenHDZ20: >
+    lock-free level hashing on Optane PM, 8-slot buckets (swept from
+    4/8/16), YCSB Load-A/A/B/C workload table with exact read:write ratios,
+    15-byte fixed keys/values, micro (16M ops) and macro (64M ops) scales,
+    Zipfian(0.99) key distribution (uniform claimed "similar" but not
+    shown), dedicated load-factor-vs-10K-insertions curve (CCEH<=45%,
+    P-CLHT<=84%, CLEVEL~86%, CMAP~100%) used explicitly as the paper's
+    memory-efficiency metric, 5-run averaged throughput and latency (only
+    paper in the track naming a repetition count/statistic), single-op CLI
+    plus batch YCSB-trace harness, 6x Optane DC PMM + 36 threads/socket.

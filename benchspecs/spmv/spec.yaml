@@ -1,0 +1,345 @@
+kernel: spmv
+summary: >
+  Sparse matrix times dense vector (SpMV), the core kernel behind iterative
+  solvers (CG/GMRES/AMG), graph algorithms (GraphBLAS BFS/PageRank), and
+  similarity search; measured as steady-state throughput with format
+  construction reported separately, plus dedicated variants for the
+  conversion-amortized, sequence-of-calls, and symmetric-storage claims that
+  this track's literature treats as genuinely different from a single
+  isolated y=Ax call.
+operation: "y[M] = A[M,K](sparse) * x[K](dense)"
+
+variants:
+  - id: spmv-csr-kernel
+    claim: >
+      steady-state kernel throughput, sparse format given/constructed once
+      (construction excluded from the per-call number but measured and
+      reported), single isolated y=Ax call. The common denominator every
+      surveyed paper except FBMPK and AmgT actually reports; run at both fp64
+      (primary) and fp32 (secondary) since the track splits roughly evenly
+      (fp64: TileSpMV, DCS-SpMV, CB-SpMV; fp32: AlphaSparse, Bit-GraphBLAS,
+      Serpens).
+    inputs:
+      suite: "SuiteSparse Matrix Collection"
+      selection: >
+        real (non-complex), square or rectangular matrices, 1e4 <= nnz <=
+        2e8; excludes matrices used by only one paper's abstract with no
+        code confirmation (avoids cherry-picking). Explicitly binary/
+        pattern-only matrices (Bit-GraphBLAS's 521-matrix domain) are kept
+        out of this general variant, since 1-bit storage changes the
+        byte-accounting model (see open_questions).
+      recommended_subset:
+        [audikw_1, ldoor, Serena, StocF-1465, Bump_2911, Flan_1565,
+         Hook_1498, Geo_1438, dielFilterV3real, Long_Coup_dt6, Cube_Coup_dt6,
+         crankseg_2, cage15, delaunay_n24, roadNet-CA, hugetrace-00020,
+         wiki-Talk, soc-LiveJournal1, com-Orkut, webbase-1M, in-2004,
+         nlpkkt240, Queen_4147, mip1, pwtk]
+      vector_operand: >
+        x: dense, initialized U(-1,1) with fixed seed=42; y: initialized to
+        zero (beta=0, no accumulate into y) unless the technique's kernel
+        signature requires accumulate, in which case beta and the initial y
+        contents must be documented alongside the result.
+    protocol:
+      format: >
+        matrix given as CSR (or COO, converted to CSR by a reference loader).
+        If the technique requires a different internal layout (BSR, tiled,
+        ELL, bit-packed, mixed-precision blocks, etc.), the ONE-TIME
+        conversion is performed once before the timing loop; its wall-clock
+        cost is measured and reported (see preprocessing_reported) but is
+        NOT counted in the per-call throughput number. This matches
+        TileSpMV/CB-SpMV/AlphaSparse's actual runtime structure (conversion
+        happens once, outside the loop) but requires the conversion time to
+        actually be surfaced, which TileSpMV and CB-SpMV's own artifacts do
+        not do.
+      warmup: 20
+      reps: 100
+      statistic: "median (report min/max/stdev alongside)"
+      timer: >
+        platform-specific, one timestamp pair PER ITERATION (not a single
+        pair around a batched loop, which is what all 9 surveyed
+        SpMV-implementing artifacts do): GPU = CUDA/HIP event pair per call;
+        CPU = std::chrono::steady_clock or omp_get_wtime per call; FPGA =
+        vendor runtime/on-board kernel-invocation counter per call (matching
+        Serpens's explicit "Kernel time" label).
+      timing_scope: >
+        kernel only. GPU: H2D/D2H excluded, operands device-resident before
+        timing starts. FPGA: host<->accelerator DMA excluded from this
+        number and measured/reported separately, once (this fixes Top-K
+        SpMV's ambiguity about whether PCIe/HBM transfer is inside its
+        reported time, by requiring the Serpens-style split explicitly).
+      preprocessing_reported: >
+        separately, once: format-conversion wall time reported alongside
+        the kernel throughput number, never silently folded in and never
+        silently dropped (fixes TileSpMV/CB-SpMV, whose artifacts don't
+        surface this number at all). If the technique's construction step is
+        an open-ended autotuning/design SEARCH rather than mechanical
+        conversion (e.g. AlphaSparse's per-matrix format+kernel search,
+        up to 8h), that search cost is EXCLUDED from this variant's
+        "preprocessing" line item entirely and reported only in
+        spmv-e2e-preproc, since blending a millisecond-scale conversion and
+        an hours-scale search into the same field would understate how
+        different in kind they are.
+      precision: >
+        fp64 (primary): reference computed in fp64. fp32 (secondary):
+        reference is the same fp64 computation, error measured against it.
+    metric:
+      primary: "GFLOP/s (2*nnz flops per call; no beta*y term, since beta=0 by default)"
+      secondary: >
+        GB/s = bytes_moved/time, where bytes_moved = nnz*(sizeof(value)+
+        sizeof(index)) + (num_rows+1)*sizeof(index) [row pointer] +
+        num_rows*sizeof(value) [x, read once per row, compulsory-traffic
+        lower bound] + num_rows*sizeof(value) [y, write once] — the standard
+        roofline-style minimum-traffic formula, not each paper's own ad hoc
+        accounting (DCS-SpMV's dataSize formula was the closest match found
+        and is generalized here).
+    correctness: >
+      fp64: max relative error vs. an independently-computed fp64 reference
+      (cuSPARSE fp64 CSR on GPU, Intel MKL fp64 CSR on CPU, same computation
+      re-run on host for FPGA) < 1e-9. fp32: max relative error vs. the fp64
+      reference < 1e-4. Both are tighter than 3 of the 9 surveyed papers'
+      own tolerances (TileSpMV's 1%, Serpens's <2%-of-elements-mismatch,
+      CB-SpMV's 1e-4/1e-3) and are gated BEFORE timing counts, unlike
+      FBMPK's and CB-SpMV-style artifacts where correctness checking exists
+      in code but is off by default or unautomated.
+
+  - id: spmv-e2e-preproc
+    claim: >
+      end-to-end throughput including one-shot format construction
+      (mechanical conversion), amortized over k=100 repeated calls on the
+      SAME matrix — the realistic reuse pattern for iterative
+      solvers/AMG/graph algorithms that call SpMV many times per matrix
+      factorization (AmgT: 31 SpMV calls per V-cycle x up to 50 iterations =
+      up to 1,551 calls, so k=100 is conservative relative to real solver
+      usage; DCS-SpMV's own reported numbers already average over 100 calls,
+      just without folding in construction cost).
+    inputs:
+      suite: "same as spmv-csr-kernel"
+      selection: "same as spmv-csr-kernel"
+      recommended_subset: "same as spmv-csr-kernel"
+      vector_operand: "same as spmv-csr-kernel"
+    protocol:
+      format: "input is raw CSR/COO; conversion to the kernel's native format IS timed, once"
+      warmup: 20
+      reps: "k=100 post-conversion calls; report BOTH the amortized number and the pure post-conversion kernel time"
+      statistic: median
+      timer: "same per-platform per-iteration timers as spmv-csr-kernel, plus one std::chrono/CUDA-event bracket around the one-shot conversion"
+      timing_scope: "conversion + k kernel calls; H2D/D2H of the ORIGINAL matrix included once, D2H of y excluded (matches AmgT/Bit-GraphBLAS's separate-preprocessing-report intent but forces an explicit stated k instead of an implicit or absent one)"
+      preprocessing_reported: >
+        both standalone (ms, once) AND amortized-per-call
+        (construction_ms/k added to each call's time). If
+        construction_time > 10*k*kernel_time (i.e. no realistic k choice
+        would amortize it away — AlphaSparse's regime, where an 8h search
+        dwarfs a microsecond-scale kernel call even at k=100), report the
+        amortized-at-k=100 number AS-IS (which will honestly show
+        construction dominating) plus the raw uncapped construction time,
+        rather than silently choosing a larger k to make the amortized
+        number look favorable. This is the explicit fix for AlphaSparse's
+        own practice of reporting zero amortization argument for its
+        multi-hour search.
+      precision: "same fp64/fp32 split as spmv-csr-kernel"
+    metric:
+      primary: "GFLOP/s (amortized: k*2*nnz / (construction_time + k*kernel_time))"
+      secondary: "ms (construction, standalone, once); ms (per-call, pure post-conversion kernel, median)"
+    correctness: "same tolerance as spmv-csr-kernel, checked post-conversion"
+
+  - id: spmv-sequence-krylov
+    claim: >
+      throughput on a bounded SEQUENCE of SpMV calls on the same matrix A
+      with related vectors (Ax, A^2 x, ..., A^k x, or linear combinations),
+      the Krylov-subspace / multigrid usage pattern that FBMPK targets
+      directly and AmgT exhibits inside its V-cycle — distinct from a single
+      isolated call because cache/reuse effects across the sequence and
+      reordering that only pays off over multiple calls change what "fast"
+      means.
+    inputs:
+      suite: "same as spmv-csr-kernel"
+      selection: "same as spmv-csr-kernel, restricted to matrices where a k-step Krylov sequence is numerically meaningful (i.e. exclude structurally singular / non-square matrices)"
+      recommended_subset: "same as spmv-csr-kernel"
+      vector_operand: "x_0: dense U(-1,1) seed=42; x_{i+1} = A x_i for the sequence (or the paper's own linear-combination scheme if applicable, documented explicitly)"
+    protocol:
+      format: "same as spmv-csr-kernel"
+      warmup: 20
+      reps: "k in {2, 4, 8}; report each k separately (not just the largest)"
+      statistic: "median per-call time within the sequence, across 100 repeated sequences"
+      timer: "same per-platform per-iteration timers as spmv-csr-kernel"
+      timing_scope: >
+        per-call amortized reporting (average across the k calls in one
+        sequence, then median across 100 repeated sequences) — REQUIRED even
+        though FBMPK's own artifact only reports total-sequence time; this
+        closes the fairness gap where a slower solve that's simply "not
+        divided by k" would look incomparable against papers reporting a
+        single-call metric.
+      preprocessing_reported: >
+        separately, once: any sequence-specific preprocessing (matrix
+        reordering/partitioning done to reduce cache pressure across the k
+        calls, e.g. FBMPK's ABMC reordering) is measured and reported — NOT
+        silently excluded from the total the way FBMPK's own public artifact
+        does (it ships a pre-reordered matrix so this cost never appears in
+        the timing loop at all).
+      precision: "fp64 primary (matches FBMPK); fp32 optional secondary"
+    metric:
+      primary: "GFLOP/s (per-call, averaged across k calls in a sequence: k*2*nnz / sequence_time)"
+      secondary: "ms (total sequence time, once per k); ms (sequence-preprocessing, standalone, once)"
+    correctness: "same tolerance as spmv-csr-kernel, checked on the final x_k (or each intermediate x_i if the technique claims per-step accuracy)"
+
+  - id: spmv-symmetric-kernel
+    claim: >
+      steady-state throughput exploiting matrix symmetry (half-storage,
+      lower- or upper-triangular CSR), for the numerically-symmetric subset
+      of the standard suite — kept as its OWN variant rather than a data
+      filter on spmv-csr-kernel because the computational kernel itself
+      differs: a symmetric SpMV writes to both y[i] and y[j] per stored
+      nonzero (requiring conflict-free or atomic accumulation across
+      threads), a correctness dimension the general kernel never faces, and
+      because GFLOP/s must be counted against the FULL unfolded nnz, not
+      stored nnz, to stay comparable to spmv-csr-kernel at all.
+    inputs:
+      suite: "SuiteSparse Matrix Collection, symmetric subset"
+      selection: >
+        structurally AND numerically symmetric matrices, rows > 5e4, nnz >
+        1e5 — DCS-SpMV's own criterion, adopted since it is the only
+        surveyed paper targeting this variant.
+      recommended_subset:
+        [audikw_1, ldoor, Serena, StocF-1465, Bump_2911, Flan_1565,
+         Hook_1498, Geo_1438, dielFilterV3real, Long_Coup_dt6, Cube_Coup_dt6,
+         crankseg_2, pwtk]
+      vector_operand: "same as spmv-csr-kernel"
+    protocol:
+      format: "lower- or upper-triangular half of CSR (given; construction from a full CSR input timed once and reported, same discipline as spmv-csr-kernel)"
+      warmup: 20
+      reps: 100
+      statistic: "median (report min/max/stdev alongside)"
+      timer: "same per-platform per-iteration timers as spmv-csr-kernel"
+      timing_scope: "kernel only, same H2D/D2H exclusion as spmv-csr-kernel"
+      preprocessing_reported: "separately, once, same discipline as spmv-csr-kernel"
+      precision: "fp64 primary (matches DCS-SpMV); fp32 optional secondary"
+    metric:
+      primary: >
+        GFLOP/s using the FULL (unfolded) flop count:
+        2*(2*nnz_stored - diag_nnz), explicitly NOT the stored-nnz count —
+        this is a deliberate anti-gaming fix: a symmetric kernel reporting
+        GFLOP/s off stored nnz alone would show an inflated number for doing
+        LESS arithmetic, not more.
+      secondary: "ms; GB/s using the half-storage byte count (the actual memory-traffic reduction symmetry buys)"
+    correctness: >
+      same relative-error tolerance as spmv-csr-kernel, PLUS a mandatory
+      race-freedom check: the same input run twice with different thread
+      counts/scheduling must produce bit-identical or tolerance-identical
+      output (catches unsynchronized write-write conflicts on y[i]/y[j],
+      the failure mode this variant's technique family is specifically
+      built to avoid).
+
+notes_on_fairness:
+  - >
+    IMPLEMENTATION FINDING (added while building bench/, 2026-08-06): the phrase
+    "max relative error" used by this track's papers and by the variants above is
+    under-specified, and taken literally it fails correct kernels. An output
+    element here is a sum of many signed products; cancellation regularly leaves a
+    true value near zero, and |out-ref|/|ref| then blows up to O(1e-2..1e0) for a
+    perfectly good fp32 kernel (measured: 3.9e-2 on SuiteSparse/cant at N=128 with
+    scipy's own fp32 CSR product). The reference harness therefore gates on
+    |out-ref| / (|A|*|B|) elementwise — the standard componentwise backward-error
+    denominator — and records the naive pointwise-relative, absolute and L2-relative
+    values alongside so the choice stays auditable. Any implementation of this spec
+    must state which denominator it used; "relative error" alone is not a gate.
+  - >
+    TileSpMV and CB-SpMV never measure or surface their format-conversion
+    cost anywhere in the released artifact (not even "reported separately,
+    excluded" — it's simply absent). This spec makes measuring and
+    reporting construction time mandatory for spmv-csr-kernel, not optional.
+  - >
+    AlphaSparse's per-matrix format+kernel search can take up to 8 hours
+    (vs. a microsecond-scale single SpMV call) and the paper offers no
+    amortization argument. Rather than picking an arbitrarily large k to
+    paper over this, spmv-e2e-preproc requires reporting the amortized
+    number honestly AT k=100 (which will show construction dominating for
+    AlphaSparse-style techniques) plus the raw uncapped construction time,
+    so the spec doesn't quietly launder an 8-hour one-off cost the way an
+    unstated-k "amortization" claim would.
+  - >
+    CB-SpMV's released code (`ITER=10`) contradicts its own paper text
+    ("executed 1000 times") — an artifact-vs-paper mismatch caught only by
+    reading the benchmark script directly. This spec fixes reps=100 as the
+    single number to use regardless of what any individual paper's text or
+    code claims, and requires per-iteration timestamps so the 100 reps
+    yield a real median+range, not just a mean.
+  - >
+    FBMPK's public artifact drops its ABMC reordering preprocessing cost
+    entirely (ships a pre-reordered matrix, no line item for the cost at
+    all) — stronger exclusion than any format-conversion paper's practice.
+    spmv-sequence-krylov requires this cost be measured and reported, not
+    silently absent.
+  - >
+    Correctness tolerances across the surveyed papers range from FBMPK's
+    1e-6 (but gated behind a compile flag that's OFF by default) to
+    TileSpMV's 1% and Serpens's "<2% of elements may mismatch." This spec
+    fixes one tolerance per precision (1e-9 fp64, 1e-4 fp32) and makes the
+    gate mandatory before any timing counts, tighter than the majority of
+    surveyed artifacts' actual shipped behavior.
+  - >
+    No surveyed paper reports median+min/max; all 9 SpMV-implementing
+    papers report only a mean (sometimes an amortized/on-device mean, as in
+    Serpens). This spec requires per-iteration timestamps specifically so a
+    real distribution (median, min, max, stdev) can be reported, catching
+    the kind of jitter/throttling a batched-mean timer structurally hides.
+  - >
+    DCS-SpMV's symmetric-SpMV technique writes to both y[i] and y[j] per
+    stored nonzero from concurrent threads; the paper's own artifact does
+    not describe an explicit race-freedom test. spmv-symmetric-kernel adds
+    one as a mandatory correctness check, since a data race that happens to
+    not manifest in a single test run is not the same as a proven-correct
+    parallel accumulation scheme.
+
+open_questions:
+  - >
+    Mixed/cascade precision (AmgT's fp64/fp32/fp16-per-multigrid-level
+    scheme; Top-K SpMV's 20/25/32-bit fixed-point sweep) doesn't fit the
+    single-precision-per-call model used by spmv-csr-kernel/
+    spmv-e2e-preproc/spmv-sequence-krylov. A dedicated
+    "spmv-mixed-precision" variant was considered but not added — the
+    4-variant budget went to the shape-level divergences (kernel-only vs.
+    amortized vs. sequence vs. symmetric) that recur across more of the
+    surveyed papers; AmgT and Top-K SpMV's precision-cascade claims are
+    left as a follow-up extension.
+  - >
+    Top-K SpMV computes an approximate top-K index subset, not a full y
+    vector — its correctness model (Kendall's tau, NDCG vs. an exact
+    reference) is fundamentally different from elementwise numeric
+    tolerance and doesn't fit any of the 4 variants above. It is treated as
+    a related-but-distinct benchmark (top-k sparse similarity search), out
+    of scope for this general SpMV spec.
+  - >
+    Bit-GraphBLAS's 1-bit matrix representation (B2SR format, 521-matrix
+    binary-square-matrix domain) has a fundamentally different
+    byte-accounting model (1 bit/nonzero vs. sizeof(value)+sizeof(index))
+    that the GB/s formula in spmv-csr-kernel doesn't capture correctly.
+    Excluded from the general suite's selection criterion; a bit-packed
+    format extension is a candidate future variant if more binary-matrix
+    papers appear in this track.
+  - >
+    FBMPK's exact matrix suite, ARM hardware claim, and k-sequence-length
+    choices could not be verified (both available PDF sources had
+    unreadable font encodings); the `recommended_subset` entry for this
+    track's sequence variant is inferred from the one confirmed example
+    (audikw_1) plus the general suite's large symmetric matrices, not
+    independently confirmed against the paper's own evaluation table.
+  - >
+    Whether the FPGA-specific host<->accelerator DMA number
+    (spmv-csr-kernel's "reported separately" requirement) should itself
+    become a first-class secondary metric (e.g. "effective end-to-end
+    GFLOP/s including DMA") is left open — Top-K SpMV's ambiguity about
+    whether DMA is in-scope suggests this matters in practice, but neither
+    FPGA paper's artifact gave enough detail to fix a specific DMA-inclusion
+    protocol with confidence.
+
+evidence:
+  conf/ipps/NiuLDJ0T21: "all SuiteSparse matrices; WARMUP_NUM=200 + BENCH_REPEAT=1000 mean; fp64; CSR->Tile conversion never timed at all; cuSPARSE/CSR5 baselines; 1% rel tolerance."
+  conf/sc/DuLWLTS22: "843 SuiteSparse matrices (rows>9K, nnz[50K,60M]); adaptive rep count for ~8s wall time; fp32; per-matrix format+kernel search up to 8h, zero amortization argument; ACSR/CSR5/HYB/TACO baselines."
+  conf/sc/QiuXFZD0WCC024: "318 symmetric SuiteSparse matrices (rows>50K,nnz>100K); BENCH_REPEAT=100 mean; fp64; preprocessing timed separately, excluded from headline; MKL/RACE baselines."
+  conf/ics/CongSC00Q25: "2,843 SuiteSparse matrices; code ITER=10 vs paper's claimed 1000 (discrepancy); fp64; format conversion never measured or reported; cuSPARSE-BSR(best-of-4)/TileSpMV/DASP baselines."
+  conf/ipps/ChenSSTBL22: "521 binary SuiteSparse matrices; TEST_TIMES=5 mean; 1-bit format, fp32 output; CSR->B2SR conversion (3-34ms) timed separately with explicit amortization argument; cuSPARSE baseline."
+  conf/sc/LuZWFLCY0C024: "16 curated matrices; SpMV embedded in AMG V-cycle (31 calls/iter x 50 iters); fp64/fp32/fp16 level-dependent cascade; CSR<->mBSR conversion >5% of runtime, disclosed; HYPRE+cuSPARSE/rocSPARSE baselines."
+  conf/dac/SongCGC22: "12 curated + 2,519 SuiteSparse matrices (nnz[1e3,1e8]); on-device rp_time=100 amortized mean; fp32; explicit 'Kernel time' label excludes host-side conversion; <2%-mismatch tolerance; K80/GraphLily/Sextans baselines."
+  conf/dac/ParraviciniCSS21: "mostly synthetic matrices + 1 real (GloVe, 54.9M nnz); NITER=30; reduced fixed-point precision (20/25/32-bit); ranking-quality correctness (Kendall's tau, NDCG), not elementwise; CPU/GPU baselines."
+  conf/ipps/ZhangLYDYLW23: "SuiteSparse via Matrix Market, audikw_1 canonical example; NTIMES=30, no warmup exclusion; fp64; sequence-of-SpMV (A^k x) shape, reordering preprocessing dropped entirely from timing; MKL baseline."
+  conf/asplos/JainGC25: "negative finding: public artifact implements only SpMM/SDDMM, not SpMV despite the paper's SSMK framing; excluded from this track, already covered in spmm track survey."

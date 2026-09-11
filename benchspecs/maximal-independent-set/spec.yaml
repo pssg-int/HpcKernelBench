@@ -1,0 +1,140 @@
+kernel: maximal-independent-set
+summary: >
+  Single-node multi-GPU maximal independent set (MIS) computation on
+  undirected graphs too large for one GPU's memory, measured as
+  steady-state throughput (Mnodes/s, Medges/s) jointly with MIS
+  cardinality (since MIS is not unique and a smaller/degenerate output
+  would be a false win); graph load and untimed verification excluded from
+  per-run time.
+operation: >
+  status[V] in {in, out} = MIS(A[V,V] adjacency (sparse, CSR, undirected,
+  binary CSR/.egr), num_gpus); a valid MIS satisfies: no two adjacent
+  vertices are both 'in', and every 'out' vertex has at least one 'in'
+  neighbor. A is unweighted; only connectivity matters.
+
+variants:
+  - id: mis-kernel-oversized-graph500
+    claim: >
+      steady-state multi-GPU MIS throughput on synthetic Graph500 R-MAT
+      graphs sized to deliberately exceed a single GPU's memory (the exact
+      regime MG-MIS targets); graph generation, dedup, and CSR construction
+      excluded but reported separately (one-shot, not amortized)
+    inputs:
+      suite: "Graph500 reference generator (graph500/graph500), R-MAT/Kronecker, edge_factor=16 default, cleaned via the paper's own clean_graph500.cpp (dedup + self-loop removal)"
+      selection: >
+        SCALE chosen so the resulting binary-CSR graph exceeds the
+        per-GPU memory of the system under test: for a 4x32GB-class system,
+        SCALE such that the graph needs >32GB total (matches the paper's
+        own ">32 GB" class, tested on 4x V100 32GB); for a 2x12GB-class
+        system, SCALE such that the graph needs >12GB total (matches the
+        paper's own ">12 GB" class, tested on 2x RTX 3080 12GB). Report the
+        exact SCALE and resulting (V, E) alongside the memory-class label
+        since SCALE-to-memory mapping is implementation-dependent.
+      recommended_subset:
+        - "SCALE28 (edge_factor=16, ~2.7B directed edges after generation) as a >32GB-class instance"
+        - "SCALE26 (edge_factor=16, ~671M directed edges) as a >12GB-class instance"
+        - "one SCALE below each threshold (SCALE27, SCALE25) as an in-memory-on-1-GPU control, to isolate the multi-GPU communication overhead from raw compute"
+      dense_operand: "N/A"
+      gpu_configs: "REQUIRED to match or bracket the paper's own two systems: 4x V100 32GB (or equivalent aggregate >=128GB across >=4 GPUs) and 2x RTX 3080 12GB (or equivalent aggregate >=24GB across >=2 GPUs); report exact GPU model/count/per-GPU memory used"
+    protocol:
+      format: "binary CSR (.egr, ECLgraph format), built once from the generated+cleaned edge list; construction NOT counted in per-run time (isolated via the code's own prepTimer, which the paper's source keeps separate from the main runtime measurement)"
+      warmup: 0
+      reps: "5 (not specified by the paper's own README/source, which shows only a single-run timer; this spec REQUIRES 5 repeated full invocations of the binary per graph/GPU-config to guard against the run-to-run device-initialization and inter-GPU-topology variance inherent to multi-GPU codes, since the paper's own artifact does not visibly average across runs)"
+      statistic: "median of 5, report min/max"
+      timer: "CPUTimer (host-side wall clock) wrapping the OpenMP-orchestrated multi-GPU parallel region only, matching the paper's own runtime measurement region (excludes prepTimer's graph-load/buffer-setup and verifyTimer's post-hoc validity check, both of which the paper's own code already isolates)"
+      timing_scope: "MIS computation only; CSR construction and MIS-validity verification are one-shot/untimed and excluded, exactly as the paper's own three-timer (prep/run/verify) split already separates them"
+      preprocessing_reported: "separately, once per graph: Graph500 generation + clean_graph500 dedup time, and binary-CSR read/buffer-setup time (prepTimer)"
+      multi_gpu_partitioning_disclosure: "REQUIRED: report the graph-partitioning scheme across GPUs (e.g. contiguous vertex-range split) and whether it is load-balanced by vertex count or edge count, since this materially affects the local/remote phase split MG-MIS's own design relies on"
+    metric:
+      primary: "throughput: Mnodes/s and Medges/s (median of 5), matching the paper's own two printed throughput lines"
+      secondary: "wall time (median, min, max, ms); geomean speedup over the single-GPU-with-UVM baseline on the SAME graph"
+    correctness: >
+      valid MIS (verified via the paper's own untimed verifyTimer-style
+      pass): no two adjacent 'in' vertices; every 'out' vertex has >=1
+      'in' neighbor. Any violation invalidates that run.
+    quality: >
+      MIS cardinality |S| MUST be reported alongside throughput (MIS is
+      combinatorially non-unique — a fast-but-tiny or fast-but-bloated MIS
+      is a false win). Report |S| / |V| (selected fraction) and, when a
+      baseline is run on the same graph, the ratio |S|_MG-MIS / |S|_baseline
+      (paper's own headline quality number: "2.6% smaller on average" than
+      the single-GPU UVM baseline).
+
+  - id: mis-vs-single-gpu-uvm-baseline
+    claim: >
+      head-to-head comparison against the paper's own baseline (same
+      lab's single-GPU MIS kernel run with CUDA UVM) on graphs that fit
+      only via UVM oversubscription on 1 GPU but fit natively across
+      the multi-GPU aggregate — this IS the paper's central claim
+      (17.73x / 22.88x geomean speedup), elevated to its own variant since
+      it requires a matched baseline build rather than being a standalone
+      MG-MIS number
+    inputs:
+      suite: "same graphs as mis-kernel-oversized-graph500"
+      selection: "same recommended_subset; both MG-MIS and the single-GPU-UVM baseline MUST be run on identical binary-CSR inputs"
+      recommended_subset: "same as mis-kernel-oversized-graph500"
+      dense_operand: "N/A"
+    protocol:
+      format: "same binary CSR as mis-kernel-oversized-graph500"
+      warmup: 0
+      reps: 5
+      statistic: "median of 5 for both MG-MIS and the baseline; report min/max for both"
+      timer: "same CPUTimer convention for MG-MIS; whatever the baseline single-GPU-UVM code's own native timer is, disclosed explicitly"
+      timing_scope: "MIS computation only for both sides; UVM page-fault/migration overhead is NOT separated out for the baseline since the paper's own headline number treats it as part of the baseline's cost (this is the whole point of the comparison — UVM thrashing is why MG-MIS is faster)"
+      preprocessing_reported: "separately for both sides, same convention as mis-kernel-oversized-graph500"
+      baseline_identity_required: true
+    metric:
+      primary: "speedup = time(single-GPU-UVM baseline) / time(MG-MIS), geometric mean across the recommended_subset"
+      secondary: "per-instance speedup (not just the geomean), MIS-size ratio (MG-MIS / baseline)"
+    correctness: "same valid-MIS gate as mis-kernel-oversized-graph500, applied to both sides"
+    quality: "MIS-size ratio MG-MIS/baseline MUST be reported (paper's own -2.6% average finding); a speedup number without this ratio is an incomplete claim per this track's approximate/heuristic quality-co-reporting requirement"
+
+notes_on_fairness:
+  - >
+    MIS is not a unique output — an implementation could trivially trade
+    MIS quality (cardinality) for speed by using a weaker priority scheme.
+    The paper's own abstract already discloses this tradeoff (-2.6% average
+    size vs. baseline), which is good practice; this spec makes that
+    disclosure MANDATORY in both variants rather than optional, per the
+    project's requirement that approximate/heuristic problems report
+    quality jointly with time, not as an afterthought.
+  - >
+    The paper's own artifact keeps graph-load (prepTimer), MIS computation
+    (runtime), and validity verification (verifyTimer) in three separate,
+    non-overlapping timers in the source code itself — this spec's
+    timing_scope/preprocessing_reported split is not an invention imposed
+    on the paper; it directly mirrors what the paper's own code already
+    does, made explicit and mandatory for submissions.
+  - >
+    Because the README gives no concrete real-world named-graph list
+    (unlike ECL-MM/graphB+ from the same lab in this survey batch), this
+    spec anchors its size classes to the paper's own organizing variable —
+    "exceeds one GPU's memory" — using Graph500 R-MAT rather than
+    fabricating a named real-world suite the paper never specified. This
+    keeps the spec's inputs traceable to something the paper actually
+    said, rather than presenting an invented list as if it were confirmed.
+
+open_questions:
+  - >
+    Whether the paper's own reported numbers (17.73x, 22.88x geomean)
+    average multiple external repetitions of the binary or are single-shot
+    per graph could not be confirmed from the README or the inspected
+    portion of MG-MIS_10.cu (no outer repeat loop was visible around the
+    main OpenMP parallel region in the excerpt read). This spec's
+    reps: 5 / median-of-5 requirement is this benchmark's own addition for
+    robustness, not a confirmed reproduction of the paper's exact
+    statistic — flagged so a full source read (or contacting the authors)
+    could tighten this before treating the variant as bit-for-bit
+    paper-reproducing.
+  - >
+    Exact real-world graph names/sizes used in the paper (if any beyond
+    Graph500-generated instances) were not confirmed — the ICS25 PDF
+    (linked from the README as userweb.cs.txstate.edu/~mb92/papers/ics25.pdf)
+    was not machine-readable via the tools available for this survey; a
+    follow-up with direct PDF text extraction should check Table/Figure
+    captions for named SuiteSparse instances before finalizing whether a
+    third "real-world graphs" variant should be added alongside the two
+    Graph500-based variants here.
+
+evidence:
+  conf/ics/AkathoottXB25: "4x V100 32GB and 2x RTX3080 12GB systems, Graph500 R-MAT + Indigo3Suite-generated inputs sized to exceed one GPU's memory (>32GB and >12GB classes respectively), baseline is same-lab single-GPU MIS with UVM, geomean speedup 17.73x/22.88x, MIS size on average 2.6% smaller than baseline (quality tradeoff disclosed), code's own three-timer split (prep/run/verify) already isolates load and verification from the timed region; exact repeated-trial convention and named real-world graph list not confirmed from available sources"

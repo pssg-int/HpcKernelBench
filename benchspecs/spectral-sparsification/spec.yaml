@@ -1,0 +1,131 @@
+kernel: spectral-sparsification
+summary: >
+  Incremental spectral sparsification of a large undirected weighted
+  graph: nearly-linear-time initial sparsifier construction followed by
+  O(log N)-time per-edge-batch incremental updates, measured as time
+  jointly with the relative condition number between original and
+  sparsifier Laplacians, since sparsification quality and edge-count
+  reduction are an inherent tradeoff with no single correct answer.
+operation: >
+  H_0 = Setup(G_0=(V,E_0,w): Laplacian L_{G_0}) via low-resistance-
+  diameter (LRD) decomposition into node clusters, selecting a spectrally
+  -critical edge subset; H_i = Update(H_{i-1}, Delta E_i (new weighted
+  edges)) in O(log N) time per update using low-dimensional resistance
+  embeddings to score edge importance/redundancy; output H_i is a sparse
+  weighted graph (subgraph, not necessarily edge-subset of G) whose
+  Laplacian spectrally approximates L_{G_i}.
+
+variants:
+  - id: sparsify-kernel-setup-suitesparse
+    claim: >
+      steady-state one-shot setup-phase time (initial sparsifier
+      construction from scratch) on the SuiteSparse Matrix Collection
+      suite used by this track's paper; this is the common denominator
+      any spectral sparsifier must support before incremental updates are
+      possible
+    inputs:
+      suite: "SuiteSparse Matrix Collection (sparse.tamu.edu), symmetric positive-semidefinite Laplacian-derived instances"
+      selection: "13 named instances spanning circuit simulation, finite-element analysis, and Delaunay-triangulation/large-sparse-graph domains, matching the track paper's own evaluation suite"
+      recommended_subset:
+        - "G3_circuit (1.5M nodes, 3.0M edges) — circuit, large"
+        - "G2_circuit (1.5e5 nodes, 2.9e5 edges) — circuit, medium"
+        - "fe_4elt2 (1.1e4 nodes, 3.3e4 edges) — FEM, small"
+        - "fe_ocean (1.4e5 nodes, 4.1e5 edges) — FEM, medium"
+        - "fe_sphere (1.6e4 nodes, 4.9e4 edges) — FEM, small"
+        - "delaunay_n18 through delaunay_n22 (2.6e5 - 4.2e6 nodes) — Delaunay size ladder"
+        - "M6, 333SP, AS365 (each ~3.7e6 nodes, ~1.1e7 edges) — large sparse graphs"
+        - "NACA15 (1.0e6 nodes, 3.1e6 edges) — mesh graph"
+      dense_operand: "N/A (sparse weighted Laplacian is the sole input)"
+      target_operating_point: "sparsifier density (|E_H|/|V|) fixed per instance and disclosed (e.g. 2x, 4x, 8x edges-per-node), since setup time trades directly against target density"
+    protocol:
+      format: "Laplacian read from SuiteSparse .mtx once, not counted in setup time"
+      warmup: "1 setup run, discarded"
+      reps: 5
+      statistic: "median setup_time_s, report min/max"
+      timer: "wall-clock around the LRD-decomposition + initial-sparsifier-selection call"
+      timing_scope: "setup phase only (nearly-linear-time construction); matrix I/O excluded but reported separately"
+      preprocessing_reported: "matrix load time, separately, once per instance"
+    metric:
+      primary: "setup_time_s (median, min/max) as a function of |V|, |E|"
+      secondary: "kappa(L_G, L_H) relative condition number, sparsifier density |E_H|/|V|, speedup vs. GRASS baseline at matched density"
+    correctness: >
+      no exact-value correctness (sparsification is inherently
+      approximate); quality gate is kappa(L_G, L_H) <= kappa achieved by
+      the GRASS baseline at the SAME target density on the same instance
+      (i.e. matched-density comparison, not matched-time) — a
+      sparsification that is faster but achieves worse spectral fidelity
+      at the same density is a DIFFERENT operating point, not a strict
+      improvement, and must be reported as such rather than compared
+      directly.
+
+  - id: sparsify-incremental-updates
+    claim: >
+      per-update O(log N) incremental throughput across a sequence of 10
+      edge-batch insertions per graph, amortized over the batch (this
+      operationalizes the paper's actual headline contribution — up to
+      200x speedup over full re-sparsification — as a first-class
+      variant rather than folding it into the one-shot setup number)
+    inputs:
+      suite: "same recommended_subset as sparsify-kernel-setup-suitesparse"
+      selection: "same instances, each with a fixed, disclosed sequence of 10 incremental edge batches (batch size and edge-selection scheme, e.g. random or degree-weighted, disclosed explicitly)"
+      recommended_subset: "same as sparsify-kernel-setup-suitesparse"
+      dense_operand: "N/A"
+      edge_batch_spec: "10 sequential incremental updates per graph, batch size disclosed (e.g. 1% of |E_0| edges per batch), same batch sequence and RNG seed reused across implementations under test"
+    protocol:
+      format: "H_0 built once via sparsify-kernel-setup-suitesparse's protocol; NOT counted in incremental-update time"
+      warmup: "1 update, discarded"
+      reps: "10 update cycles per graph (matches the paper's own convention), each timed individually — never averaged into the setup time"
+      statistic: "median per-update time across the 10 cycles, report min/max; also report the FULL 10-cycle sequence (not just the average) since update cost can drift as the sparsifier ages"
+      timer: "wall-clock around each Update() call"
+      timing_scope: "incremental update only; setup (H_0 construction) reported standalone via sparsify-kernel-setup-suitesparse, never blended into the per-update number"
+      preprocessing_reported: "H_0 setup_time_s cross-referenced from sparsify-kernel-setup-suitesparse, reported alongside but never summed into the per-update statistic"
+      amortization_count_required: true
+    metric:
+      primary: "median_update_time_ms across the 10 cycles"
+      secondary: "kappa(L_{G_i}, H_i) after each of the 10 updates (quality must not silently degrade over the update sequence), speedup vs. full-resparsification-from-scratch baseline (rerun sparsify-kernel-setup-suitesparse's setup on G_i) at each cycle i, speedup vs. random-edge-selection ablation baseline"
+    correctness: >
+      same kappa-vs-GRASS-at-matched-density gate as
+      sparsify-kernel-setup-suitesparse, checked after EVERY one of the
+      10 update cycles (not just the final one), since an incremental
+      method could plausibly degrade gracefully-looking-but-actually-bad
+      quality over a long update sequence without a single-shot check
+      catching it.
+
+notes_on_fairness:
+  - >
+    Density and spectral fidelity (kappa) trade off directly — reporting
+    only edge-count reduction (density) without kappa, or only kappa
+    without density, makes results incomparable across
+    implementations that pick different density targets. Both variants
+    require both to be reported together, and correctness gates are
+    defined at MATCHED density, not matched time, so a submission cannot
+    win by simply sparsifying more aggressively.
+  - >
+    The paper's central contribution is the incremental update path
+    (O(log N) per update vs. full O(setup) re-sparsification) — a
+    benchmark measuring only one-shot setup time would completely miss
+    this claim. sparsify-incremental-updates is kept as an equally
+    weighted, separately-reported variant specifically to prevent that.
+  - >
+    The 10-update-cycle protocol requires reporting the full sequence
+    (not just an average), since a method whose per-update time or
+    quality drifts upward over the sequence (e.g. as the sparsifier
+    accumulates edges and its clustering structure goes stale) would
+    look artificially good if only cycle 1 or an average were reported.
+
+open_questions:
+  - >
+    Exact edge-batch size and edge-selection scheme used in the paper's
+    own 10-update-cycle experiments (random vs. degree-weighted vs.
+    domain-specific, e.g. circuit-netlist-driven incremental edits) was
+    not confirmed from the fetched HTML fulltext excerpt — the spec's
+    edge_batch_spec requires disclosure rather than assuming a specific
+    scheme.
+  - >
+    Whether the paper reports kappa as global spectral condition number
+    or a related per-cluster/local resistance-diameter bound at each of
+    the 10 update points individually, versus only a single final-state
+    number, was not fully disambiguated from the fetched excerpt.
+
+evidence:
+  conf/dac/AghdaeiF24: "13 SuiteSparse instances (circuit: G3_circuit/G2_circuit; FEM: fe_4elt2/fe_ocean/fe_sphere; Delaunay+large-sparse: delaunay_n18-22, M6, 333SP, AS365, NACA15); setup-phase and update-phase (10 cycles) timed separately on a 64-core/1TB-RAM CPU host; quality = relative condition number kappa(L_G,L_H); baselines = GRASS (primary) and random-edge-selection (ablation); up to 200x speedup claim is for incremental update vs. full re-sparsification, not setup vs. GRASS"

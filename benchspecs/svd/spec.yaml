@@ -1,0 +1,319 @@
+kernel: svd
+summary: >
+  Singular Value Decomposition, in this track's own form: t-SVD, the
+  tensor generalization computed by applying an FFT along a tensor's 3rd
+  (tube) mode and then computing k independent ordinary matrix SVDs of the
+  resulting m x n frequency-domain frontal slices (k = batch/tube depth),
+  followed by an inverse FFT. The track's two papers exercise the FULL
+  (untruncated, one-shot, library-primitive) case and the TRUNCATED
+  (low-tubal-rank, iteratively-called-inside-an-ALS-loop) case
+  respectively — kept as separate variants below (see survey.md's
+  Divergences).
+operation: >
+  T[m,n,k] = U[m,r,k] * S[r,r,k] * V[n,r,k]^T (per-frontal-slice, in the
+  Fourier domain along the 3rd mode), where r=min(m,n) for the FULL case
+  or r=target-tubal-rank < min(m,n) for the TRUNCATED case; computed as
+  T_hat = fft(T, dim=3); for each of the k frontal slices, [U_hat(:,:,i),
+  S_hat(:,:,i), V_hat(:,:,i)] = svd(T_hat(:,:,i)) (optionally truncated to
+  rank r); U,S,V = ifft(U_hat,S_hat,V_hat, dim=3).
+variants:
+  - id: tsvd-full-batched-kernel
+    claim: >
+      steady-state, one-shot FULL t-SVD (every singular value/vector of
+      every frontal slice, no rank truncation) throughput on synthetic
+      dense tensors, with the based/streamed/batched EXECUTION STRATEGY as
+      a required, disclosed parameter (matching cuTensor-Tubal's own
+      benchmark practice of sweeping all three), and BOTH square and
+      tall-skinny frontal-slice shapes swept (the square-only practice
+      both papers in this track actually use is called out explicitly as
+      insufficient for this track's own "matrix shapes" key axis -- see
+      notes_on_fairness).
+    inputs:
+      suite: synthetic dense random tensors T(m,n,k), entries U(-1,1),
+        matching both papers' own practice (no real/named dataset is
+        used for the underlying t-SVD primitive by either paper in this
+        track)
+      selection: >
+        SQUARE frontal slices m=n in {50, 100, ..., 500} (matches
+        `CPU/testsvd.m`'s own confirmed sweep exactly) union {1000, 2000}
+        (matches the GPU test.sh-confirmed upper range for the sibling
+        t-FFT primitive, extended here to t-SVD); TALL-SKINNY frontal
+        slices m:n in {4:1, 16:1} at m in {400, 1600} (a spec addition --
+        see notes_on_fairness, since neither paper's own fetched scripts
+        exercise a non-square shape); batch depth k in {128, 256, 512,
+        1024} (matches `CPU/testsvd.m`'s own confirmed sweep)
+      recommended_subset:
+        - "square: m=n=100, k=128"
+        - "square: m=n=500, k=128"
+        - "square: m=n=500, k=1024"
+        - "square: m=n=2000, k=128"
+        - "tall-skinny: m=1600,n=400 (4:1), k=128"
+        - "tall-skinny: m=1600,n=100 (16:1), k=128"
+      dense_operand: "fp64 (working assumption -- no fetched script
+        confirms precision explicitly; flagged in open_questions)"
+    protocol:
+      format: "dense tensor, row-major frontal slices; FFT along the
+        3rd mode is part of the timed t-SVD call (matching the library's
+        own primitive boundary -- t-FFT is a SEPARATE primitive in this
+        library and is not double-counted here, but the t-SVD call as
+        exercised by this library's own test driver includes its own
+        internal frequency-domain transform, not a pre-transformed input)"
+      execution_strategy: >
+        required, disclosed: one of {based, streamed, batched} (matches
+        `GPU/test/test.sh`'s own literal CLI argument convention);
+        "based" is the CUDA-stream-free reference GPU implementation
+        (distinct from the CPU MATLAB reference), "streamed" parallelizes
+        across frontal slices via CUDA streams, "batched" issues one
+        batched-SVD-style call across all k slices at once -- report all
+        three for every (m,n,k) point swept, not just the fastest, since
+        this project's fairness principle disfavors reporting only a
+        best-of-strategy number without disclosing which strategy
+        produced it
+      warmup: 1 full t-SVD call before the timed sweep begins (spec
+        addition -- see notes_on_fairness; the repo's own separate
+        `GPU/test/warmup/` binary confirms a warmup concept exists in the
+        codebase, but its placement relative to the per-config sweep in
+        `test.sh` was not confirmed)
+      reps: 10 (spec default; the repo's own `test.cpp` drivers run each
+        configuration exactly once with no loop, which this spec does
+        not adopt -- see notes_on_fairness)
+      statistic: median (report min/max)
+      timer: "device-side events (CUDA events) for the GPU path (a
+        DEVIATION from the repo's own `clock()`-based timing -- see
+        notes_on_fairness); host wall-clock (std::chrono) for the CPU
+        MATLAB-equivalent reference path"
+      timing_scope: "t-SVD kernel only (including its internal FFT/iFFT,
+        per the library's own primitive boundary); host<->device
+        transfer of the input tensor excluded"
+      preprocessing_reported: separately, once (device memory allocation)
+    metric:
+      primary: "GFLOP/s, using the standard batched-dense-SVD flop-count
+        convention (per frontal slice: ~4*min(m,n)^2*max(m,n) +
+        8*min(m,n)^3 for a full SVD, summed over k slices, plus the
+        FFT/iFFT flop count) -- a spec addition, since neither paper
+        reports a GFLOP/s number; both report speedup only (see below)"
+      secondary: "ms; speedup vs. the CPU MATLAB reference (dual
+        10-core Xeon, matching this paper's own baseline hardware/metric
+        exactly, for direct reproduction of its 16.91-38.97x range across
+        primitives); speedup vs. cuSOLVER/MAGMA batched-SVD as an
+        ADDITIONAL required baseline this spec adds (see
+        notes_on_fairness -- neither paper compares against a vendor
+        batched-SVD library)"
+    correctness: >
+      TWO required gates, since neither individually matches this track's
+      "singular-value accuracy + orthogonality" pairing on its own:
+      (1) orthogonality: max(||U^T U - I||_F, ||V^T V - I||_F) < 1e-10
+      per frontal slice (fp64); (2) singular-value accuracy: max relative
+      error of the computed singular values vs. a reference batched-SVD
+      call (cuSOLVER or MATLAB `svd`, computed independently of the
+      based/streamed/batched execution-strategy code path under test) <
+      1e-10. This REPLACES cuTensor-Tubal's own practice of only
+      cross-checking streamed-vs-based (its own two code paths against
+      each other, with no external reference and no stated numeric
+      tolerance) -- see notes_on_fairness for why an execution-strategy
+      self-consistency check alone is not treated as sufficient evidence
+      of correctness.
+
+  - id: tsvd-truncated-completion-e2e
+    claim: >
+      end-to-end low-tubal-rank tensor completion via alternating
+      minimization, where a TRUNCATED t-SVD (target tubal-rank r, a
+      required, disclosed, swept parameter -- this track's
+      accuracy/compression tolerance axis) is called once per iteration,
+      amortized over the iterations needed to converge -- the variant the
+      tensor-completion paper is purpose-built for.
+    inputs:
+      suite: >
+        synthetic low-tubal-rank tensors with entries masked under BOTH
+        a uniform (element-wise) sampling pattern and the paper's own
+        motivating TUBAL-sampling pattern (whole tubes/fibers dropped
+        together, not individual entries) -- both patterns included since
+        the paper's own headline 7403x number is specifically a
+        tubal-vs-uniform-sampling-algorithm comparison, not a
+        general-sampling-pattern-agnostic number
+      selection: >
+        ground-truth tensor T0(m,n,k) generated as a random low-tubal-rank
+        product (rank r0 known exactly, so recovery error has a clean
+        ground truth); m=n swept as in tsvd-full-batched-kernel's square
+        case (a subset: 100, 500, 1000); sampling rate (fraction of
+        observed tubes/entries) swept in {0.1, 0.3, 0.5}
+      recommended_subset:
+        - "m=n=100, k=128, r0=10, sampling=0.3, tubal-sampling"
+        - "m=n=500, k=128, r0=20, sampling=0.3, tubal-sampling"
+        - "m=n=500, k=128, r0=20, sampling=0.3, uniform-sampling
+          (ablation baseline)"
+        - "m=n=1000, k=128, r0=30, sampling=0.1, tubal-sampling"
+      dense_operand: "target tubal-rank r for the truncated t-SVD
+        sub-calls in {r0, 2*r0} (r0 = the exact planted rank, 2*r0 as an
+        over-estimated-rank robustness point); fp64"
+    protocol:
+      format: "dense tensor with a boolean observation mask; mask
+        generation is preprocessing, excluded from the timed
+        alternating-minimization loop, reported separately once"
+      iteration_budget: >
+        k_iter=100 alternating-minimization sweeps as the default budget
+        (spec addition -- neither paper states an iteration count or
+        convergence criterion in the sources reached); report the
+        break-even/convergence iteration count k* (smallest k_iter at
+        which relative recovery error stops improving by more than 1e-4
+        between consecutive iterations) alongside the fixed-budget number
+      warmup: 1 full alternating-minimization run before the timed sweep
+        (spec addition; not evidenced by either paper)
+      reps: 5 (spec default; not evidenced by either paper)
+      statistic: median (report min/max) of the wall-clock time to reach
+        convergence (k*) or, if not converged, of the k_iter=100
+        wall-clock time
+      timer: device-side events (CUDA events) for the GPU path (a
+        DEVIATION from the base library's `clock()`-based convention, for
+        the same reason given in tsvd-full-batched-kernel's protocol)
+      timing_scope: >
+        full alternating-minimization loop (every truncated-t-SVD
+        sub-call plus the surrounding update step); ground-truth/mask
+        generation excluded and reported separately
+      preprocessing_reported: separately, once (ground-truth tensor and
+        sampling-mask generation)
+    metric:
+      primary: "wall-clock time (s) to reach convergence (or the
+        k_iter=100 budget); speedup vs. CPU MATLAB alternating
+        minimization (matches the paper's own headline metric family:
+        up to 248.18x reported), vs. GPU element-sampling (uniform-
+        sampling-algorithm) tensor completion run on the SAME hardware
+        (up to 7403.27x reported -- this is specifically an
+        algorithm-vs-algorithm comparison under the SAME sampling
+        pattern's data, not a hardware speedup, and must be reported as
+        such, not conflated with the CPU-vs-GPU number), and vs. an
+        external GPU matrix-completion (2D-only) system (up to 33.27x
+        reported)"
+      secondary: "GFLOP/s (effective, using the truncated-rank r flop
+        count, not the full-rank count -- a spec addition, neither paper
+        reports this)"
+    correctness: >
+      PRIMARY (required) gate: relative recovery error
+      ||T_completed - T0||_F / ||T0||_F on the WITHHELD (non-observed)
+      entries < 1e-2 (a spec addition -- the paper's own exact metric and
+      tolerance were not recovered from the sources reached; 1e-2 matches
+      this project's general convention for statistical/recovery-style
+      gates on real-noisy-data-adjacent problems, as opposed to the
+      1e-10 tight numerical tolerance used in the full-t-SVD kernel
+      variant above, because tensor completion from partial, possibly
+      noisy observations is fundamentally an approximate-recovery problem,
+      not an exact-numerical-identity one). A run whose recovery error
+      exceeds this gate does not count toward reported speedup/timing.
+
+notes_on_fairness:
+  - >
+    Both papers' own fetched scripts exercise SQUARE frontal slices only
+    (m=n); this track's own key axes explicitly call for both square AND
+    tall-skinny matrix shapes. The tsvd-full-batched-kernel variant adds
+    tall-skinny shapes as a spec-level requirement rather than silently
+    reproducing the square-only practice both papers actually use --
+    without this addition, this track's spec would inherit a real gap in
+    the underlying papers' own evaluation coverage.
+  - >
+    Neither paper compares its GPU t-SVD implementation against a vendor
+    batched-SVD library (cuSOLVER's batched/strided-batched SVD APIs,
+    MAGMA). cuTensor-Tubal's only baseline is its own CPU MATLAB
+    reference; the tensor-completion paper's only external (non-
+    ablation) baseline is an unnamed 2D matrix-completion system. This
+    spec ADDS a cuSOLVER/MAGMA batched-SVD comparison as a required
+    secondary metric in tsvd-full-batched-kernel, since a from-scratch
+    hand-written batched-SVD implementation not compared against the
+    vendor library it is nominally competing with is a real evaluation
+    gap this project's fairness principle flags rather than reproduces.
+  - >
+    cuTensor-Tubal's own correctness check (found directly in
+    `GPU/test/tsvd/test.cpp`) only cross-validates its "streamed" output
+    against its own "based" output -- two code paths of the SAME
+    implementation, with no external ground truth and no numeric
+    tolerance found in the fetched excerpt; the "batched" path has NO
+    correctness check at all in the fetched code. This spec replaces that
+    practice with an external reference (cuSOLVER/MATLAB `svd`) plus an
+    explicit numeric tolerance for BOTH gates (orthogonality and
+    singular-value accuracy) and for ALL THREE execution strategies, not
+    just "streamed" -- an execution-strategy self-consistency check alone
+    cannot catch a bug present identically in both "based" and "streamed"
+    code paths, and provides no coverage at all for "batched".
+  - >
+    The repo's own timing convention (`clock()`, single-shot, no
+    warmup-per-config, no repetition loop) is replaced with this
+    project's general convention (device-side events, explicit warmup,
+    repeated + median-reported) in both variants -- a disclosed
+    DEVIATION from the papers' own practice, not a claim that this
+    matches how their headline numbers were actually produced (see
+    open_questions in survey.md: `CPU/testsvd.m`'s fetched copy has its
+    actual SVD call commented out, so even the paper's own script, AS
+    FETCHED, would measure loop overhead rather than the algorithm --
+    reinforcing that this spec's own protocol, not a literal
+    reproduction of the fetched script, is the right basis for a
+    harness).
+  - >
+    The tensor-completion paper's headline "7403.27x" figure is an
+    algorithm-vs-algorithm (tubal-sampling-aware vs. naive
+    element-sampling) comparison, not a hardware speedup number, and this
+    spec's metric section requires it be reported and labeled as such --
+    conflating it with the CPU-vs-GPU hardware speedup number (248.18x)
+    would misattribute an algorithmic improvement to a hardware one.
+  - >
+    Full (untruncated) and truncated t-SVD are treated as separate
+    variants rather than one variant with a rank parameter that happens
+    to sometimes equal min(m,n), because the two papers in this track
+    exercise them in genuinely different contexts (one-shot library
+    primitive vs. iteratively-called ALS sub-kernel) with different
+    correctness notions (numerical agreement vs. statistical recovery
+    accuracy) -- collapsing them into one variant would obscure that
+    difference (see survey.md Divergences).
+
+open_questions:
+  - >
+    Neither paper's fulltext was reached (both closed-access; see
+    survey.md) -- every protocol detail above not directly attributed to
+    a fetched script is a spec addition, not evidence from the papers'
+    own Methodology sections. This track's evidentiary base is thinner
+    than every other track surveyed so far in this project.
+  - >
+    The exact GPU model(s) used for either paper's headline numbers were
+    not recovered.
+  - >
+    Whether `CPU/testsvd.m`'s fetched copy (with its SVD call commented
+    out) is a stale/debug artifact or reflects the actual script used for
+    the paper's numbers is unresolved.
+  - >
+    The tensor-completion paper's own concrete tensor sizes, sampling
+    rates, target-tubal-rank values, and exact recovery-error metric/
+    tolerance were not recovered -- every concrete number in the
+    tsvd-truncated-completion-e2e variant's `inputs`/`correctness` above
+    is a spec-level default, not evidence-derived.
+  - >
+    Whether cuTensor-Tubal's `test.sh`-confirmed t-FFT sweep pattern
+    generalizes to its t-SVD-specific test driver was not independently
+    re-confirmed (only `CPU/testsvd.m`'s MATLAB-side sweep was directly
+    read for t-SVD specifically).
+  - >
+    No public real (non-synthetic) dataset was found used by either paper
+    for the core t-SVD/tensor-completion kernel itself; whether the
+    papers' own headline application-level numbers (beyond the
+    library-primitive micro-benchmarks) use any real tensor was not
+    determined.
+
+evidence:
+  journals/tpds/ZhangLWW20: >
+    TPDS'20 (10.1109/TPDS.2019.2940192), 7-primitive GPU tubal-rank tensor
+    library, t-SVD always FULL, based/streamed/batched execution
+    strategies as a disclosed CLI parameter; synthetic square frontal
+    slices only (m=n swept 50-2000 across two scripts), batch depth k
+    swept 128-1024 independently; clock()-based single-shot timing, no
+    confirmed warmup-per-config or repetition; correctness =
+    streamed-vs-based self-consistency only (no external reference, no
+    stated tolerance, "batched" path unchecked); speedup-vs-own-CPU-
+    MATLAB-reference metric (up to 27.03x for t-SVD, dual 10-core Xeon
+    baseline); no vendor batched-SVD library baseline found.
+  journals/tpds/ZhangLW20: >
+    TPDS'20 (10.1109/TPDS.2020.2975196), alternating-minimization
+    low-tubal-rank tensor completion for the tubal-sampling pattern,
+    truncated t-SVD as a repeated sub-kernel; same underlying
+    library/repo as cuTensor-Tubal; dataset table, truncation-rank
+    parameter surface, and recovery-error metric/tolerance not recovered
+    from sources reached; headline speedups: 248.18x vs CPU MATLAB
+    (hardware speedup), 7403.27x vs GPU element/uniform-sampling
+    completion (algorithm-vs-algorithm, same hardware), 33.27x vs an
+    external GPU matrix-completion (2D-only) system.

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# PATH shim: hidet's own JIT backend (python/hidet/backend/build.py's NVCC
+# class) resolves "nvcc" via shutil.which() and invokes it with no way to
+# inject a host-compiler override -- there is no CXX/CUDAHOSTCXX/-ccbin knob
+# exposed anywhere in hidet's Python build path. Putting this directory first
+# on PATH (adapter.py / this script do this) makes shutil.which('nvcc')
+# resolve here instead of the real toolkit nvcc, so every JIT kernel
+# compilation picks up -ccbin g++-12 without any hidet source edit. This is a
+# build-system/host-compiler-selection fix (ARTIFACT_GUIDE rule 3 explicitly
+# allows this class of patch), not a change to hidet's compiler/kernel logic
+# -- this script is pure passthrough plus one flag.
+#
+# Root cause: nvcc 12.9 (-ccbin g++-14, SUSE default) fails on
+# <bits/alloc_traits.h> with "identifier __has_construct is undefined" --
+# the same host-compiler/libstdc++ mismatch already diagnosed and fixed the
+# same way in ../../spmm/inferfast/build.sh.
+# NOTE: these two lines are written LITERALLY into bin/nvcc (the heredoc
+# delimiter below is unquoted only for the comment interpolation above this
+# point; the $ signs here are escaped) -- the generated wrapper must stay
+# machine-neutral (same Perlmutter-default fallback chain as this script's
+# own REAL_NVCC/HOST_COMPILER assignment above), never bake in whichever
+# path THIS build happened to resolve. At actual invocation time (this
+# script's own verification step below, or a later hidet JIT subprocess
+# during a gate run) the wrapper reads REAL_NVCC/KB_GXX12 straight from its
+# environment -- already exported by artifacts/toolchain.sh, sourced by
+# both this build.sh and bench/env.sh -- falling back to the hardcoded
+# Perlmutter path only if genuinely unset (e.g. no env.sh sourced at all).
+REAL_NVCC="${REAL_NVCC:-/opt/nvidia/hpc_sdk/Linux_x86_64/25.5/cuda/12.9/bin/nvcc}"
+HOST_COMPILER="${HOST_COMPILER:-${KB_GXX12:-/usr/bin/g++-12}}"
+exec "$REAL_NVCC" -ccbin "$HOST_COMPILER" "$@"

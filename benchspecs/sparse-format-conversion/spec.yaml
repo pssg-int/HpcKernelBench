@@ -1,0 +1,171 @@
+kernel: sparse-format-conversion
+summary: >
+  Converting a sparse matrix from a source storage format (CSR/COO as
+  loaded) to a target format optimized for a downstream sparse kernel
+  (here: SpMM), covering both the pure conversion throughput and the
+  end-to-end, format-selection-amortized usage pattern this track's one
+  surveyed paper (LiteForm) actually implements.
+operation: >
+  target_format = convert(source_format, A[M,K]); optionally
+  target_format_selection = select(A) when the target format itself is
+  chosen automatically per-matrix (LiteForm's CELL-vs-BCSR classifier +
+  CELL partition-count regressor + bucket-config search).
+
+variants:
+  - id: sparse-format-conversion-kernel
+    claim: >
+      steady-state, format-pair-specific conversion throughput
+      (nnz/s), source format given/loaded, target format's construction
+      timed in isolation from any downstream SpMM call — the "just the
+      conversion" number this track's axis list asks for, which LiteForm's
+      own artifact does not report as a standalone metric (it only reports
+      conversion-stage wall time as part of a 3-stage preprocessing
+      breakdown ahead of an SpMM run, never isolated on its own).
+    inputs:
+      suite: "real GNN adjacency matrices, reused verbatim from LiteForm's own artifact"
+      selection: "LiteForm's own NAMES list: cora, citeseer, pubmed, ppi, arxiv, proteins, reddit (7 named matrices; the artifact's SuiteSparse-scale download tooling exists but its own end-to-end driver does not exercise it, so this spec does not claim broader coverage than what was actually run)"
+      recommended_subset: "all 7 (small enough to run exhaustively)"
+      format_pairs: "[CSR -> CELL (SparseTIR column_part_hyb, ELL-style partitioned hybrid)], [CSR -> BCSR]"
+    protocol:
+      warmup: 5
+      reps: 20
+      statistic: "median (report min/max) — no per-call repetition/statistic is defined for the conversion stage alone in LiteForm's own artifact (it is timed once via time.perf_counter per matrix); this is a deliberate strengthening"
+      timer: "host wall clock (time.perf_counter or equivalent), single-threaded host-side conversion"
+      timing_scope: "conversion only: source format assumed already resident/parsed; downstream SpMM kernel execution excluded"
+      cache_state: "not applicable (host-side conversion); GPU-side buffer allocation for the target format IS included in the timed region"
+      format_selection_reported: >
+        if the target format is itself chosen automatically (as in
+        LiteForm's own CELL-vs-BCSR classifier), the selection-model
+        inference time and any partition/bucket-config search time are
+        reported as two SEPARATE line items, never merged into the
+        conversion-time number — directly matching LiteForm's own 3-stage
+        timing breakdown (predict_format_selection /
+        predict_num_partitions / search_bucket_config), generalized into
+        a spec requirement rather than an artifact-specific detail.
+    metric:
+      primary: "nnz/s = nnz(A) / conversion_time"
+      secondary: "ms; construction memory footprint (bytes) of the target format relative to the source format's bytes, as a density/overhead ratio"
+    correctness: >
+      roundtrip: convert source -> target -> back to source-equivalent
+      (CSR), and require the recovered (row,col,val) multiset to match the
+      original bit-exact for indices and within 1e-12 relative error for
+      fp64-stored values / 1e-6 for fp32 (this roundtrip check is NOT
+      present in LiteForm's own artifact — see notes_on_fairness — but is
+      required by this track's own axis definition). Additionally, for
+      formats whose only defined use is as an SpMM operand (e.g. CELL,
+      which is not naturally invertible to CSR without extra bookkeeping),
+      an equivalent check is required: SpMM(target_format, x) must match
+      SpMM(source_format via a reference kernel, x) within the tolerance
+      of sparse-format-conversion-e2e-amortized's correctness gate below.
+
+  - id: sparse-format-conversion-e2e-amortized
+    claim: >
+      end-to-end throughput: one-shot format selection + conversion +
+      partition/bucket-config search, amortized over k repeated SpMM calls
+      on the same matrix — this is what LiteForm's own released driver
+      (drive05.spmm.end-to-end.sh -> proc05.spmm.end-to-end.py) actually
+      measures, so k and the pipeline stages are reproduced from it rather
+      than invented.
+    inputs:
+      suite: "same as sparse-format-conversion-kernel"
+      selection: "same as sparse-format-conversion-kernel"
+      recommended_subset: "same as sparse-format-conversion-kernel"
+      dense_operand: "SpMM right-hand-side matrix width N reported per LiteForm's own artifact convention (feature-dimension sweep not fully recoverable from the files read — see open_questions); fp32, U(-1,1)"
+    protocol:
+      pipeline_stages_timed_separately: >
+        (1) format selection (RandomForest classifier inference), (2)
+        partition-count prediction (RandomForest regressor inference, CELL
+        path only), (3) bucket-config search (CELL path only), (4)
+        format construction/conversion, (5) k SpMM calls post-construction
+        — matches LiteForm's own predict_format_selection/
+        predict_num_partitions/search_bucket_config/build_hyb_format/
+        bench_hyb_with_config split, generalized into an explicit 5-stage
+        spec requirement.
+      cache_state: "L2 cache flushed before every timed SpMM call (FLUSH_L2=ON, matches LiteForm's own driver env var) — a cold-cache discipline this spec keeps as the default rather than relaxing to warm-cache, since it is the only cache policy any file in this artifact states explicitly"
+      warmup: 10
+      reps: "k=50 post-construction SpMM calls (this track's own choice; LiteForm's artifact delegates per-call timing/repetition internally to sparsetir_artifact.profile_tvm_ms, whose own warmup/rep convention was not confirmed from the files read — see open_questions)"
+      statistic: "median (report min/max) over the k calls"
+      timer: "device-side kernel time (CUDA events) for stage 5; host wall clock (time.perf_counter, matching LiteForm's own instrumentation) for stages 1-4"
+      timing_scope: >
+        two numbers reported: (a) amortized end-to-end
+        (stages1-4_time + k*spmm_time)/k per call, and (b) pure
+        post-construction SpMM time alone (median over k), so a reader can
+        see both "what a cold-start user pays" and "steady-state kernel
+        speed" without one number hiding the other.
+      preprocessing_reported: "stages 1-4 each reported standalone (ms, once) AND folded into the amortized number per timing_scope above"
+    metric:
+      primary: "amortized GFLOP/s (2*nnz*N / ((stages1-4_time + k*spmm_time)/k)) and pure-kernel GFLOP/s (2*nnz*N/spmm_time, stage 5 alone)"
+      secondary: "ms per stage (1-4, standalone); ms per SpMM call (median, stage 5)"
+    correctness: >
+      SpMM output vs. cuSPARSE fp32 CSR SpMM reference: max relative error
+      < 1e-4 (LiteForm's own artifact does not state a numeric tolerance in
+      the files read — this value is this spec's own choice, flagged in
+      open_questions). Additionally requires the format-selection model's
+      decision itself to be logged per matrix (CELL vs. BCSR), since a
+      wrong selection that still passes numeric correctness would silently
+      understate the technique's real-world reliability if only aggregate
+      throughput were reported.
+
+notes_on_fairness:
+  - >
+    LiteForm's own driver ships tooling to download the ~900GB full
+    SuiteSparse collection but its actual released end-to-end benchmark
+    only runs 7 named GNN graphs (cora/citeseer/pubmed/ppi/arxiv/proteins/
+    reddit). This spec's `selection` fields state that scope explicitly
+    rather than let the presence of the download script imply a broader
+    evaluated suite than what the paper's own pipeline actually exercises.
+  - >
+    No roundtrip (target-format-back-to-source) correctness check exists
+    anywhere in the reviewed artifact. sparse-format-conversion-kernel adds
+    one as a mandatory gate (or an SpMM-equivalence check for
+    non-invertible formats like CELL), since this track's own axis
+    definition specifically calls for roundtrip correctness and the
+    surveyed paper's artifact does not provide it.
+  - >
+    LiteForm's own artifact already separates format-selection,
+    partition-count-prediction, and bucket-config-search time from SpMM
+    kernel time — a stronger preprocessing-disclosure practice than most
+    other tracks' surveyed papers. This spec keeps that 3-way (extended to
+    4-way, folding in format construction) split rather than collapsing it
+    into a single "preprocessing" number, to preserve that useful
+    granularity.
+  - >
+    No numeric correctness tolerance for the SpMM output is stated anywhere
+    in the files read; the 1e-4 relative-error value in this spec is this
+    spec's own choice, not derived from the paper.
+
+open_questions:
+  - >
+    Exact warmup/repetition/statistic convention of
+    sparsetir_artifact.profile_tvm_ms (the external timing helper
+    LiteForm's own benchmark delegates SpMM-kernel timing to) was not
+    confirmed — that package was not vendored in this repo and was not
+    read directly; this spec's own k=50/median choice for the amortized
+    variant should be reconciled against profile_tvm_ms's actual behavior
+    before treating results as literally reproducing LiteForm's numbers.
+  - >
+    The dense right-hand-side operand width N used in LiteForm's own
+    end-to-end SpMM benchmark (a standard SpMM parameter, analogous to the
+    "feature dimension" in GNN message passing) was not confirmed from the
+    files read — `CostModelSettings.feat_size` exists in the code but its
+    concrete swept values were not seen in the excerpt read.
+  - >
+    Whether `bench_naive`'s baseline is cuSPARSE itself, a plain
+    unpartitioned ELL/CSR SpMM, or something else was not confirmed from
+    the files read; the paper's own "2.06x over cuSPARSE" headline claim
+    (per this track's one-liner) could not be traced to a specific
+    baseline function in the code excerpts reviewed.
+
+evidence:
+  conf/hpdc/PengTPK25: >
+    LiteForm: per-matrix CELL-vs-BCSR format selection via a pretrained
+    RandomForest classifier + CELL partition-count regressor + bucket-config
+    search, each stage timed separately via time.perf_counter; 7 real GNN
+    graphs (cora/citeseer/pubmed/ppi/arxiv/proteins/reddit); SpMM kernel
+    timing delegated to external sparsetir_artifact.profile_tvm_ms (exact
+    warmup/rep convention unconfirmed); FLUSH_L2=ON cold-cache discipline in
+    the driver script; fp32; vs. cuSPARSE (per paper's "2.06x" claim) and an
+    internal bench_naive baseline; no roundtrip conversion check or numeric
+    correctness tolerance found in the artifact. Repo README.md +
+    playground_pipline/{drive05.spmm.end-to-end.sh, proc05.spmm.end-to-end.py,
+    format_algos.py}.

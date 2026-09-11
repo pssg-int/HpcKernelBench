@@ -1,0 +1,582 @@
+kernel: blas-level1-2
+summary: >
+  Vector-vector (level-1: dot, axpy, nrm2, scal) and matrix-vector
+  (level-2: gemv, symmetric symv, triangular trsv) BLAS operations, as
+  produced by the compiler/DSL/generator systems this track's 4 papers
+  actually are (only 1 of 4, fBLAS, benchmarks named BLAS routines
+  directly against a reference library the other way this spec's other
+  tracks do; the other 3 evaluate a generator whose output includes
+  BLAS-L1/L2-shaped kernels among a broader kernel set — see
+  survey.md Divergences). Overwhelmingly memory-bandwidth-bound at
+  every vector/matrix length large enough to exceed L1 cache, so GB/s
+  is this track's primary metric, same as the gemv track.
+operation: >
+  level-1: r = sum_i(x_i*y_i) [dot], y = a*x+y [axpy], r = ||x||_2
+  [nrm2], x = a*x [scal]. level-2: y = alpha*A*x + beta*y [gemv, A
+  general MxK]; y = alpha*A*x + beta*y [symv, A symmetric MxM, only
+  the canonical upper- or lower-triangle stored/read — half the memory
+  traffic of a general gemv at the same M, a genuine byte-accounting
+  difference this spec's metric formulas must reflect, not just a
+  different access pattern]; x = A^-1*x [trsv, A triangular — NOT
+  evidenced in any of this track's 4 surveyed papers, kept as an
+  explicitly out-of-evidence optional op, see open_questions].
+
+variants:
+  - id: blas-l1-vector-kernel
+    claim: >
+      steady-state bandwidth for level-1 vector ops (dot, axpy, nrm2,
+      scal) across a vector-length sweep spanning L1 through DRAM-
+      resident working sets, with an explicit reduction-accuracy axis
+      for the two reduction ops (dot, nrm2) — the common-denominator
+      variant, grounded directly in fBLAS's own `sdot`/`ddot`
+      evaluation harness (`evaluation/individual_modules/`,
+      `evaluation/cpu_comparison/host_dot.cpp`), the only paper in this
+      track whose level-1 benchmark code was read in full.
+    inputs:
+      suite: synthetic vectors, no external dataset (matches fBLAS's
+        own on-the-fly-generated inputs for its memory-bound DOT/GEMV
+        experiments)
+      selection: >
+        vector length n swept across the working-set sizes that
+        cross each cache level's capacity on a representative x86
+        target (32KB L1, 1MB L2, 30MB L3 — the same rough figures this
+        spec's other tracks assume where a specific target isn't
+        pinned); no surveyed paper states which cache levels its own
+        sweep was designed to cross (fBLAS's `n` is a free CLI
+        parameter with no stated design rationale beyond "must be a
+        multiple of width"), so this selection is this spec's own
+        construction, not literature-derived.
+      recommended_subset: >
+        n (elements, fp32) in {2048 (~8KB/vector, fits L1 alongside
+        the other operand), 8192 (~32KB/vector, at the L1 boundary),
+        65536 (~256KB/vector, fits L2), 1048576 (~4MB/vector, exceeds
+        typical L2, fits L3), 8388608 (~32MB/vector, at/beyond typical
+        L3, DRAM-bound), 67108864 (~256MB/vector, unambiguously
+        DRAM-bound)}; each n must additionally be a multiple of the
+        target's SIMD/streaming width (fBLAS's own constraint,
+        `width=64` for its `sdot`/`sgemv` FPGA config — generalize to
+        whatever width the CPU/FPGA/GPU target actually uses).
+      dense_operand: >
+        precision in {fp32, fp64} (fBLAS's own `sdot`/`ddot` split;
+        neither fp16 nor int8/uint8 reduction is evidenced for a
+        "plain" level-1 dot/axpy/nrm2/scal in this track's 4 papers —
+        the one mixed-int8/int32-accumulator reduction found,
+        VeGen's, is a distinct enough case (ISA-targeting, not
+        numerical-accuracy-targeting) to get its own variant below
+        rather than being folded in here)
+    protocol:
+      reduction_accuracy: >
+        for dot and nrm2 specifically (NOT axpy/scal, which have no
+        reduction step): report results at BOTH the target's natural/
+        default accumulation order (whatever a straightforward
+        sequential or SIMD-width-wide-streaming accumulation produces
+        — fBLAS's own dot kernel, inferred from its `width`-parameterized
+        streaming JSON config, is presumably this) AND a compensated
+        (Kahan or pairwise-tree) summation variant, at the LARGEST
+        swept n (67108864) where floating-point reduction-order error
+        actually accumulates to a measurable level — none of this
+        track's 4 papers discusses summation order or compensated
+        summation at all (see survey.md Divergences), so this axis is
+        this spec's own addition to close a real gap the instructions
+        call out ("reduction-accuracy considerations for dot/norm"),
+        not a reproduction of any paper's own practice.
+      preprocessing: one-shot buffer allocation/H2D (or on-fabric
+        generation, matching fBLAS's own choice for these specific
+        memory-bound experiments) of x, y; excluded from the timed
+        region, reported once
+      warmup: 10
+      reps: 100 (fBLAS's own harness takes `-r <runs>` with no fixed
+        default — this spec fixes 100 as an explicit default; higher
+        than the gemm-track's 50 default because level-1 vector ops at
+        small-to-mid n are even shorter-duration than GEMV, hence
+        noisier per call)
+      statistic: >
+        mean AND sample standard deviation, both reported (fBLAS's own
+        choice, `host_dot.cpp`: `stddev=sqrt(stddev/runs)`) — this is
+        a deliberate departure from this benchmark suite's usual
+        median-preferred convention (see benchspecs/gemm/spec.yaml,
+        benchspecs/gemv/spec.yaml), kept here because fBLAS is the one
+        paper in either track surveyed so far to report a formal
+        dispersion statistic rather than just min/max or a single
+        number, and that dispersion information (not just a
+        de-noised central-tendency number) is itself useful for a
+        vector-length sweep this short-duration; ALSO report min and
+        max alongside, so a reader who wants this suite's usual
+        median-based comparison can still approximate it.
+      timer: >
+        per platform class: FPGA (OpenCL) - host-side wall clock
+        (`current_time_usecs()`) wrapping `enqueueTask`+`finish()` for
+        every kernel/helper queue, i.e. an explicit full-pipeline
+        drain before stopping the clock (fBLAS's own convention,
+        read directly from `host_dot.cpp`); GPU - device-side kernel
+        time (CUDA/HIP events), matching this suite's convention
+        elsewhere; CPU - monotonic wall clock.
+      timing_scope: >
+        kernel only; data-transfer time (H2D/D2H, or the FPGA
+        equivalent `enqueueWriteBuffer`/`enqueueReadBuffer`) is
+        measured SEPARATELY in its own accumulator and reported
+        alongside, never folded into the compute-time metric — this
+        directly follows fBLAS's own code-level separation of
+        `transfer_times` from `fblas_times` in `host_dot.cpp`, the
+        most literal match to this benchmark suite's own "preprocessing
+        never silently mixed into per-iteration time" principle found
+        in either track surveyed so far.
+      preprocessing_reported: separately, once, before the steady-
+        state loop; per-run transfer time (see timing_scope) is
+        reported per-run, not amortized as a one-shot preprocessing
+        cost, since fBLAS's own harness measures it fresh every
+        iteration rather than once
+    metric:
+      primary: >
+        GB/s = data_bytes/time, where data_bytes = op-dependent:
+        dot = 2*n*sizeof(dtype) (two input vectors, scalar output not
+        counted — fBLAS's own formula); axpy = 3*n*sizeof(dtype) (x
+        read, y read, y written); nrm2 = n*sizeof(dtype) (one input
+        vector, scalar output not counted); scal = 2*n*sizeof(dtype)
+        (x read, x written)
+      secondary: GOps/s (fBLAS's own term; = 2*n/time for dot [multiply-
+        add pair per element], = 2*n/time for axpy, = 2*n/time for
+        nrm2 [multiply + add per element, sqrt not counted], = n/time
+        for scal); for the reduction_accuracy comparison specifically,
+        also report the two variants' relative slowdown (compensated
+        vs. natural-order) as a distinct number, since paying for
+        accuracy at zero measured cost would itself be a finding worth
+        surfacing
+    correctness: >
+      |result - reference| < flteps, where reference is OpenBLAS/MKL's
+      `Xdot`/`Xaxpy`/`Xnrm2`/`Xscal` (fBLAS's own reference library
+      choice) and flteps = 1e-4 for fp32, 1e-6 for fp64 — fBLAS's own
+      hardcoded values, read directly from `host_gemv.cpp` (lines
+      ~194-198; the same constants are reused for dot in
+      `host_dot.cpp`, which references `flteps` without
+      re-declaring it). This is a deliberate departure from this
+      suite's usual max-RELATIVE-error convention (benchspecs/gemm/
+      spec.yaml, benchspecs/gemv/spec.yaml): dot and nrm2 return a
+      single scalar that can legitimately be near zero (e.g. two
+      near-orthogonal vectors), where a relative-error gate becomes
+      unstable/meaningless — an ABSOLUTE tolerance is the more
+      defensible choice for these two specific ops, and fBLAS's own
+      choice is kept as-is rather than overridden, unlike this spec's
+      treatment of TLR-MVM/MARLIN's tolerances in the gemv track.
+
+  - id: blas-l2-gemv-symv-kernel
+    claim: >
+      steady-state bandwidth for level-2 matrix-vector ops, covering
+      both general GEMV (fBLAS's `sgemv`/`dgemv`) and
+      symmetry-exploiting SYMV (SySTeC's `ssymv`, which reads only the
+      canonical triangle) at matched M — the pairing exists specifically
+      to make the symmetric-storage bandwidth *reduction* (not just a
+      different access pattern) a first-class, measured comparison
+      rather than two unrelated numbers, since that reduction is
+      exactly what SySTeC's own compiler is built to automatically
+      exploit.
+    inputs:
+      suite: synthetic dense (for gemv) and dense-symmetric (for symv,
+        only the canonical triangle populated/read) matrices
+      selection: >
+        M=K square (gemv) and M=M square-symmetric (symv) sweep,
+        sized around fBLAS's own tile configuration (2048x2048 tiles,
+        `sgemv.json`) since that is this track's only concrete GEMV
+        tile-size evidence; SySTeC gives no concrete SYMV problem size
+        in the sources read in this pass (open question)
+      recommended_subset: >
+        M=K in {512, 1024, 2048, 4096} for both gemv and symv (symv's
+        matrix is square by construction; gemv's is also square here
+        for a matched, apples-to-apples comparison at each M — a
+        rectangular gemv sweep is out of scope for this variant since
+        SYMV has no rectangular analogue to compare against; use
+        gemv-dense-kernel in benchspecs/gemv/spec.yaml for a
+        rectangular-shape sweep instead)
+      dense_operand: precision in {fp32, fp64} (matches fBLAS's own
+        `sgemv`/`dgemv` split; SySTeC/Finch's own precision choice for
+        `ssymv.jl` not confirmed from the ~15-line kernel snippet read
+        in this pass — assume fp64, Finch/Julia's default numeric
+        type, flagged as an assumption in open_questions)
+    protocol:
+      preprocessing: >
+        one-shot allocation/residency; for symv specifically, the
+        one-shot cost of packing A into its canonical-triangle storage
+        layout (if the harness's input representation is a full dense
+        matrix that must first be repacked) is also preprocessing,
+        reported separately, once — NOT charged per-call, since a real
+        symmetric-matrix application would populate the triangle
+        directly rather than repack from a dense representation on
+        every call
+      warmup: 20
+      reps: 200 (matches gemv-dense-kernel's reasoning in
+        benchspecs/gemv/spec.yaml — memory-latency-bound, short-duration
+        calls need more reps for a stable statistic)
+      statistic: mean and stddev, matching blas-l1-vector-kernel's
+        choice within this track for consistency (fBLAS's own
+        convention); report min/max alongside as well
+      timer: same per-platform rule as blas-l1-vector-kernel
+      timing_scope: kernel only; H2D/D2H and any triangle-repacking
+        (see preprocessing above) excluded
+      preprocessing_reported: separately, once, before the steady-
+        state loop
+    metric:
+      primary: >
+        GB/s = data_bytes/time, where data_bytes(gemv) = M*K*
+        sizeof(dtype) + K*sizeof(dtype) + M*sizeof(dtype) (matches
+        gemv-dense-kernel's formula in benchspecs/gemv/spec.yaml
+        exactly, for cross-track consistency), and data_bytes(symv) =
+        (M*(M+1)/2)*sizeof(dtype) + M*sizeof(dtype) [x] +
+        M*sizeof(dtype) [y] — HALF the matrix-read term relative to
+        gemv at the same M, reflecting that only the canonical
+        triangle is stored/read; a harness that reports symv's
+        bandwidth using the GENERAL gemv formula (i.e. as if the full
+        M*M matrix were read) would silently overstate its measured
+        GB/s relative to what was actually moved — this is exactly the
+        kind of byte-accounting error this spec's explicit per-op
+        formula is meant to foreclose.
+      secondary: >
+        GFLOP/s (2*M*K for gemv, 2*M*M for symv — note FLOP count is
+        NOT halved for symv the way byte count is, since the compiler
+        still performs 2 useful multiply-adds per matrix element read,
+        one for each of y[i] and y[j] per the symmetrization identity
+        in survey.md — so symv's FLOP/byte ratio is genuinely 2x
+        gemv's at the same M, which is the entire point of exploiting
+        symmetry); bandwidth_reduction_factor = gemv_GB/s /
+        symv_GB/s at matched M, reported as this variant's headline
+        comparison number
+    correctness: >
+      max relative error vs. OpenBLAS/MKL `Xgemv`/`Xsymv` < 1e-6 (fp64)
+      / < 1e-3 (fp32) — matches gemv-dense-kernel's convention in
+      benchspecs/gemv/spec.yaml (vector-output ops keep the
+      max-relative-error convention; only the scalar-output level-1
+      reduction ops in blas-l1-vector-kernel use fBLAS's own absolute-
+      tolerance convention, per that variant's correctness field).
+
+  - id: blas-l1-mixed-precision-reduction
+    claim: >
+      measured (not merely instruction-count-estimated) runtime
+      throughput of a mixed-precision, integer-accumulated dot-product
+      reduction targeting fused dot-product ISA extensions (AVX512-VNNI
+      and equivalents) — grounded in VeGen's own
+      `dot_16x1x16_uint8_int8_int32` benchmark kernel, but this spec
+      REQUIRES an actual wall-clock/cycle-accurate measurement rather
+      than the static instruction-count comparison VeGen's own
+      recovered evaluation figure appears to use (see survey.md,
+      "Timing protocol... not recoverable" and the inference that
+      VeGen's evaluation may be closer to a static-cost-model
+      comparison for at least some reported numbers) — a fairness fix
+      this spec makes explicitly, not a reproduction of an unconfirmed
+      practice, since instruction count does not account for
+      issue-width, port contention, or memory-system effects that a
+      real dot-product kernel's throughput depends on.
+    inputs:
+      suite: synthetic uint8 x int8 vector pairs (VeGen's own kernel
+        signature; sourced conceptually from TVM's 2D-convolution
+        inner loop per the paper's own description, though the exact
+        convolution shape that produced this specific dot-product
+        length was not recovered in this pass)
+      selection: vector length n a multiple of the target ISA's
+        dot-product instruction width (16 for AVX512-VNNI's
+        `vpdpbusd`, matching the kernel name's own "16x1x16" shape
+        notation)
+      recommended_subset: n in {16, 64, 256, 1024, 4096, 16384} (the
+        native instruction width and small multiples thereof, plus a
+        DRAM-scale point at 16384 for a bandwidth-bound comparison
+        point analogous to blas-l1-vector-kernel's sweep)
+      dense_operand: uint8 x (input 1), int8 (input 2), int32
+        accumulator (VeGen's own precision combination; exact
+        rationale for the uint8/int8 asymmetry, rather than
+        int8/int8, not recovered — matches the real VNNI instruction's
+        own signature, which is itself asymmetric for hardware-design
+        reasons unrelated to this specific kernel)
+    protocol:
+      preprocessing: one-shot allocation; excluded, reported once
+      warmup: 10
+      reps: 200 (short-duration integer kernel, same reasoning as
+        blas-l1-vector-kernel)
+      statistic: median (report min and max) — this spec's own
+        default choice (VeGen's own statistic, if any beyond the
+        static instruction-count comparison, was not recovered)
+      timer: CPU cycle counter (RDTSC or equivalent) or monotonic wall
+        clock; report which
+      timing_scope: kernel only
+      preprocessing_reported: separately, once
+      also_report: >
+        static instruction count for the generated code (VeGen's own
+        metric, per the one recovered figure) ALONGSIDE the measured
+        runtime — not as a replacement for it, so this variant's
+        numbers remain comparable to VeGen's own published figure
+        while also closing the gap this spec's claim identifies
+    metric:
+      primary: GOps/s (2*n/time, multiply-add pair per element,
+        matching this track's other level-1 formula)
+      secondary: instruction count (VeGen's own metric, see
+        also_report); speedup vs. the reference auto-vectorizing
+        compilers VeGen itself compares against (ICC, GCC, LLVM) on
+        the same measured-runtime basis, not the static-instruction-
+        count basis alone
+    correctness: >
+      exact match (bit-exact int32 accumulator output vs. a reference
+      scalar-loop implementation) — integer accumulation has no
+      floating-point rounding-order ambiguity, so an exact-match gate
+      is both achievable and the correct (not merely convenient)
+      choice here, unlike the floating-point reduction ops in
+      blas-l1-vector-kernel.
+
+  - id: blas-l1l2-generated-kernel-suite
+    claim: >
+      aggregate throughput and correctness across a BROAD suite of
+      compiler/DSL-generated level-1/2 (and adjacent) kernels compared
+      against the same vendor-BLAS reference set — the variant this
+      track most needs given that 3 of its 4 papers (Exo 2, SySTeC,
+      and to a lesser extent VeGen) are fundamentally "benchmark a
+      generator across many kernels" rather than "benchmark one named
+      routine", unlike fBLAS and unlike the gemv track's papers. Exo
+      2's own claim ("comparable to or better than MKL, OpenBLAS,
+      BLIS... on AVX2, AVX512, and Gemmini") is exactly this shape of
+      claim; this variant's protocol exists to make that claim
+      independently checkable per-kernel rather than only as an
+      aggregate statement, since no per-kernel breakdown for the BLAS
+      L1/2 subset specifically was recoverable from the sources read
+      in this pass (see survey.md open_questions).
+    inputs:
+      suite: >
+        the union of every level-1/2 kernel each generator in this
+        track actually claims to produce/optimize: from Exo 2 (BLAS
+        level 1, 2 — exact op list not recovered, see open_questions,
+        so use the canonical BLAS L1/L2 op list: axpy, dot, nrm2,
+        scal, gemv, symv, trsv), from SySTeC (ssymv specifically, its
+        one confirmed level-1/2-adjacent op), from VeGen (the
+        dot-product-reduction kernel class, per
+        blas-l1-mixed-precision-reduction above)
+      selection: >
+        every op named above, at the vector/matrix-length sweep
+        defined in blas-l1-vector-kernel (level-1 ops) and
+        blas-l2-gemv-symv-kernel (level-2 ops) respectively — this
+        variant does not define a new size sweep, it defines a new
+        AGGREGATION protocol over the other variants' own sweeps,
+        run through whichever generator produced the kernel
+      recommended_subset: >
+        same recommended_subset lists as blas-l1-vector-kernel and
+        blas-l2-gemv-symv-kernel, run once per generator under test
+      dense_operand: >
+        precision as each generator's own paper claims support for
+        (report which); no single precision is assumed across
+        generators
+    protocol:
+      preprocessing: >
+        one-shot code generation/compilation for each kernel (Exo 2's
+        scheduling-library-driven codegen, SySTeC's Finch-program
+        compilation, VeGen's vectorizer output) — this is genuinely
+        one-shot per (generator, kernel, size) triple in realistic
+        use (compile once, run many times), so it is excluded from
+        the timed region and reported separately, once per kernel,
+        NOT amortized into the per-call throughput number
+      per_kernel_protocol: >
+        each individual kernel in the suite is measured under
+        whichever of blas-l1-vector-kernel /
+        blas-l2-gemv-symv-kernel's protocol fields (warmup, reps,
+        statistic, timer, timing_scope) matches its BLAS level — no
+        separate protocol is defined here beyond the aggregation rule
+        below
+      correctness_gate_before_aggregation: >
+        a kernel that fails its own variant's correctness gate
+        (blas-l1-vector-kernel's or blas-l2-gemv-symv-kernel's,
+        matched by op) is EXCLUDED from the aggregate and reported as
+        a named failure, not silently dropped or averaged in at a
+        0/failing value — this directly follows the "N/A (unsupported)"
+        principle benchspecs/gemm/spec.yaml already established for
+        cross-platform baseline gaps, applied here to cross-kernel
+        correctness gaps within a single generator's own claimed suite
+    metric:
+      primary: >
+        per-kernel GB/s or GFLOP/s (whichever the matched
+        single-kernel variant defines as primary), reported individually
+        for every kernel in the suite — never pre-aggregated before
+        being reported
+      secondary: >
+        geometric mean speedup vs. the vendor-BLAS reference (MKL,
+        OpenBLAS, BLIS — Exo 2's own named reference set, and the same
+        set fBLAS's `cpu_comparison` and, by strong implication,
+        SySTeC/Finch's typical baselines also use) across every kernel
+        that PASSED its correctness gate; geometric mean (not
+        arithmetic mean) because speedup ratios across a heterogeneous
+        kernel suite should not be dominated by whichever kernel
+        happens to have the largest absolute speedup, matching
+        standard practice for cross-benchmark speedup aggregation
+    correctness: >
+      per-kernel, matching blas-l1-vector-kernel's or
+      blas-l2-gemv-symv-kernel's tolerance by op (see
+      correctness_gate_before_aggregation above for how failures are
+      handled at the suite level, rather than a single suite-wide
+      tolerance).
+
+notes_on_fairness:
+  - >
+    fBLAS's own harness already separates transfer time from compute
+    time in code (`transfer_times` vs. `fblas_times` in
+    `host_dot.cpp`) — the most literal, code-level match to this
+    benchmark suite's stated "preprocessing never silently mixed into
+    per-iteration time" principle found across either track surveyed
+    today (gemv or blas-level1-2). This spec's blas-l1-vector-kernel
+    and blas-l2-gemv-symv-kernel variants keep that same per-run
+    separation rather than collapsing it into a one-shot amortized
+    preprocessing number, since fBLAS's own design measures transfer
+    fresh every iteration (unlike, e.g., CA3DMM's one-shot process-grid
+    setup in benchspecs/gemm/spec.yaml's gemm-distributed-e2e variant).
+  - >
+    Reduction-accuracy (compensated vs. natural-order summation) for
+    dot/nrm2 is an axis the task instructions explicitly call out as
+    key to this track, but NONE of the 4 surveyed papers discusses it
+    — fBLAS's dot kernel almost certainly uses a fixed, simple
+    streaming-order accumulation (inferred from its width-parameterized
+    JSON config, not confirmed from a reduction-order statement in any
+    source read), and VeGen's kernel sidesteps the question entirely
+    via exact integer accumulation. This spec introduces the
+    reduction_accuracy field in blas-l1-vector-kernel as its own
+    addition to close this gap, not as a generalization of any paper's
+    stated practice — flagged explicitly rather than presented as
+    literature-derived.
+  - >
+    Symmetric storage (SYMV) genuinely halves memory traffic relative
+    to general GEMV at the same M, but does NOT halve FLOP count (each
+    matrix element read still produces two useful multiply-adds, per
+    the symmetrization identity in survey.md's SySTeC section) — a
+    harness that naively reuses the GEMV byte-counting formula for
+    SYMV would silently overstate SYMV's measured GB/s. This spec's
+    blas-l2-gemv-symv-kernel variant defines SYMV's byte formula
+    explicitly and separately from GEMV's for exactly this reason,
+    and makes the resulting bandwidth_reduction_factor a required,
+    explicit, headline comparison number rather than leaving it
+    implicit in two separately-reported numbers a reader would have
+    to divide themselves.
+  - >
+    fBLAS is the only paper in this track (and one of only 2 papers
+    across both tracks surveyed today, alongside MARLIN in the gemv
+    track) to hardcode a concrete numeric correctness tolerance
+    anywhere in its own artifact. This spec's blas-l1-vector-kernel
+    variant keeps fBLAS's own absolute-tolerance convention
+    (1e-4 float / 1e-6 double) rather than overriding it with this
+    suite's usual max-relative-error convention, specifically because
+    scalar reduction outputs (dot, nrm2) can legitimately be near zero,
+    where a relative-error gate is the wrong tool — this is a
+    deliberate, operation-specific exception, not an inconsistency:
+    blas-l2-gemv-symv-kernel's vector-output ops keep the
+    max-relative-error convention used throughout the rest of this
+    benchmark suite.
+  - >
+    VeGen's own recovered evaluation figure (Figure 2, per the
+    search-summary source) reports instruction count and a derived
+    speedup ratio, with no runtime/cycle measurement confirmed from
+    any source read in this pass — this spec's
+    blas-l1-mixed-precision-reduction variant requires an actual
+    measured runtime alongside (not instead of) that instruction-count
+    metric, since instruction count alone cannot account for
+    issue-width, port contention, or memory-system effects that
+    determine a real dot-product kernel's achieved throughput. This is
+    this spec's explicit fix to what looks, from the one figure
+    recovered, like a potential gap in VeGen's own evaluation
+    methodology — stated as an inference from limited evidence, not a
+    confirmed reading of the paper's full evaluation section (which
+    could not be fetched in this pass).
+  - >
+    3 of this track's 4 papers (Exo 2, SySTeC, VeGen) evaluate a
+    generator/compiler across a broad, heterogeneous kernel set rather
+    than a single named BLAS routine — unlike this benchmark suite's
+    other tracks (gemm, gemv), where every surveyed paper benchmarks
+    the kernel itself. blas-l1l2-generated-kernel-suite exists
+    specifically to make suite-level claims like Exo 2's own
+    ("comparable to or better than MKL/OpenBLAS/BLIS") independently
+    checkable per-kernel, with an explicit rule (exclude and name
+    failures, geometric-mean the rest) for how a partial-pass suite is
+    aggregated, since no paper in this track states its own
+    aggregation rule for a case where some generated kernels
+    underperform or fail correctness.
+
+open_questions:
+  - >
+    SySTeC's own CGO'25 paper body (not just its README) was not read
+    in this pass; a SYMV-specific speedup number, hardware target,
+    timing protocol, precision, and correctness-validation method are
+    all unconfirmed — the repo's `tests/` directory (listed but not
+    opened) is the most likely place to find this. blas-l2-gemv-symv-
+    kernel's symv precision assumption (fp64) is a guess pending this.
+  - >
+    VeGen's and Exo 2's full evaluation-section methodology could not
+    be recovered from any source reachable in this pass (every PDF
+    fetch attempt returned undecodable binary content or an HTTP
+    403/404 error, and no local PDF-to-text utility was available).
+    In particular: Exo 2's exact BLAS L1/L2 op list and per-op
+    problem-size sweep, and whether VeGen's own evaluation used a
+    measured runtime anywhere alongside the one instruction-count
+    figure recovered, are both unconfirmed.
+  - >
+    Exo 2's BLAS L1/L2 benchmark kernels were not found in the repo's
+    `apps/x86` directory (which shows `conv`, `halide`, `resnet`,
+    `sgemm`, `ssyrk` only) at the depth explored in this pass — they
+    may be defined via the scheduling-library mechanism itself
+    (generated, not statically present as example files), live in an
+    unexplored path (`tests/`, or a separate companion benchmark repo
+    not linked from this track's `artifact_url`), or may not be
+    present in the public repo at all if they were evaluated only in
+    a private/artifact-evaluation branch. This blocks fully populating
+    blas-l1l2-generated-kernel-suite's Exo-2-sourced op list beyond
+    "the canonical BLAS L1/L2 op list" placeholder used above.
+  - >
+    fBLAS's own paper-stated repetition count (as opposed to its
+    README's illustrative `-r 1` smoke-test example) was not
+    independently reconfirmed in this pass; the earlier
+    benchspecs/gemm/spec.yaml survey cites arXiv 1907.07929 for
+    fBLAS's GEMM-side numbers but this survey did not re-fetch that
+    source specifically to pin down the DOT/GEMV repetition count used
+    to produce fBLAS's own published numbers.
+  - >
+    No surveyed paper in this track evidences a `trsv` (triangular
+    solve) benchmark of any kind — it is listed in this spec's
+    `operation` field per the task instructions' own example op list
+    but has no evidence basis in this track's 4 papers and is not
+    given a dedicated variant; a future revision should either find
+    evidence for it or drop it from scope explicitly.
+
+evidence:
+  conf/sc/MatteisLH20: >
+    FPGA (Intel/Altera OpenCL) sdot/ddot and sgemv/dgemv, explicitly
+    named by the paper as its BLAS Level-1/2 representative samples;
+    on-fabric-generated inputs to isolate on-chip bandwidth; width=64
+    streaming, sgemv tiled 2048x2048; host wall-clock timer draining
+    every OpenCL queue before stopping, transfer time measured
+    separately from compute time in code; -r <runs> CLI repetition
+    count, mean + sample stddev statistic; correctness vs
+    OpenBLAS/MKL cblas_Xdot with hardcoded absolute tolerance
+    (flteps = 1e-4 float / 1e-6 double); GOps/s (2*n/time) and GB/s
+    metrics; MKL CPU + power (Mammut) comparison baseline. Repo
+    evaluation/individual_modules/README.md,
+    evaluation/cpu_comparison/{README.md,host_dot.cpp,sdot.json,
+    sgemv.json} read in full.
+  conf/cgo/PatelAA25: >
+    Finch-based symmetric sparse/dense tensor compiler; ssymv.jl
+    kernel confirmed (canonical-triangle-only symmetric matrix-vector
+    product, auto-generated via a symmetrization rewrite that emits
+    both y[i]+=A_ij*x_j and y[j]+=A_ij*x_i per off-diagonal read);
+    README states an aggregate 1.3x (SpMV) to 7.8x (4D MTTKRP)
+    savings range, no SYMV-specific number recovered; timing
+    protocol, hardware, and correctness method not recoverable from
+    the README/kernel-source read in this pass. Repo README.md +
+    level_two/ssymv.jl fulltext.
+  conf/asplos/ChenMCA21: >
+    Vectorizer generator; one concrete level-1-shaped benchmark
+    kernel recovered, dot_16x1x16_uint8_int8_int32 (TVM 2D-conv
+    inner loop), uint8xint8->int32 accumulation targeting AVX512-VNNI;
+    one figure shows instruction-count-based speedup vs ICC/GCC/LLVM
+    reference auto-vectorizers, suggesting a possibly static (not
+    measured-runtime) evaluation for at least this figure; full
+    timing protocol not recoverable (every PDF fetch attempt failed:
+    ACM 403, direct-PDF undecodable, ResearchGate 403). WebSearch
+    summary of docslib.org excerpt + repo top-level listing (no
+    dedicated benchmark/ dir found at the depth explored).
+  conf/asplos/IkarashiQDRBR25: >
+    User-schedulable scheduling-language system; evaluated across
+    "80+ kernels including BLAS level 1, 2, GEMM, blur, unsharp mask"
+    per the paper's own abstract/intro (WebSearch summary), claiming
+    performance comparable to or better than MKL/OpenBLAS/BLIS/Halide
+    on AVX2/AVX512/Gemmini; no BLAS L1/L2-specific benchmark file
+    found in repo apps/x86 (conv, halide, resnet, sgemm, ssyrk only)
+    at the depth explored; full evaluation methodology (per-op sweep,
+    timing protocol, correctness) not recoverable (every PDF/HTML
+    fetch attempt failed: PDF undecodable, arxiv.org/html 404 at
+    versions tried, ar5iv redirected to abstract, ResearchGate 403).

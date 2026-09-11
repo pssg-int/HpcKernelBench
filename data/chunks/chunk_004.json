@@ -1,0 +1,477 @@
+[
+ {
+  "key": "conf/asplos/Eilam24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Harnessing the Power of Specialization for Sustainable Computing",
+  "abstract": "Computing is critical to address some of the most pressing needs of humanity today, including climate change mitigation and adaptation. However, it is also the source of a significant and steadily increasing carbon toll, attributed in part to the exponential growth in energy-demanding workloads, such as artificial intelligence (AI). Due to the demise of Dennard scaling, we can no longer count on exponentially-improve energy efficiency of general-purpose processors. Therefore, today's operational efficiency gains rely on specialized hardware.",
+  "hint_categories": [
+   "stencil_pde"
+  ]
+ },
+ {
+  "key": "conf/asplos/ZhangCZ0LCWL24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Harp: Leveraging Quasi-Sequential Characteristics to Accelerate Sequence-to-Graph Mapping of Long Reads",
+  "abstract": "Read mapping is a crucial task in computational genomics. Recently, there has been a significant paradigm shift from sequence-to-sequence mapping (S2S) to sequence-to-graph mapping (S2G). The S2G mapping incurs high graph processing overheads and leads to an unnoticed shift of performance hotspots. This presents a substantial challenge to current software implementations and hardware accelerators.",
+  "hint_categories": [
+   "graph"
+  ]
+ },
+ {
+  "key": "conf/asplos/WuH0HZNH24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Hector: An Efficient Programming and Compilation Framework for Implementing Relational Graph Neural Networks in GPU Architectures",
+  "abstract": "Relational graph neural networks (RGNNs) are graph neural networks with dedicated structures for modeling the different types of nodes and edges in heterogeneous graphs. While RGNNs have been increasingly adopted in many real-world applications due to their versatility and accuracy, they pose performance and system design challenges: inherent memory-intensive computation patterns, the gap between the programming interface and kernel APIs, and heavy programming effort required to optimize kernels caused by their coupling with data layout and heterogeneity. To systematically address these challenges, we propose Hector, a novel two-level intermediate representation and its code generator framework that (a) captures the key properties of RGNN models, and opportunities to reduce memory accesses in inter-operator scheduling and materialization, (b) generates code with flexible data access schemes to eliminate redundant data copies, and (c) decouples model semantics, data layout, and operators-specific optimizations from each other to reduce programming effort. By building on one general matrix multiply (GEMM) template and a node/edge traversal template, Hector achieves up to 9.9× speed-up in inference and 43.7× speed-up in training compared with the state-of-the-art public systems on select models, RGCN, RGAT and HGT, when running heterogeneous graphs provided by Deep Graph Library (DGL) and Open Graph Benchmark (OGB). In addition, Hector does not trigger any out-of-memory (OOM) exception in these tests. We also propose linear operator reordering and compact materialization to further accelerate the system by up to 3.8×. As an indicator of the reduction of programming effort, Hector takes in 51 lines of code expressing the three models and generates a total of 8K lines of CUDA and C++ code. Through profiling, we found that higher memory efficiency allows Hector to accommodate larger input and therefore attain higher throughput in forward propagation, while backward propagation is bound by latency introduced by atomic updates and outer products.",
+  "hint_categories": [
+   "dense_la",
+   "primitives",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/MoX024",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Heet: Accelerating Elastic Training in Heterogeneous Deep Learning Clusters",
+  "abstract": "Modern GPU clusters inherently exhibit heterogeneity, encompassing various aspects such as computation and communication. This heterogeneity poses a significant challenge for the elastic scheduling of deep learning workloads. Unfortunately, existing elastic schedulers often overlook the impact of heterogeneity on scaling efficiency, resulting in considerably prolonged job completion times.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/KothariNXUBBAMS24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Hydride: A Retargetable and Extensible Synthesis-based Compiler for Modern Hardware Architectures",
+  "abstract": "As modern hardware architectures evolve to support increasingly diverse, complex instruction sets for meeting the performance demands of modern workloads in image processing, deep learning, etc., it has become ever more crucial for compilers to provide robust support for evolution of their internal abstractions and retargetable code generation support to keep pace with emerging instruction sets. We propose Hydride, a novel approach to compiling for complex, emerging hardware architectures. Hydride uses vendor-defined pseudocode specifications of multiple hardware ISAs to automatically design retargetable instructions for AutoLLVM IR, an extensible compiler IR which consists of (formally defined) language-independent and target-independent LLVM IR instructions to compile to those ISAs, and automatically generated instruction selection passes to lower AutoLLVM IR to each of the specified hardware ISAs. Hydride also includes a code synthesizer that automatically generates code generation support for schedule-based languages, such as Halide, to optimally generate AutoLLVM IR. Our results show that Hydride is able to represent 3,557 instructions combined in x86, Hexagon, ARM architectures using only 397 AutoLLVM IR instructions, including (Intel) SSE2, SSE4, AVX, AVX2, AVX512, (Qualcomm) Hexagon HVX, and (ARM) NEON vector ISAs. We created a new Halide compiler with Hydride using only a formal semantics of Halide IR, leveraging the auto-generated AutoLLVM IR and back-ends for the three hardware architectures. Across kernels from deep learning and image processing, this compiler is able to perform just as well as the mature, production Halide compiler on Hexagon, and outperform on x86 by 8% and ARM by 3%. Hydride also outperforms the production Halide's LLVM back end by 12% on x86, 100% on HVX, and 26% on ARM across the same kernels.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/SeoNHKKPKP0SWCK24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "IANUS: Integrated Accelerator based on NPU-PIM Unified Memory System",
+  "abstract": "Accelerating end-to-end inference of transformer-based large language models (LLMs) is a critical component of AI services in datacenters. However, the diverse compute characteristics of LLMs' end-to-end inference present challenges as previously proposed accelerators only address certain operations or stages (e.g., self-attention, generation stage, etc.). To address the unique challenges of accelerating end-to-end inference, we propose IANUS - Integrated Accelerator based on NPU-PIM Unified Memory System. IANUS is a domain-specific system architecture that combines a Neural Processing Unit (NPU) with a Processing-in-Memory (PIM) to leverage both the NPU's high computation throughput and the PIM's high effective memory bandwidth. In particular, IANUS employs a unified main memory system where the PIM memory is used both for PIM operations and for NPU's main memory. The unified main memory system ensures that memory capacity is efficiently utilized and the movement of shared data between NPU and PIM is minimized. However, it introduces new challenges since normal memory accesses and PIM computations cannot be performed simultaneously. Thus, we propose novel PIM Access Scheduling that manages not only the scheduling of normal memory accesses and PIM computations but also workload mapping across the PIM and the NPU. Our detailed simulation evaluations show that IANUS improves the performance of GPT-2 by 6.2× and 3.2×, on average, compared to the NVIDIA A100 GPU and the state-of-the-art accelerator. As a proof-of-concept, we develop a prototype of IANUS with a commercial PIM, NPU, and an FPGA-based PIM controller to demonstrate the feasibility of IANUS.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/MahapatraGAKWXK24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "In-Storage Domain-Specific Acceleration for Serverless Computing",
+  "abstract": "While (I) serverless computing is emerging as a popular form of cloud execution, datacenters are going through major changes: (II) storage dissaggregation in the system infrastructure level and (III) integration of domain-specific accelerators in the hardware level. Each of these three trends individually provide significant benefits; however, when combined the benefits diminish. On the convergence of these trends, the paper makes the observation that for serverless functions, the overhead of accessing dissaggregated storage overshadows the gains from accelerators. Therefore, to benefit from all these trends in conjunction, we propose In-Storage Domain-Specific Acceleration for Serverless Computing (dubbed DSCS-Serverless1). The idea contributes a server-less model that utilizes a programmable accelerator embedded within computational storage to unlock the potential of acceleration in disaggregated datacenters. Our results with eight applications show that integrating a comparatively small accelerator within the storage (DSCS-Serverless) that fits within the storage's power constraints (25 Watts), significantly outperforms a traditional disaggregated system that utilizes NVIDIA RTX 2080 Ti GPU (250 Watts). Further, the work highlights that disaggregation, serverless model, and the limited power budget for computation in storage device require a different design than the conventional practices of integrating microprocessors and FPGAs. This insight is in contrast with current practices of designing computational storage devices that are yet to address the challenges associated with the shifts in datacenters. In comparison with two such conventional designs that use ARM cores or a Xilinx FPGA, DSCS-Serverless provides 3.7× and 1.7× end-to-end application speedup, 4.3× and 1.9× energy reduction, and 3.2× and 2.3× better cost efficiency, respectively.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/asplos/LiuNLFGCLG024",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "JUNO: Optimizing High-Dimensional Approximate Nearest Neighbour Search with Sparsity-Aware Algorithm and Ray-Tracing Core Mapping",
+  "abstract": "Approximate nearest neighbor (ANN) search is a widely applied technique in modern intelligent applications, such as recommendation systems and vector databases. Therefore, efficient and high-throughput execution of ANN search has become increasingly important. In this paper, we first characterize the state-of-the-art product quantization-based method of ANN search and identify a significant source of inefficiency in the form of unnecessary pairwise distance calculations and accumulations. To improve efficiency, we propose Juno, an end-to-end ANN search system that adopts a carefully designed sparsity- and locality-aware search algorithm. We also present an efficient hardware mapping that utilizes ray tracing cores in modern GPUs with pipelined execution on tensor cores to execute our sparsity-aware ANN search algorithm. Our evaluations on four datasets from 1 to 100 million search points demonstrate 2.2×-8.5× improvements in search throughput. Moreover, our algorithmic enhancements alone achieve a maximal 2.6× improvement on the hardware without the acceleration of the RT core.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/LeeDP24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Kimbap: A Node-Property Map System for Distributed Graph Analytics",
+  "abstract": "Most distributed graph analytics systems such as Gemini, Gluon, and SympleGraph support a computational model in which node properties are updated iteratively using properties of adjacent neighbors of those nodes. However, there are many algorithms that cannot be expressed in this model, such as the Louvain algorithm for community detection and the Shiloach-Vishkin algorithm for connected components. These algorithms may be more efficient or may produce better quality output than simpler algorithms that can be expressed using updates only from adjacent vertices.",
+  "hint_categories": [
+   "graph"
+  ]
+ },
+ {
+  "key": "conf/asplos/LimKHMSR24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "LazyDP: Co-Designing Algorithm-Software for Scalable Training of Differentially Private Recommendation Models",
+  "abstract": "Differential privacy (DP) is widely being employed in the industry as a practical standard for privacy protection. While private training of computer vision or natural language processing applications has been studied extensively, the computational challenges of training of recommender systems (RecSys) with DP have not been explored. In this work, we first present our detailed characterization of private RecSys training using DP-SGD, root-causing its several performance bottlenecks. Specifically, we identify DP-SGD's noise sampling and noisy gradient update stage to suffer from a severe compute and memory bandwidth limitation, respectively, causing significant performance overhead in training private RecSys. Based on these findings, we propose LazyDP, an algorithm-software co-design that addresses the compute and memory challenges of training RecSys with DP-SGD. Compared to a state-of-the-art DP-SGD training system, we demonstrate that LazyDP provides an average 119× training throughput improvement while also ensuring mathematically equivalent, differentially private RecSys models to be trained.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/asplos/Yedidia24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Lightweight Fault Isolation: Practical, Efficient, and Secure Software Sandboxing",
+  "abstract": "Software-based fault isolation (SFI) is a longstanding technique that allows isolation of one or more processes from each other with minimal or no use of hardware protection mechanisms. The demand for SFI systems has been increasing due to the advent of cloud and serverless computing, which require systems to run untrusted code with low latency and low context switch times. SFI systems must optimize for a combination of performance, trusted code base (TCB) size, scalability, and implementation complexity. With the rise of ARM64 in both cloud and personal computers, we revisit classic SFI in the context of ARM64 and present a new multi-sandbox SFI scheme that is practical to implement, efficient, and maintains a small TCB. Our technique, called Lightweight Fault Isolation (LFI), supports tens of thousands of 4GiB sandboxes in a single address space and does full software isolation of loads, stores, and jumps with a runtime overhead of 7% on the compatible subset of the SPEC 2017 benchmark suite. In addition to providing low runtime and code size overheads compared to existing multi-sandbox systems, LFI is implemented independently of existing compiler toolchains, has a small static verifier to reduce TCB size, is hardened against basic Spectre attacks, and has broad software support, including for language mechanisms like exceptions and ISA features such as SIMD.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/JainLVKKHR24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Limoncello: Prefetchers for Scale",
+  "abstract": "This paper presents Limoncello, a novel software system that dynamically configures data prefetchers for high-utilization systems. We demonstrate that in resource-constrained environments, such as large data centers, traditional methods of hardware prefetching can increase memory latency and decrease available memory bandwidth. To address this issue, Limoncello disables hardware prefetchers when memory bandwidth utilization is high, and it leverages targeted software prefetching to reduce cache misses when hardware prefetchers are disabled. Limoncello is software-centric and does not require any modifications to hardware. Our evaluation of the deployment on Google's fleet reveals that Limoncello unlocks significant performance gains for high-utilization systems: It improves application throughput by 10%, due to a 15% reduction in memory latency, while maintaining minimal change in cache miss rate for targeted library functions.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/asplos/WangRA24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "MPC-Pipe: an Efficient Pipeline Scheme for Semi-honest MPC Machine Learning",
+  "abstract": "Multi-party computing (MPC) has been gaining popularity as a secure computing model over the past few years. However, prior works have demonstrated that MPC protocols still pay substantial performance penalties compared to plaintext, particularly when applied to ML algorithms. The overhead is due to added computation and communication costs. Prior studies, as well as our own analysis, found that most MPC protocols today sequentially perform communication and computation. The participating parties must compute on their shares first and then perform data communication to allow the distribution of new secret shares before proceeding to the next computation step. In this work, we show that serialization is unnecessary, particularly in the context of ML computations (both in Convolutional neural networks and in Transformer-based models). We demonstrate that it is possible to carefully orchestrate the computation and communication steps to overlap.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/ShaLIMGAM24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Marple: Scalable Spike Sorting for Untethered Brain-Machine Interfacing",
+  "abstract": "Spike sorting is the process of parsing electrophysiological signals from neurons to identify if, when, and which particular neurons fire. Spike sorting is a particularly difficult task in computational neuroscience due to the growing scale of recording technologies and complexity in traditional spike sorting algorithms. Previous spike sorters can be divided into software-based and hardware-based solutions. Software solutions are highly accurate but operate on recordings after-the-fact, and often require utilization of high-power GPUs to process in a timely fashion, and they cannot be used in portable applications. Hardware solutions suffer in terms of accuracy due to the simplification of mechanisms for implementation's sake and process only up to 128 inputs. This work answers the question: \"How much computation power and memory storage is needed to sort spikes from 1000s of channels to keep up with advances in probe technology?\" We analyze the computational and memory requirements for modern software spike sorters to identify their potential bottlenecks - namely in the template memory storage. We architect Marple, a highly optimized hardware pipeline for spike sorting which incorporates a novel mechanism to reduce the template memory storage from 8 - 11x. Marple is scalable, uses a flexible vector-based back-end to perform neuron identification, and a fixed-function front-end to filter the incoming streams into areas of interest. The implementation is projected to use just 79mW in 7nm, when spike sorting 10K channels at peak activity. We further demonstrate, for the first time, a machine learning replacement for the template matching stage.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/asplos/FanXJL24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "MaxEmbed: Maximizing SSD bandwidth utilization for huge embedding models serving",
+  "abstract": "Deep learning recommendation models (DLRMs) have gained widespread application across search, advertising, and e-commerce. Still, DLRMs present notable challenges as they depend heavily on large embedding tables to represent sparse features in recommendation systems. This raises concerns about both memory capacity and cost. Solid-state drives (SSDs) offer a cost-effective solution with a significantly larger capacity, but they introduce read amplification issues because of the mismatch between embedding size and SSD read granularity. Prior SSD embedding storage systems aim to tackle these challenges by employing hypergraph partitioning to co-locate co-appearing embeddings onto the same SSD page, alleviating read amplification. However, this approach has a drawback as it divides embeddings into completely disjoint clusters, limiting potential combinations between embeddings.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/PengXSHZHKKD24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "MaxK-GNN: Extremely Fast GPU Kernel Design for Accelerating Graph Neural Networks Training",
+  "abstract": "In the acceleration of deep neural network training, the graphics processing unit (GPU) has become the mainstream platform. GPUs face substantial challenges on Graph Neural Networks (GNNs), such as workload imbalance and memory access irregularities, leading to underutilized hardware. Existing solutions such as PyG, DGL with cuSPARSE, and GNNAdvisor frameworks partially address these challenges. However, the memory traffic involved with Sparse-Dense Matrix Matrix Multiplication (SpMM) is still significant.",
+  "hint_categories": [
+   "dense_la",
+   "sparse_la",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/MaoDZM24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Merlin: Multi-tier Optimization of eBPF Code for Performance and Compactness",
+  "abstract": "eBPF (extended Berkeley Packet Filter) significantly enhances observability, performance, and security within the Linux kernel, playing a pivotal role in various real-world applications. Implemented as a register-based kernel virtual machine, eBPF features a customized Instruction Set Architecture (ISA) with stringent kernel safety requirements, e.g., a limited number of instructions. This constraint necessitates substantial optimization efforts for eBPF programs to meet performance objectives. Despite the availability of compilers supporting eBPF program compilation, existing tools often overlook key optimization opportunities, resulting in suboptimal performance. In response, this paper introduces Merlin, an optimization framework leveraging customized LLVM passes and bytecode rewriting for Instruction Representation (IR) transformation and bytecode refinement. Merlin employs two primary optimization strategies, i.e., instruction merging and strength reduction. These optimizations are deployed before eBPF verification. We evaluate Merlin across 19 XDP programs (drawn from the Linux kernel, Meta, hXDP, and Cilium) and three eBPF-based systems (Sysdig, Tetragon, and Tracee, each comprising several hundred eBPF programs). The results show that all optimized programs pass the kernel verification. Meanwhile, Merlin can reduce number of instructions by 73% and runtime overhead by 60% compared with the original programs. Merlin can also improve the throughput by 0.59% and reduce the latency by 5.31%, compared to state-of-the-art technique K2, while being 106 times faster and more scalable to larger and more complex programs without additional manual efforts.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/asplos/NarkthongDRX24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "MicroVSA: An Ultra-Lightweight Vector Symbolic Architecture-based Classifier Library for Always-On Inference on Tiny Microcontrollers",
+  "abstract": "Artificial intelligence (AI) on tiny edge devices has become feasible thanks to the emergence of high-performance microcontrollers (MCUs) and lightweight machine learning (ML) models. Nevertheless, the cost and power consumption of these MCUs and the computation requirements of these ML algorithms still present barriers that prevent the widespread inclusion of AI functionality on smaller, cheaper, and lower-power devices. Thus, there is an urgent need for a more efficient ML algorithm and implementation strategy suitable for lower-end MCUs.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/KimOKK024",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "NDPipe: Exploiting Near-data Processing for Scalable Inference and Continuous Training in Photo Storage",
+  "abstract": "This paper proposes a novel photo storage system called NDPipe, which accelerates the performance of training and inference for image data by leveraging near-data processing in photo storage servers. NDPipe distributes storage servers with inexpensive commodity GPUs in a data center and uses their collective intelligence to perform inference and training near image data. By efficiently partitioning deep neural network (DNN) models and exploiting the data parallelism of many storage servers, NDPipe can achieve high training throughput with low synchronization costs. NDPipe optimizes the near-data processing engine to maximally utilize system components in each storage server. Our results show that, given the same energy budget, NDPipe exhibits 1.39× higher inference throughput and 2.64× faster training speed than typical photo storage systems.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/HanWQSXWZYL24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "NetRen: Service Migration-Driven Network Renascence with Synthesizing Updated Configuration",
+  "abstract": "Changes in enterprise networks require updated configurations. However, manual configurations with slow update efficiency, poor performance, and handling limitations, lead to the unavailability of updated networks. Therefore, we propose an efficient network renascence framework, NetRen, which synthesizes OSPF/BGP configurations driven by service and traffic migration. We follow the workflow of sketch extraction, configuration synthesis, and repair. Initially, comprehensive graphs are constructed to represent configuration sketches. We propose a GraphTrans synthesizer with Transformer's benefits of long-range focus and parallel reasoning. Training samples with the optimization relationship enable the synthesizer to achieve a mapping that optimizes performance based on configurations. To overcome the satisfiability barrier, configurations from the synthesizer are input to the stepwise configuration repairer as well-initialized solutions, achieving rapid configuration repair. Experiments demonstrate that the consistency of network configurations output by the GraphTrans synthesizer averages 98%. NetRen achieves a 312.4× increase in synthesis efficiency and a 5.83% improvement in network performance.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/HeoLCCLHK0P24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "NeuPIMs: NPU-PIM Heterogeneous Acceleration for Batched LLM Inferencing",
+  "abstract": "Modern transformer-based Large Language Models (LLMs) are constructed with a series of decoder blocks. Each block comprises three key components: (1) QKV generation, (2) multi-head attention, and (3) feed-forward networks. In batched processing, QKV generation and feed-forward networks involve compute-intensive matrix-matrix multiplications (GEMM), while multi-head attention requires bandwidth-heavy matrix-vector multiplications (GEMV). Machine learning accelerators like TPUs or NPUs are proficient in handling GEMM but are less efficient for GEMV computations. Conversely, Processing-in-Memory (PIM) technology is tailored for efficient GEMV computation, while it lacks the computational power to handle GEMM effectively.",
+  "hint_categories": [
+   "dense_la",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/HuVBMHOW0MZJ24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Optimal Kernel Orchestration for Tensor Programs with Korch",
+  "abstract": "Kernel orchestration is the task of mapping the computation defined in different operators of a deep neural network (DNN) to the execution of GPU kernels on modern hardware platforms. Prior approaches optimize kernel orchestration by greedily applying operator fusion, which fuses the computation of multiple operators into a single kernel, and miss a variety of optimization opportunities in kernel orchestration.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/XiaZSWWYFC24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Optimizing Deep Learning Inference via Global Analysis and Tensor Expressions",
+  "abstract": "Optimizing deep neural network (DNN) execution is important but becomes increasingly difficult as DNN complexity grows. Existing DNN compilers cannot effectively exploit optimization opportunities across operator boundaries, leaving room for improvement. To address this challenge, we present Souffle, an open-source compiler that optimizes DNN inference across operator boundaries. Souffle creates a global tensor dependency graph using tensor expressions, traces data flow and tensor information, and partitions the computation graph into subprograms based on dataflow analysis and resource constraints. Within a subprogram, Souffle performs local optimization via semantic-preserving transformations, finds an optimized program schedule, and improves instruction-level parallelism and data reuse. We evaluated Souffle using six representative DNN models on an NVIDIA A100 GPU. Experimental results show that Souffle consistently outperforms six state-of-the-art DNN optimizers by delivering a geometric mean speedup of up to 3.7× over TensorRT and 7.8× over Tensorflow XLA.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/YuLZCFX24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Optimizing Dynamic-Shape Neural Networks on Accelerators via On-the-Fly Micro-Kernel Polymerization",
+  "abstract": "In recent times, dynamic-shape neural networks have gained widespread usage in intelligent applications to address complex tasks, introducing challenges in optimizing tensor programs due to their dynamic nature. As the operators' shapes are determined at runtime in dynamic scenarios, the compilation process becomes expensive, limiting the practicality of existing static-shape tensor compilers. To address the need for effective and efficient optimization of dynamic-shape neural networks, this paper introduces MikPoly, a novel dynamic-shape tensor compiler based on micro-kernel polymerization. MikPoly employs a two-stage optimization approach, dynamically combining multiple statically generated micro-kernels using a lightweight cost model based on the shape of a tensor operator known at runtime. We evaluate the effectiveness of MikPoly by employing popular dynamic-shape operators and neural networks on two representative accelerators, namely GPU Tensor Cores and Ascend NPUs. Our experimental results demonstrate that MikPoly effectively optimizes dynamic-shape workloads, yielding an average performance improvement of 1.49× over state-of-the-art vendor libraries.",
+  "hint_categories": [
+   "tensor"
+  ]
+ },
+ {
+  "key": "conf/asplos/JiaMGSB24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "PATHFINDER: Practical Real-Time Learning for Data Prefetching",
+  "abstract": "Data prefetching is vital in high-performance processors and a large body of research has introduced a number of different approaches for accurate prefetching: stride detection, address correlating prefetchers, delta pattern detection, irregular pattern detection, etc. Most recently, a few works have leveraged advances in machine learning and deep neural networks to design prefetchers. These neural-inspired prefetchers observe data access patterns and develop a trained model that can then make accurate predictions for future accesses. A significant impediment to the success of these prefetchers is their high implementation cost, for both inference and training. These models cannot be trained in real-time, i.e., they have to be trained beforehand with a large benchmark suite. This results in a large model (that increases the overhead for inference), and the model can only successfully predict patterns that are similar to patterns in the training set.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/LiZWYCYL024",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "PIM-DL: Expanding the Applicability of Commodity DRAM-PIMs for Deep Learning via Algorithm-System Co-Optimization",
+  "abstract": "DRAM-based processing-in-memory (DRAM-PIM) has gained commercial prominence in recent years. However, their integration for deep learning acceleration poses inherent challenges. Existing DRAM-PIMs are limited in computational capabilities, primarily applicable for element-wise and GEMV operators. Unfortunately, these operators contribute only a small portion of the execution time in most DNN workloads. Current systems still necessitate powerful hosts to handle a significant portion of compute-heavy operators.",
+  "hint_categories": [
+   "dense_la"
+  ]
+ },
+ {
+  "key": "conf/asplos/HuangWSXXB24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Palantir: Hierarchical Similarity Detection for Post-Deduplication Delta Compression",
+  "abstract": "Deduplication compresses backup data by identifying and removing duplicate blocks. However, deduplication cannot detect when two blocks are very similar, which opens up opportunities for further data reduction using delta compression. Most existing works find similar blocks by characterizing each block by a set of features and matching similar blocks using coarse-grained super-features. If two blocks share a super-feature, delta compression only needs to store their delta for the new block.",
+  "hint_categories": [
+   "primitives",
+   "compression"
+  ]
+ },
+ {
+  "key": "conf/asplos/YavarzadehACGGK24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Pathfinder: High-Resolution Control-Flow Attacks Exploiting the Conditional Branch Predictor",
+  "abstract": "This paper introduces novel attack primitives that enable adversaries to leak (read) and manipulate (write) the path history register (PHR) and the prediction history tables (PHTs) of the conditional branch predictor in high-performance CPUs. These primitives enable two new classes of attacks: first, it can recover the entire control flow history of a victim program by exploiting read primitives, as demonstrated by a practical secret-image recovery based on capturing the entire control flow of libjpeg routines. Second, it can launch extremely high-resolution transient attacks by exploiting write primitives. We demonstrate this with a key recovery attack against AES based on extracting intermediate values.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/WangWXWL024",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "PrimePar: Efficient Spatial-temporal Tensor Partitioning for Large Transformer Model Training",
+  "abstract": "With the rapid up-scaling of transformer-based large language models (LLM), training these models is becoming increasingly demanding on novel parallel training techniques. Tensor partitioning is an extensively researched parallel technique, encompassing data and model parallelism, and has a significant influence on LLM training performance. However, existing state-of-the-art parallel training systems are based on incomplete tensor partitioning space, where the distribution of partitioned sub-operators is limited to the spatial dimension. We discover that introducing the temporal dimension into tensor partitioning of LLM training instance provides extra opportunities to avoid collective communication across devices, saving memory space and also overlapping device-to-device communication with computation. In this paper, we propose a new tensor partition primitive that distributes sub-operators along both the spatial and temporal dimensions to further explore communication and memory overhead reduction over current solutions. This new primitive creates a broader parallelization space and leads to parallel solutions that achieve better training throughput with lower peak memory occupancy compared to state-of-the-art techniques. To efficiently deploy optimized parallel transformer model training to multiple devices, we further present an optimization algorithm that can find optimal parallel solutions from our spatial-temporal tensor partition space with acceptable search time. Our evaluation shows that our optimized tensor partitioning achieves up to 1.68 × training throughput with 69% peak memory occupancy compared to state-of-the-art distributed training systems when training LLMs. Upon scaling to 32 GPUs, the geo-mean speedup across benchmarks is 1.30 ×. When applied in 3D parallelism, up to 1.46 × training throughput can be achieved.",
+  "hint_categories": [
+   "primitives",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/AnselYHGJVBBBBC24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "PyTorch 2: Faster Machine Learning Through Dynamic Python Bytecode Transformation and Graph Compilation",
+  "abstract": "This paper introduces two extensions to the popular PyTorch machine learning framework, TorchDynamo and TorchInductor, which implement the torch.compile feature released in PyTorch 2. TorchDynamo is a Python-level just-in-time (JIT) compiler that enables graph compilation in PyTorch programs without sacrificing the flexibility of Python. It achieves this by dynamically modifying Python bytecode before execution and extracting sequences of PyTorch operations into an FX graph, which is then JIT compiled using one of many extensible backends. TorchInductor is the default compiler backend for TorchDynamo, which translates PyTorch programs into OpenAI's Triton for GPUs and C++ for CPUs. Results show that TorchDynamo is able to capture graphs more robustly than prior approaches while adding minimal overhead, and TorchInductor is able to provide a 2.27× inference and 1.41× training geometric mean speedup on an NVIDIA A100 GPU across 180+ real-world models, which outperforms six other compilers. These extensions provide a new way to apply optimizations through compilers in eager mode frameworks like PyTorch.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/TanLZYLSZC0Y24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "QuFEM: Fast and Accurate Quantum Readout Calibration Using the Finite Element Method",
+  "abstract": "Quantum readout noise turns out to be the most significant source of error, which greatly affects the measurement fidelity. Matrix-based calibration has been demonstrated to be effective in various quantum platforms. However, existing methodologies are fundamentally limited in either scalability or accuracy. Inspired by the classical finite element method (FEM), a formal method to model the complex interaction between elements, we present our calibration framework named QuFEM. First, we apply a divide-and-conquer strategy that formulates the calibration as a series of tensor products with noise matrices. This matrices are iteratively characterized together with the calibrated probability distribution, aiming to capture the inherent locality of qubit interactions. Then, to accelerate the end-to-end calibration, we propose a sparse tensor-product engine to exploit the sparsity in the intermediate values. Our experiments show that QuFEM achieves 2.5×103× speedup in the 136-qubit calibration compared to the state-of-the-art matrix-based calibration technique [50], and provides 1.2× and 1.4× fidelity improvement on the 18-qubit and 36-qubit real-world quantum devices.",
+  "hint_categories": [
+   "sparse_la",
+   "stencil_pde"
+  ]
+ },
+ {
+  "key": "conf/asplos/WangWDZ0D24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "RAP: Resource-aware Automated GPU Sharing for Multi-GPU Recommendation Model Training and Input Preprocessing",
+  "abstract": "Ensuring high-quality recommendations for newly onboarded users requires the continuous retraining of Deep Learning Recommendation Models (DLRMs) with freshly generated data. To serve the online DLRM retraining, existing solutions use hundreds of CPU computing nodes designated for input preprocessing, causing significant power consumption that surpasses even the power usage of GPU trainers.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/LaeuferFAINS24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "RTL-Repair: Fast Symbolic Repair of Hardware Design Code",
+  "abstract": "We present RTL-Repair, a semantics-based repair tool for register transfer level circuit descriptions. Compared to the previous state-of-the-art tool, RTL-Repair generates more correct repairs within seconds instead of minutes or even hours. We imagine that RTL-Repair could thus be integrated into an IDE to give developers repair suggestions promptly. Our new SMT-based one-step fault localization and repair algorithm for digital hardware designs uses optimization to generate minimal changes that a user can easily understand. A novel adaptive windowing approach allows us to avoid scalability issues by focusing the repair search on the parts of the test that matter the most. RTL-Repair provides repairs that pass their testbench for 9 out of 12 real bugs collected from open-source hardware projects. Two repairs fully match the ground truth, one partially, four more repairs change the correct expression but in a way that overfits the testbench, and only three repairs differ strongly from the ground truth.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/0033F0N24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Red-QAOA: Efficient Variational Optimization through Circuit Reduction",
+  "abstract": "The Quantum Approximate Optimization Algorithm (QAOA) addresses combinatorial optimization challenges by converting inputs to graphs. However, the optimal parameter searching process of QAOA is greatly affected by noise. Larger problems yield bigger graphs, requiring more qubits and making their outcomes highly noise-sensitive. This paper introduces Red-QAOA, leveraging energy landscape concentration via a simulated annealing-based graph reduction.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/asplos/ZhangCYWTZ24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "SIRO: Empowering Version Compatibility in Intermediate Representations via Program Synthesis",
+  "abstract": "This paper presents Siro, a new program transformation framework that translates between different versions of Intermediate Representations (IR), aiming to better address the issue of IR version incompatibility on IR-based software, such as static analyzers. We introduce a generic algorithm skeleton for Siro based on the divide-and-conquer principle. To minimize labor-intensive tasks of the implementation process, we further employ program synthesis to automatically generate translators for IR instructions within vast search spaces. Siro is instantiated on LLVM IR and has effectively helped to produce ten well-functioning IR translators for different version pairs, each taking less than three hours. From a practical perspective, we utilize these translators to assist static analyzers and fuzzers in reporting bugs and achieving accuracy of 91% and 95%, respectively. Remarkably, Siro has already been deployed in real-world scenarios and makes existing static analyzers available to safeguard the Linux kernel by uncovering 80 new vulnerabilities.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/RenZCXCW24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Scaling Up Memory Disaggregated Applications with SMART",
+  "abstract": "Recent developments in RDMA networks are leading to the trend of memory disaggregation. However, the performance of each compute node is still limited by the network, especially when it needs to perform a large number of concurrent fine-grained remote accesses. According to our evaluations, existing IOPS-bound disaggregated applications do not scale well beyond 32 cores, and therefore do not take full advantage of today's many-core machines.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/NiuSSGSYAR24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "SmartMem: Layout Transformation Elimination and Adaptation for Efficient DNN Execution on Mobile",
+  "abstract": "This work is motivated by recent developments in Deep Neural Networks, particularly the Transformer architectures underlying applications such as ChatGPT, and the need for performing inference on mobile devices. Focusing on emerging transformers (specifically the ones with computationally efficient Swin-like architectures) and large models (e.g., Stable Diffusion and LLMs) based on transformers, we observe that layout transformations between the computational operators cause a significant slowdown in these applications. This paper presents SmartMem, a comprehensive framework for eliminating most layout transformations, with the idea that multiple operators can use the same tensor layout through careful choice of layout and implementation of operations. Our approach is based on classifying the operators into four groups, and considering combinations of producer-consumer edges between the operators. We develop a set of methods for searching such layouts. Another component of our work is developing efficient memory layouts for 2.5 dimensional memory commonly seen in mobile devices. Our experimental results show that SmartMem outperforms 5 state-of-the-art DNN execution frameworks on mobile devices across 18 varied neural networks, including CNNs, Transformers with both local and global attention, as well as LLMs. In particular, compared to DNNFusion, SmartMem achieves an average speedup of 2.8×, and outperforms TVM and MNN with speedups of 6.9× and 7.9×, respectively, on average.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/XuXLZHJL24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "SoCFlow: Efficient and Scalable DNN Training on SoC-Clustered Edge Servers",
+  "abstract": "SoC-Cluster, a novel server architecture composed of massive mobile system-on-chips (SoCs), is gaining popularity in industrial edge computing due to its energy efficiency and compatibility with existing mobile applications. However, we observe that the deployed SoC-Cluster servers are not fully utilized, because the hosted workloads are mostly user-triggered and have significant tidal phenomena. To harvest the free cycles, we propose to co-locate deep learning tasks on them.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/NiuAR24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "SoD2: Statically Optimizing Dynamic Deep Neural Network Execution",
+  "abstract": "Though many compilation and runtime systems have been developed for DNNs in recent years, the focus has largely been on static DNNs. Dynamic DNNs, where tensor shapes and sizes and even the set of operators used are dependent upon the input and/or execution, are becoming common. This paper presents SoD2, a comprehensive framework for optimizing Dynamic DNNs. The basis of our approach is a classification of common operators that form DNNs, and the use of this classification towards a Rank and Dimension Propagation (RDP) method. This framework statically determines the shapes of operators as known constants, symbolic constants, or operations on these. Next, using RDP we enable a series of optimizations, like fused code generation, execution (order) planning, and even runtime memory allocation plan generation. By evaluating the framework on 10 emerging Dynamic DNNs and comparing it against several existing systems, we demonstrate both reductions in execution latency and memory requirements, with RDP-enabled key optimizations responsible for much of the gains. Our evaluation results show that SoD2 runs up to 3.9× faster than these systems while saving up to 88% peak memory consumption.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/MiaoSDXL0J24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "SpotServe: Serving Generative Large Language Models on Preemptible Instances",
+  "abstract": "The high computational and memory requirements of generative large language models (LLMs) make it challenging to serve them cheaply. This paper aims to reduce the monetary cost for serving LLMs by leveraging preemptible GPU instances on modern clouds, which offer accesses to spare GPU resources at a much cheaper price than regular instances but may be preempted by the cloud provider at any time. Serving LLMs on preemptible instances requires addressing challenges induced by frequent instance preemptions and the necessity of migrating instances to handle the preemptions.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/PrakriyaCBSC24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "TAPA-CS: Enabling Scalable Accelerator Design on Distributed HBM-FPGAs",
+  "abstract": "Despite the increasing adoption of FPGAs in compute clouds, there remains a significant gap in programming tools and abstractions which can leverage network-connected, cloud-scale, multi-die FPGAs to generate accelerators with high frequency and throughput. We propose TAPA-CS, a task-parallel dataflow programming framework which automatically partitions and compiles a large design across a cluster of FPGAs while achieving high frequency and throughput. TAPA-CS has three main contributions. First, it is an open-source framework which allows users to leverage virtually \"unlimited\" accelerator fabric, high-bandwidth memory (HBM), and on-chip memory. Second, given as input a large design, TAPA-CS automatically partitions the design to map to multiple FPGAs, while ensuring congestion control, resource balancing, and overlapping of communication and computation. Third, TAPA-CS couples coarse-grained floor-planning with interconnect pipelining at the inter- and intra-FPGA levels to ensure high frequency. FPGAs in our multi-FPGA testbed communicate through a high-speed 100Gbps Ethernet infrastructure. We have evaluated the performance of TAPA-CS on designs, including systolic-array based CNNs, graph processing workloads such as page rank, stencil applications, and KNN. On average, the 2-, 3-, and 4-FPGA designs are 2.1×, 3.2×, and 4.4× faster than the single FPGA baselines generated through Vitis HLS. TAPA-CS also achieves a frequency improvement between 11%-116% compared with Vitis HLS.",
+  "hint_categories": [
+   "stencil_pde",
+   "graph"
+  ]
+ },
+ {
+  "key": "conf/asplos/KimRL24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "TCCL: Discovering Better Communication Paths for PCIe GPU Clusters",
+  "abstract": "Exploiting parallelism to train deep learning models requires GPUs to cooperate through collective communication primitives. While systems like DGX, equipped with proprietary interconnects, have been extensively studied, the systems where GPUs mainly communicate through PCIe have received limited attention. This paper introduces TCCL, a collective communication library designed explicitly for such systems. TCCL has three components: a profiler for multi-transfer performance measurement, a pathfinder to discover optimal communication paths, and a modified runtime of NCCL to utilize the identified paths. The focus is on ring-based collective communication algorithms that apply to popular communication operations in deep learning, such as AllReduce and AllGather. The evaluation results of TCCL on three different PCIe-dependent GPU clusters show that TCCL outperforms (up to ×2.07) the state-of-the-art communication libraries, NCCL and MSCCL. We also evaluate TCCL with DL training workloads with various combinations of parallelism types.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/WangM24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "TGLite: A Lightweight Programming Framework for Continuous-Time Temporal Graph Neural Networks",
+  "abstract": "In recent years, Temporal Graph Neural Networks (TGNNs) have achieved great success in learning tasks for graphs that change over time. These dynamic/temporal graphs represent topology changes as either discrete static graph snapshots (called DTDGs), or a continuous stream of timestamped edges (called CTDGs). Because continuous-time graphs have richer time information, it will be crucial to have abstractions for programming CTDG-based models so that practitioners can easily explore new designs and optimizations in this space. A few recent frameworks have been proposed for programming and accelerating TGNN models, but these either do not support continuous-time graphs, lack easy composability, and/or do not facilitate CTDG-specific optimizations.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/GhodratiKXMKAWK24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Tandem Processor: Grappling with Emerging Operators in Neural Networks",
+  "abstract": "With the ever increasing prevalence of neural networks and the upheaval from the language models, it is time to rethink neural acceleration. Up to this point, the broader research community, including ourselves, has disproportionately focused on GEneral Matrix Multiplication (GEMM) operations. The supporting argument was that the large majority of the neural operations are GEMM. This argument guided the research in Neural Processing Units (NPUs) for the last decade. However, scant attention was paid to non-GEMM operations and they are rather overlooked. As deep learning evolved and progressed, these operations have grown in diversity and also large variety of structural patterns have emerged that interweave them with the GEMM operations. However, conventional NPU designs have taken rather simplistic approaches by supporting these operations through either a number of dedicated blocks or fall back to general-purpose processors.",
+  "hint_categories": [
+   "dense_la",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/HanZWHFLMLMJSD024",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "TensorTEE: Unifying Heterogeneous TEE Granularity for Efficient Secure Collaborative Tensor Computing",
+  "abstract": "Heterogeneous collaborative computing with NPU and CPU has received widespread attention due to its substantial performance benefits. To ensure data confidentiality and integrity during computing, Trusted Execution Environments (TEE) is considered a promising solution because of its comparatively lower overhead. However, existing heterogeneous TEE designs are inefficient for collaborative computing due to fine and different memory granularities between CPU and NPU. 1) The cacheline granularity of CPU TEE intensifies memory pressure due to its extra memory access, and 2) the cacheline granularity MAC of NPU escalates the pressure on the limited memory storage. 3) Data transfer across heterogeneous enclaves relies on the transit of non-secure regions, resulting in cumbersome re-encryption and scheduling.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/GiordanoDLM24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "TinyForge: A Design Space Exploration to Advance Energy and Silicon Area Trade-offs in tinyML Compute Architectures with Custom Latch Arrays",
+  "abstract": "The proliferation of smart IoT devices has given rise to tinyML, which deploys deep neural networks on resource-constrained systems, benefitting from custom hardware that optimizes for low silicon area and high energy efficiency amidst tinyML's characteristic small model sizes (50-500 KB) and low target frequencies (1-100 MHz). We introduce a novel custom latch array integrated with a compute memory fabric, achieving 8 μm2/B density and 11 fJ/B read energy, surpassing synthesized implementations by 7x in density and 5x in read energy. This advancement enables dataflows that do not require activation buffers, reducing memory overheads. By optimizing systolic vs. combinational scaling in a 2D compute array and using bit-serial instead of bit-parallel compute, we achieve a reduction of 4.8x in area and 2.3x in multiply-accumulate energy. To study the advantages of the proposed architecture and its performance at the system level, we architect tinyForge, a design space exploration to obtain Pareto-optimal architectures and compare the trade-offs with respect to traditional approaches. tinyForge comprises (1) a parameterized template for memory hierarchies and compute fabric, (2) estimations of power, area, and latency for hardware components, (3) a dataflow optimizer for efficient workload scheduling, (4) a genetic algorithm performing multi-objective optimization to find Pareto-optimal architectures. We evaluate the performance of our proposed architecture on all of the MLPerf Tiny Inference Benchmark workloads, and the BERT-Tiny transformer model, demonstrating its effectiveness in lowering the energy per inference while addressing the introduced area overheads. We show the importance of storing all the weights on-chip, reducing the energy per inference by 7.5x vs. utilizing off-chip memories. Finally, we demonstrate the potential of the custom latch arrays and bit-serial digital compute arrays to reduce by up to 1.8x the energy per inference, 2.2x the latency per inference, and 3.7x the silicon area.",
+  "hint_categories": [
+   "primitives",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/TongGLH24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Towards Unified Analysis of GPU Consistency",
+  "abstract": "After more than 30 years of research, there is a solid understanding of the consistency guarantees given by CPU systems. Unfortunately, the same is not yet true for GPUs. The growing popularity of general purpose GPU programming has been a call for action which industry players like Nvidia and Khronos have answered by formalizing their Ptx and Vulkan consistency models. These models give precise answers to questions about program's correctness. However, interpreting them still requires a level of expertise that escapes most developers, and the current tool support is insufficient.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/TauroSCDH24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "TrackFM: Far-out Compiler Support for a Far Memory World",
+  "abstract": "Large memory workloads with favorable locality of reference can benefit by extending the memory hierarchy across machines. Systems that enable such far memory configurations can improve application performance and overall memory utilization in a cluster. There are two current alternatives for software-based far memory: kernel-based and library-based. Kernel-based approaches sacrifice performance to achieve programmer transparency, while library-based approaches sacrifice programmer transparency to achieve performance. We argue for a novel third approach, the compiler-based approach, which sacrifices neither performance nor programmer transparency. Modern compiler analysis and transformation techniques, combined with a suitable tightly-coupled runtime system, enable this approach. We describe the design, implementation, and evaluation of TrackFM, a new compiler-based far memory system. Through extensive benchmarking, we demonstrate that TrackFM outperforms kernel-based approaches by up to 2× while retaining their programmer transparency, and that TrackFM can perform similarly to a state-of-the-art library-based system (within 10%). The application is merely recompiled to reap these benefits.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/ZhaoXLTWW24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Training Job Placement in Clusters with Statistical In-Network Aggregation",
+  "abstract": "In-Network Aggregation (INA) offloads the gradient aggregation in distributed training (DT) onto programmable switches, where the switch memory could be allocated to jobs in either synchronous or statistical multiplexing mode. Statistical INA has advantages in switch memory utilization, control-plane simplicity, and management safety, but it faces the problem of cross-layer resource efficiency in job placement. This paper presents a job placement system NetPack for clusters with statistical INA, which aims to maximize the utilization of both computation and network resources. NetPack periodically batches and places jobs into the cluster. When placing a job, NetPack runs a steady state estimation algorithm to acquire the available resources in the cluster, heuristically values each server according to its available resources (GPU and bandwidth), and runs a dynamic programming algorithm to efficiently search for servers with the highest value for the job. Our prototype of NetPack and the experiments demonstrate that NetPack outperforms prior job placement methods by 45% in terms of average job completion time on production traces.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/BlockGMAT24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Two-Face: Combining Collective and One-Sided Communication for Efficient Distributed SpMM",
+  "abstract": "Sparse matrix dense matrix multiplication (SpMM) is commonly used in applications ranging from scientific computing to graph neural networks. Typically, when SpMM is executed in a distributed platform, communication costs dominate. Such costs depend on how communication is scheduled. If it is scheduled in a sparsity-unaware manner, such as with collectives, execution is often inefficient due to unnecessary data transfers. On the other hand, if communication is scheduled in a fine-grained sparsity-aware manner, communicating only the necessary data, execution can also be inefficient due to high software overhead.",
+  "hint_categories": [
+   "dense_la",
+   "sparse_la",
+   "ml_kernels"
+  ]
+ }
+]

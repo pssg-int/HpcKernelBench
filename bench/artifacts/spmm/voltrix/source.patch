@@ -1,0 +1,20 @@
+diff --git a/voltrix/jit/compiler.py b/voltrix/jit/compiler.py
+index c9a7e84..a09bb00 100644
+--- a/voltrix/jit/compiler.py
++++ b/voltrix/jit/compiler.py
+@@ -128,7 +128,14 @@ def build(name: str, arg_defs: tuple, code: str) -> Runtime:
+         + (",--verbose" if PTXAS_VERBOSE_FLAG in os.environ else ""),
+         # Suppress some unnecessary warnings, such as unused variables for certain `constexpr` branch cases
+         "--diag-suppress=177,174,940",
+-        "-I/home/yatorho/doc/projs/cu_head",
++        # (build-system fix, HPC-KernelBench integration) dropped a hardcoded
++        # "-I/home/yatorho/doc/projs/cu_head" here: the upstream author's own
++        # local dev include dir, absent on every other machine. Confirmed
++        # via `grep -rn '#include' voltrix/include/voltrix/*.cuh` that every
++        # header voltrix/spmm_kernels.cuh and bmat_kernels.cuh pull in is
++        # either a standard CUDA/thrust/libstdc++ header or this repo's own
++        # "voltrix/*.cuh" (found via the get_jit_include_dir() -I already
++        # below) -- nothing under the dropped path is ever needed.
+         "-DDISABLE_MX_MAIN",
+         "-lcuda",
+     ]

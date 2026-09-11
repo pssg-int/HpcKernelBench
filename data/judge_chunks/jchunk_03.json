@@ -1,0 +1,763 @@
+[
+ {
+  "key": "conf/sc/ZiogasSBCMLLH21",
+  "title": "Productivity, portability, performance: data-centric Python",
+  "venue": "SC",
+  "year": 2021,
+  "authors": [
+   "Alexandros Nikolaos Ziogas",
+   "Timo Schneider",
+   "Tal Ben-Nun",
+   "Alexandru Calotoiu",
+   "Tiziano De Matteis"
+  ],
+  "abstract": "Python has become the de facto language for scientific computing. Programming in Python is highly productive, mainly due to its rich science-oriented software ecosystem built around the NumPy module. As a result, the demand for Python support in High Performance Computing (HPC) has skyrocketed. However, the Python language itself does not necessarily offer high performance. In this work, we present a workflow that retains Python's high productivity while achieving portable performance across different architectures. The workflow's key features are HPC-oriented language extensions and a set of automatic optimizations powered by a data-centric intermediate representation. We show performance r",
+  "candidates": [
+   {
+    "url": "https://github.com/AI-Kyo-er/Dace_repro",
+    "desc": "The reproduction work of the paper \"Productivity, Portability, Performance: Data-Centric Python\"",
+    "stars": 1,
+    "readme_head": "# Dace_repro\nThe reproduction work of the paper \"Productivity, Portability, Performance: Data-Centric Python\"\n\n大家可以把本论文复现工作中的任何环节同步到该仓库中，包括代码、实验数据、复现结果论文等内容，截至11月27日，大家加油！！\n"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/SteilRIPSP21",
+  "title": "TriPoll: computing surveys of triangles in massive-scale temporal graphs with metadata",
+  "venue": "SC",
+  "year": 2021,
+  "authors": [
+   "Trevor Steil",
+   "Tahsin Reza",
+   "Keita Iwabuchi",
+   "Benjamin W. Priest",
+   "Geoffrey Sanders"
+  ],
+  "abstract": "Understanding the higher-order interactions within network data is a key objective of network science. Surveys of metadata triangles (or patterned 3-cycles in metadata-enriched graphs) are often of interest in this pursuit. In this work, we develop TriPoll, a prototype distributed HPC system capable of surveying triangles in massive graphs containing metadata on their edges and vertices. We contrast our approach with much of the prior effort on triangle analysis, which often focuses on simple triangle counting, usually in simple graphs with no metadata. We assess the scalability of TriPoll when surveying triangles involving metadata on real and synthetic graphs with up to hundreds of billion",
+  "candidates": [
+   {
+    "url": "https://github.com/llnl/tripoll",
+    "desc": "",
+    "stars": 1,
+    "readme_head": "This repository is a companion to our TriPoll [paper](https://arxiv.org/abs/2107.12330) presented as [\nSuperComputing '21](https://dl.acm.org/doi/10.1145/3458817.3476200). This work identifies triangles\nin massive graphs with metadata using distributed memory and processes the metadata on triangles in a user-defined manner as they are identified.\n\n# Building\nTriPoll requires MPI, CMake, and gcc-8 or later. Communication is handled using [YGM](https://github.com/LLNL/ygm),\nwhich uses MPI internally. CMake is configured to download YGM and its dependencies automatically through FetchContent.\n\nCompiling the code is as simple as\n```\nmkdir build\ncd build\ncmake ..\nmake\n```\n\n# Using TriPoll\n\nTriPoll makes use of a small number of data structures and functions that we will briefly cover here.\n\n### Undirected Graph\nThe undirected graph is a temporary data structure to load data into. Edges are inserted by calling `async_add_edge`,\nand vertex metadata is added by calling `async_set_vertex_metadata`.\n\n### Ordered Directed Graph\nThe `ordered_directed_graph` is the data structure TriPoll algorithms are run on. It creates directed graphs from\nundirected graphs by assigning an \"order\" to each vertex. As edges are added, the \"order\" of each vertex is looked up,\nand a directed edges is added from the lower order vertex to the higher order.\n\nThis can be used to assign any ordering on vertices, but it is only used to create degree-ordered directed graphs in\nthis work, in which edges are pointed"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/DuLWLTS22",
+  "title": "AlphaSparse: Generating High Performance SpMV Codes Directly from Sparse Matrices",
+  "venue": "SC",
+  "year": 2022,
+  "authors": [
+   "Zhen Du",
+   "Jiajia Li 0001",
+   "Yinshan Wang",
+   "Xueqi Li 0001",
+   "Guangming Tan"
+  ],
+  "abstract": "Sparse Matrix-Vector multiplication (SpMV) is an essential computational kernel in many application scenarios. Tens of sparse matrix formats and implementations have been proposed to compress the memory storage and speed up SpMV performance. We develop AlphaSparse, a superset of all existing works that goes beyond the scope of human-designed format(s) and implementation(s). AlphaSparse automatically creates novel machine-designed formats and SpMV kernel implementations en-tirely from the knowledge of input sparsity patterns and hard-ware architectures. Based on our proposed Operator Graph that expresses the path of SpMV format and kernel design, AlphaS-parse consists of three main components",
+  "candidates": [
+   {
+    "url": "https://github.com/AnonymousRepo123/AlphaSparse",
+    "desc": "A intelligent matrix format designer for SpMV",
+    "stars": 10,
+    "readme_head": "Please go to https://github.com/duzhen1996/AlphaSparse for the latest version.\n\n# AlphaSparse\n\nAlphaSparse is a superset of traditional auto-tuners that goes beyond the scope of existing human-designed format(s) and implementation(s). It automatically creates novel machine-designed formats and SpMV kernel implementations entirely from the knowledge of input sparsity patterns and hardware architectures.\n\nThe SC'22 paper: https://dl.acm.org/doi/abs/10.5555/3571885.3571972\n\n## Hardware Configurations\n\n- We have tested on NVIDIA RTX 2080 and A100. Generally, AlphaSparse can support all up-to-date NVIDIA GPUs.\n- CUDA version: 11.x. The nvcc needs to be configured into environment variables.\n- GCC version: 9.4 or any others supporting C++11.\n- Operating System version: Ubuntu 20.04.3 LTS, Linux kernel 5.4.0-99-generic x86_64.\n- Python version: 3.x.\n- No third-part library is needed.\n\n## Download data of test matrices\n\nIn our evaluation, all input matrices are from SuiteSparse Matrix Collection (https://sparse.tamu.edu). Two ways are provided to download data as follows.\n\n- Directly download from websites. Go to the websites of SuiteSparse Matrix Collection, click the link of specific matrix name, and click the download link named \"Matrix Market\". The downloaded file is zipped. By extracting the file, a \".mtx\" file can be gotten.\n\n- Use the python interface. Install the `ssgetpy` Python module. Run `import ssgetpy` and type `help(ssgetpy)` to get a detailed help message on using ssg"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/BestaMLTIKAJPKGVMH22",
+  "title": "ProbGraph: High-Performance and High-Accuracy Graph Mining with Probabilistic Set Representations",
+  "venue": "SC",
+  "year": 2022,
+  "authors": [
+   "Maciej Besta",
+   "Cesare Miglioli",
+   "Paolo Sylos Labini",
+   "Jakub Tetek",
+   "Patrick Iff"
+  ],
+  "abstract": "Important graph mining problems such as Clustering are computationally demanding. To significantly accelerate these problems, we propose ProbGraph: a graph representation that enables simple and fast approximate parallel graph mining with strong theoretical guarantees on work, depth, and result accuracy. The key idea is to represent sets of vertices using probabilistic set representations such as Bloom filters. These representations are much faster to process than the original vertex sets thanks to vectorizability and small size. We use these representations as building blocks in important parallel graph mining algorithms such as Clique Counting or Clustering. When enhanced with ProbGraph, t",
+  "candidates": [
+   {
+    "url": "https://github.com/spcl/probgraph",
+    "desc": "",
+    "stars": 2,
+    "readme_head": "### Prerequirisites: #\r\n\r\n  * boost 1.76\r\n  * g++ 8.3.0\r\n  * python 3.7\r\n\r\n### Building: #\r\n\r\nRun the following commands from the main probgraph-public folder:\r\n```\r\ncd src\r\nmake\r\ncd ../ \r\n```\r\n\r\n### Using ProbGraph: #\r\n\r\nNow run the test to check that everything works:\r\n\r\n`./test.sh`\r\n\r\nor you can try it yourself by running any of the executables in probgraph-public/src/\r\n\r\nthe general formulation is\r\n\r\n`./src/PROBLEM_APPROXIMATOR OPTIONS`\r\n\r\npossible choices for PROBLEM are:\r\n  * `tc` : Triangle Counting\r\n  * `jp-jc` : Clustering (Jaccard)\r\n  * `jp-ov` : Clustering (Overlap)\r\n  * `jp-cn` : Clustering (Common neigh.)\r\n  * `4c`: 4-cliques\r\n\r\npossible choices for APPROXIMATOR are:\r\n  * `base` : Baseline\r\n  * `1h`: one-hash\r\n  * `bf`: Bloom Filter\r\n  * `pgp`: Partial Graph Processing\r\n  * `redex`: Reduced Execution\r\n  * `colorful`, `doulion` : only available for Triangle Counting\r\n\r\nFor example, \r\n\r\n`./src/tc_bf -g 17 -k 256`\r\n\r\nwill run Triangle counting (TC) using Bloom Filters (BF) on a Kronecker graph with 2^17 nodes and 256 avg. degree (-g 17 -k 256).\r\nRun any executable with the -h flag to see the available options\r\n\r\nIn order to run experiments on stored graphs, you will have to download them in the probgraph-sc/src/graphs/ folder. Some small graphs are already in the folder. You can find a list of graphs in the paper together with references to the datasets. In alternative, you can download your own graphs in the graphs folder. Be sure they are in the ordered edgelist f"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/WeiJ22",
+  "title": "STMatch: Accelerating Graph Pattern Matching on GPU with Stack-Based Loop Optimizations",
+  "venue": "SC",
+  "year": 2022,
+  "authors": [
+   "Yihua Wei",
+   "Peng Jiang 0004"
+  ],
+  "abstract": "Graph pattern matching is a fundamental task in many graph analytics and graph mining applications. As an NP-hard problem, it is often a performance bottleneck in these applications. Previous work has proposed to use GPU to accelerate the computation. However, we find that the existing GPU solutions fail to show a performance advantage over the state-of-the-art CPU implementation due to their subgraph-centric design. This work proposes a novel stack-based graph pattern matching system on GPU that avoids the synchronization and memory consumption issues of the previous subgraph-centric systems. We also propose a two-level work-stealing and a loop-unrolling technique to improve the inter-warp ",
+  "candidates": [
+   {
+    "url": "https://github.com/HPC-Research-Lab/STMatch",
+    "desc": "",
+    "stars": 12,
+    "readme_head": "## Overview\nSTMatch is a stack-based subgraph pattern matching system on GPU. \n\n## Build STMatch\n\n### Data Preparation\n\nGo to graph_converter directory and compile graph converter\n```Shell\ncd graph_converter/\nmake\n```\n\nIn graph_converter directory, run prepare_data.sh to download graph data and transfer the data format to our system's format. \nThe shell script prepare_data.sh will also labelize the downloaded graphs\n```Shell\n#we commented 2 graph links(Orkut and Friendster) on the top of prepare_data.sh \\\n#because these 2 graphs are extreme big. \n#It will take you about 1 ~ 2 hours to download and convert them. \n#You can uncomment the link of these 2 graphs in prepare_data.sh \\\n#if you want to test them and then re-run prepare_data.sh\nbash prepare_data.sh  \n```\n\nNow you can see some directories in ~/project/data/bin_graph/\n```Shell\n#it's like \"com-amazon.ungraph  com-dblp.ungraph  com-youtube.ungraph  email-Enron  wiki-Vote\"\n```\n\n### Compile STMatch\nGo to home directory of STMatch and compile the project\n```Shell\nmake clean\n#Be careful, don't use make's multi-threads execution like make -j 16. \nmake\n```\nNow you can see 7 executable files ending with .exe in ./bin directory. \n\n\n## Test STMatch\n\nWe provide some shell scripts for batched test, or you can input the command to test a specific pattern and graph directly.\nWe also provide the instructions about how to reproduce the result of Table III, Table IV and Figure 10 in the paper. \n\n\n### Reproducing the results of Table III ("
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/JiangZJLZLC22",
+  "title": "VSGM: View-Based GPU-Accelerated Subgraph Matching on Large Graphs",
+  "venue": "SC",
+  "year": 2022,
+  "authors": [
+   "Guanxian Jiang",
+   "Qihui Zhou",
+   "Tatiana Jin",
+   "Boyang Li 0016",
+   "Yunjian Zhao"
+  ],
+  "abstract": "Subgraph matching is a fundamental building block in graph analytics. Due to its high time complexity, GPU-based solutions have been proposed for sub graph matching. Most existing GPU-based works can only cope with relatively small graphs that fit in GPU memory. To support efficient subgraph matching on large graphs, we propose a view-based method to hide communication overhead and improve GPU utilization. We develop VSGM, a sub graph matching framework that supports efficient pipelined execution and multi-GPU architecture. Ex-tensive experimental evaluation shows that VSGM significantly outperforms the state-of-the-art solutions.",
+  "candidates": [
+   {
+    "url": "https://github.com/kygx-legend/vsgm",
+    "desc": "",
+    "stars": 11,
+    "readme_head": "VSGM\n=======\nVSGM: View-Based GPU-Accelerated Subgraph Matching on Large Graphs\n\nDependencies\n-------------\n1. nvidia/cuda:11.3.0\n2. g++ - 7\n\nSubmodule\n-------------\n    $ git submodule init\n    $ git submodule update\n\nBuild\n-------------\n\n\t$ cd lib/bliss-0.73/bliss && make\n    $ cd src/preprocess && make -j\n    $ cd src/tools && make -j\n    $ cd src/app && make -j\n\nChange Data Format\n-------------\n\n    $ mkdir test\n    $ cd test\n    $ wget https://snap.stanford.edu/data/bigdata/communities/com-friendster.ungraph.txt.gz\n    $ gunzip com-friendster.ungraph.txt.gz\n    $ ../src/preprocess/preprocess -f com-friendster.ungraph.txt -d 0 -o 1  # build csr binary\n\nK-Means Clustering\n-------------\n\n    $ cd test\n    $ ../src/tools/features -f com-friendster.ungraph.txt.bin -h 1\n    $ ../src/tools/kmeans -f com-friendster.ungraph.txt.bin.1hop.bin -i 10 -t 32 -k 4 -init 0 -rc 1  # i: iterations, t: threads, k: cluster num, init: 0 - kmeans++, 1 - random, rc: enable reorder cluster\n\nView Bin Packing\n-------------\n\n    $ cd test\n    $ cp com-friendster.ungraph.txt.bin.1hop.bin.kmeans.4 com-friendster.ungraph.txt.bin.kmeans.1x4\n    $ ../src/tools/view_packing -gf com-friendster.ungraph.txt.bin -pf com-friendster.ungraph.txt.bin.kmeans.1x4 -h 2 -m 10 -t 1 -s 1 -d 1  # for 2 hop\n    $ ../src/tools/view_packing -gf com-friendster.ungraph.txt.bin -pf com-friendster.ungraph.txt.bin.kmeans.1x4 -h 3 -m 10 -t 1 -s 1 -d 1  # for 3 hop\n\nRun Subgraph Matching\n-------------\n\n    $ cd test\n    $ ../src"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/JiaZGLXWL22",
+  "title": "vGraph: Memory-Efficient Multicore Graph Processing for Traversal-Centric Algorithms",
+  "venue": "SC",
+  "year": 2022,
+  "authors": [
+   "Menghan Jia",
+   "Yiming Zhang 0003",
+   "Xinbiao Gan",
+   "Dongsheng Li 0001",
+   "Erci Xu"
+  ],
+  "abstract": "To lower the monetary/energy cost, single-machine multicore graph processing is gaining increasing attention for a wide range of traversal-centric graph algorithms such as BFS, SSSP, CC, and PageRank, of which the processing is relatively simple and the topology data (vertices and edges) dominates the memory footprint. This paper presents <tex xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">$v$</tex> Graph, a NUMA-aware, memory-efficient multicore graph processing system for traversal-centric algorithms. <tex xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">$v$</tex> Graph proposes an ultralight NUMA-aware gra",
+  "candidates": [
+   {
+    "url": "https://github.com/sunfanyunn/vGraph",
+    "desc": "Official code for \"vGraph: A Generative Model for Joint CommunityDetection and Node Representation Learning\" (NeurIPS 2019)",
+    "stars": 46,
+    "readme_head": "## vGraph: A Generative Model for Joint CommunityDetection and Node Representation Learning (NeurIPS 2019)\n#### Authors: [Fan-yun Sun](https://fanyun-sun.github.io/), [Meng Qu](https://mnqu.github.io/), [Jordan Hoffman](https://jhoffmann.org/), [Chin-Wei Huang](https://chinweihuang.com/), [Jian Tang](https://jian-tang.com/)\n#### [Link to the paper](https://arxiv.org/abs/1906.07159)\n#### [Link to the slides](https://drive.google.com/open?id=1ZAvOmhP7IfvGK9l6j-IopCh6oEtx4l8m)\n\nPlease cite our paper if you use this code in your own work:\n\n```\n@article{sun2019vgraph,\n  title={vgraph: A generative model for joint community detection and node representation learning},\n  author={Sun, Fan-Yun and Qu, Meng and Hoffmann, Jordan and Huang, Chin-Wei and Tang, Jian},\n  journal={Advances in Neural Information Processing Systems},\n  volume={32},\n  year={2019}\n}\n```\n"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/Lu023",
+  "title": "DASP: Specific Dense Matrix Multiply-Accumulate Units Accelerated General Sparse Matrix-Vector Multiplication",
+  "venue": "SC",
+  "year": 2023,
+  "authors": [
+   "Yuechen Lu",
+   "Weifeng Liu 0002"
+  ],
+  "abstract": "Sparse matrix-vector multiplication (SpMV) plays a key role in computational science and engineering, graph processing, and machine learning applications. Much work on SpMV was devoted to resolving problems such as random access to the vector x and unbalanced load. However, we have experimentally found that the computation of inner products still occupies much overhead in the SpMV operation, which has been largely ignored in existing work.",
+  "candidates": [
+   {
+    "url": "https://github.com/RustAudio/dasp",
+    "desc": "The fundamentals for Digital Audio Signal Processing. Formerly `sample`.",
+    "stars": 1169,
+    "readme_head": "# dasp [![Actions Status][dasp-actions-svg]][dasp-actions] [![docs.rs][dasp-docs-rs-svg]][dasp-docs-rs]\n\n**Digital Audio Signal Processing in Rust.**\n\n*Formerly the [`sample` crate](https://crates.io/crates/sample).*\n\nA suite of crates providing the fundamentals for working with PCM (pulse-code\nmodulation) DSP (digital signal processing). In other words, `dasp` provides a\nsuite of low-level, high-performance tools including types, traits and functions\nfor working with digital audio signals.\n\nThe `dasp` libraries require **no dynamic allocations**<sup>1</sup> and have\n**no dependencies**. The goal is to design a library akin to the **std, but for\naudio DSP**; keeping the focus on portable and fast fundamentals.\n\n<sup>1: Besides the feature-gated `SignalBus` trait, which is occasionally\nuseful when converting a `Signal` tree into a directed acyclic graph.</sup>\n\nFind the [API documentation here][dasp-docs-rs].\n\n\n## Crates\n\n**dasp** is a modular collection of crates, allowing users to select the precise\nset of tools required for their project. The following crates are included\nwithin this repository:\n\n| **Library** | **Links** | **Description** |\n| --- | --- | --- |\n| [**`dasp`**][dasp] | [![Crates.io][dasp-crates-io-svg]][dasp-crates-io] [![docs.rs][dasp-docs-rs-svg]][dasp-docs-rs] | Top-level API with features for all crates. |\n| [**`dasp_sample`**][dasp_sample] | [![Crates.io][dasp_sample-crates-io-svg]][dasp_sample-crates-io] [![docs.rs][dasp_sample-docs-rs-svg]][dasp_sample"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/WuGGBHLLH23",
+  "title": "FASDA: An FPGA-Aided, Scalable and Distributed Accelerator for Range-Limited Molecular Dynamics",
+  "venue": "SC",
+  "year": 2023,
+  "authors": [
+   "Chunshu Wu",
+   "Tong Geng",
+   "Anqi Guo",
+   "Sahan Bandara",
+   "Pouya Haghi"
+  ],
+  "abstract": "Conducting long-timescale simulations of small molecules using Molecular Dynamics (MD) is crucial in drug design. However, traditional methods to accelerate the process, including ASICs or GPUs, have limitations. ASIC solutions are not always generally available, while GPU solutions may not scale when processing small molecules. FPGAs are both communication processors and accelerators, with tight coupling between these capabilities, and so could be used to address strong scaling in this domain.",
+  "candidates": [
+   {
+    "url": "https://github.com/auerlab/fasda",
+    "desc": "100% C Differential Analysis Tool",
+    "stars": 3,
+    "readme_head": "# FASDA - Fast And Simple Differential Analysis\n\n## Description\n\nThere are mature, easy-to-use, and efficient tools for all steps in a typical\ndifferential analysis pipeline up to and including alignment (read mapping)\nand peak calling.  Well-maintained tools such as FastQC, fastq-trim, cutadapt,\nkallisto, BWA, Bowtie2, HISAT2, samtools, bedtools, and MACS2/MACS3\nmake the early stages of\nan RNA-Seq, ATAC-Seq, or ChIP-Seq analysis fairly straightforward.\n\nData-massaging before and after differential analysis is also relatively\nsimple using standard Unix tools such as awk, cut, grep, sed, and tr, or\nsimple perl or python scripts.\n\nThe differential analysis step itself has been problematic,\nhowever, with few well-developed tools available, and many of them requiring\nfairly sophisticated R scripting for basic use.  R is a wondrous tool\nfor quick-and-dirty statistical computations.  It embodies immense\nknowledge of statistics that most of us lack, and hence enables us\nto perform many standard analyses without the aid of a statistician.\nHowever, Rscript suffers from severe limitations as an application development\nlanguage, which partly explains the difficulties in using R-based tools.  For\napplication development, it is often preferable to use a compiled\nlanguage (and compare the results to what R produces as part of the\nverification process).\n\nCode maintenance has also historically been problematic,\nwith even the most popular tools falling into\ndisrepair at times, and frequently "
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/ShiZWCZHYC23",
+  "title": "GraphSet: High Performance Graph Mining through Equivalent Set Transformations",
+  "venue": "SC",
+  "year": 2023,
+  "authors": [
+   "Tianhui Shi",
+   "Jidong Zhai",
+   "Haojie Wang 0004",
+   "Qiqian Chen",
+   "Mingshu Zhai"
+  ],
+  "abstract": "Graph mining is of critical use in a number of fields such as social networks, knowledge graphs, and fraud detection. As an NP-complete problem, accelerating computation performance is the main target for current optimizations. Due to excellent performance, state-of-the-art graph mining systems mainly rely on pattern-aware algorithms. Despite previous efforts, complex control flows introduced by pattern-aware algorithms bring significant overhead and also impede further acceleration on heterogeneous hardware.",
+  "candidates": [
+   {
+    "url": "https://github.com/sth1997/GraphSet",
+    "desc": "",
+    "stars": 10,
+    "readme_head": "# AE of SC23\n\n**For AE reviewers, we have prepared a server containing all the datasets and codes. Please contact sth19@mails.tsinghua.edu.cn to access the server.**\n\n## Reproduce\n\n(i) To begin, ensure that you have a machine with a performance configuration similar to the following: Intel Xeon Platinum 8259CL CPU @ 2.50GHz, 1 socket (16 cores, hyper-threading disabled), 256 GB memory, and at least 8 NVIDIA Tesla V100 (32GB memory) GPUs for PCIe.\n\nOur open-source project can be found at https://github.com/sth1997/GraphSet, and the steps to reproduce our work are as follows:\n\n1. Download the repository code via git.\n\n2. The full dataset can be accessed via https://1drv.ms/f/s!Agc-P1eh9RVug-IM6eVlnMCpYCGCpQ?e=LlMueg. We also provide a DOI to the full dataset: https://zenodo.org/record/8200447. Alternatively(and not recommended), you can opt to preprocess the dataset from the original Stanford Large Network Dataset Collection, which can be found at https://snap.stanford.edu/data/.\n\n3. Install the necessary dependencies: gcc@12, CUDA@12, cmake@3.26, openmpi@4.1.5, and python@3 (preinstalled on our clusters, so you only need to load it.). Examples by using module load command:\n    * `module load cuda-12.0.1-gcc-12.2.0-34tfuhe`\n    * `module load openmpi-4.1.5-gcc-12.2.0-awa3vt5`\n    * `module load cmake-3.26.3-gcc-12.2.0-caw7voo`\n\n4. Build the project by executing `mkdir build; cd build; cmake ..; make -j` in the project's root folder.\n\n5. Please note that `DATA_PATH` and `COMMAND"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/FengCLJ23",
+  "title": "PeeK: A Prune-Centric Approach for K Shortest Path Computation",
+  "venue": "SC",
+  "year": 2023,
+  "authors": [
+   "Wang Feng",
+   "Shiyang Chen 0004",
+   "Hang Liu 0001",
+   "Yuede Ji"
+  ],
+  "abstract": "The K shortest path (KSP) algorithm, which finds the top K shortest simple paths from a source to a target vertex, has a wide range of real-world applications, e.g., routing, vulnerability detection, and biology analysis. While the top K shortest simple paths offer invaluable insights, computing them is time-consuming. For example, on a Twitter graph (61.6M vertices and 1.5B edges), the best parallel method needs about 20 minutes to get 128 shortest paths between two vertices. A key observation we made is existing works search K shortest paths from the original graph, while top K shortest paths only cover a meager portion of the original graph, e.g., less than 0.001% on a Twitter graph for K",
+  "candidates": [
+   {
+    "url": "https://github.com/phw/peek",
+    "desc": "Simple animated GIF screen recorder with an easy to use interface",
+    "stars": 10565,
+    "readme_head": "# Peek - an animated GIF recorder\n[![GitHub release](https://img.shields.io/github/release/phw/peek.svg)](https://github.com/phw/peek/releases)\n[![License: GPL v3+](https://img.shields.io/badge/license-GPL%20v3%2B-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)\n[![Packaging status](https://repology.org/badge/tiny-repos/peek.svg)](https://repology.org/metapackage/peek/packages)\n[![Translation Status](https://hosted.weblate.org/widgets/peek/-/svg-badge.svg)](https://hosted.weblate.org/engage/peek/?utm_source=widget)\n\n> [!IMPORTANT]\n> The Peek project has been declared deprecated, please read [the announcement](https://github.com/phw/peek/issues/1191).\n> No new features will be developed and issue reporting has been closed.\n\n![Peek recording itself](https://raw.githubusercontent.com/phw/peek/master/data/screenshots/peek-recording-itself.gif)\n\nSimple screen recorder with an easy to use interface\n\n<!-- START doctoc generated TOC please keep comment here to allow auto update -->\n<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->\n## Contents\n\n- [About](#about)\n- [Requirements](#requirements)\n  - [Runtime](#runtime)\n  - [Development](#development)\n- [Installation](#installation)\n  - [Official distribution packages](#official-distribution-packages)\n  - [Flatpak](#flatpak)\n  - [Snappy](#snappy)\n  - [AppImage](#appimage)\n  - [Ubuntu](#ubuntu)\n  - [ElementaryOS](#elementaryos)\n  - [Debian](#debian)\n  - [Fedora](#fedora)\n  - [Solus](#solus)\n  - [Arch Linux](#arch-linux)\n  "
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/CastroIABFH23",
+  "title": "VENOM: A Vectorized N: M Format for Unleashing the Power of Sparse Tensor Cores",
+  "venue": "SC",
+  "year": 2023,
+  "authors": [
+   "Roberto L. Castro",
+   "Andrei Ivanov",
+   "Diego Andrade",
+   "Tal Ben-Nun",
+   "Basilio B. Fraguela"
+  ],
+  "abstract": "The increasing success and scaling of Deep Learning models demands higher computational efficiency and power. Sparsification can lead to both smaller models as well as higher compute efficiency, and accelerated hardware is becoming available. However, exploiting it efficiently requires kernel implementations, pruning algorithms, and storage formats, to utilize hardware support of specialized sparse vector units. An example of those are the NVIDIA's Sparse Tensor Cores (SPTCs), which promise a 2× speedup. However, SPTCs only support the 2:4 format, limiting achievable sparsity ratios to 50%. We present the V:N:M format, which enables the execution of arbitrary N:M ratios on SPTCs. To efficien",
+  "candidates": [
+   {
+    "url": "https://github.com/vynect/venom",
+    "desc": "Venom is a high-performance system developed with JavaScript to create a bot for WhatsApp, support for creating any interaction, such as customer service, media sending, sentence recognition based on artificial intelligence and all types of design architecture for WhatsApp.",
+    "stars": 6560,
+    "readme_head": "<p align=\"center\">\n  <img src=\"https://github.com/orkestral/venom/raw/main/img/venom.png\" alt=\"Venom\" width=\"220\" />\n</p>\n\n<h1 align=\"center\">Venom v6</h1>\n\n<p align=\"center\">\n  <em>The next generation of WhatsApp automation. Completely rebuilt.</em>\n</p>\n\n<p align=\"center\">\n  <img src=\"https://img.shields.io/npm/v/venom-bot?style=flat-square&color=0d1117&labelColor=0d1117\" alt=\"npm\" />\n  <img src=\"https://img.shields.io/node/v/venom-bot?style=flat-square&color=0d1117&labelColor=0d1117\" alt=\"node\" />\n  <img src=\"https://img.shields.io/npm/dt/venom-bot?style=flat-square&color=0d1117&labelColor=0d1117\" alt=\"downloads\" />\n  <img src=\"https://img.shields.io/github/actions/workflow/status/orkestral/venom/build.yml?branch=master&style=flat-square&color=0d1117&labelColor=0d1117\" alt=\"build\" />\n  <img src=\"https://img.shields.io/github/license/orkestral/venom?style=flat-square&color=0d1117&labelColor=0d1117\" alt=\"license\" />\n</p>\n\n<p align=\"center\">\n  <a href=\"https://orkestral.github.io/venom\"><img src=\"https://img.shields.io/badge/Documentation-Read%20Now-2ea44f?style=for-the-badge&logo=gitbook&logoColor=white\" /></a>\n  <a href=\"https://www.npmjs.com/package/venom-bot\"><img src=\"https://img.shields.io/badge/npm-Install-0d1117?style=for-the-badge&logo=npm&logoColor=white\" /></a>\n</p>\n\n---\n\n<p align=\"center\">\n  <img src=\"https://capsule-render.vercel.app/api?type=rect&color=0:1a1a2e,50:16213e,100:0f3460&height=2&section=header\" width=\"100%\" />\n</p>\n\n## Why Venom?\n\nVenom is not just a"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/QiuXFZD0WCC024",
+  "title": "A Conflict-aware Divide-and-Conquer Algorithm for Symmetric Sparse Matrix-Vector Multiplication",
+  "venue": "SC",
+  "year": 2024,
+  "authors": [
+   "Haozhong Qiu",
+   "Chuanfu Xu",
+   "Jianbin Fang",
+   "Jian Zhang 0115",
+   "Liang Deng"
+  ],
+  "abstract": "Exploiting matrix symmetry to halve memory footprint offers an opportunity for accelerating memory-bound computations like Sparse Matrix-Vector Multiplication (SpMV). However, symmetric SpMV incurs data conflicts when concurrently writing the output vector. Previous approaches fail to address this issue efficiently. This paper proposes DCS-SpMV, a Divide-and-Conquer (DC) algorithm for efficient Symmetric SpMV. The key idea is to recursively divide the matrix-induced conflict graph into independent subgraphs for parallel execution, and construct separate subgraphs to avoid data conflicts. Our DC algorithm transforms the input matrix into a low-conflict part and a high-conflict part, which mot",
+  "candidates": [
+   {
+    "url": "https://github.com/qleonardo/DCS-SpMV",
+    "desc": "A Conflict-aware Divide-and-Conquer Algorithm for Symmetric Sparse Matrix-Vector Multiplication",
+    "stars": 5,
+    "readme_head": "# DCS-SpMV\nA Conflict-aware Divide-and-Conquer Algorithm for Symmetric Sparse Matrix-Vector Multiplication\n\nRefer to AD-AE.pdf for more information.\nYou can follow the Artifact Evaluation (AE) to run the code.\n"
+   },
+   {
+    "url": "https://github.com/qleonardo/DClib",
+    "desc": "DClib of \"A Conflict-aware Divide-and-Conquer Algorithm for Symmetric Sparse Matrix-Vector Multiplication\"",
+    "stars": 0,
+    "readme_head": "# DClib\nDClib of \"A Conflict-aware Divide-and-Conquer Algorithm for Symmetric Sparse Matrix-Vector Multiplication\"\n\ncd ./build/\n\nchmod a+x ./configure\n\n./configure OMP FORKJOIN\n"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/XuCMAJ24",
+  "title": "Atlas: Hierarchical Partitioning for Quantum Circuit Simulation on GPUs",
+  "venue": "SC",
+  "year": 2024,
+  "authors": [
+   "Mingkuan Xu",
+   "Shiyi Cao",
+   "Xupeng Miao",
+   "Umut A. Acar",
+   "Zhihao Jia"
+  ],
+  "abstract": "This paper presents techniques for theoretically and practically efficient and scalable Schrödinger-style quantum circuit simulation. Our approach partitions a quantum circuit into a hierarchy of subcircuits and simulates the subcircuits on multinode GPUs, exploiting available data parallelism while minimizing communication costs. To minimize communication costs, we formulate an Integer Linear Program that rewards simulation of “nearby” gates on “nearby” GPUs. To maximize throughput, we use a dynamic programming algorithm to compute the subcircuit simulated by each kernel at a GPU. We realize these techniques in Atlas, a distributed, multi-GPU quantum circuit simulator. Our evaluation on a v",
+  "candidates": [
+   {
+    "url": "https://github.com/Atlas-OS/Atlas",
+    "desc": "🚀 An open and lightweight modification to Windows, designed to optimize performance, privacy and usability.",
+    "stars": 21084,
+    "readme_head": "<h1 align=\"center\">\n  <a href=\"http://atlasos.net\" target=\"_blank\"><img src=\"https://gcore.jsdelivr.net/gh/Atlas-OS/branding@main/banners/banner-v3.png\" alt=\"Atlas\" width=\"800\"></a>\n</h1>\n  <p align=\"center\">\n    <a href=\"https://github.com/Atlas-OS/Atlas/blob/main/LICENSE\"><img alt=\"License\" src=\"https://img.shields.io/github/license/atlas-os/atlas?style=for-the-badge&logo=github&color=1A91FF\"/></a>\n    <a href=\"https://github.com/Atlas-OS/Atlas/graphs/contributors\"><img alt=\"Contributors\" src=\"https://img.shields.io/github/contributors/atlas-os/atlas?style=for-the-badge&color=1A91FF\" /></a>\n    <a href=\"https://github.com/Atlas-OS/Atlas/releases/latest\"><img alt=\"Release\" src=\"https://img.shields.io/github/release/atlas-os/atlas?style=for-the-badge&color=1A91FF\" /></a>\n    <a href=\"https://github.com/Atlas-OS/.github/blob/main/profile/CODE_OF_CONDUCT.md\"><img alt=\"Code of Conduct\" src=\"https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg?style=for-the-badge&color=1A91FF\" /></a>\n  </p>\n<p align=\"center\">A transparent and lightweight modification to Windows, designed to optimize performance, privacy and usability.</p>\n\n<p align=\"center\">\n  <a href=\"https://atlasos.net\" target=\"_blank\">🌐 Website</a>\n  •\n  <a href=\"https://docs.atlasos.net\" target=\"_blank\">📚 Documentation</a>\n  •\n  <a href=\"https://discord.atlasos.net\" target=\"_blank\">☎️ Discord</a>\n  •\n  <a href=\"https://github.com/Atlas-OS/Atlas/discussions\" target=\"_blank\">💬 Discussions</a>\n</p>\n\n## 📚 **Importa"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/YangLYD24",
+  "title": "DBSR: An Efficient Storage Format for Vectorizing Sparse Triangular Solvers on Structured Grids",
+  "venue": "SC",
+  "year": 2024,
+  "authors": [
+   "Xiaojian Yang",
+   "Shengguo Li",
+   "Fan Yuan",
+   "Dezun Dong"
+  ],
+  "abstract": "The Sparse Triangular Solver (SPTRSV) plays a critical role in solving structured grid problems. Yet, the commonly used sparse matrix storage formats for structured grid methods do not efficiently support SPTRSV in utilizing the instruction parallelism offered by modern multi-core CPUs. We introduce DBSR, a new sparse storage format to enable SPTRSV to take advantage of the SIMD instructions. DBSR promotes contiguous memory access and vectorized computation, while also optimizing memory usage. We evaluate DBSR by applying it within multigrid algorithms and the zero fill-in incomplete $\\mathbf{L U}$ preconditioner. Our evaluation, conducted on four architectures - three ARMv8 systems and one ",
+  "candidates": [
+   {
+    "url": "https://github.com/DvdGiessen/DBSR",
+    "desc": "DBSR: Database Search & Replace",
+    "stars": 37,
+    "readme_head": "# DBSR: Database Search & Replace\n\nDBSR provides functionality for committing search-and-replace-operations on\nMySQL databases. It's main advantage above using a simple REPLACE()-SQL\nstatement is the support for parsing PHP serialized strings, which are commonly\nused in for example WordPress databases.\n\nSince DBSR does its own parsing of serialized strings, it is also able to repair\ncorrupted serializations, a problem often seen when less advanced search-replace\nscripts were used before on the same database.\n\n## Requirements\nMinimum supported PHP version is 5.3 and is tested with versions up to 7.4. PDO\nis used for connecting with the database, so make sure you have the `pdo` and\n`pdo_mysql` extensions enabled.\n\n## Usage\nFirst, head over to [the releases page](https://github.com/DvdGiessen/DBSR/releases)\nand download the latest version of DBSR.\n\nYou can either download the CLI version which you can use from the command\nline, or the GUI version which can be uploaded to a webserver and accessed\nthrough a web browser.\n\n*Note:* Some tutorials make you download this entire repository and put it on\nyour web server. I do not recommend this. For most users, just downloading the\nGUI version ([DBSearchReplace-GUI.php](https://github.com/DvdGiessen/DBSR/releases))\nand uploading that to your web server is the recommended way to use DBSR.\n\n*Note:* Another thing I see many tutorials recommend is using the `extensive\nsearch` option. In most cases, if you are just replacing plain text values"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/LiuYMLZYLLQ24",
+  "title": "Moirae: Generating High-Performance Composite Stencil Programs with Global Optimizations",
+  "venue": "SC",
+  "year": 2024,
+  "authors": [
+   "Xiaoyan Liu",
+   "Xinyu Yang",
+   "Kejie Ma",
+   "Shanghao Liu",
+   "Kaige Zhang 0002"
+  ],
+  "abstract": "Stencil computation is one of the most universal computation motifs in scientific applications such as weather prediction. Due to the complexity of scientific simulation, the stencil computation can contain a set of complex stencil operations that form a directed acyclic graph (referred to composite stencil). Unfortunately, most existing stencil optimizations and compilers only focus on intra-stencil operation, and cannot fully explore the performance improvement potential of composite stencils in nowadays applications. To this end, we propose Moirae, a framework that explores a novel optimization space and generates high-performance code for composite stencils. We first propose a lightweigh",
+  "candidates": [
+   {
+    "url": "https://github.com/peteromallet/Moirae",
+    "desc": "",
+    "stars": 23,
+    "readme_head": "# Moirae\n\nScripted terminal demo video pipeline. Write a YAML screenplay, get a polished MP4 with camera zoom/pan, skin theming, and background compositing.\n\n![Moirae demo](demo.gif)\n\n[You can see a full example here.](https://x.com/peterom/status/2033675452036886969)\n\n## Give This to Your Agent\n\nCopy-paste this into your AI coding agent (Claude Code, Cursor, etc.) to install Moirae:\n\n```\nInstall Moirae, a scripted terminal demo video pipeline.\n\n1. Check prerequisites are installed:\n\n   which asciinema agg ffmpeg\n\n   If any are missing:\n   - asciinema: brew install asciinema (or pip install asciinema)\n   - agg: cargo install --git https://github.com/asciinema/agg\n   - ffmpeg: brew install ffmpeg\n\n2. Clone and install Moirae:\n\n   git clone https://github.com/peteromallet/Moirae.git\n   cd Moirae\n   pip install pillow numpy pyyaml pydantic rich\n\n3. Test it works:\n\n   python -m moirae moirae/scripts/example.yaml\n\n   This should preview a demo in your terminal. To render an MP4:\n\n   python -m moirae moirae/scripts/example.yaml -o demo.mp4\n\n4. Read SKILL.md for the full screenplay YAML schema, scene types,\n   camera directives, theme system, and CLI options.\n```\n\n## Examples\n\n- [`moirae/scripts/example.yaml`](moirae/scripts/example.yaml) — basic conversation\n- [`moirae/scripts/example_with_camera.yaml`](moirae/scripts/example_with_camera.yaml) — camera zoom/pan\n"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/LiSDHGGPGZ24",
+  "title": "Rapid GPU-Based Pangenome Graph Layout",
+  "venue": "SC",
+  "year": 2024,
+  "authors": [
+   "Jiajie Li 0008",
+   "Jan-Niklas Schmelzle",
+   "Yixiao Du",
+   "Simon Heumos",
+   "Andrea Guarracino"
+  ],
+  "abstract": "Computational Pangenomics is an emerging field that studies genetic variation using a graph structure encompassing multiple genomes. Visualizing pangenome graphs is vital for understanding genome diversity. Yet, handling large graphs can be challenging due to the high computational demands of the graph layout process. In this work, we conduct a thorough performance characterization of a state-of-the-art pangenome graph layout algorithm, revealing significant data-level parallelism, which makes GPUs a promising option for compute acceleration. However, irregular data access and the algorithm’s memory-bound nature present significant hurdles. To overcome these challenges, we develop a solution",
+  "candidates": [
+   {
+    "url": "https://github.com/tonyjie/gpu_pangenome_layout",
+    "desc": "Rapid GPU-Based Pangenome Graph Layout. GPU acceleration on `odgi layout` built upon ODGI. ",
+    "stars": 0,
+    "readme_head": "# Rapid GPU-Based Pangenome Graph Layout\n\nThis project is built upon [ODGI](https://github.com/pangenome/odgi) (optimized dynamic genome/graph implementation), a comprehensive pangenome analysis framework. \nThe original ODGI only supports multi-threaded CPU implementation. \n\nAmong all the supported operations within ODGI, [`odgi layout`](https://odgi.readthedocs.io/en/latest/rst/commands/odgi_layout.html) is the most time-consuming step, which becomes the bottleneck of the pangenome analysis pipeline. \n\nWe provide a rapid GPU solution for pangenome graph layout, leading to a speedup of 48.3x, reducing the previous hour-scale computation time into only minute-scale computation time. \n\n## Installation\n### Directly use it in the upstream [ODGI](https://github.com/pangenome/odgi)\n- We are actively working on pushing the PR to the upstream ODGI! Then you can directly install and use it in the ODGI framework (very soon). \n\n### Build from our forked [ODGI](https://github.com/tonyjie/odgi)\n#### No algorithm changes\n- Build on [gpu_final](https://github.com/tonyjie/odgi/tree/gpu_final) branch, which is the default branch. You need to have CUDA enabled to build the project. This branch would give you the GPU implementation with all the optimizations excluding warp-level data reuse. Since there is no algorithmic change, the generated layout is the same as the CPU-generated layout. \n\n#### Explore the max performance with warp-level data reuse optimization\n- Build on [gpu_data_reuse](http"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/GundaboluTV25",
+  "title": "BLAZE: Exploiting Hybrid Parallelism and Size-customized Kernels to Accelerate BLASTP on GPUs",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Sree Charan Gundabolu",
+   "Mithuna Thottethodi",
+   "T. N. Vijaykumar"
+  ],
+  "abstract": "Basic Local Alignment Search Tool (BLAST/BLASTP) [3], often referred to as the Google of biological research [9], is widely used to query a large database to find homologous gene/protein sequences. Though there have been attempts to accelerate BLASTP, the protein sequence alignment tool, on GPUs, they remain slower than CPU/multicore-based multi-threaded implementations. In this paper, we introduce BLAZE, a GPU-accelerated drop-in replacement for BLASTP that produces identical results while achieving speedups over both multithreaded and GPU-accelerated implementations.",
+  "candidates": [
+   {
+    "url": "https://github.com/blaze/blaze",
+    "desc": "NumPy and Pandas interface to Big Data",
+    "stars": 3191,
+    "readme_head": ".. image:: https://raw.github.com/blaze/blaze/master/docs/source/svg/blaze_med.png\n   :align: center\n\n|Build Status| |Coverage Status| |Join the chat at\nhttps://gitter.im/blaze/blaze|\n\n**Blaze** translates a subset of modified NumPy and Pandas-like syntax\nto databases and other computing systems. Blaze allows Python users a\nfamiliar interface to query data living in other data storage systems.\n\nExample\n=======\n\nWe point blaze to a simple dataset in a foreign database (PostgreSQL).\nInstantly we see results as we would see them in a Pandas DataFrame.\n\n.. code:: python\n\n    >>> import blaze as bz\n    >>> iris = bz.Data('postgresql://localhost::iris')\n    >>> iris\n        sepal_length  sepal_width  petal_length  petal_width      species\n    0            5.1          3.5           1.4          0.2  Iris-setosa\n    1            4.9          3.0           1.4          0.2  Iris-setosa\n    2            4.7          3.2           1.3          0.2  Iris-setosa\n    3            4.6          3.1           1.5          0.2  Iris-setosa\n\nThese results occur immediately. Blaze does not pull data out of\nPostgres, instead it translates your Python commands into SQL (or\nothers.)\n\n.. code:: python\n\n    >>> iris.species.distinct()\n               species\n    0      Iris-setosa\n    1  Iris-versicolor\n    2   Iris-virginica\n\n    >>> bz.by(iris.species, smallest=iris.petal_length.min(),\n    ...                      largest=iris.petal_length.max())\n               species  largest  smallest\n    0     "
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/RenZHFWJLK25",
+  "title": "Caracal: A GPU-Resident Sparse LU Solver with Lightweight Fine-Grained Scheduling",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Jie Ren",
+   "Tingxuan Zhong",
+   "Yuxi Hong 0001",
+   "Guofeng Feng",
+   "Xincheng Wang"
+  ],
+  "abstract": "We address inefficiencies in task scheduling, memory management, and scalability in GPU-resident sparse LU factorization with a two-level approach of sequentially scheduled coarse-grained blocks containing multiple fine-grained blocks managed with a lightweight static scheduler enabling multi-stream parallelism. Additionally, we design an intelligent memory caching mechanism for the fine-grained scheduler, which retains frequently accessed data in GPU memory. To further enhance scalability, we introduce a distributed memory design that partitions the input matrix using a 1D block-cyclic distribution and optimizes inter-GPU communication via NVLink. The multi-GPU design reaches a computationa",
+  "candidates": [
+   {
+    "url": "https://github.com/urvin-compliance/caracal",
+    "desc": "Caracal is a ruby library for dynamically creating professional-quality Microsoft Word documents (.docx).",
+    "stars": 333,
+    "readme_head": "# Caracal\n\n[![Gem Version](http://img.shields.io/gem/v/caracal.svg?style=flat)](https://rubygems.org/gems/caracal)\n\n\n## Overview\n\nCaracal is a ruby library for dynamically creating professional-quality Microsoft Word documents using an HTML-style syntax.\n\nCaracal is not a magical HTML to Word translator. Instead, it is a markup language for generating Office Open XML (OOXML). Programmers create Word documents by issuing a series of simple commands against a document object. When the document is rendered, Caracal takes care of translating those Ruby commands into the requisite OOXML. At its core, the library is essentially a templating engine for the `:docx` format.\n\nOr, said differently, if you use [Prawn](https://github.com/prawnpdf/prawn) for PDF generation, you'll probably like Caracal. Only you'll probably like it better. :)\n\nPlease see the [caracal-example](https://github.com/trade-informatics/caracal-example) repository for\na working demonstration of the library's capabilities.\n\n\n## Teaser\n\nHow would you like to make a Word document like this?\n\n```ruby\nCaracal::Document.save 'example.docx' do |docx|\n  # page 1\n  docx.h1 'Page 1 Header'\n  docx.hr\n  docx.p\n  docx.h2 'Section 1'\n  docx.p  'Lorem ipsum dolor....'\n  docx.p\n  docx.table @my_data, border_size: 4 do\n    cell_style rows[0], background: 'cccccc', bold: true\n  end\n\n  # page 2\n  docx.page\n  docx.h1 'Page 2 Header'\n  docx.hr\n  docx.p\n  docx.h2 'Section 2'\n  docx.p  'Lorem ipsum dolor....'\n  docx.ul do\n    li 'Item 1"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/RajeMR0S25",
+  "title": "FaSTCC: Fast Sparse Tensor Contractions on CPUs",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Saurabh Raje",
+   "Hunter McCoy",
+   "Atanas Rountev",
+   "Prashant Pandey 0001",
+   "P. Sadayappan"
+  ],
+  "abstract": "Sparse tensor contractions are a core computational primitive in scientific computing and machine learning. Effective optimization of such contractions through loop permutation/tiling remains an open challenge. Our work perform the first comprehensive comparative analysis of data access costs and memory requirements for loop permutations for sparse tensor contractions. Based on these insights, we develop FaSTCC, a novel hashing-based parallel implementation of sparse tensor contractions. FaSTCC introduces a new 2D tiled contraction-index-outer scheme and a corresponding tile-aware design. Using probabilistic modeling, our approach automatically chooses between dense and sparse output tile ac",
+  "candidates": [
+   {
+    "url": "https://github.com/moonbit-community/fastcc",
+    "desc": "The c compiler optimized for speed written in MoonBit",
+    "stars": 44,
+    "readme_head": "# fastcc.mbt\n\n## Benchmarks\n\n### refs/vc/v.c (bench_tinycc_compile.sh DATASET=vc)\n\nFile: `refs/vc/v.c` (138152 LOC)\n\nEnvironment: macOS arm64, fastcc from this repo built in release mode.\n\nCommand:\n\n```\nDATASET=vc APPLY_VC_PATCH=1 DETAIL=1 REPEAT=3 WARMUP=1 scripts/bench_tinycc_compile.sh\n```\n\nResults (3 runs):\n\n- fastcc.mbt total: 0.425s\n- refs/tinycc total: 0.113s\n- clang total: 1.592s\n- ratio (mbt/ref): 3.77x\n- ratio (mbt/clang): 0.27x\n- ratio (ref/clang): 0.07x\n- phases avg ms: parse=137.484 sem=62.083 codegen=187.454 total=387.021\n- notes: arm64 benchmark applies `refs/vc_patches/arm64_closure_bytes.patch` to `refs/vc/v.c`; clang uses system headers (compat include skipped); numbers vary by run\n"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/ZhangWXYZC25",
+  "title": "HyTiS: Hybrid Tile Scheduling for GPU GEMM with Enhanced Wave Utilization and Cache Locality",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Zheng Zhang 0036",
+   "Hulin Wang",
+   "Hongming Xu",
+   "Donglin Yang",
+   "Xiaobo Zhou 0002"
+  ],
+  "abstract": "General matrix-matrix multiplication (GEMM) is a fundamental operation in both deep learning and scientific computing. To accelerate these workloads, GPUs with a large number of streaming multiprocessors (SMs) are widely used. However, as modern GPUs scale in core count and adopt larger tile sizes, the wave quantization problem induced by partially filled waves results in growing hardware underutilization and substantially degraded performance. Existing solutions to this problem often suffer from low execution efficiency or introduce additional synchronization overhead.",
+  "candidates": [
+   {
+    "url": "https://github.com/hytis-ohtu/hytis",
+    "desc": "",
+    "stars": 1,
+    "readme_head": "# HYTiS\n\n[![codecov](https://codecov.io/gh/hytis-ohtu/hytis/graph/badge.svg?token=WLP90N7ZRE)](https://codecov.io/gh/hytis-ohtu/hytis)\n\n**[Projektin wikistä](https://github.com/hytis-ohtu/hytis/wiki)** löytyy lisää tietoa sovelluksesta.\n\n## Vaatimukset\n\n- **Node.js** ja **npm**\n- **Docker** ja **Docker Compose** (paikallista kehitysympäristöä varten, jos käytät PostgreSQL- ja Redis-kontteja)\n\n## Kehitys\n\n1. Kloonaa repositorio\n\n   HTTPS:\n\n   ```bash\n   git clone https://github.com/hytis-ohtu/hytis.git\n   ```\n\n   SSH:\n\n   ```bash\n   git clone git@github.com:hytis-ohtu/hytis.git\n   ```\n\n2. Siirry projektin juurihakemistoon\n\n   ```bash\n   cd HYTiS\n   ```\n\n3. Asenna riippuvuudet\n\n   ```bash\n   npm run install:all\n   ```\n\n4. Määritä ympäristömuuttujat\n\n   **Backend**\n\n   Luo `backend`-hakemistoon `.env`-tiedosto seuraavilla muuttujilla:\n\n   ```bash\n   DATABASE_URL=YOUR_DATABASE_URL_HERE\n   PORT=3000\n   NODE_ENV=development\n   SESSION_SECRET=change-this-to-a-long-random-string-in-production\n   SESSION_MAX_AGE=86400000\n   FRONTEND_URL=http://localhost:5173\n   USE_HY_LOGIN=false\n   ```\n\n   Tuotantoympäristön ja Helsingin yliopiston OIDC-kirjautumiseen tarvittavat ympäristömuuttujat löydät tiedostosta `backend/.env.example`.\n\n   **Vaihtoehto A: PostgreSQL ja Redis Dockerilla**\n\n   Jos käytät valmiita Docker-kontteja, jotka on määritelty tiedostossa `backend/database.yaml`, käytä alla olevia arvoja:\n\n   ```bash\n   DATABASE_URL=postgres://postgres:example@localhost:5432/postgres\n   REDI"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/WangDLTSL25",
+  "title": "KAMI: Communication-Avoiding General Matrix Multiplication within a Single GPU",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Hemeng Wang",
+   "Yang Du 0015",
+   "Sidu Li",
+   "Xiaowen Tian",
+   "Qingxiao Sun"
+  ],
+  "abstract": "Efficient general matrix-matrix multiplication (GEMM) has attracted significant research attention in HPC and AI workloads. While large-scale GEMM has nearly achieved the peak floating-point performance of GPUs, substantial opportunities for optimization remain in small and batched GEMM operations.",
+  "candidates": [
+   {
+    "url": "https://github.com/tw93/Kami",
+    "desc": "👩‍🚒 Good content deserves good paper.",
+    "stars": 9939,
+    "readme_head": "<div align=\"center\">\n  <img src=\"assets/images/logo.svg\" width=\"120\" />\n  <h1>Kami</h1>\n  <p><b>Good content deserves good paper.</b></p>\n  <a href=\"https://github.com/tw93/kami/stargazers\"><img src=\"https://img.shields.io/github/stars/tw93/kami?style=flat-square\" alt=\"Stars\"></a>\n  <a href=\"https://github.com/tw93/kami/releases\"><img src=\"https://img.shields.io/github/v/tag/tw93/kami?label=version&style=flat-square\" alt=\"Version\"></a>\n  <a href=\"LICENSE\"><img src=\"https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square\" alt=\"License\"></a>\n  <a href=\"https://twitter.com/HiTw93\"><img src=\"https://img.shields.io/badge/follow-Tw93-red?style=flat-square&logo=Twitter\" alt=\"Twitter\"></a>\n</div>\n\n## Why\n\nKami (紙, かみ) means paper in Japanese: the surface where a finished idea lands. AI can produce documents better than most humans do manually. The missing piece is not capability but constraint: without a design system, every session drifts into generic gray and inconsistent layouts.\n\nKami fills that gap: one constraint language, eight document templates plus a landing-page system, simple enough for agents to run reliably, strict enough that every output is something you actually want to ship.\n\nPart of a trilogy: [Kaku](https://github.com/tw93/Kaku) (書く) writes code, [Waza](https://github.com/tw93/Waza) (技) drills habits, [Kami](https://github.com/tw93/Kami) (紙) delivers documents.\n\n## Showcase\n\nReal PDFs from one constraint set, across templates and languages. Click any p"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/HuXSYZLJX0LG25",
+  "title": "LiquidGEMM: Hardware-Efficient W4A8 GEMM Kernel for High-Performance LLM Serving",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Huanqi Hu",
+   "Bowen Xiao",
+   "Shixuan Sun",
+   "Jianian Yin",
+   "Zhexi Zhang"
+  ],
+  "abstract": "Quantization is a critical technique for accelerating LLM inference by reducing memory footprint and improving computational efficiency. Among various schemes, 4-bit weight and 8-bit activation quantization (W4A8) offers a strong balance between accuracy and performance. However, existing W4A8 GEMM kernels fall short in practice due to inefficient dequantization on CUDA Cores, which cannot keep pace with the high throughput of Tensor Cores. In this paper, we present LiquidGEMM, a hardware-efficient W4A8 GEMM kernel for efficient LLM serving. LiquidGEMM designs two key techniques: LiquidQuant, a hardware-efficient quantization method that enables fast, overflow-safe dequantization using just ",
+  "candidates": [
+   {
+    "url": "https://github.com/Scicom-AI-Enterprise-Organization/LiquidGEMM",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "# LiquidGEMM\n\nAn open implementation of **[LiquidGEMM: Hardware-Efficient W4A8 GEMM Kernel for\nHigh-Performance LLM Serving](https://arxiv.org/abs/2509.01229)** (SC '25) — a from-scratch\nHopper (sm_90a) CUDA/CuTe kernel plus an out-of-tree **vLLM plugin** (no fork), with an\nhonest benchmark suite against bf16, FP8-dynamic, and INT8 baselines.\n\nThe paper has no official code release; the closest public reference is QServe/QoQ. This\nrepo implements both of the paper's contributions:\n\n- **LiquidQuant (LQQ)** — two-level weight quantization: FP16 → per-channel INT8 in the\n  protective range `[-119, 119]` → group-wise UINT4 (group 64). Dequant back to INT8 is\n  overflow-safe **IMAD + XOR** — 2 arithmetic instructions per 4 elements — enabled by a\n  nibble-interleaved weight packing (mask-shift unpack, no lane shuffling).\n- **The RS-WGMMA kernel** (`csrc/liquid_gemm/w4a8_wgmma.cu`) — weights are the WGMMA **A\n  operand sourced from registers** (`Y=(W·Xᵀ)ᵀ`): each thread dequantizes its fragment\n  straight from 4-bit GMEM (weights never touch shared memory), activations stream through\n  swizzled smem as the B descriptor, INT8 WGMMA accumulates in INT32. The mainloop keeps a\n  WGMMA batch in flight across K-tiles (`wait<1>` + 3-buffer rotation — the paper's ImFP\n  overlap), with **split-K** for long-K decode shapes and a fused reduce+scale+cast\n  epilogue. Fragment layouts are correct-by-construction (CuTe identity-tensor coordinate\n  dump → fragment-order prepack), and every kernel "
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/CaroCFC25",
+  "title": "SIGMo: High-Throughput Batched Subgraph Isomorphism on GPUs for Molecular Matching",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Antonio De Caro",
+   "Gennaro Cordasco",
+   "Federico Ficarelli",
+   "Biagio Cosenza"
+  ],
+  "abstract": "Subgraph isomorphism is a fundamental graph problem with applications in diverse domains from biology to social network analysis. Of particular interest is molecular matching, which uses a subgraph isomorphism formulation for the drug discovery process. While subgraph isomorphism is known to be NP-complete and computationally expensive, in the molecular matching formulation a number of domain constraints allow for efficient implementations. This paper presents SIGMo, a high-throughput, portable subgraph isomorphism framework for GPUs, specifically designed for batch molecular matching. SIGMo takes advantage of the specific domain formulation to provide a more efficient filter-and-join strate",
+  "candidates": [
+   {
+    "url": "https://github.com/damonto/sigmo",
+    "desc": "A self-hosted web UI and API for managing ModemManager-based cellular modems",
+    "stars": 126,
+    "readme_head": "# Sigmo (Formerly Telmo)\n\n[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)\n[![Go Report Card](https://goreportcard.com/badge/github.com/damonto/sigmo)](https://goreportcard.com/report/github.com/damonto/sigmo)\n[![Release](https://img.shields.io/github/v/release/damonto/sigmo.svg)](https://github.com/damonto/sigmo/releases/latest)\n\n**Sigmo** is a modern, self-hosted web UI and API for managing ModemManager-based cellular modems. It ships as a single binary with an embedded Vue 3 frontend, designed to be lightweight and easy to deploy.\n\nSigmo focuses on advanced eSIM operations, SMS management, and network control. Pro-only features are documented in [pro/README.md](pro/README.md).\n\n## ✨ Features\n\n- **📱 eSIM Management**: List, download (SM-DP+), enable, rename, and delete eSIM profiles.\n- **📩 SMS Center**: Full conversational view for SMS, send/delete capability, and USSD session support.\n- **⚙️ Modem Control**: SIM slot switching, network scanning, manual registration, and preference configuration (Alias, MSS).\n- **🔒 Secure Access**: OTP-based login system via Telegram, HTTP, Email, and more.\n- **🔔 Notifications**: Forward incoming SMS and login tokens to Telegram, Bark, Gotify, Email, etc.\n- **🚀 Portable**: Single Go binary with no external runtime dependencies (except ModemManager).\n\n---\n\n## 🛍️ Recommended Hardware & Offers\n\n> Support the project and get reliable hardware for your setup.\n\n- **Need an eUICC?**\n  We recommend **[eSTK.me](https:/"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/HeLDL0M025",
+  "title": "StraGCN: GPU-Accelerated Strassen's Sparse-Dense Matrix Multiplication for Graph Convolutional Network Training",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Weidong He",
+   "Haikun Liu",
+   "Zhuohui Duan",
+   "Xiaofei Liao",
+   "Shuhao Zhang 0001"
+  ],
+  "abstract": "Graph Convolutional Networks (GCNs) are a fundamental approach to deep learning on graph-structured data. However, they face a significant challenge in training efficiency due to the high computational cost of Sparse-Dense Matrix Multiplication (SpMM). This paper presents StraGCN, the first GPU-accelerated SpMM implementation based on Strassen’s algorithm particularly designed for GCN training. First, we propose a horizontal fusion model for GPU kernels as an alternative to the commonly used multi-stream CUDA model, significantly improving data locality of on-chip shared memory for Strassen’s SpMM. Second, StraGCN exploits the immutability of the adjacency matrix in GCNs to reuse intermediat",
+  "candidates": [
+   {
+    "url": "https://github.com/CGCL-codes/StraGCN",
+    "desc": "",
+    "stars": 1,
+    "readme_head": "# StraGCN\nStraGCN is a high-performance framework that accelerates GCN training by adapting Strassen’s algorithm for SpMM. StraGCN introduces the horizontal fusion model to improve the data reuse of Strassen's SpMM. In addition, StraGCN exploits the immutability of the adjacency matrix in GCNs to reuse intermediate results. Finally, StraGCN employs a two-stage partitioning strategy to address both intra- and inter-matrix load imbalance in Strassen's SpMM. To learn more about how StraGCN works, please refer to our paper.\n\nThese codes provide the implementation of `StraGCN`, along with baseline implementations of  `GNNA`, `PyG` and `DGL`.\n\n## Hardware\n* CPU x86_64 with host memory >= 32GB. (Test on Intel Xeon Gold 5220 (16 cores) CPU with 128GB host memory)\n* NVIDIA GPU (arch>=sm_60) with device memory >= 16GB. We mainly evaluate our design on RTX 4090.\n## OS & Compiler\n* `Ubuntu 22.04+`\n* `GCC >= 9.0`\n* `CUDA >= 11.0` and `nvcc >= 11.0`\n## Important Files/Directories\n* dgl/ : contains latest `DGL` implementation.\n* pyg/ : contains latest `PyG` implementation.\n* GNNA/ : contains `GNNA` implementation.\n* StraGCN/ : contain the `StraGCN` implementation.\n## Implementation\n### Install environment\n* Install conda on system\n* Create conda environment\n```\nconda create -n env_name python=3.9\n```\n* Install pytorch\n```\nconda install pytorch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 -c pytorch\n```\n* Install PyG\n```\npip install torch-geometric\n```\n* Install DGL\n```\nconda install -c dglt"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/FuXGMSWSD0Y25",
+  "title": "T2-RELION: Task Parallelism, Tensor Core Accelerated RELION for Cryo-EM 3D Reconstruction",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Jiayu Fu",
+   "Jingle Xu",
+   "Lin Gan 0001",
+   "Tianqi Mao",
+   "Zirong Shen"
+  ],
+  "abstract": "Cryo-electron microscopy (cryo-EM) is a key technique for structural biology, but its computational efficiency, particularly during 3D reconstruction, remains a bottleneck. We introduce T2-RELION, a highly optimized version of RELION for cryo-EM 3D reconstruction on CPU-GPU platforms. RELION is a widely used open-source package in the cryo-EM community. We identify and resolve key inefficiencies in RELION’s parallelization strategy and memory management by proposing task parallelism and a three-phase GPU memory management strategy. Furthermore, we leverage Tensor Cores to accelerate the hot-spot kernel for difference calculation, employing an advanced pipelining strategy to hide latency and ",
+  "candidates": [
+   {
+    "url": "https://github.com/Edgarrrrrr/T2-RELION",
+    "desc": "",
+    "stars": 2,
+    "readme_head": ""
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/ChenZSLY25",
+  "title": "UpANNS: Enhancing Billion-Scale ANNS Efficiency with Real-World PIM Architecture",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Sitian Chen",
+   "Amelie Chi Zhou",
+   "Yucheng Shi",
+   "Yusen Li",
+   "Xin Yao"
+  ],
+  "abstract": "Approximate Nearest Neighbor Search (ANNS) is a critical component of modern AI systems, such as recommendation engines and retrieval-augmented large language models (RAG-LLMs). However, scaling ANNS to billion-entry datasets exposes critical inefficiencies: CPU-based solutions are bottlenecked by memory bandwidth limitations, while GPU implementations underutilize hardware resources, leading to suboptimal performance and energy consumption. To address these challenges, we introduce UpANNS, a novel framework leveraging Processing-in-Memory (PIM) architecture to accelerate billion-scale ANNS. UpANNS integrates four key innovations, including 1) architecture-aware data placement to minimize la",
+  "candidates": [
+   {
+    "url": "https://github.com/steam009/UpANNS",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "# UpANNS\n# [SC 25] UpANNS: Enhancing Billion-Scale ANNS Efficiency with Real-World PIM Architecture\n## Prerequisites\n\n### Software\n- Faiss 1.8.0\n- UPMEM SDK version 2023.2.0\n\n### Hardware\n- UPMEM PIM x 7\n- Memory: 128 GB\n\n## Directory Structure\n```\n./\n├─dpu # dpu source code\n└─include # head file\n```\n\n## Branch explanation\n- UpANNS-{dataset name}: Contains the optimized UpANNS implementation for PIM.\n- PIM-naive-{dataset name}: Contains the baseline naive implementation of ANNS on PIM.\n- UpANNS-{dataset name}-cache-ablation: Contains the ablation study evaluating the contribution of the occurrence-aware encoding mechanism.\n\n## Dataset Download\n- [**DEEP**](https://research.yandex.com/blog/benchmarks-for-billion-scale-similarity-search)\n- [**SIFT**](http://corpus-texmex.irisa.fr/)\n- [**SPACEV**](https://github.com/microsoft/SPTAG/tree/main/datasets/SPACEV1B)\n\n## Reproduce\nWe have provided shell scripts to automate the experiments. Simply, you can use `sh run.sh` to run the UpANNS.\n\n### Main Environment Parameter description in `run.sh`\n- `NR_DPUS`: numbr of DPU to run the UpANNS\n- `NR_TASKLETS`: number of threads to run the UpANNS\n- `MS`: the length of vector after encoded\n- `KSUB`: the number of rows in codebook\n- `DSUB`: each `DSUB` dimensions are encoded into one dimension\n- `TOPK`: the size of search result.\n- `DIMM`: the original dimensions.\n- `ETD`:  the number of vectors that read once by each thread\n- `BS`: the batch size\n\n"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/DAntonioMTV25",
+  "title": "Wasp: Efficient Asynchronous Single-Source Shortest Path on Multicore Systems via Work Stealing",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Marco D'Antonio",
+   "Son Thai Mai",
+   "Philippas Tsigas",
+   "Hans Vandierendonck"
+  ],
+  "abstract": "The Single-Source Shortest Path (SSSP) problem is a fundamental graph problem with an extensive set of real-world applications. State-of-the-art parallel algorithms for SSSP, such as the Δ -stepping algorithm, create parallelism through priority coarsening. Priority coarsening results in redundant computations that diminish the benefits of parallelization and limit parallel scalability.",
+  "candidates": [
+   {
+    "url": "https://github.com/wasp-lang/wasp",
+    "desc": "The batteries-included full-stack framework for the AI era. Develop JS/TS web apps (React, Node.js, and Prisma) using declarative code that abstracts away complex full-stack features like auth, background jobs, RPC, email sending, end-to-end type safety, single-command deployment, and more.",
+    "stars": 18584,
+    "readme_head": "<div>\n  <!-- INTRO -->\n  <div align=center>\n    <img height=\"80px\" src=\"https://user-images.githubusercontent.com/1536647/77317442-78625700-6d0b-11ea-9822-0fb21e557e87.png\"/>\n    <p>The fastest way to develop full-stack web apps with React & Node.js.</p>\n  </div>\n  <br />\n  <!-- BADGES -->\n  <div align=center>\n    <a href=\"https://github.com/wasp-lang/wasp/blob/main/LICENSE\"><img alt=\"license\" src=\"https://img.shields.io/github/license/wasp-lang/wasp\"></a>\n    <a href=\"https://github.com/wasp-lang/wasp/releases/latest\"><img alt=\"latest release\" src=\"https://img.shields.io/github/v/release/wasp-lang/wasp\"/></a>\n    <a href=\"https://discord.gg/rzdnErX\"><img alt=\"discord\" src=\"https://img.shields.io/discord/686873244791210014?label=chat%20@%20discord\"/></a>\n  </div>\n  <br />\n  <!-- LINKS -->\n  <div align=center>\n    <a href=\"https://wasp.sh\">Website</a>\n    |\n    <a href=\"https://wasp.sh/docs\">Docs</a>\n  </div>\n  <div align=center>\n    <a href=\"https://discord.gg/rzdnErX\">Discord</a>\n    |\n    <a href=\"https://x.com/WaspLang\">Twitter</a>\n    |\n    <a href=\"https://www.youtube.com/@wasplang\">Youtube</a>\n  </div>\n  <div align=center>\n    <a href=\"https://e44cy1h4s0q.typeform.com/to/EPJCwsMi\">Deployed? Get swag! 👕</a>\n  </div>\n</div>\n\n---\n\n## What is Wasp?\n\nWasp (**W**eb **A**pplication **Sp**ecification) is a Rails-like framework for React, Node.js, and Prisma.\nBuild your app in a day and deploy it with a single CLI command!\n\n### Why is Wasp awesome\n\n- 🚀 **Quick start**: Due to it"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/MaNWB025",
+  "title": "mLR: Scalable Laminography Reconstruction based on Memoization",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Bin Ma",
+   "Viktor Nikitin",
+   "Xi Wang 0027",
+   "Tekin Bicer",
+   "Dong Li 0001"
+  ],
+  "abstract": "ADMM-FFT is an iterative method with high reconstruction accuracy for laminography but suffers from excessive computation time and large memory consumption. We introduce mLR, which employs memoization to replace the time-consuming Fast Fourier Transform (FFT) operations based on an unique observation that similar FFT operations appear in iterations of ADMM-FFT. We introduce a series of techniques to make the application of memoization to ADMM-FFT performance-beneficial and scalable. We also introduce variable offloading to save CPU memory and scale ADMM-FFT across GPUs within and across nodes. Using mLR, we are able to scale ADMM-FFT on an input problem of 2K × 2K × 2K, which is the largest ",
+  "candidates": [
+   {
+    "url": "https://github.com/mlr-org/mlr",
+    "desc": "Machine Learning in R ",
+    "stars": 1683,
+    "readme_head": " mlr <img src=\"man/figures/logo.png\" align=\"right\" />\n\nPackage website: [release](https://mlr.mlr-org.com/) | [dev](https://mlr.mlr-org.com/dev/)\n\nMachine learning in R.\n\n<!-- badges: start -->\n\n[![tic](https://github.com/mlr-org/mlr/workflows/tic/badge.svg?branch=main)](https://github.com/mlr-org/mlr/actions)\n[![CRAN_Status_Badge](https://www.r-pkg.org/badges/version-ago/mlr)](https://cran.r-project.org/package=mlr)\n[![cran checks](https://badges.cranchecks.info/worst/mlr.svg)](https://cran.r-project.org/web/checks/check_results_mlr.html)\n[![CRAN Downloads](https://cranlogs.r-pkg.org/badges/mlr)](https://cran.r-project.org/package=mlr)\n[![StackOverflow](https://img.shields.io/badge/stackoverflow-mlr-blue.svg)](https://stackoverflow.com/questions/tagged/mlr)\n[![lifecycle](https://img.shields.io/badge/lifecycle-retired-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html)\n[![codecov](https://codecov.io/gh/mlr-org/mlr/branch/main/graph/badge.svg)](https://app.codecov.io/gh/mlr-org/mlr)\n\n<!-- badges: end -->\n\n- [CRAN release site](https://CRAN.R-project.org/package=mlr)\n- [Online tutorial](https://mlr.mlr-org.com/index.html)\n- [Changelog](https://mlr.mlr-org.com/news/index.html)\n\n- [Stackoverflow](https://stackoverflow.com/questions/tagged/mlr): `#mlr`\n- [Mattermost](https://lmmisld-lmu-stats-slds.srv.mwn.de/mlr_invite/)\n- [Blog](https://mlr-org.com/)\n\n## Deprecated\n\n{mlr} is considered retired from the mlr-org team.\nWe won't add new features anymore and will only fix _"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/ZhangLWW20",
+  "title": "cuTensor-Tubal: Efficient Primitives for Tubal-Rank Tensor Learning Operations on GPUs",
+  "venue": "TPDS",
+  "year": 2020,
+  "authors": [
+   "Tao Zhang 0046",
+   "Xiao-Yang Liu",
+   "Xiaodong Wang 0001",
+   "Anwar Walid"
+  ],
+  "abstract": "Tensors are the cornerstone data structures in high-performance computing, big data analysis and machine learning. However, tensor computations are compute-intensive and the running time increases rapidly with the tensor size. Therefore, designing high-performance primitives on parallel architectures such as GPUs is critical for the efficiency of ever growing data processing demands. Existing GPU basic linear algebra subroutines (BLAS) libraries (e.g., NVIDIA cuBLAS) do not provide tensor primitives. Researchers have to implement and optimize their own tensor algorithms in a case-by-case manner, which is inefficient and error-prone. In this paper, we develop the cuTensor-tubal library of sev",
+  "candidates": [
+   {
+    "url": "https://github.com/YangletLiu/cuTensor_CUDA_Library_for_Transform_based_Tensors",
+    "desc": "T. Zhang, X.-Y. Liu, X. Wang, and A. Walid. cuTensor-tubal: Efficient primitives for tubal-rank tensor operations on GPUs. IEEE Transactions on Parallel and Distributed Systems, 2019.",
+    "stars": 2,
+    "readme_head": "#                  cuTensor CUDA Library for Tensors\n\nWe implement the cuTensor library for the transform-based tensor model.  \n>    | CuOperations | tfft | tproduct | tsvd | tqr | tinv | tnorm |\n>    | :---: | :---:| :---:| :---: | :---: | :---: | :---: |\n>    | based | √ | √ | √ | √ | √ | √ |\n>    | streamed | √ | √ | √ | √ |  √ | √ |\n>    | batched | √ | √ | √ | √ | √ | √ |\n\n[1] T. Zhang, X.-Y. Liu, X. Wang, and A. Walid. cutensor-tubal: Efficient primitives for tubal-rank tensor operations on GPUs. IEEE Transactions on Parallel and Distributed Systems, 2019.\n\n[2] T. Zhang, X.-Y. Liu, and X. Wang. High Performance GPU tensor completion with tubal-sampling pattern. IEEE Transactions on Parallel and Distributed Systems, 2020.\n\n[3] X.-Y. Liu, S. Aeron, V. Aggarwal*, X. Wang. Low-tubal-rank tensor completion using alternating minimization. IEEE Transactions on Information Theory, 2019.\n\n\n## INSTALLION\n\n**1.get CuTensor library from git repository**  \n```   \n    $ git clone https://github.com/hust512/cuTensor_CUDA_Library_for_Tensors\n```\n**2.go into cuTensor_CUDA_Library_for_Tensors folder**  \n```\n    $ cd cuTensor_CUDA_Library_for_Tensors\n```\n**3.edit make.inc file**  \n```\n     provide path for third party libraries.you can refer to make.inc_example.  \n```\n**4.make cuTensor_CUDA_Library_for_Tensors**  \n```\n    $ make\n```\n## RESULT\n<div style=\"float:left\"><img width=\"300\" height=\"300\" src=\"https://github.com/lihailihai/Tensor_/blob/master/RESULT/tprod13.png\"/></div>\n<div style="
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/ZhengSHJWDP21",
+  "title": "Feluca: A Two-Stage Graph Coloring Algorithm With Color-Centric Paradigm on GPU",
+  "venue": "TPDS",
+  "year": 2021,
+  "authors": [
+   "Zhigao Zheng 0001",
+   "Xuanhua Shi",
+   "Ligang He",
+   "Hai Jin 0001",
+   "Shuo Wei"
+  ],
+  "abstract": "There are great challenges in performing graph coloring on GPU in general. First, the long-tail problem exists in the recursion algorithm because the conflict (i.e., different threads assign the adjacent nodes to the same color) becomes more likely to occur as the number of iterations increases. Second, it is hard to parallelize the sequential spread algorithm because the color allocation depends on the adjoining iteration. Third, the atomic operation is widely used on GPU to maintain the color list, which can greatly reduce the efficiency of GPU threads. In this article, we propose a two-stage high-performance graph coloring algorithm, called Feluca, aiming to address the above challenges. ",
+  "candidates": [
+   {
+    "url": "https://github.com/lgnlgn/feluca",
+    "desc": "A lightweight datamining algorithm toolkit",
+    "stars": 5,
+    "readme_head": "feluca\n======\n\nA lightweight datamining algorithm toolkit *extends* *DAMI*\n"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/HidayetogluBGRG22",
+  "title": "MemXCT: Design, Optimization, Scaling, and Reproducibility of X-Ray Tomography Imaging",
+  "venue": "TPDS",
+  "year": 2022,
+  "authors": [
+   "Mert Hidayetoglu",
+   "Tekin Biçer",
+   "Simon Garcia de Gonzalo",
+   "Bin Ren 0002",
+   "Doga Gürsoy"
+  ],
+  "abstract": "This work extends our previous research entitled &#x201C;MemXCT: Memory-centric X-ray CT Reconstruction with Massive Parallelization&#x201D; that was originally published at SC19 conference (Hidayeto&#x011F;lu <i>et al.</i>, 2019) with reproducibility of the computational imaging performance. X-ray computed tomography (XCT) is regularly used at synchrotron light sources to study the internal morphology of materials at high resolution. However, experimental constraints, such as radiation sensitivity, can result in noisy or undersampled measurements. Further, depending on the resolution, sample size and data acquisition rates, the resulting noisy dataset can be in the order of terabytes. Advan",
+  "candidates": [
+   {
+    "url": "https://github.com/kanwren/MemXCT",
+    "desc": "",
+    "stars": 1,
+    "readme_head": "# SC20 Team Phoenix Reproducibility Report\n\nView on Overleaf: https://www.overleaf.com/read/znzvbjfbnycv\n"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/ZhengCJWWLYL22",
+  "title": "NeoFlow: A Flexible Framework for Enabling Efficient Compilation for High Performance DNN Training",
+  "venue": "TPDS",
+  "year": 2022,
+  "authors": [
+   "Size Zheng 0001",
+   "Renze Chen",
+   "Yicheng Jin",
+   "Anjiang Wei",
+   "Bingyang Wu"
+  ],
+  "abstract": "Deep neural networks (DNNs) are increasingly deployed in various image recognition and natural language processing applications. The continuous demand for accuracy and high performance has led to innovations in DNN design and a proliferation of new operators. However, existing DNN training frameworks such as PyTorch and TensorFlow only support a limited range of operators and rely on hand-optimized libraries to provide efficient implementations for these operators. To evaluate novel neural networks with new operators, the programmers have to either replace the holistic new operators with existing operators or provide low-level implementations manually. Therefore, a critical requirement for D",
+  "candidates": [
+   {
+    "url": "https://github.com/kiraaziz/Neoflow",
+    "desc": "Neoflow is an open-source whiteboard application designed for seamless collaboration and creativity. It combines simplicity with advanced features, making it perfect for teams, designers, and creative minds.",
+    "stars": 253,
+    "readme_head": "# Neoflow\n![Hero Screenshot](public/landing.webp)\n---\n\nNeoflow is an open-source whiteboard application designed for seamless collaboration and creativity. It combines simplicity with advanced features, making it perfect for teams, designers, and creative minds.\n\n## Features\n\n- **Free Forever**: No hidden costs. Create and collaborate without limits.\n- **Open Source**: Built with transparency and powered by the community.\n- **Fun & Easy**: Intuitive interface for seamless creativity.\n- **AI Integration**: Smart features to enhance your workflow.\n- **tldraw Powered**: Built on top of the powerful tldraw engine.\n- **Real-time Collaboration**: Work together in real time with your team.\n\n## Installation\n\nGet started with Neoflow in minutes:\n\n```bash\n# Clone the repository\ngit clone https://github.com/kiraaziz/Neoflow.git\n\n# Navigate to the project directory\ncd Neoflow\n\n# Setup .env file with required variables\n# (Refer to the documentation for details)\n\n# Install dependencies\nnpm --force i\n\n# Start the development server\nnpm run dev\n\n# Open the app in your browser\n# Visit http://localhost:3000\n```\n \n\n## Quick Start Guide\n\n- Visit the [Neoflow GitHub Repository](https://github.com/kiraaziz/Neoflow).\n- Follow the installation instructions to set up the project.\n- Start creating and collaborating with ease!\n\n## Community\n\nJoin our community to connect with other users and contribute to the project:\n\n- [Discord](https://discord.gg/4BpxBW5g)\n- [GitHub Repository](https://github.com/ki"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/GaoJTWS22",
+  "title": "TaiChi: A Hybrid Compression Format for Binary Sparse Matrix-Vector Multiplication on GPU",
+  "venue": "TPDS",
+  "year": 2022,
+  "authors": [
+   "Jianhua Gao",
+   "Weixing Ji",
+   "Zhaonian Tan",
+   "Yizhuo Wang 0001",
+   "Feng Shi 0009"
+  ],
+  "abstract": "Binary Sparse Matrix-Vector Multiplication (SpMV) is a heavy computational kernel in weblink analysis, integer factorization, compressed sensing, spectral graph theory, and other domains. Testing several popular GPU-based SpMV implementations on 400 sparse matrices, we observed that data transfer to GPU memory accounts for a large part of the total computation time. The transfer of constant value “1”s can be easily eliminated for binary sparse matrices. However, compressing index arrays has always been a great challenge. This article proposes a new compression format TaiChi to further reduce index data copies and improve the performance of SpMV, especially for diagonally dominant binary spar",
+  "candidates": [
+   {
+    "url": "https://github.com/taichi-dev/taichi",
+    "desc": "Productive, portable, and performant GPU programming in Python.",
+    "stars": 28297,
+    "readme_head": "<div align=\"center\">\n  <img width=\"500px\" src=\"https://github.com/taichi-dev/taichi/raw/master/misc/logo.png\"/>\n</div>\n\n---\n[![Latest Release](https://img.shields.io/github/v/release/taichi-dev/taichi?color=blue&label=Latest%20Release)](https://github.com/taichi-dev/taichi/releases/latest)\n[![downloads](https://pepy.tech/badge/taichi)](https://pepy.tech/project/taichi)\n[![CI](https://github.com/taichi-dev/taichi/actions/workflows/testing.yml/badge.svg)](https://github.com/taichi-dev/taichi/actions/workflows/testing.yml)\n[![Nightly Release](https://github.com/taichi-dev/taichi/actions/workflows/release.yml/badge.svg)](https://github.com/taichi-dev/taichi/actions/workflows/release.yml)\n<a href=\"https://discord.gg/f25GRdXRfg\"><img alt=\"discord invitation link\" src=\"https://dcbadge.vercel.app/api/server/f25GRdXRfg?style=flat\"></a>\n\n```shell\npip install taichi  # Install Taichi Lang\nti gallery          # Launch demo gallery\n```\n\n## What is Taichi Lang?\n\nTaichi Lang is an open-source, imperative, parallel programming language for high-performance numerical computation. It is embedded in Python and uses just-in-time (JIT) compiler frameworks, for example LLVM, to offload the compute-intensive Python code to the native GPU or CPU instructions.\n\n<a href=\"https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/simulation/fractal.py#L1-L31\"> <img src=\"https://github.com/taichi-dev/public_files/raw/master/taichi/fractal_code.png\" height=\"270px\"></a>  <img src=\"https://raw"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/GaihreLL22",
+  "title": "gSoFa: Scalable Sparse Symbolic LU Factorization on GPUs",
+  "venue": "TPDS",
+  "year": 2022,
+  "authors": [
+   "Anil Gaihre",
+   "Xiaoye Sherry Li",
+   "Hang Liu 0001"
+  ],
+  "abstract": "Decomposing a matrix <inline-formula><tex-math notation=\"LaTeX\">$\\mathbf {A}$</tex-math></inline-formula> into a lower matrix <inline-formula><tex-math notation=\"LaTeX\">$\\mathbf {L}$</tex-math></inline-formula> and an upper matrix <inline-formula><tex-math notation=\"LaTeX\">$\\mathbf {U}$</tex-math></inline-formula> , which is also known as LU decomposition, is an essential operation in numerical linear algebra. For a sparse matrix, LU decomposition often introduces more nonzero entries in the <inline-formula><tex-math notation=\"LaTeX\">$\\mathbf {L}$</tex-math></inline-formula> and <inline-formula><tex-math notation=\"LaTeX\">$\\mathbf {U}$</tex-math></inline-formula> factors than in the original ",
+  "candidates": [
+   {
+    "url": "https://github.com/Anil-Gaihre/gSoFa",
+    "desc": "The code of gSoFa",
+    "stars": 5,
+    "readme_head": "Software (tested)\n-----\ng++ 5.4.0, g++ 7.5.0, IBM Spectrum MPI 10.3.0.0, CUDA 10.0\nCompilation flag: -O3\n\n--\nHardware (tested)\n------\nV100 (tested), OLCF Summit Supercomputers\n\n--\nCompile\n-----\n\nmake\n\n--\nExecute\n------\nTest (Runs in BC dataset): make test\nType: \"./mpi_cuda_test.bin\" it will show you what is needed.\nTips: The test graph (PR in the paper) is in the Pre2 folder.\n\n--\nDataset generation\n----\nWe use SuperLU_DIST (https://github.com/xiaoyeli/superlu_dist) to get the exact reordered matrix that it uses for the Symbolic Factorization for fair comparison.\n\nThe reordered matrix by the SuperLU_DIST solver before symbolic factorization in it is given as an input to gSoFa.\nWe dump the reordered matrix from SuperLU_DIST solver to CSR files. An example dataset in the pre2 folder (PR) is in ascii format in dataset folder.\n\n--\nCode specification\n---------\n\nWithout_space_optimization:\nConsists of the code that doesn't do space optimization. \nCompile: make\nRun: make test\nmpiexec -n 1 $(exe) begin_position.dat end_position.dat csr.dat N_GPU 1024 0 0 1 1 4096\n\nWith_space_optimization:\nConsists of the code that includes the space optimizations. \nCompile: make\nRun: make test\nmpiexec -n 1 $(exe) begin_position.dat end_position.dat csr.dat N_GPU 1024 0 0 1 1 4096\n\n\nThe overall code structure in each folder is:\n\n- main.cu: main function.\n-symbfact.cuh: computes symbolic factorization\n-barrier.cuh: Consists of software barrier\n- wtime.h: timing.\n\nNote: The code is modified to run on a s"
+   }
+  ]
+ }
+]

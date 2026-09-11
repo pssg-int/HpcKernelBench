@@ -1,0 +1,478 @@
+[
+ {
+  "key": "conf/cgo/PopoolaZGBSHO23",
+  "venue": "CGO",
+  "year": 2023,
+  "title": "Code Synthesis for Sparse Tensor Format Conversion and Optimization",
+  "abstract": "Many scientific applications compute using sparse data and store that data in a variety of sparse formats because each format has unique space and performance benefits. Optimizing applications that use sparse data involves translating the sparse data into the chosen format and transforming the computation to iterate over that format. This paper presents a formal definition of sparse tensor formats and an automated approach to synthesize the transformation between formats. This approach is unique in that it supports ordering constraints not supported by other approaches and synthesizes the transformation code in a high-level intermediate representation suitable for applying composable transformations such as loop fusion and temporary storage reduction. We demonstrate that the synthesized code for COO to CSR with optimizations is 2.85x faster than TACO, Intel MKL, and SPARSKIT while the more complex COO to DIA is 1.4x slower than TACO but faster than SPARSKIT and Intel MKL using the geometric average of execution time.",
+  "hint_categories": [
+   "sparse_la",
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/cgo/LovelessB23",
+  "venue": "CGO",
+  "year": 2023,
+  "title": "Compiling Functions onto Digital Microfluidics",
+  "abstract": "Digital Microfluidic Biochips (DMFBs) have the potential to fundamentally transform biochemical disciplines through automation, miniaturization, and the ability to facilitate repeatable chemical experimentation. Programming DMFBs has historically been accomplished by writing low-level bit manipulations to select which electrodes should activate in sequence. Recent research on high-level programming languages and compilers for DMFBs have begun to address the programmability challenge, but important capabilities such as loading and executing pre-compiled libraries and function calls, are absent from the literature. A primary driver of this oversight is the lack of a memory hierarchy to store physical chemicals off-chip to jump to and from function calls. This paper addresses the complexities involved in compiling function calls within the technology's unique boundaries, and provides a proof-of-concept implementation from language to code generation, with solutions evaluated using a cycle-accurate DMFB simulator as well as physical execution on an open-hardware DMFB.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/Brahmakshatriya23",
+  "venue": "CGO",
+  "year": 2023,
+  "title": "D2X: An eXtensible conteXtual Debugger for Modern DSLs",
+  "abstract": "Compiled Domain Specific Languages are taking over various high-performance domains because of their ability to exploit the domain knowledge and apply optimizations that produce the most specialized code. A lot of research has gone into making DSLs more performant and easy to prototype. But the Achilles heel for DSLs is still the lack of debugging support that provides an end-to-end picture to the user and improves the productivity of both the DSL designer and the end-user. Conventional techniques extend the compilers, the debugging information format, and the debuggers themselves to provide more information than what the debugger can provide when attached to the generated code. Such an approach quickly stops scaling as adding extensions to large and complex debuggers hampers DSL designer productivity. We present D2X, a DSL debugging infrastructure that works with most standard debuggers without any modifications and is easily extensible to capture all the domain specific information the end-user cares about. We show that we can add debugging support to the state-of-the-art graph DSL GraphIt with as little as 1.4% changes to the compiler code base. We also apply our techniques to a meta-programming DSL framework BuildIt so that any DSLs built on top of BuildIt get debugging support without any modifications further boosting the productivity of future DSL designers.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/MinKE23",
+  "venue": "CGO",
+  "year": 2023,
+  "title": "Flexer: Out-of-Order Scheduling for Multi-NPUs",
+  "abstract": "Recent neural accelerators often comprise multiple neural processing units (NPUs) with shared cache and memory. The regular schedules of state-of-the-art scheduling techniques miss important opportunities for memory reuse. This paper presents Flexer, an out-of-order (OoO) scheduler that maximizes instruction-level parallelism and data reuse on such multi-NPU systems. Flexer employs a list scheduling algorithm to dynamically schedule the tiled workload to all NPUs. To cope with the irregular data access patterns of OoO schedules, several heuristics help maximize data reuse by considering the availability of data tiles at different levels in the memory hierarchy. Evaluated with several neural networks on 2 to 4-core multi-NPUs, Flexer achieves a speedup of up to 2.2x and a 1.2-fold reduction in data transfers for individual layers compared to the best static execution order.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/cgo/ThangamaniJLGB23",
+  "venue": "CGO",
+  "year": 2023,
+  "title": "Lifting Code Generation of Cardiac Physiology Simulation to Novel Compiler Technology",
+  "abstract": "The study of numerical models for the human body has become a major focus of the research community in biology and medicine. For instance, numerical ionic models of a complex organ, such as the heart, must be able to represent individual cells and their interconnections through ionic channels, forming a system with billions of cells, and requiring efficient code to handle such a large system. The modeling of the electrical system of the heart combines a compute-intensive kernel that calculates the intensity of current flowing through cell membranes, and feeds a linear solver for computing the electrical potential of each cell.",
+  "hint_categories": [
+   "solver_components"
+  ]
+ },
+ {
+  "key": "conf/cgo/AhrensDKA23",
+  "venue": "CGO",
+  "year": 2023,
+  "title": "Looplets: A Language for Structured Coiteration",
+  "abstract": "Real world arrays often contain underlying structure, such as sparsity, runs of repeated values, or symmetry. Specializing for structure yields significant speedups. But automatically generating efficient code for structured data is challenging, especially when arrays with different structure interact. We show how to abstract over array structures so that the compiler can generate code to coiterate over any combination of them. Our technique enables new array formats (such as 1DVBL for irregular clustered sparsity), new iteration strategies (such as galloping intersections), and new operations over structured data (such as concatenation or convolution).",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/cgo/ShinPCS23",
+  "venue": "CGO",
+  "year": 2023,
+  "title": "PIMFlow: Compiler and Runtime Support for CNN Models on Processing-in-Memory DRAM",
+  "abstract": "Processing-in-Memory (PIM) has evolved over decades into a feasible solution to addressing the exacerbating performance bottleneck with main memory by placing computational logic in or near memory. Recent proposals from DRAM manufacturers highlighted the HW constraint-aware design of PIM-enabled DRAM with specialized MAC logic, providing an order of magnitude speedup for memory-intensive operations in DL models. Although the main target for PIM acceleration did not initially include convolutional neural networks due to their high compute intensity, recent CNN models are increasingly adopting computationally lightweight implementation. Motivated by the potential for the software stack to enable CNN models on DRAM-PIM hardware without invasive changes, we propose PIMFlow, an end-to-end compiler and runtime support, to accelerate CNN models on a PIM-enabled GPU memory. PIMFlow transforms model graphs to create inter-node parallelism across GPU and PIM, explores possible task- and data-parallel execution scenarios for optimal execution time, and provides a code-generating back-end and execution engine for DRAM-PIM. PIMFlow achieves up to 82% end-to-end speedup and reduces energy consumption by 26% on average for CNN model inferences.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/KandiahLVNH23",
+  "venue": "CGO",
+  "year": 2023,
+  "title": "Parsimony: Enabling SIMD/Vector Programming in Standard Compiler Flows",
+  "abstract": "Achieving peak throughput on modern CPUs requires maximizing the use of single-instruction, multiple-data (SIMD) or vector compute units. Single-program, multiple-data (SPMD) programming models are an effective way to use high-level programming languages to target these ISAs. Unfortunately, many SPMD frameworks have evolved to have either overly-restrictive language specifications or under-specified programming models, and this has slowed the widescale adoption of SPMD-style programming. This paper introduces Parsimony (PARallel SIMd), a SPMD programming approach built with semantics designed to be compatible with multiple languages and to cleanly integrate into the standard optimizing compiler toolchains for those languages. We first explain the Parsimony programming model semantics and how they enable a standalone compiler IR-to-IR pass that can perform vectorization independently of other passes, improving the language and toolchain compatibility of SPMD programming. We then demonstrate a LLVM prototype of the Parsimony approach that matches the performance of ispc, a popular but more restrictive SPMD approach, and achieves 97% of the performance of hand-written AVX-512 SIMD intrinsics on over 70 benchmarks ported from the Simd Library. We finally discuss where Parsimony has exposed parts of existing language and compiler flows where slight improvements could further enable improved SPMD program vectorization.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/RohwedderHCCA23",
+  "venue": "CGO",
+  "year": 2023,
+  "title": "To Pack or Not to Pack: A Generalized Packing Analysis and Transformation",
+  "abstract": "Packing is an essential loop optimization for handcrafting a high-performance General Matrix Multiplication (GEMM). Packing copies a non-contiguous block of data to a contiguous block to reduce the number of TLB entries required to access it, avoiding expensive TLB misses. When copying data, packing can rearrange elements of the block to decrease the stride between consecutive accesses, improving spatial locality. Until now the use of packing has been limited to handcrafted GEMM implementations and to auto-tuning techniques. Existing loop optimizers, such as Polly and Pluto, either only apply packing to GEMM computations (Polly), or not at all (Pluto). This work proposes GPAT, a generalized packing analysis and code transformation that applies packing, when beneficial, to a generic input loop nest. GPAT is implemented in the Affine dialect of MLIR and evaluated on Polybench/C. GPAT applies packing to benchmarks beyond GEMM and obtains significant speedup compared to current loop optimizers that do not apply packing.",
+  "hint_categories": [
+   "dense_la"
+  ]
+ },
+ {
+  "key": "conf/cgo/JangdaMDMS24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "A Framework for Fine-Grained Synchronization of Dependent GPU Kernels",
+  "abstract": "Machine Learning (ML) models execute several parallel computations including Generalized Matrix Multiplication, Convolution, Dropout, etc. These computations are commonly executed on Graphics Processing Units (GPUs), by dividing the computation into independent processing blocks, known as tiles. Since the number of tiles are usually higher than the execution units of a GPU, tiles are executed on all execution units in one or more waves. However, the number of tiles is not always a multiple of the number of execution units. Thus, tiles executed in the final wave can under-utilize the GPU. To address this issue, we present cuSync, a framework for synchronizing dependent kernels using a user-defined fine-grained synchronization policy to improve the GPU utilization. cuSync synchronizes tiles instead of kernels, which allows executing independent tiles of dependent kernels concurrently. We also present a compiler to generate diverse fine-grained synchronization policies based on dependencies between kernels. Our experiments found that synchronizing CUDA kernels using cuSync reduces the inference times of four popular ML models: MegatronLM GPT-3 by up to 15%, LLaMA by up to 14%, ResNet-38 by up to 22%, and VGG-19 by up to 16% over several batch sizes.",
+  "hint_categories": [
+   "dense_la",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/cgo/ShaikhhaHH24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "A Tensor Algebra Compiler for Sparse Differentiation",
+  "abstract": "Sparse tensors are prevalent in many data-intensive applications. However, existing automatic differentiation (AD) frameworks are tailored towards dense tensors, which makes it a challenge to efficiently compute gradients through sparse tensor operations. This is due to irregular sparsity patterns that can result in substantial memory and computational overheads. We propose a novel framework that enables the efficient AD of sparse tensors. The key aspects of our work include a compilation pipeline leveraging two intermediate DSLs with AD-agnostic domain-specific optimizations followed by efficient C++ code generation. We showcase the effectiveness of our framework in terms of performance and scalability through extensive experimentation, outperforming state-of-the-art alternatives across a variety of synthetic and real-world datasets.",
+  "hint_categories": [
+   "sparse_la",
+   "tensor"
+  ]
+ },
+ {
+  "key": "conf/cgo/AgostiniHGJRTACK24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "AXI4MLIR: User-Driven Automatic Host Code Generation for Custom AXI-Based Accelerators",
+  "abstract": "This paper addresses the need for automatic and efficient generation of host driver code for arbitrary custom AXI-based accelerators targeting linear algebra algorithms, an important workload in various applications, including machine learning and scientific computing. While existing tools have focused on automating accelerator prototyping, little attention has been paid to the host-accelerator interaction. This paper introduces AXI4MLIR, an extension of the MLIR compiler framework designed to facilitate the automated generation of host-accelerator driver code. With new MLIR attributes and transformations, AXI4MLIR empowers users to specify accelerator features (including their instructions) and communication patterns and exploit the host memory hierarchy. We demonstrate AXI4MLIR's versatility across different types of accelerators and problems, showcasing significant CPU cache reference reductions (up to 56%) and up to a 1.65× speedup compared to manually optimized driver code implementations. AXI4MLIR implementation is open-source and available at: https:/7github.com/AXI4MLIR/axi4mlir.",
+  "hint_categories": [
+   "dense_la",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/cgo/OkudaA24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "AskIt: Unified Programming Interface for Programming with Large Language Models",
+  "abstract": "Large Language Models (LLMs) exhibit a unique phenomenon known as emergent abilities, demonstrating adeptness across numerous tasks, from text summarization to code generation. While these abilities open up novel avenues in software design and crafting, their incorporation presents substantial challenges. Developers face decisions regarding the use of LLMs for directly performing tasks within applications as well as for generating and executing code to accomplish these tasks. Moreover, effective prompt design becomes a critical concern, given the necessity of extracting data from natural language outputs. To address these complexities, this paper introduces AskIt, a domain-specific language (DSL) specifically designed for LLMs. AskIt simplifies LLM integration by providing a unified interface that not only allows for direct task execution using LLMs but also supports the entire cycle of code generation and execution. This dual capability is achieved through (1) type-guided output control, (2) template-based function definitions, and (3) prompt generation for both usage modes. Our evaluations underscore AskIt's effectiveness. Across 50 tasks, AskIt generated concise prompts, achieving a 16.14 % reduction in prompt length compared to benchmarks. Additionally, by enabling a seamless transition between using LLMs directly in applications and for generating code, AskIt achieved significant efficiency improvements, as observed in our GSM8K benchmark experiments. The implementations of AskIt in TypeScript and Python are available at https://github.com/katsumiok/ts-askit and https://github.com/katsumiok/pyaskit, respectively.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/cgo/KoB24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "BEC: Bit-Level Static Analysis for Reliability against Soft Errors",
+  "abstract": "Soft errors are a type of transient digital signal corruption that occurs in digital hardware components such as the internal flip-flops of CPU pipelines, the register file, memory cells, and even internal communication buses. Soft errors are caused by environmental radioactivity, magnetic interference, lasers, and temperature fluctuations, either unintentionally, or as part of a deliberate attempt to compromise a system and expose confidential data. We propose a bit-level error coalescing (BEC) static program analysis and its two use cases to understand and improve program reliability against soft errors. The BEC analysis tracks each bit corruption in the register file and classifies the effect of the corruption by its semantics at compile time. The usefulness of the proposed analysis is demonstrated in two scenarios, fault injection campaign pruning, and reliability-aware program transformation. Experimental results show that bit-level analysis pruned up to 30.04 % of exhaustive fault injection campaigns (13.71 % on average), without loss of accuracy. Program vulnerability was reduced by up to 13.11 % (4.94 % on average) through bit-level vulnerability-aware instruction scheduling. The analysis has been implemented within LLVM and evaluated on the RISC-V architecture. To the best of our knowledge, the proposed BEC analysis is the first bit-level compiler analysis for program reliability against soft errors. The proposed method is generic and not limited to a specific computer architecture.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/GeesonS24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "Compiler Testing with Relaxed Memory Models",
+  "abstract": "Finding bugs is key to the correctness of compilers in wide use today. If the behaviour of a compiled program, as allowed by its architecture memory model, is not a behaviour of the source program under its source model, then there is a bug. This holds for all programs, but we focus on concurrency bugs that occur only with two or more threads of execution. We focus on testing techniques that detect such bugs in C/C++ compilers. We seek a testing technique that automatically covers concurrency bugs up to fixed bounds on program sizes and that scales to find bugs in compiled programs with many lines of code. Otherwise, a testing technique can miss bugs. Unfortunately, the state-of-the-art techniques are yet to satisfy all of these properties. We present the Téléchat compiler testing tool for concurrent programs. Téléchat compiles a concurrent C/C++ program and compares source and compiled program behaviours using source and architecture memory models. We make three claims: Téléchat improves the state-of-the-art at finding bugs in code generation for multi-threaded execution, it is the first public description of a compiler testing tool for concurrency that is deployed in industry, and it is the first tool that takes a significant step towards the desired properties. We provide experimental evidence suggesting Téléchat finds bugs missed by other state-of-the-art techniques, case studies indicating that Téléchat satisfies the properties, and reports of our experience deploying Téléchat in industry regression testing.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/CuiZHL24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "DrPy: Pinpointing Inefficient Memory Usage in Multi-Layer Python Applications",
+  "abstract": "Python has become an increasingly popular programming language, especially in the areas of data analytics and machine learning. Many modern Python packages employ a multi-layer design: the Python layer manages various packages and expresses high-level algorithms; the native layer is written in C/C++/Fortran/CUDA for efficient computation. Typically, each layer manages its own computation and memory and exposes APIs for cross-layer interactions. Without holistic optimization, performance inefficiencies can exist at the boundary between layers. In this paper, we develop DrPy, a novel profiler that pinpoints such memory inefficiencies across layers in Python applications. Unlike existing tools, DrPy takes a hybrid and fine-grained approach to track memory objects and their usage in both Python and native layers. DrPy correlates the behavior of memory objects across layers and builds an object flow graph to pinpoint memory inefficiencies. In addition, DrPy captures rich information associated with object flow graphs, such as call paths and source code attribution to guide intuitive code optimization. Guided by DrPy, we are able to optimize many Python applications with non-trivial performance improvement. Many optimization patches have been validated by application developers and committed to application repositories.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/JayaweeraKWK24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "Energy-Aware Tile Size Selection for Affine Programs on GPUs",
+  "abstract": "Loop tiling is a high-order transformation used to increase data locality and performance. While previous work has considered its application to several domains and architectures, its potential impact on energy efficiency has been largely ignored. In this work, we present an Energy-Aware Tile Size Selection Scheme (EATSS) for affine programs targeting GPUs. We automatically derive non-linear integer formulations for affine programs and use the Z3 solver to find effective tile sizes that meet architectural resource constraints, while maximizing performance and minimizing energy consumption. Our approach builds on the insight that reducing the liveness of in-cache data, together with exploiting automatic power scaling, can lead to substantial gains in performance and energy efficiency. We evaluate EATSS on NVIDIA Xavier and GA100 GPUs, and report median performance-per-Watt improvement relative to PPCG on several affine kernels. On Polybench kernels, we achieve 1.5 × and 1.2 × improvement and obtain up to 6.3 × improvement on non-Polybench high-dimensional affine kernels.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/MurtoviGPLLS24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "Enhancing Performance Through Control-Flow Unmerging and Loop Unrolling on GPUs",
+  "abstract": "Compilers use a wide range of advanced optimizations to improve the quality of the machine code they generate. In most cases, compiler optimizations rely on precise analyses to be able to perform the optimizations. However, whenever a control-flow merge is performed information is lost as it is not possible to precisely reason about the program anymore. One existing solution to this issue is code duplication, which involves duplicating instructions from merge blocks to their predecessors. This paper introduces a novel and more aggressive approach to code duplication, grounded in loop unrolling and control-flow unmerging that enables subsequent optimizations that cannot be enabled by applying only one of these transformations. We implemented our approach inside LLVM, and evaluated its performance on a collection of GPU benchmarks in CUDA. Our results demonstrate that, even when faced with branch divergence, which complicates code duplication across multiple branches and increases the associated cost, our optimization technique achieves performance improvements of up to 81%.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/cgo/TiottoPTSOLGB24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "Experiences Building an MLIR-Based SYCL Compiler",
+  "abstract": "Similar to other programming models, compilers for SYCL, the open programming model for heterogeneous computing based on C++, would benefit from access to higher-level intermediate representations. The loss of high-level structure and semantics caused by premature lowering to low-level intermediate representations and the inability to reason about host and device code simultaneously present major challenges for SYCL compilers. The MLIR compiler framework, through its dialect mechanism, allows to model domain-specific, high-level intermediate representations and provides the necessary facilities to address these challenges. This work therefore describes practical experience with the design and implementation of an MLIR-based SYCL compiler. By modeling key elements of the SYCL programming model in host and device code in the MLIR dialect framework, the presented approach enables the implementation of powerful device code optimizations as well as analyses across host and device code. Compared to two LLVM-based SYCL implementations, this yields speedups of up to 4.3x on a collection of SYCL benchmark applications. Finally, this work also discusses challenges encountered in the design and implementation and how these could be addressed in the future.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/ShobakiMHLMKRG24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "Instruction Scheduling for the GPU on the GPU",
+  "abstract": "In this paper, we show how to use the GPU to parallelize a precise instruction scheduling algorithm that is based on Ant Colony Optimization (ACO). ACO is a nature-inspired intelligent-search technique that has been used to compute precise solutions to NP-hard problems in operations research (OR). Such intelligent-search techniques were not used in the past to solve NP-hard compiler optimization problems, because they require substantially more computation than the heuristic techniques used in production compilers. In this work, we show that parallelizing such a compute-intensive technique on the GPU makes using it in compilation reasonably practical. The register-pressure-aware instruction scheduling problem addressed in this work is a multi-objective optimization problem that is significantly more complex than the problems that were previously solved using parallel ACO on the GPU. We describe a number of techniques that we have developed to efficiently parallelize an ACO algorithm for solving this multi-objective optimization problem on the GPU. The target processor is also a GPU. Our experimental evaluation shows that parallel ACO-based scheduling on the GPU runs up to 27 times faster than sequential ACO-based scheduling on the CPU, and this leads to reducing the total compile time of the rocPRIM benchmarks by 21%. ACO-based scheduling improves the execution-speed of the compiled benchmarks by up to 74% relative to AMD's production scheduler. To the best of our knowledge, our work is the first successful attempt to parallelize a compiler optimization algorithm on the GPU.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/FuRH24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "JITSPMM: Just-in-Time Instruction Generation for Accelerated Sparse Matrix-Matrix Multiplication",
+  "abstract": "Achieving high performance for Sparse Matrix-Matrix Multiplication (SpMM) has received increasing research attention, especially on multi-core CPUs, due to the large input data size in applications such as graph neural networks (GNNs). Most existing solutions for SpMM computation follow the ahead-of-time (AOT) compilation approach, which compiles a program entirely before it is executed. AOT compilation for SpMM faces three key limitations: unnecessary memory access, additional branch overhead, and redundant instructions. These limitations stem from the fact that crucial information pertaining to SpMM is not known until runtime. In this paper, we propose JITSpMM, a just-in-time (JIT) assembly code generation framework to accelerated SpMM computation on multi-core CPUs with SIMD extensions. First, JITSpMM integrates the JIT assembly code generation technique into three widely-used workload division methods for SpMM to achieve balanced workload distribution among CPU threads. Next, with the availability of runtime information, JITSpMM employs a novel technique, coarse-grain column merging, to maximize instruction-level parallelism by unrolling the performance-critical loop. Furthermore, JITSpMM intelligently allocates registers to cache frequently accessed data to minimizing memory accesses, and employs selected SIMD instructions to enhance arithmetic throughput. We conduct a performance evaluation of JITSpMM and compare it two AOT baselines. The first involves existing SpMM implementations compiled using the Intel icc compiler with auto-vectorization. The second utilizes the highly-optimized SpMM routine provided by Intel MKL. Our results show that JITSpMM provides an average improvement of 3.8× and 1.4×, respectively.",
+  "hint_categories": [
+   "dense_la",
+   "sparse_la",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/cgo/CruysseD24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "Latent Idiom Recognition for a Minimalist Functional Array Language Using Equality Saturation",
+  "abstract": "Accelerating programs is typically done by recognizing code idioms matching high-performance libraries or hardware interfaces. However, recognizing such idioms automatically is challenging. The idiom recognition machinery is difficult to write and requires expert knowledge. In addition, slight variations in the input program might hide the idiom and defeat the recognizer. This paper advocates for the use of a minimalist functional array language supporting a small, but expressive, set of operators. The minimalist design leads to a tiny sets of rewrite rules, which encode the language semantics. Crucially, the same minimalist language is also used to encode idioms. This removes the need for hand-crafted analysis passes, or for having to learn a complex domain-specific language to define the idioms. Coupled with equality saturation, this approach is able to match the core functions from the BLAS and PyTorch libraries on a set of computational kernels. Compared to reference C kernel implementations, the approach produces a geometric mean speedup of 1.46× for C programs using BLAS, when generating such programs from the high-level minimalist language.",
+  "hint_categories": [
+   "dense_la"
+  ]
+ },
+ {
+  "key": "conf/cgo/CicoliniCSC24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "One Automaton to Rule Them All: Beyond Multiple Regular Expressions Execution",
+  "abstract": "Regular Expressions (REs) matching is crucial to identify strings exhibiting certain morphological properties in a data stream, resulting paramount in contexts such as deep packet inspection in computer security and genome analysis in bioinformatics. Yet, due to their intrinsic data-dependence characteristics, REs represent a complex computational kernel, and numerous solutions investigate pattern-matching efficiency in different directions. However, most of them lack a comprehensive ruleset optimization approach to truly push the pattern matching performance when considering multiple REs together. Thus, exploiting REs morphological similarities within the same dataset allows memory reduction when storing the patterns and drastically improves the dataset-matching throughput. Based on this observation, we propose the Multi-RE Finite State Automata (MFSA) that extends the Finite State Automata (FSA) model to improve REs parallelization by leveraging similarities within a specific application ruleset. We design a multi-level compilation framework to manage REs merging and optimization to produce MFSA(s). Furthermore, we extend iNFAnt algorithm for MFSAs execution with the novel iMFAnt engine. Our evaluation investigates the MFSA size-reduction impact and the execution throughput compared with the one of multiple FSA in both single-and multi-threaded configurations. This approach shows an average 71.95% compression in terms of states, introducing limited compilation time overhead. Besides, best iMFAnt achieves a geomean <tex xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">$5.99\\times$</tex> throughput improvement and <tex xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">$4.05\\times$</tex> speedup against single and multiple parallel FSAs.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/cgo/GuoCEBVGJ24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "OptiWISE: Combining Sampling and Instrumentation for Granular CPI Analysis",
+  "abstract": "Despite decades of improvement in compiler technology, it remains necessary to profile applications to improve performance. Existing profiling tools typically either sample hardware performance counters or instrument the program with extra instructions to analyze its execution. Both techniques are valuable with different strengths and weaknesses, but do not always correctly identify optimization opportunities. We present OPTIWISE, a profiling tool that runs the program twice, once with low-overhead sampling to accurately measure performance, and once with instrumentation to accurately capture control flow and execution counts. OPTIWISE then combines this information to give a highly detailed per-instruction CPI metric by computing the ratio of samples to execution counts, as well as aggregated information such as costs per loop, source-code line, or function. We evaluate OPTIWISE to show it has an overhead of 8.1× geomean, and 57× worst case on SPEC CPU2017 benchmarks. Using OPTIWISE, we present case studies of optimizing selected SPEC benchmarks on a modern x86 server processor. The per-instruction CPI metrics quickly reveal problems such as costly mispredicted branches and cache misses, which we use to manually optimize for effective performance improvements.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/cgo/ConsolaroZRLTSAZBAB24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "PolyTOPS: Reconfigurable and Flexible Polyhedral Scheduler",
+  "abstract": "Polyhedral techniques have been widely used for automatic code optimization in low-level compilers and higher-level processes. Loop optimization is central to this technique, and several polyhedral schedulers like Feautrier, Pluto, isl and Tensor Scheduler have been proposed, each of them targeting a different architecture, parallelism model, or application scenario. The need for scenario-specific optimization is growing due to the heterogeneity of architectures. One of the most critical cases is represented by NPUs (Neural Processing Units) used for AI, which may require loop optimization with different objectives. Another factor to be considered is the framework or compiler in which polyhedral optimization takes place. Different scenarios, depending on the target architecture, compilation environment, and application domain, may require different kinds of optimization to best exploit the architecture feature set. We introduce a new configurable polyhedral scheduler, PolyTOPS, that can be adjusted to various scenarios with straightforward, high-level configurations. This scheduler allows the creation of diverse scheduling strategies that can be both scenario-specific (like state-of-the-art schedulers) and kernel-specific, breaking the concept of a one-size-fits-all scheduler approach. PolyTOPS has been used with isl and CLooG as code generators and has been integrated in MindSpore AKG deep learning compiler. Experimental results in different scenarios show good performance: a geomean speedup of 7.66x on MindSpore (for the NPU Ascend architecture) hybrid custom operators over isl scheduling, a geomean speedup up to 1.80× on PolyBench on different multicore architectures over Pluto scheduling. Finally, some comparisons with different state-of-the-art tools are presented in the PolyMage scenario.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/GuanZBLZY24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "PresCount: Effective Register Allocation for Bank Conflict Reduction",
+  "abstract": "Modern processors with large multi-banked register files often rely on hardware solutions to resolve bank conflicts efficiently. However, these hardware-based methods, while flexible, can incur runtime penalties and restrict the exploration of optimized hardware designs. In contrast, compiler-based methods for register bank assignments avoid runtime overhead. However, incorporating bank assignment into the complex register allocation process presents significant challenges, leading existing methods to adopt conservative approaches to avoid potential side effects. This paper introduces the novel register allocation method PresCount, which enhances the coloring strategy for the Register Conflict Graph (RCG) and incorporates a bank pressure tracking mechanism to improve performance. The integrated register bank assigner in PresCount effectively reduces bank conflicts, achieving remarkable reductions of 43.28% and 27.76%, respectively, compared to existing methods on platforms with rich register banks and limited register budgets, as demonstrated by SPECfp and CNN-KERNEL benchmarks. Furthermore, a subgroup splitting technique is introduced to facilitate register allocation under the bank-subgroup register file design, specifically our Domain-Specific Architecture (DSA) for AI computing. This technique demonstrates an impressive 99.85% reduction in bank conflicts for domain-specific kernel functions. By addressing the challenges of bank conflicts in register allocation, the proposed PresCount method showcases significant improvements in performance and efficiency for platforms with different register configurations and domain-specific workloads, allowing for more flexible exploration of optimized hardware designs.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/cgo/IvanovZDEM24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "Retargeting and Respecializing GPU Workloads for Performance Portability",
+  "abstract": "In order to come close to peak performance, accelerators like GPUs require significant architecture-specific tuning that understand the availability of shared memory, parallelism, tensor cores, etc. Unfortunately, the pursuit of higher performance and lower costs have led to a significant diversification of architecture designs, even from the same vendor. This creates the need for performance portability across different GPUs, especially important for programs in a particular programming model with a certain architecture in mind. Even when the program can be seamlessly executed on a different architecture, it may suffer a performance penalty due to it not being sized appropriately to the available hardware resources such as fast memory and registers, let alone not using newer advanced features of the architecture. We propose a new approach to improving performance of (legacy) CUDA programs for modern machines by automatically adjusting the amount of work each parallel thread does, and the amount of memory and register resources it requires. By operating within the MLIR compiler infrastructure, we are able to also target AMD GPUs by performing automatic translation from CUDA and simultaneously adjust the program granularity to fit the size of target GPUs. Combined with autotuning assisted by the platform-specific compiler, our approach demonstrates 27% geomean speedup on the Rodinia benchmark suite over baseline CUDA implementation as well as performance parity between similar NVIDIA and AMD GPUs executing the same CUDA program.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/HeYWO24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "Revamping Sampling-Based PGO with Context-Sensitivity and Pseudo-instrumentation",
+  "abstract": "The ever increasing scale of modern data center demands more effective optimizations, as even a small percentage of performance improvement can result in a significant reduction in data-center cost and its environmental footprint. However, the diverse set of workloads running in data centers also challenges the scalability of optimization solutions. Profile-guided optimization (PGO) is a promising technique to improve application performance. Sampling-based PGO is widely used in data-center applications due to its low operational overhead, but the performance gains are not as substantial as the instrumentation-based counterpart. The high operational overhead of instrumentation-based PGO, on the other hand, hinders its large-scale adoption, despite its superior performance gains. In this paper, we propose CSSPGO, a context-sensitive sampling-based PGO framework with pseudo-instrumentation. CSSPGO offers a more balanced solution to push sampling-based PGO performance closer to instrumentation-based PGO while maintaining minimal operational overhead. It leverages pseudo-instrumentation to improve profile quality without incurring the overhead of traditional instrumentation. It also enriches profile with context-sensitivity to aid more effective optimizations through a novel profiling methodology using synchronized LBR and stack sampling. CSSPGO is now used to optimize over 75% of Meta's data center CPU cycles. Our evaluation with production workloads demonstrates 1%-5% performance improvement on top of state-of-the-art sampling-based PGO.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/cgo/ReymondBBFPR24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "SCHEMATIC: Compile-Time Checkpoint Placement and Memory Allocation for Intermittent Systems",
+  "abstract": "Battery-free devices enable sensing in hard-to-access locations, opening up new opportunities in various fields such as healthcare, space, or civil engineering. Such devices harvest ambient energy and store it in a capacitor. Due to the unpredictable nature of the harvested energy, a power failure can occur at any time, resulting in a loss of all non-persistent information (e.g., processor registers, data stored in volatile memory). Checkpointing volatile data in non-volatile memory allows the system to recover after a power failure, but raises two issues: (i) spatial and temporal placement of checkpoints; (ii) memory allocation of variables between volatile and non-volatile memory, with the overall objective of using energy as efficiently as possible. While many techniques rely on the developer to address these issues, we present Schematic,a compiler technique that automates checkpoint placement and memory allocation to minimize the overall energy consumption. Schematicensures that programs will eventually terminate (forward progress property). Moreover, checkpoint placement and memory allocation adapt to the size of the energy buffer and the capacity of volatile memory. Schematictakes advantage of volatile memory (VM) to reduce the energy consumed, by automatically placing the most used variables in VM. We tested Schematicfor different experimental settings (size of volatile memory and capacitor) and results show an average energy reduction of 51 % compared to related techniques.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/cgo/ArmengolEstapeWCO24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "SLaDe: A Portable Small Language Model Decompiler for Optimized Assembly",
+  "abstract": "Decompilation is a well-studied area with numerous high-quality tools available. These are frequently used for security tasks and to port legacy code. However, they regularly generate difficult-to-read programs and require a large amount of engineering effort to support new programming languages and ISAs. Recent interest in neural approaches has produced portable tools that generate readable code. Nevertheless, to-date such techniques are usually restricted to synthetic programs without optimization, and no models have evaluated their portability. Furthermore, while the code generated may be more readable, it is usually incorrect. This paper presents SLaDe, a Small Language model Decompiler based on a sequence-to-sequence Transformer trained over real-world code and augmented with a type inference engine. We utilize a novel tokenizer, dropout-free regularization, and type inference to generate programs that are more readable and accurate than standard analytic and recent neural approaches. Unlike standard approaches, SLaDe can infer out-of-context types and unlike neural approaches, it generates correct code. We evaluate SLaDe on over 4,000 ExeBench functions on two ISAs and at two optimization levels. SLaDe is up to 6× more accurate than Ghidra, a state-of-the-art, industrial-strength decompiler and up to 4× more accurate than the large language model ChatGPT and generates significantly more readable code than both.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/cgo/SwannOSM24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "Seer: Predictive Runtime Kernel Selection for Irregular Problems",
+  "abstract": "Modern GPUs are designed for regular problems and suffer from load imbalance when processing irregular data. Prior to our work, a domain expert selects the best kernel to map fine-grained irregular parallelism to a GPU. We instead propose Seer, an abstraction for producing a simple, reproduceable, and understandable decision tree selector model which performs runtime kernel selection for irregular workloads. To showcase our framework, we conduct a case study in Sparse Matrix Vector Multiplication (SpMV), in which Seer predicts the best strategy for a given dataset with an improvement of 2× over the best single iteration kernel across the entire SuiteSparse Matrix Collection dataset.",
+  "hint_categories": [
+   "dense_la",
+   "sparse_la"
+  ]
+ },
+ {
+  "key": "conf/cgo/CastelloBDIM24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "Tackling the Matrix Multiplication Micro-Kernel Generation with Exo",
+  "abstract": "The optimization of the matrix multiplication (or GEMM) has been a need during the last decades. This operation is considered the flagship of current linear algebra libraries such as BLIS, OpenBLAS, or Intel OneAPI because of its widespread use in a large variety of scientific applications. The GEMM is usually implemented following the GotoBLAS philosophy, which tiles the GEMM operands and uses a series of nested loops for performance improvement. These approaches extract the maximum computational power of the architectures through small pieces of hardware-oriented, high-performance code called micro-kernel. However, this approach forces developers to generate, with a nonnegligible effort, a dedicated micro-kernel for each new hardware. In this work, we present a step-by-step procedure for generating micro-kernels with the Exo compiler that perform close to (or even better than) manually developed microkernels written with intrinsic functions or assembly language. Our solution also improves the portability of the generated code, since a hardware target is fully specified by a concise library-based description of its instructions.",
+  "hint_categories": [
+   "dense_la"
+  ]
+ },
+ {
+  "key": "conf/cgo/SaiocSC24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "Unveiling and Vanquishing Goroutine Leaks in Enterprise Microservices: A Dynamic Analysis Approach",
+  "abstract": "Go is a modern programming language gaining popularity in enterprise microservice systems. Concurrency is a first-class citizen in Go with lightweight “goroutines” as the building blocks of concurrent execution. Go advocates message-passing to communicate and synchronize among goroutines. Improper use of message passing in Go can result in “partial deadlock” (interchangeably called a goroutine leak), a subtle concurrency bug where a blocked sender (receiver) never finds a corresponding receiver (sender), causing the blocked goroutine to leak memory, via its call stack and objects reachable from the stack. In this paper, we systematically study the prevalence of message passing and the resulting partial deadlocks in ≈75 Million lines of Uber's Go monorepo hosting ≈2500 microservices. We develop two lightweight, dynamic analysis tools: Goleak and LeakProf, designed to identify partial deadlocks. Goleak detects partial deadlocks during unit testing and prevents the introduction of new bugs. Conversely, LeakProf uses goroutine profiles obtained from services deployed in production to pinpoint intricate bugs arising from complex control flow, unexplored interleavings, or the absence of test coverage. We share our experience and insights deploying these tools in developer workflows in a large industrial setting. Using Goleak we unearthed 857 pre-existing goroutine leaks in the legacy code and prevented the introduction of ≈260 new leaks over one year period. Using LeakProf we found 24 and fixed 21 goroutine leaks, which resulted in up to 34% speedup and 9.2× memory reduction in some of our production services.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/cgo/OttoniPSX24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "Welcome from the Program Chairs",
+  "abstract": "On behalf of the Program Committee of the International Symposium on Code Generation and Optimization (CGO), we are delighted to present the papers featured in the 2024 edition of the conference. This year marks a significant milestone in the history of CGO, as the symposium embraced a dual-round submission process for the first time. The initial round had a deadline set on May 19th, 2024, while the second round followed the traditional CGO deadline on September 1st, 2024. Although the program committee remained consistent throughout both rounds, each round had distinct program co-chairs overseeing coordination. The firstround coordinators were Jingling Xue and Michel Steuwer, while the second-round coordinators were Fernando Pereira and Guilherme Ottoni.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/LiQMCSCZDCJZYLL24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "oneDNN Graph Compiler: A Hybrid Approach for High-Performance Deep Learning Compilation",
+  "abstract": "With the rapid development of deep learning models and hardware support for dense computing, the deep learning (DL) workload characteristics changed significantly from a few hot spots on compute-intensive operations to a broad range of operations scattered across the models. Accelerating a few compute-intensive operations using the expert-tuned implementation of primitives doesn't fully exploit the performance potential of AI hardware. Various efforts have been made to compile a full deep neural network (DNN) graph. One of the biggest challenges is to achieve high-performance tensor compilation by generating expert-level performance code for the dense compute-intensive operations and applying compilation optimization at the scope of DNN computation graph across multiple compute-intensive operations. We present oneDNN Graph Compiler, a tensor compiler that employs a hybrid approach of using techniques from both compiler optimization and expert-tuned kernels for high-performance code generation of the deep neural network graph. oneDNN Graph Compiler addresses unique optimization challenges in the deep learning domain, such as low-precision computation, aggressive fusion of graph operations, optimization for static tensor shapes and memory layout, constant weight optimization, and memory buffer reuse. Experimental results demonstrate significant performance gains over existing tensor compiler and primitives library for performance-critical DNN computation graphs and end-to-end models on Intel® Xeon® Scalable Processors.",
+  "hint_categories": [
+   "tensor",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/cgo/LopoukhineFVLDD25",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "A Multi-level Compiler Backend for Accelerated Micro-kernels Targeting RISC-V ISA Extensions",
+  "abstract": "High-performance micro-kernels must fully exploit today’s diverse and specialized hardware to deliver peak performance to deep neural networks (DNNs). While higher-level optimizations for DNNs are offered by numerous compilers (e.g., MLIR, TVM, OpenXLA), performance-critical micro-kernels are left to specialized code generators or handwritten assembly. Even though widely-adopted compilers (e.g., LLVM, GCC) offer tuned backends, their CPU-focused input abstraction, unstructured intermediate representation (IR) and general-purpose best-effort design inhibit tailored code generation for innovative hardware. We think it is time to widen the classical hourglass backend and embrace progressive lowering across a diverse set of structured abstractions to bring domain-specific code generation to compiler backends. We demonstrate this concept by implementing a custom backend for a RISC-V-based accelerator with hardware loops and streaming registers, leveraging knowledge about the hardware at levels of abstraction that match its custom instruction set architecture (ISA). We use incremental register allocation over structured IRs, while dropping classical spilling heuristics, and show up to 90% floating-point unit (FPU) utilization across key DNN kernels. By breaking the backend hourglass model, we reopen the path from domain-specific abstractions to specialized hardware.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/KimKPKY0025",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "Accelerating LLMs using an Efficient GEMM Library and Target-Aware Optimizations on Real-World PIM Devices",
+  "abstract": "Real-time processing of deep learning models on conventional systems, such as CPUs and GPUs, is highly challenging due to memory bottlenecks. This is exacerbated in Large Language Models (LLMs), where the majority of executions are dominated by General Matrix Multiplication (GEMM) operations, which are relatively more memory-intensive than convolution operations. Processing-in-Memory (PIM), which provides high internal bandwidth, can be a promising alternative for LLM serving. However, since current PIM systems do not fully replace traditional memory, data transfer between the host and PIM-side memory is essential. Therefore, minimizing the transfer cost between the host and PIM is crucial for serving LLMs efficiently on the PIM. In this paper, we propose PIM-LLM, an end-to-end framework that accelerates LLMs using an efficient tiled GEMM library and several key target-aware optimizations on real-world PIM systems. We first propose PGEMMlib, which provides optimized tiling techniques for PIM, considering architecture specific characteristics to minimize unnecessary data transfer overhead and maximize parallelism. In addition, Tile-Selector explores optimized parameters and techniques for different GEMM shapes and available resources of PIM systems using an analytical model. To accelerate LLMs using PGEMMlib, we integrate it into the TVM deep learning compiler framework. We further optimize the LLM execution by applying several key optimizations: Build-time memory layout adjustment, PIM resource pooling, CPU/PIM cooperation support, and QKV generation fusion. Evaluation shows that PIM-LLM achieves significant performance gains of up to 45.75x over the TVM baseline for several well-known LLMs. We strongly believe that this work provides key insights for efficient LLM serving on real PIM devices.",
+  "hint_categories": [
+   "dense_la",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/cgo/XuZC025",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "An Efficient Polynomial Multiplication Derived Implementation of Convolution in Neural Networks",
+  "abstract": "Convolution is the most time consuming computation kernel in Convolutional Neural Network (CNN) applications and the majority of Graph Neural Network (GNN) applications. To achieve good convolution performance, current NN libraries such as cuDNN usually transform the naive convolution problem into either the matrix vector multiplication form, called the im2col+MM approach, or into the Fourier domain representation, namely the FFT approach. Both approaches either introduce significant amount of data redundancy to reduce the number of data passes and to leverage highly tuned linear algebra libraries, or avoid data redundancy but require multiple passes on input. Therefore, no implementation of convolution can outperform others in all cases. In this paper, we introduce a novel transformation that reinterprete the convolution in NN as a polynomial multiplication problem. By carefully constructing a number of conceptual polynomials, NN’s convolution essentially becomes a well-known problem of calculating the coefficients in the product of two polynomials. We evaluate our approach in multiple ways: at the API level comparing it with one of the most widely used NN libraries cuDNN, as well as implementing it in PyTorch and comparing the performance with benchmark networks. On three NVIDIA GPUs 3090Ti, V100 and A10G, our approach outperforms cuDNN over a broad range of parameters with the max speedups of 34.6%, 43.1% and 33.6% on these GPUs, respectively.",
+  "hint_categories": [
+   "dense_la",
+   "fft_spectral",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/cgo/HoffmannFGLP25",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "Automatic Synthesis of Specialized Hash Functions",
+  "abstract": "This paper introduces a technique for synthesizing hash functions specialized to particular byte formats. This code generation method leverages three prevalent patterns: (i) fixed-length keys, (ii) keys with common subsequences, and (iii) keys ranging on predetermined sequences of bytes. Code generation involves two algorithms: one identifies relevant regular expressions within key examples, and the other generates specialized hash functions based on these expressions. Comparative analysis demonstrates that the synthetic functions outperform the general-purpose hashes in the C++ Standard Template Library and the Google Abseil Library when keys are given in ascending, normal or uniform distribution. In applications where low-mixing hashes are acceptable, the synthetic functions achieve speedups ranging from 2% to 11% on full benchmarks, and speedups of almost 50x once only hashing speed is considered.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/LeeY025",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "CUrator: An Efficient LLM Execution Engine with Optimized Integration of CUDA Libraries",
+  "abstract": "Large Language Models (LLMs) have recently emerged as a state-of-the-art learning model with a wide range of applications in diverse computing environments. Among the various computational operations that comprise the LLM, the GEneral Matrix Multiplication (GEMM) operation is the most frequently utilized operation within the LLM. GEMM libraries such as cuBLAS and CUTLASS provide a variety of optimization techniques to achieve optimal GEMM performance in GPU-enabled computing environments. In particular, the CUTLASS open-source library for GPUs within the CUDA programming environment provides users with the capability to optimize templates for high performance. Previous research has demonstrated the effectiveness of CUTLASS-based GEMMs in improving the performance of real-world deep neural networks on various deep learning platforms. However, these studies have not considered different model parameters for modern LLMs nor have they explored the impact of diverse GPU computing environments. This paper presents CUrator, an efficient LLM execution engine that can achieve optimal end-to-end LLM performance using both cuBLAS and CUTLASS libraries on different GPUs for modern LLMs such as BERT, GPT, and Llama. CUrator first generates CUTLASS-/cuBLAS-friendly graph IRs of various LLMs on the TVM framework to maximize mapping coverage. On the CUTLASS mapping path, it performs a comprehensive search for programmable tuning parameters in the CUTLASS library with the objective of deriving optimal kernels for all GEMMs within each LLM. CUrator further introduces two optimization techniques: 1) build-time reduction key initialization support for CUTLASS Split-K GEMMs, and 2) Split-K support for CUTLASS Batch GEMMs. Finally, CUrator selects the best performing mapping path between cuBLAS and CUTLASS paths. The experimental results show that CUrator achieves inference speedups of 1.50× and 4.99×, respectively, for representative LLMs on the A100 GPU in the single and half precision, compared to the baseline. We strongly believe that the CUrator framework can provide the best direction for next-generation tuning frameworks by showing the maximum end-to-end performance of various LLMs on various GPUs.",
+  "hint_categories": [
+   "dense_la",
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/cgo/LiangSS0FMXL25",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "Calibro: Compilation-Assisted Linking-Time Binary Code Outlining for Code Size Reduction in Android Applications",
+  "abstract": "Recent Android systems have employed pre-compilation technology to boost app launch speed and runtime performance. However, this generates large OAT files that over-consume scarce memory and storage resources in mobile devices. This paper conducts an evaluation of code redundancy in popular production android applications and observes that the code redundancy is up to 25%. To reduce the code size via redundancy elimination, this paper proposes Calibro, a compilation-assisted linking-time binary code outlining method. Calibro consists of two parts, the Compilation-Time code Outlining (CTO) and the Linking-Time Binary code Outlining (LTBO) with information collected at compilation- time. Additionally, a paralleled suffix tree method is proposed to reduce the building time overhead, and a hot function filtering method is proposed to effectively mitigate run-time performance degradation caused by code outlining. Experimental results show that compared to the baseline (the original AOSP version with all available code size optimization enabled), the proposed approach reduces code size in Android applications by more than 15.19% on average, with negligible runtime performance degradation and tolerable building time overhead. Hence the proposed code outlining approach is promising for production deployment.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/cgo/ZhangF25",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "Code Generation for Cryptographic Kernels using Multi-word Modular Arithmetic on GPU",
+  "abstract": "Fully homomorphic encryption (FHE) and zero-knowledge proofs (ZKPs) are emerging as solutions for data security in distributed environments. However, the widespread adoption of these encryption techniques is hindered by their significant computational overhead, primarily resulting from core cryptographic operations that involve large integer arithmetic. This paper presents a formalization of multi-word modular arithmetic (MoMA), which breaks down large bit-width integer arithmetic into operations on machine words. We further develop a rewrite system that implements MoMA through recursive rewriting of data types, designed for compatibility with compiler infrastructures and code generators. We evaluate MoMA by generating cryptographic kernels, including basic linear algebra subprogram (BLAS) operations and the number theoretic transform (NTT), targeting various GPUs. Our MoMA-based BLAS operations outperform state-of-the-art multi-precision libraries by orders of magnitude, and MoMA-based NTTs achieve near-ASIC performance on commodity GPUs.",
+  "hint_categories": [
+   "dense_la",
+   "fft_spectral"
+  ]
+ },
+ {
+  "key": "conf/cgo/SomainiCASC25",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "Combining MLIR Dialects with Domain-Specific Architecture for Efficient Regular Expression Matching",
+  "abstract": "Pattern matching based on Regular Expressions (REs) is a pervasive and challenging computational kernel used in several applications to identify critical information in a data stream. Due to the sequential data dependency of REs and the increasing data volume growth, hardware acceleration is gaining attention to address the limitation of general-purpose architectures. RE-oriented Domain-Specific Architectures (DSAs) combine the flexibility of translating REs into binary code with the efficiency of a specialized architecture, filling the gap between frozen hardware accelerators and the versatility of CPUs/GPUs. However, existing DSAs focus mainly on the efficiency execution challenge while missing the optimization opportunities that a structured compilation infrastructure can provide. This paper proposes a RE-tailored multi-level intermediate representation strategy embodied by the MLIR framework at the compiler level to exploit different abstraction optimizations via two domain-specific dialects, one targeting the abstract representation of REs and the other targeting the underlying domain-specific ISA. Moreover, this paper proposes a novel architectural organization of an open-source state-of-the-art DSA to maximize the parallelization capabilities. Overall, the proposed approach significantly improves execution time by up to 2.26×, energy efficiency by up to 2.30×, and resource usage.",
+  "hint_categories": [
+   "primitives",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/cgo/HeY25",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "CuAsmRL: Optimizing GPU SASS Schedules via Deep Reinforcement Learning",
+  "abstract": "Large language models (LLMs) are remarked by their substantial computational requirements. To mitigate the cost, researchers develop specialized CUDA kernels, which often fuse several tensor operations to maximize the utilization of GPUs as much as possible. However, those specialized kernels may still leave performance on the table as CUDA assembly experts show that manual optimization of GPU SASS schedules can lead to better performance, and trial-and-error is largely employed to manually find the best GPU SASS schedules. In this work, we employ an automatic approach to optimize GPU SASS schedules, which thus can be integrated into existing compiler frameworks. The key to automatic optimization is training an RL agent to mimic how human experts perform manual scheduling. To this end, we formulate an assembly game, where RL agents can play to find the best GPU SASS schedules. The assembly game starts from a -O3 optimized SASS schedule, and the RL agents can iteratively apply actions to mutate the current schedules. Positive rewards are generated if the mutated schedules get higher throughput by executing on GPUs. Experiments show that CuAsmRL can further improve the performance of existing specialized CUDA kernels transparently by up to 26%, and on average 9%. Moreover, it is used as a tool to reveal potential optimization moves learned automatically",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/MilikicCJ25",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "GraalNN: Context-Sensitive Static Profiling with Graph Neural Networks",
+  "abstract": "Accurate static profile prediction is crucial for achieving optimal program performance in the absence of dynamic profiles. However, existing static profiling methods struggle to fully exploit the complex structure of the compiler’s intermediate representation and fail to effectively utilize the calling context information needed for accurate profile inference. To address these limitations, we introduce GraalNN, a Graph Neural Network-based static profiling framework that directly learns structural information from control-flow graphs. This reduces the reliance on handcrafted features and minimizes the effort required for feature engineering while improving the model’s ability to predict profiles. GraalNN adopts a two-stage approach: it predicts context-insensitive profiles during parsing and uses contextual information from the call graph to refine profiles during inlining. This methodology achieves a 10.13% runtime speedup across a diverse set of industry-standard benchmarks, surpassing state-of-the-art static profiling techniques by more than 2.5%. Furthermore, GraalNN improves throughput by 3.7% over other static profiling methods on real-world microservices.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/cgo/AugustoPVRP25",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "Honey Potion: An eBPF Backend for Elixir",
+  "abstract": "The Extended Berkeley Packet Filter (eBPF) is a sandboxed virtual machine that runs on operating systems with kernel privileges. Currently, eBPF programs are either translated from a subset of C, called Restricted C, or from bindings available for languages such as Rust or Python. This paper describes Honey Potion, a compiler that compiles Elixir to eBPF binaries. Translation is challenging, for it must not only preserve semantics, but also satisfy the eBPF verifier, which requires proofs of in-bounds memory accesses and termination. The translator relies heavily on this last constraint---ensured termination---to implement different optimizations: constant propagation, type specialization and partial evaluation. Honey Potion is publicly available, and has been used in the development of many eBPF applications, such as packet routers, process monitors and event loggers. To the best of our knowledge, Honey Potion is the first translator of a functional programming language to eBPF.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/BassoPRB25",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "Improving Native-Image Startup Performance",
+  "abstract": "With the increasing popularity of Serverless computing and Function as a Service---where typical workloads have a short lifetime---the research community is increasingly focusing on startup performance optimization. To reduce the startup time of managed language runtime systems, related work proposes strategies to move runtime environment initialization ahead-of-time. For instance, GraalVM Native Image allows one to create a binary file from a Java application that embeds a snapshot of the pre-initialized heap memory and can run without instantiating a Java Virtual Machine. However, the program startup needs to be further optimized, because the cloud runtime often starts the program while responding to the request. Thus, the program startup time impacts the service-level agreement. In this paper, we improve the startup time of Native-Image binaries by changing their layout during compilation, reducing I/O traffic. We propose a profile-guided binary-reordering approach and a profiling methodology to obtain the execution-order profiles of methods and objects. Thanks to these profiles, we first reduce page faults related to the code section. Then, we propose three ordering strategies to reduce page faults related to accessing the objects in the heap snapshot. Since the object identities and the heap-snapshot contents are not persistent across Native-Image builds of the same program, we propose a method of matching objects from the profile against the objects in the profile-guided build. Experimental results show that our ordering strategies lead to an average page-fault reduction factor of 1.61× and an average execution-time speedup of 1.59×.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/cgo/MaWXH0ZCHZTWZ25",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "IntelliGen: Instruction-Level Auto-tuning for Tensor Program with Monotonic Memory Optimization",
+  "abstract": "Tensor compilers play a critical role in optimizing deep neural networks (DNNs), with memory performance emerging as a key bottleneck in code generation for DNN models. Existing tensor compilers are constrained by inefficient auto-tuning algorithms. They either must deploy coarse-grained descriptions, thus miss potential optimization, or struggle with vast search spaces, rendering auto-tuning inapplicable. Tensor compilers require a more holistic optimization of memory performance to overcome these constraints. To address this issue, we focus our optimization objective on memory performance, which allows us to design monotonic optimization methods, significantly enhancing the efficiency of auto-tuning and thus enabling auto-tuning on a fine-granularity description. Based on these observations, we propose IntelliGen, a tensor compiler with instruction-level auto-tuning and monotonic memory optimization. We design an instruction-level graph description, and a monotonic optimization method for optimization on . Benefiting from auto-tuning techniques with fine-grained description, IntelliGen demonstrates significant speedup of up to 3.13×, 3.55×, and 16.9× (averaging 1.46×, 1.85×, and 2.30×, respectively) on NVIDIA GPUs, AMD GPUs, and Cambricon MLUs over the most efficient existing frameworks.",
+  "hint_categories": [
+   "tensor"
+  ]
+ },
+ {
+  "key": "conf/cgo/ArifA025",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "Janitizer: Rethinking Binary Tools for Practical and Comprehensive Security",
+  "abstract": "Comprehensive application security can only be ensured if all code that it is going to execute is protected: any unprotected code, either from libraries or the application, becomes a potential attack surface. Compilers contain extensive suites of tools to aid in this, but require source availability that is often infeasible. Existing static and dynamic binary rewriting techniques that retrofit for security either lack in code coverage or soundness, or incur very high performance overhead. We present a case for adopting hybrid static-dynamic mechanisms to ensure comprehensive security for binaries, providing sound and practical solutions. We highlight the limitations of existing hybrid tools in their use for security purposes, and provide insights to re-architect them. We provide a framework, Janitizer, that enables sound and comprehensive code coverage for entire applications, presenting hybrid binary implementations for two important classes of security schemes; a memory sanitizer and a control flow integrity scheme. These achieve the coverage and correctness of high-overhead dynamic techniques, while maintaining performance levels of low-coverage static techniques.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/TanejaLYML25",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "LLM-Vectorizer: LLM-Based Verified Loop Vectorizer",
+  "abstract": "Vectorization is a powerful optimization technique that significantly boosts the performance of high performance computing applications operating on large data arrays. Despite decades of research on auto-vectorization, compilers frequently miss opportunities to vectorize code. On the other hand, writing vectorized code manually using compiler intrinsics is still a complex, error-prone task that demands deep knowledge of specific architecture and compilers. In this paper, we evaluate the potential of large-language models (LLMs) to generate vectorized (Single Instruction Multiple Data) code from scalar programs that process individual array elements. We propose a novel finite-state-machine multi-agents based approach that harnesses LLMs and test-based feedback to generate vectorized code. Our findings indicate that LLMs are capable of producing high-performance vectorized code with run-time speedup ranging from 1.1x to 9.4x as compared to the state-of-the-art compilers such as Intel Compiler, GCC, and Clang. To verify the correctness of vectorized code, we use Alive2, a leading bounded translation validation tool for LLVM IR. We describe a few domain-specific techniques to improve the scalability of Alive2 on our benchmark dataset. Overall, our approach is able to verify 38.2% of vectorizations as correct on the TSVC benchmark dataset.",
+  "hint_categories": []
+ }
+]

@@ -1,0 +1,180 @@
+kernel: triangle-counting
+summary: >
+  Exact global triangle count of a static, undirected, simple graph via
+  edge-orientation + neighbor-intersection; measured as steady-state
+  counting throughput with orientation/format-conversion preprocessing
+  reported separately, across single-GPU and MPI-distributed-CPU variants
+  that the surveyed literature treats as genuinely different regimes (no
+  paper in this track straddles both platforms).
+operation: >
+  T = |{(u,v,w) : uv,vw,wu in E}| for undirected simple graph G=(V,E);
+  computed via a directed orientation of each edge (typically low-degree ->
+  high-degree, i.e. degree ordering / DODGR construction) followed by
+  local set-intersection of directed out-neighborhoods, summed and,
+  depending on the orientation convention, divided by a small constant
+  (1, 3, or 6) to yield the unique undirected triangle count.
+
+variants:
+  - id: tc-gpu-kernel-exact
+    claim: >
+      steady-state single-GPU counting-kernel throughput, graph already
+      resident in device memory in the algorithm's native format (CSR /
+      DCSR / bitmap / tensor-core layout); orientation and any
+      format-specific reordering conversion EXCLUDED from the timed region
+      but reported separately. The common denominator TC-Compare/GroupTC's
+      own 9-algorithm harness and ToT's per-phase CUDATimer split both
+      actually measure.
+    inputs:
+      suite: "SNAP (edge-list) union ∪ SuiteSparse Matrix Collection (Matrix-Market, symmetric adjacency) — same underlying graphs, either lossless encoding accepted"
+      selection: >
+        real (non-synthetic) undirected/undirectable graphs used by >=1
+        code-verified surveyed GPU artifact, 1e5 <= |E| <= 2e9 (excludes
+        toy instances below 1e5 edges and instances too large for a single
+        GPU's device memory in CSR+working-set form); union of TC-Compare's
+        19-dataset SNAP list, capped at the memory-fitting subset.
+      recommended_subset:
+        [as-caida, p2p-Gnutella31, email-EuAll, soc-Slashdot0902,
+         web-NotreDame, com-dblp, amazon0601, roadNet-CA, wiki-Talk,
+         web-BerkStan, as-skitter, cit-Patents, soc-pokec,
+         sx-stackoverflow, com-lj, soc-LiveJournal1, com-orkut]
+      graph_properties: "undirected, self-loops and duplicate edges removed during CSR build (not timed, see protocol.format)"
+    protocol:
+      format: "CSR, given (SNAP-edge-list -> CSR dedup/symmetrize, or Matrix-Market -> CSR, NOT timed); algorithm-native reordering (e.g. GroupTC's rid_dcsr, ToT's bitmap layout) also NOT timed, reported once under preprocessing_reported"
+      orientation: "edge orientation (e.g. extract-upper-triangular / low-to-high-degree direction assignment) is preprocessing, NOT timed, reported once under preprocessing_reported — fixes katric's practice of folding orientation into kernel time (that belongs in tc-dist-e2e-real below, not here)"
+      warmup: 10
+      reps: 100
+      statistic: "median (report min/max alongside)"
+      timer: "device-side wall clock bracketed by cudaDeviceSynchronize() (or CUDA events), one measurement per iteration — NOT a single event pair wrapping the whole 100-iteration loop"
+      timing_scope: "counting kernel only (set-intersection / tensor-core MMA + reduction); H2D/D2H transfer of the graph excluded (loaded once before the loop, matching TC-Compare's TC_gpu())"
+      preprocessing_reported: "separately, once: (a) CSR build/dedup time, (b) orientation time, (c) algorithm-native format conversion time"
+      deviation_from_surveyed_practice: >
+        TC-Compare's own gpu_run() wraps all 100 iterations under one
+        accumulator and reports only the mean (no warmup discard, no
+        median/min/max); ToT's driver runs a single un-repeated measurement
+        per phase. This spec requires per-iteration timestamps and
+        mandates reporting median + min/max instead, so run-to-run jitter
+        and clock throttling are visible rather than averaged away or
+        invisible from n=1.
+    metric: {primary: "GTEPS (|E| / time / 1e9)", secondary: "ms"}
+    correctness: >
+      EXACT integer match (zero tolerance — triangle counts are integers,
+      not floating-point sums) vs. a trusted single-threaded CPU reference
+      (merge-based sorted-neighbor triangle counting, computed once per
+      graph and cached), cross-checked against SNAP's own published
+      "Number of triangles" statistic (snap.stanford.edu/data per-dataset
+      page) wherever the graph originates from SNAP. Implementations using
+      reduced-precision accumulation (e.g. ToT's fp16 Tensor Core MMA) MUST
+      still produce the exact integer count to qualify for this variant's
+      leaderboard on a given graph; if precision loss causes a mismatch on
+      some instance, that (implementation, graph) pair is marked
+      NOT-VERIFIED and excluded, rather than silently reported — this
+      closes the gap ToT's own README documents ("-e 1 ... may mitigate
+      precision problems in some cases") but never resolves.
+
+  - id: tc-gpu-e2e-preproc
+    claim: >
+      end-to-end single-GPU throughput including one-shot CSR build +
+      orientation + algorithm-native format conversion, amortized over
+      k=100 repeated counts on the same resident graph — TC-Compare's own
+      100-iteration convention read as an amortization count rather than a
+      pure-kernel repetition count, and the realistic "load graph once,
+      count many times" usage pattern implied by streaming/dynamic-graph
+      follow-on work in this space.
+    inputs:
+      suite: "same as tc-gpu-kernel-exact"
+      selection: "same as tc-gpu-kernel-exact"
+      recommended_subset: "same as tc-gpu-kernel-exact, plus twitter7 and com-friendster (>1B edges) to stress one-shot conversion cost at scale"
+    protocol:
+      format: "input is raw SNAP edge-list or Matrix-Market; CSR build + orientation + native-format conversion ALL timed, once"
+      warmup: 10
+      reps: "k=100 post-conversion counting calls; report both amortized (incl. 1/k of preprocessing) and pure-kernel time"
+      statistic: median
+      timer: "device-side wall clock for the counting calls; std::chrono/CUDA events for the one-shot preprocessing"
+      timing_scope: "CSR build + orientation + format conversion + k counting calls; H2D of the raw graph included, D2H of the final scalar count excluded"
+      preprocessing_reported: "both standalone (ms, once) AND amortized-per-call (preprocessing_ms / k added to each call)"
+    metric: {primary: "GTEPS (amortized)", secondary: "ms (preprocessing, standalone); ms (per-call, pure kernel)"}
+    correctness: "same exact-match gate as tc-gpu-kernel-exact, checked post-conversion"
+
+  - id: tc-dist-strong-scaling-real
+    claim: >
+      distributed-memory strong-scaling wall-clock time on a fixed
+      real-world graph across a core-count ladder; I/O + graph
+      distribution EXCLUDED and reported separately (matching all 3
+      distributed papers), edge orientation / degree-ordering REPORTED AS
+      ITS OWN SEPARATE NUMBER even though 2 of 3 surveyed distributed
+      papers (katric, likely lcc) bundle it into the counted time —
+      following TriPoll's cleaner preprocess_timer/step_timer split as the
+      fairness fix.
+    inputs:
+      suite: "union of graphs used by >=2 of {katric, lcc, TriPoll}"
+      selection: "LiveJournal, Orkut, Twitter, Friendster, and the uk-2007-05/webbase-2001 web-graph family recur across >=2 of the 3 surveyed distributed papers; road networks (katric only) and Reddit/Web-Data-Commons (TriPoll only) are excluded by this >=2-paper criterion"
+      recommended_subset:
+        [soc-LiveJournal1, com-orkut, twitter (or twitter7), com-friendster,
+         uk-2007-05, webbase-2001]
+      core_counts: "[2048, 4096, 8192, 16384, 32768] (katric's own ladder; lowest rung dropped since TriPoll/lcc test smaller node counts that don't reach 2048 cores on the largest graphs here)"
+    protocol:
+      format: "graph pre-partitioned/pre-distributed once, NOT timed (I/O + distribution reported separately, matching all 3 papers' stated exclusion)"
+      orientation: "degree-ordering / edge-orientation timed SEPARATELY from the counting phase and reported as its own number — deviates from katric's own practice of folding it into algorithm time, adopted here so the two legitimately different claims (orientation cost, counting cost) aren't silently merged"
+      warmup: 0
+      reps: "2 job allocations x 3 executions = 6 runs (lcc's own protocol, the most rigorous of the 3 distributed papers; strictly more repetitions than katric's 2 reps or TriPoll's un-repeated single run)"
+      statistic: "median of the longest-running (straggler) rank across the 6 runs, with 95% CI reported alongside (lcc's own protocol)"
+      timer: "MPI-barrier-synchronized wall clock (e.g. MPI_Wtime / ygm::timer), one measurement per run"
+      timing_scope: "counting phase only (orientation excluded per above); I/O + distribution excluded"
+      preprocessing_reported: "separately, once per core count: (a) I/O+distribution time, (b) orientation/degree-ordering time"
+    metric: {primary: "GTEPS (|E| / time / 1e9)", secondary: "wall-clock time (s); strong-scaling speedup vs. lowest tested core count"}
+    correctness: >
+      EXACT integer match vs. the same trusted reference count established
+      in tc-gpu-kernel-exact (computed once per graph, independent of core
+      count) or, where available, SNAP's published triangle count.
+
+  - id: tc-dist-weak-scaling-synthetic
+    claim: >
+      distributed-memory weak-scaling wall-clock time on Graph500-style
+      R-MAT synthetic graphs with fixed edges-per-core, across a
+      core-count ladder — covers the RMAT/KaGen-generated instances all 3
+      distributed papers (and TC-Compare, single-GPU) use for scale
+      sweeps, using the OFFICIAL Graph500 R-MAT parameters as the single
+      shared generator definition since the 3 papers' own scale ladders
+      (katric n=16-18, lcc S21/S23/S30, TriPoll up to scale 32) don't
+      otherwise overlap.
+    inputs:
+      suite: "R-MAT (Graph500 Kronecker generator or KaGen RMAT), a=0.57, b=c=0.19, d=0.05, edge-factor=16"
+      selection: "fixed generator parameters (Graph500 official spec) at 4 scales chosen to weak-scale with the core-count ladder below"
+      recommended_subset: "SCALE in {20, 22, 24, 26} (2^20..2^26 vertices, 16x edges/vertex), fixed RNG seed=1 reported for reproducibility (no paper in this track states a seed, which the spec fixes)"
+      core_counts: "[2048, 4096, 8192, 16384, 32768], one SCALE fixed per rung to hold edges/core roughly constant"
+    protocol:
+      format: "graph generated once in-memory and distributed, generation+distribution NOT timed"
+      orientation: "timed separately, same as tc-dist-strong-scaling-real"
+      warmup: 0
+      reps: "2 job allocations x 3 executions = 6 runs, same protocol as tc-dist-strong-scaling-real"
+      statistic: "median of the longest-running rank across the 6 runs, 95% CI reported"
+      timer: "MPI-barrier-synchronized wall clock"
+      timing_scope: "counting phase only; generation + distribution + orientation excluded, reported separately"
+      preprocessing_reported: "separately, once per (scale, core count): (a) generation+distribution time, (b) orientation time"
+    metric: {primary: "GTEPS (|E| / time / 1e9)", secondary: "wall-clock time (s); weak-scaling efficiency vs. lowest tested core count"}
+    correctness: >
+      EXACT integer match vs. a trusted single-threaded CPU reference run
+      once per (scale, seed) instance and cached — no published ground
+      truth exists for a given RMAT seed, so the fixed seed above is what
+      makes this reproducible/verifiable at all (fixes the fact that none
+      of the 3 surveyed distributed papers report a generator seed).
+
+notes_on_fairness:
+  - "TC-Compare's own 9-algorithm harness times a 100-iteration loop with a single accumulator and reports only the mean; ToT's driver runs n=1 with no repetition at all. tc-gpu-kernel-exact requires per-iteration timestamps and mandates median+min/max, matching this track's own SpMM-benchspec fix for the identical anti-pattern."
+  - "katric is the only one of the 3 distributed papers to explicitly document folding edge orientation/neighborhood-sorting into the counted 'algorithm time' rather than separating it like TriPoll does; tc-dist-strong-scaling-real and tc-dist-weak-scaling-synthetic both require the TriPoll-style separation instead, so orientation cost isn't silently hidden inside the counting number for algorithms that happen to interleave the two."
+  - "None of the 5 papers compares against an independently published ground-truth triangle count; TC-Compare and TriPoll rely only on multiple-algorithm-must-agree cross-checks, which cannot catch a bug shared by all algorithms under test. All 4 variants above mandate an EXACT match against either a trusted independent reference implementation or SNAP's own published per-dataset triangle count."
+  - "ToT's README documents a real, unresolved precision hazard (fp16 Tensor Core summation drifting on large graphs) and offers only a partial, non-guaranteed mitigation. This spec does not accept 'approximately correct' as passing for an EXACT-counting track: any implementation that can't guarantee the exact integer count on a given graph is excluded from that graph's leaderboard entry rather than silently scored."
+  - "No paper in this track reports a fixed RNG seed for its RMAT/KaGen synthetic instances, making none of the 3 distributed papers' synthetic-graph numbers independently reproducible. tc-dist-weak-scaling-synthetic fixes a seed explicitly."
+
+open_questions:
+  - "Whether ToT's paper-level dataset table (names/sizes actually benchmarked in the TPDS'25 article) exists anywhere accessible — ACM DL (403) and IEEE Xplore (418) both blocked WebFetch, and no arXiv preprint could be located via web search. The recommended_subset for the GPU variants is therefore built from TC-Compare's dataset list, not ToT's own, and ToT's real reported speedup/dataset numbers remain unverified beyond the abstract's headline figures."
+  - "TC-Compare's data_getter/g500/run.sh checked-in invocation (-R -s 17 -e 2) is explicitly labeled as an example in the repo, not necessarily the paper's actual evaluated scale(s); the true Graph500-scale sweep used in the IPDPS'24 paper itself was not independently confirmed (IEEE Xplore blocked)."
+  - "Whether lcc (StrauszVGBH22) separates edge orientation from the counted LCC/TC time the way TriPoll does, or bundles it like katric, was not resolved from the ar5iv-fetched text (the paper states only that I/O + distribution is excluded, not where orientation falls) — the spec conservatively assumes it may be bundled and requires explicit separation regardless."
+  - "Whether a genuinely shared single benchmark instance (byte-identical graph, not just same-name-different-crawl) exists across katric/lcc/TriPoll for e.g. LiveJournal or uk-2007-05 was not verified; the recommended_subset names the graph family, but exact source URLs/preprocessing (symmetrization, self-loop removal) may need to be pinned per-download to guarantee identical edge counts across re-implementations."
+
+evidence:
+  journals/tpds/ChenY25: "single .mtx graph via CLI; 3 separately-CUDATimer'd phases (extract-upper-tri, COO->bitmap, tensor-core count); n=1 no repetition; fp16 MMA with self-documented precision-error risk; CPU BFS reference via -v flag, no automated tolerance; ACM/IEEE fulltext blocked."
+  conf/ipps/Li0PTZ24: "9 GPU algorithms incl. new GroupTC, one harness; SNAP (19 named) + Graph500 Kronecker; iterator_count=100 hardcoded, mean-only, no warmup; H2D once outside loop, format conversion fully offline; correctness only via cross-algorithm agreement; IEEE fulltext blocked (418)."
+  conf/ipps/SandersU23: "8 real graphs (LiveJournal..Friendster, uk-2007-05, webbase-2001, Europe/USA roads) + KaGen RGG2D/RHG/ER/RMAT synthetic; iterations:2 in runner config, no stated statistic; I/O+build excluded but orientation+sorting INCLUDED in timed algorithm time; HavoqGT/TriC baselines; SuperMUC-NG 2048-32768 cores."
+  conf/ipps/StrauszVGBH22: "RMAT S21/S23/S30 (Graph500-style a=.57,b=c=.19,d=.05) + SNAP/KONECT real graphs; shared-mem: adaptive median-until-CI; dist-mem: 2 allocations x 3 execs, median of straggler rank + 95% CI (most rigorous of the 5); I/O+distribution excluded; TriC/SSI/binary-search baselines; Piz Daint."
+  conf/sc/SteilRIPSP21: "web-scale real graphs (Reddit, Friendster, uk-2007-05, WDC2012 up to 224.5B edges) + RMAT to scale 32; n=1 no repetition; preprocess_timer (build+DODGR/orientation) cleanly separated from step_timer (push-pull / push-only counting), the cleanest separation among the 5; both algorithm variants' counts printed as implicit cross-check; Pearce/Tom/TriC baselines; Catalyst 2-256 nodes."

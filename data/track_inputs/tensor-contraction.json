@@ -1,0 +1,75 @@
+{
+ "kernel": "tensor-contraction",
+ "papers": [
+  {
+   "key": "conf/asplos/BreuerBEGHKR25",
+   "title": "Einsum Trees: An Abstraction for Optimizing the Execution of Tensor Expressions",
+   "venue": "ASPLOS",
+   "year": 2025,
+   "doi": "10.1145/3676641.3716254",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3676641.3716254",
+   "artifact_url": "https://github.com/scalable-analyses/et_asplos25",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu",
+    "arm-cpu"
+   ],
+   "approach": "codegen",
+   "abstract": "Einsum is a declarative language for tensor expressions that specifies an output tensor in terms of several input tensors. However, it does not specify how to compute the output tensor from the input tensors. A typical computational backend for the einsum language comprises two parts: First, a contraction path algorithm that breaks down an einsum expression into a sequence of binary tensor contractions. Second, the execution of the binary contractions. For efficient binary contractions, the data layout of the tensors must be optimized. So far, the computation of contraction paths and the optimization of the data layout for single, that is, local, binary tensor contractions have been studied in isolation. For optimizing the overall execution times of einsum expressions, we introduce Einsum Tree IR, an intermediate representation for globally optimizing the data layout for a given contract",
+   "one_liner": "Einsum Tree IR globally optimizes data layout of contraction paths on Arm and x86 CPUs"
+  },
+  {
+   "key": "conf/ipps/HuLJ24",
+   "title": "cuKE: An Efficient Code Generator for Score Function Computation in Knowledge Graph Embedding",
+   "venue": "IPDPS",
+   "year": 2024,
+   "doi": "10.1109/IPDPS57955.2024.00085",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/parallel-group/cuke",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "abstract": "Knowledge graph embedding (KGE) plays an important role in graph mining and learning applications by converting discrete graph structures to continuous vector representations. While previous systems have focused on scaling KGE onto multiple GPUs, the score function computation on each GPU can be a performance bottleneck. Existing KGE systems implement the score functions with separate tensor operations, leading to large memory consumption and poor memory access efficiency. To overcome the issues, we propose a code generator that automatically translates Python-like definitions of KGE score functions into efficient CUDA code. Our code generator exploits the unique feature of KGE score functions and performs an aggressive fusion of tensor operations. Additionally, our generated code performs a runtime inspection to reduce redundant memory access for edges with identical indices. Experiment",
+   "one_liner": "cuKE: code generator fusing KGE score-function tensor ops into CUDA, 14.9x over TorchScript."
+  },
+  {
+   "key": "conf/ppopp/JangdaY24",
+   "title": "Fast Kronecker Matrix-Matrix Multiplication on GPUs",
+   "venue": "PPoPP",
+   "year": 2024,
+   "doi": "10.1145/3627535.3638489",
+   "arxiv": "2401.10187",
+   "oa_url": "https://arxiv.org/pdf/2401.10187",
+   "artifact_url": "https://github.com/abhijangda/fastkron",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Kronecker Matrix-Matrix Multiplication (Kron-Matmul) is the multiplication of a matrix with the Kronecker Product of several smaller matrices. Kron-Matmul is a core operation for many scientific and machine learning computations. State-of-the-art Kron-Matmul implementations utilize existing tensor algebra operations, such as matrix multiplication, transpose, and tensor matrix multiplication. However, this design choice prevents several Kron-Matmul specific optimizations, thus, leaving significant performance on the table.",
+   "one_liner": "Custom fused GPU kernels for Kronecker matrix-matrix multiplication beating tensor-algebra baselines"
+  },
+  {
+   "key": "conf/sc/LiuLLFYSZWPCGHW21",
+   "title": "Closing the \"quantum supremacy\" gap: achieving real-time simulation of a random quantum circuit using a new Sunway supercomputer",
+   "venue": "SC",
+   "year": 2021,
+   "doi": "10.1145/3458817.3487399",
+   "arxiv": "2110.14502",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3458817.3487399",
+   "artifact_url": "https://github.com/Daisyforest/SWQsim",
+   "artifact_status": "verified",
+   "platform": [
+    "distributed",
+    "other"
+   ],
+   "approach": "manual",
+   "abstract": "We develop a high-performance tensor-based simulator for random quantum circuits(RQCs) on the new Sunway supercomputer. Our major innovations include: (1) a near-optimal slicing scheme, and a path-optimization strategy that considers both complexity and compute density; (2) a three-level parallelization scheme that scales to about 42 million cores; (3) a fused permutation and multiplication design that improves the compute efficiency for a wide range of tensor contraction scenarios; and (4) a mixed-precision scheme to further improve the performance. Our simulator effectively expands the scope of simulatable RQCs to include the 10X10(qubits)X(1+40+1)(depth) circuit, with a sustained performance of 1.2 Eflops (single-precision), or 4.4 Eflops (mixed-precision)as a new milestone for classical simulation of quantum circuits; and reduces the simulation sampling time of Google Sycamore to 304",
+   "one_liner": "Sunway tensor-contraction random-quantum-circuit simulator: fused permute-multiply, 1.2 Eflop/s"
+  }
+ ]
+}

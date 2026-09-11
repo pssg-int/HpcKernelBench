@@ -1,0 +1,127 @@
+{
+ "kernel": "lossless-compression",
+ "papers": [
+  {
+   "key": "conf/asplos/FanYPLLW0026",
+   "title": "ZipServ: Fast and Memory-Efficient LLM Inference with Hardware-Aware Lossless Compression",
+   "venue": "ASPLOS",
+   "year": 2026,
+   "doi": "10.1145/3779212.3790250",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3779212.3790250",
+   "artifact_url": "https://github.com/xxyux/ZipServ",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Lossless model compression holds tremendous promise for alleviating the memory and bandwidth bottlenecks in bit-exact Large Language Model (LLM) serving. However, existing approaches often result in substantial inference slowdowns due to fundamental design mismatches with GPU architectures: at the kernel level, variable-length bitstreams produced by traditional entropy codecs break SIMT parallelism; at the system level, decoupled pipelines lead to redundant memory traffic. We present ZipServ, a lossless compression framework co-designed for efficient LLM inference. ZipServ introduces Tensor-Core-Aware Triple Bitmap Encoding (TCA-TBE), a novel fixed-length format that enables constant-time, parallel decoding, together with a fused decompression-GEMM (ZipGEMM) kernel that decompresses weights on-the-fly directly into Tensor Core registers. This '' load-compressed, compute-decompressed '' d",
+   "one_liner": "Tensor-core-aware lossless weight compression with fused decompress-GEMM kernel; 2.21x over cuBLAS"
+  },
+  {
+   "key": "conf/sc/HuangYYLGLJWFHT25",
+   "title": "MANS: Efficient and Portable ANS Encoding for Multi-Byte Integer Data on CPUs and GPUs",
+   "venue": "SC",
+   "year": 2025,
+   "doi": "10.1145/3712285.3759825",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3712285.3759825",
+   "artifact_url": "https://github.com/hpdps-group/MANS",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu",
+    "nvidia-gpu",
+    "amd-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Lossless compression is a classic technique for reducing data storage and transmission requirements. Asymmetric Numeral Systems (ANS) is a high-throughput, high-ratio lossless compression algorithm, but it lacks effective support for multi-byte data and cross-platform compatibility. To address this issue, we propose an Adaptive Data Mapping (ADM) scheme, which maps multi-byte integer data into single-byte space based on the data’s characteristics, improving the compression ratio of ANS while maintaining low encoding redundancy. We also optimize the ADM algorithm and the ANS encoder for GPU and CPU architectures, respectively, and combine them to create an efficient and portable ANS encoding method for multi-byte integer data, called MANS. Experimental results show that MANS improves compression ratios by an average of 1.24 ×, achieves 870.27MB/s throughput on CPUs, and delivers up to 288",
+   "one_liner": "Portable ANS lossless encoder with adaptive multi-byte mapping for CPU/GPU, up to 288x GPU speedup"
+  },
+  {
+   "key": "conf/sc/HuangDUMCLSC25",
+   "title": "lsCOMP: Efficient Light Source Compression",
+   "venue": "SC",
+   "year": 2025,
+   "doi": "10.1145/3712285.3759814",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3712285.3759814",
+   "artifact_url": "https://github.com/szcompressor/lsCOMP",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Light source facilities, which generate X-rays for probing microstructures and dynamic processes, produce intense data streams, reaching up to 250 GB/s and projected to exceed 1 TB/s by the end of this decade. Managing such massive data poses critical challenges due to limited local processing capacity and bandwidth constraints when offloading data to HPC systems. To address these challenges, we propose lsCOMP, a GPU compressor that operates within a single kernel. lsCOMP supports both lossless and configurable lossy compression, ensuring high compression ratios and preserved data quality across diverse light source applications. On a single NVIDIA A100 GPU, lsCOMP achieves compression throughputs of 380.89 to 509.21 GB/s in lossless mode, delivering up to 20 times higher performance than industry-leading GPU compressors while achieving superior compression ratios. In lossy modes, lsCOMP",
+   "one_liner": "Single-kernel GPU compressor for light-source X-ray data, up to 509 GB/s, 20x faster than SOTA GPU compressors"
+  },
+  {
+   "key": "conf/sc/HuangD0Z0J00LCC24",
+   "title": "hZCCL: Accelerating Collective Communication with Co-Designed Homomorphic Compression",
+   "venue": "SC",
+   "year": 2024,
+   "doi": "10.1109/SC41406.2024.00110",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/ZCCLorg/zccl",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu",
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "abstract": "As network bandwidth struggles to keep up with rapidly growing computing capabilities, the efficiency of collective communication has become a critical challenge for exa-scale distributed and parallel applications. Traditional approaches directly utilize error-bounded lossy compression to accelerate collective computation operations, exposing unsatisfying performance due to the expensive decompression-operation-compression (DOC) workflow. To address this issue, we present a first-ever homomorphic compression-communication co-design, hZCCL, which enables operations to be performed directly on compressed data, saving the cost of time-consuming decompression and recompression. In addition to the co-design framework, we build a light-weight compressor, optimized specifically for multi-core CPU platforms. We also present a homomorphic compressor with a run-time heuristic to dynamically select",
+   "one_liner": "hZCCL: CPU-optimized homomorphic compressor enabling ops directly on compressed collective data"
+  },
+  {
+   "key": "conf/hpdc/KnespelB23",
+   "title": "Rapidgzip: Parallel Decompression and Seeking in Gzip Files Using Cache Prefetching",
+   "venue": "HPDC",
+   "year": 2023,
+   "doi": "10.1145/3588195.3592992",
+   "arxiv": "2308.08955",
+   "oa_url": "https://arxiv.org/pdf/2308.08955",
+   "artifact_url": "https://github.com/mxmlnkn/rapidgzip",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "manual",
+   "abstract": "Gzip is a file compression format, which is ubiquitously used. Although a multitude of gzip implementations exist, only pugz can fully utilize current multi-core processor architectures for decompression. Yet, pugz cannot decompress arbitrary gzip files. It requires the decompressed stream to only contain byte values 9-126. In this work, we present a generalization of the parallelization scheme used by pugz that can be reliably applied to arbitrary gzip-compressed data without compromising performance. We show that the requirements on the file contents posed by pugz can be dropped by implementing an architecture based on a cache and a parallelized prefetcher. This architecture can safely handle faulty decompression results, which can appear when threads start decompressing in the middle of a gzip file by using trial and error. Using 128 cores, our implementation reaches 8.7 GB/s decompre",
+   "one_liner": "Rapidgzip parallel gzip decompression via cache prefetching, 55x over gzip on 128 cores"
+  },
+  {
+   "key": "conf/ics/ZhangTDYSTC23",
+   "title": "GPULZ: Optimizing LZSS Lossless Compression for Multi-byte Data on Modern GPUs",
+   "venue": "ICS",
+   "year": 2023,
+   "doi": "10.1145/3577193.3593706",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/hpdps-group/ICS23-GPULZ",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Today's graphics processing unit (GPU) applications produce vast volumes of data, which are challenging to store and transfer efficiently. Thus, data compression is becoming a critical technique to mitigate the storage burden and communication cost. LZSS is the core algorithm in many widely used compressors, such as Deflate. However, existing GPU-based LZSS compressors suffer from low throughput due to the sequential nature of the LZSS algorithm. Moreover, many GPU applications produce multi-byte data (e.g., int16/int32 index, floating-point numbers), while the current LZSS compression only takes single-byte data as input. To this end, in this work, we propose gpuLZ, a highly efficient LZSS compression on modern GPUs for multi-byte data. The contribution of our work is fourfold: First, we perform an in-depth analysis of existing LZ compressors for GPUs and investigate their main issues. ",
+   "one_liner": "GPU LZSS lossless compression for multi-byte data, high throughput"
+  },
+  {
+   "key": "conf/ipps/RiveraDTYTC22",
+   "title": "Optimizing Huffman Decoding for Error-Bounded Lossy Compression on GPUs",
+   "venue": "IPDPS",
+   "year": 2022,
+   "doi": "10.1109/IPDPS53621.2022.00075",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/codyjrivera/ipdps22-opthuffdec",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "More and more HPC applications require fast and effective compression techniques to handle large volumes of data in storage and transmission. Not only do these applications need to compress the data effectively during simulation, but they also need to perform decompression efficiently for post hoc analysis. SZ is an error-bounded lossy compressor for scientific data, and cuSZ is a version of SZ designed to take advantage of the GPU's power. At present, cuSZ's compression performance has been optimized significantly while its decompression still suffers considerably lower performance because of its sophisticated loss-less compression step-a customized Huffman decoding. In this work, we aim to significantly improve the Huffman decoding performance for cuSZ, thus improving the overall decompression performance in turn. To this end, we first investigate two state-of-the-art GPU Huffman decod",
+   "one_liner": "GPU Huffman decoder optimizations speed up cuSZ decompression by 2.43x on average"
+  }
+ ]
+}

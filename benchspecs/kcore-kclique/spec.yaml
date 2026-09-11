@@ -1,0 +1,442 @@
+kernel: kcore-kclique
+summary: >
+  Five variants covering the k-core/k-clique graph-kernel family on large
+  simple undirected graphs: static full k-core decomposition via parallel
+  peeling, batch-dynamic k-core maintenance under a stream of edge updates,
+  exact k-clique counting via GPU-specialized search/orientation, approximate
+  probabilistic clique/triangle counting via Bloom-filter/MinHash sketches,
+  and maximal clique enumeration via GPU search-tree exploration. These are
+  4 distinct kernel PROBLEMS sharing only the k-core/k-clique graph-theory
+  family, not 1 problem with 4 knobs — see notes_on_fairness for why this
+  spec has 5 variants instead of the usual 1-4.
+operation: >
+  Multi-kernel track; each variant below has its own operation definition.
+  Common thread: given a static (or dynamically updated) simple undirected
+  graph G=(V,E) in CSR/adjacency-list form, either (a) compute coreness(v)
+  for every v in V (k-core decomposition, static or maintained under
+  updates), (b) count or enumerate cliques of size k (or all maximal
+  cliques) in G.
+
+variants:
+  # ---------------------------------------------------------------------
+  - id: kcore-static-peel
+    claim: >
+      steady-state full k-core decomposition (per-vertex coreness for ALL
+      cores simultaneously) on a static simple undirected graph via parallel
+      peeling, one-shot preprocessing (CSR build / degree-degeneracy
+      orientation) excluded from the kernel timer and reported separately —
+      the common denominator across LiuSZ24's static EKCore/AKCore baselines
+      and KCGPU's degeneracy-only peeling.
+    inputs:
+      suite: "SNAP (Stanford Network Analysis Project) simple undirected graphs"
+      selection: >
+        undirected, simple (dedup/symmetrized), real-world, spanning ~1e5 to
+        ~2e9 edges, used by >=2 of the surveyed static-peeling artifacts
+        (KCGPU's own paper table, LiuSZ24's static EKCore/AKCore graph list).
+        Excludes Shun20's hypergraph inputs (structurally different data
+        model — bipartite vertex-hyperedge incidence, not a plain adjacency
+        list; see open_questions).
+      recommended_subset:
+        - {name: as-skitter, vertices: 1696415, edges: 11095298, used_by: [KCGPU]}
+        - {name: com-dblp, vertices: 317080, edges: 1049866, used_by: [KCGPU]}
+        - {name: com-lj/livejournal, vertices: 3997962, edges: 34681189, used_by: [KCGPU, LiuSZ24]}
+        - {name: com-orkut, vertices: 3072441, edges: 117185083, used_by: [KCGPU, LiuSZ24]}
+        - {name: com-friendster, vertices: 65608366, edges: 1806067135, used_by: [KCGPU, LiuSZ24, RDMCE]}
+        - {name: com-youtube, vertices: 1134890, edges: 2987624, used_by: [LiuSZ24]}
+        - {name: dblp-static, note: "static snapshot of LiuSZ24's dblp_initial graph", used_by: [LiuSZ24]}
+        - {name: wiki-static, note: "static snapshot of LiuSZ24's wiki_initial graph", used_by: [LiuSZ24]}
+        - {name: soc-twitter-static, note: "static snapshot of LiuSZ24's twitter_initial graph", used_by: [LiuSZ24]}
+        - {name: stackoverflow-static, note: "static snapshot of LiuSZ24's stackoverflow_initial graph", used_by: [LiuSZ24]}
+      dense_operand: "none (unweighted graph kernel; edge weights not used by k-core)"
+    protocol:
+      format: "CSR / GBBS adjacency-graph format (given; parse+build not timed)"
+      warmup: 3
+      reps: 10
+      statistic: "median (report min/max)"
+      timer: "device-side events (CUDA events) for GPU implementations (KCGPU); std::chrono steady_clock / GBBS internal wall-clock for CPU implementations (LiuSZ24's EKCore, Shun20-lineage code)"
+      timing_scope: "peeling kernel only; graph read, CSR/adjacency build, and (for GPU) degree/degeneracy-order preprocessing excluded, timed once and reported separately"
+      preprocessing_reported: "separately, once per graph: file read + CSR build + (GPU only) initial degree/orientation pass"
+    metric:
+      primary: "time (ms), median"
+      secondary: "vertex-updates/s = sum_v(deg(v)) processed across all peeling rounds / time_kernel"
+    correctness: >
+      exact per-vertex core numbers must match a reference decomposition
+      (e.g. NetworkX/igraph core_number, or LiuSZ24's own EKCore) exactly —
+      integer match, no floating-point tolerance (k-core is combinatorial).
+      KCGPU's implementation reports only the graph's degeneracy (the
+      single largest non-empty core number, via its count() API) rather
+      than a full per-vertex array; for that implementation, correctness is
+      checked as KCGPU_degeneracy == max(reference_core_number_array).
+
+  # ---------------------------------------------------------------------
+  - id: kcore-dynamic-batch
+    claim: >
+      batch-dynamic k-core maintenance under a stream of edge
+      insertions/deletions (and 50/50 mixed batches), reporting per-batch
+      update latency — the realistic streaming-graph usage LiuSZ24's
+      PLDS/LDS target, with a fundamentally different cost model (amortized
+      per-batch latency, not one-shot wall time) than kcore-static-peel, so
+      kept as a fully separate variant rather than a protocol knob.
+    inputs:
+      suite: "LiuSZ24's Google-Cloud-Storage-hosted dynamic graph streams"
+      selection: >
+        the 11 graphs for which LiuSZ24 ships pre-generated
+        insertion/deletion/mixed edge streams: brain, ctr, dblp, friendster,
+        livejournal, orkut, stackoverflow, twitter, usa, wiki, youtube.
+        Batch sizes in {1e6, 1e7} edges/batch (the paper's own sweep); full
+        stream replayed to completion.
+      recommended_subset:
+        - {name: dblp, stream: insertion, batch_size: 1000000}
+        - {name: livejournal, stream: insertion, batch_size: 1000000}
+        - {name: orkut, stream: mixed, batch_size: 10000000}
+        - {name: friendster, stream: mixed, batch_size: 10000000}
+        - {name: wiki, stream: deletion, batch_size: 1000000}
+        - {name: twitter, stream: insertion, batch_size: 10000000}
+        - {name: youtube, stream: mixed, batch_size: 1000000}
+    protocol:
+      format: "dynamic edge-update stream: one `+`/`-`-prefixed edge per line, plain text (GBBS convention)"
+      warmup: "1 batch (excluded from statistics)"
+      reps: 3
+      statistic: "mean AND max per batch (both reported — tail latency matters for streaming workloads; matches LiuSZ24's own -rounds 3 / avg+max output)"
+      timer: "GBBS internal wall-clock, one timestamp pair per batch"
+      timing_scope: "per-batch update time only; initial graph load and initial static k-core computation are excluded, timed once, reported separately"
+      preprocessing_reported: "separately, once: static k-core decomposition of the `_initial` graph before the update stream begins"
+      algorithms_compared:
+        approximate: "PLDS, (2+eps)-approx batch-dynamic; eps in {0.4, 0.8, 1.6}, lambda in {3, 6, 12} (LiuSZ24's own grid)"
+        sequential_reference: "LDS, single-thread level structure (adapted from Henzinger-Neumann-Wiese)"
+        exact_upper_bound: "recompute EKCore from scratch after each batch (cost ceiling for 'exact, no incremental maintenance')"
+    metric:
+      primary: "average per-batch update latency (ms)"
+      secondary: "max per-batch latency (ms, tail); approximation error = mean_v(|coreness_approx(v) - coreness_exact(v)| / coreness_exact(v))"
+    correctness: >
+      NOT a pass/fail gate — approximation is the point. Report mean and
+      max relative error of PLDS/AKCore core numbers against exact EKCore
+      computed on the identical graph state after each batch. Flag (not
+      silently drop) any batch where max error exceeds the algorithm's own
+      declared (2+eps) theoretical bound — that is a correctness bug, not
+      expected approximation noise.
+
+  # ---------------------------------------------------------------------
+  - id: kclique-count-exact
+    claim: >
+      exact k-clique counting on a static simple graph via GPU-specialized
+      search/orientation (degree- or degeneracy-DAG orientation followed by
+      warp-partitioned pivoting or per-node/per-edge enumeration), k swept
+      over a fixed ladder, one-shot DAG-orientation preprocessing excluded
+      from the kernel timer by default (KCGPU's own paper folds it in —
+      flagged as a divergence, see notes_on_fairness).
+    inputs:
+      suite: "SNAP, KCGPU's own evaluation graphs plus 2 mid-size additions"
+      selection: >
+        KCGPU's own Table 1 graph set (5 graphs) plus 2 more from the
+        broader track suite for a mid-size data point between com-dblp and
+        com-orkut.
+      recommended_subset:
+        - {name: as-skitter, vertices: 1696415, edges: 11095298}
+        - {name: com-dblp, vertices: 317080, edges: 1049866}
+        - {name: com-youtube, vertices: 1134890, edges: 2987624}
+        - {name: com-lj, vertices: 3997962, edges: 34681189}
+        - {name: com-orkut, vertices: 3072441, edges: 117185083}
+        - {name: wiki-Talk, vertices: 2394385, edges: 5021410}
+        - {name: com-friendster, vertices: 65608366, edges: 1806067135}
+    protocol:
+      format: "CSR + DAG-oriented adjacency (degree or degeneracy ordering); conversion not timed in the kernel-only column"
+      warmup: 2
+      reps: 5
+      statistic: "median (report min/max)"
+      timer: "device-side events (CUDA events)"
+      timing_scope: "kernel only: DAG orientation / degeneracy-ordering preprocessing excluded, timed once per graph, reported separately"
+      preprocessing_reported: "separately, once per graph: orientation + degeneracy ordering"
+      timeout: "5h wall-clock per (graph, k) cell (KCGPU's own paper cutoff); DNF recorded explicitly, never as 0 or omitted"
+      k_values: [4, 5, 6, 7, 8, 9, 10, 11]
+    metric:
+      primary: "time (ms), median"
+      secondary: "cliques counted per second = clique_count / time_kernel"
+    correctness: >
+      exact k-clique count must match a reference exact counter to the
+      integer (e.g. a brute-force / CPU orientation-based counter at small
+      k, or ARB-COUNT/Pivoter where available) for at least one small
+      (graph, k) cell per graph as a spot-check; for larger cells, KCGPU's
+      own node-parallel and edge-parallel code paths (config.processBy in
+      {ByNode, ByEdge}) must additionally agree with each other on the same
+      (graph, k) — an internal consistency check when no external oracle is
+      tractable.
+
+  # ---------------------------------------------------------------------
+  - id: kclique-count-approx
+    claim: >
+      approximate triangle- and 4-clique counting via probabilistic set
+      representations (Bloom-filter AND-based or MinHash neighborhood-
+      intersection estimators), trading a bounded, EXPLICITLY-REPORTED
+      accuracy loss for CPU-parallel speedup vs. tuned exact baselines — a
+      fundamentally different claim from kclique-count-exact and requires
+      accuracy as a first-class reported axis, not a pass/fail gate.
+    inputs:
+      suite: "ProbGraph's own SNAP/KONECT/DIMACS/Network-Repository/WebGraph collection + Kronecker synthetic"
+      selection: >
+        real graphs from ProbGraph's Table VIII (~30 named graphs spanning
+        biological/social/economic/scientific-computing/chemistry origins,
+        134 vertices to 45K v / 14.5M e, plus Orkut at 3.1M v / 117M e) +
+        Kronecker(scale in {14, 17, 20}, avg_degree in {16, 64, 256}) for
+        systematic n/m/m-over-n sweeps that real graphs can't isolate.
+      recommended_subset:
+        - {name: bio-humanGene, vertices: 14000, edges: 9000000}
+        - {name: bio-mouseGene, vertices: 45000, edges: 14500000}
+        - {name: econ-orani678, vertices: 2500, edges: 90100}
+        - {name: int-dating, vertices: 169000, edges: 17300000}
+        - {name: soc-fbMsg, vertices: 1900, edges: 13800}
+        - {name: soc-Orkut, vertices: 3100000, edges: 117000000}
+        - {name: sc-pwtk, vertices: 217900, edges: 5600000}
+        - {name: dimacs-hat1500-3, vertices: 1500, edges: 847000}
+        - {name: ch-SiO, vertices: 33400, edges: 675500}
+        - {name: edit-enwiktionary, vertices: 2100000, edges: 5500000}
+        - {name: kronecker-scale17-deg64, note: "synthetic, -g 17 -k 64"}
+      dense_operand: "storage budget s in {10%, 25%, 33%} of exact-CSR memory (ProbGraph's own parametrization)"
+    protocol:
+      format: "ordered edgelist -> CSR (GAP Benchmark Suite loader, load not timed)"
+      warmup: "first 1% of samples (ProbGraph's own convention — adopted verbatim as the most rigorous protocol found across this track)"
+      reps: "enough samples for mean + 95% non-parametric CI; minimum 20 if the CI hasn't stabilized by then"
+      statistic: "mean with 95% non-parametric confidence interval"
+      timer: "OpenMP wall-clock (std::chrono), all available cores (32-core reference machine in ProbGraph's own setup)"
+      timing_scope: "kernel = representation construction (BF/MinHash build) + estimation/query; CSR load excluded"
+      preprocessing_reported: "representation-construction time reported separately from estimation time (ProbGraph's own Table V/VII split)"
+      estimators: ["BF (Bloom filter, AND-based intersection)", "k-Hash (MinHash, k hash functions)", "1-Hash (MinHash, single hash)"]
+    metric:
+      primary: "speedup vs. exact same-core-count baseline (dimensionless)"
+      secondary: "relative memory overhead vs. exact CSR (%)"
+    correctness: >
+      NOT a pass/fail gate — report relative accuracy =
+      |count_approx - count_exact| / count_exact per (graph, estimator,
+      storage_budget) alongside speedup and memory overhead. A result is
+      reportable at face value only if accuracy >= 90% (ProbGraph's own
+      headline threshold); results below 90% must still be reported, but
+      flagged, not discarded (the whole point of this variant is showing
+      the accuracy/speed/memory tradeoff surface, including its bad
+      corners).
+
+  # ---------------------------------------------------------------------
+  - id: mce-enum
+    claim: >
+      exhaustive maximal clique enumeration (ALL maximal cliques, an
+      unbounded-output problem) on a static simple graph via GPU search-tree
+      exploration with dynamic load balancing — architecturally distinct
+      from kclique-count-exact (bounded combinatorial count): output size is
+      itself a first-class, unpredictable quantity, and "did it finish at
+      all" is as important a result as the time when it does.
+    inputs:
+      suite: "SNAP + Network Repository (nrvis) + KONECT (via Zenodo mirror, since konect.cc is dead)"
+      selection: >
+        graphs downloaded by RDMCE's own scripts/download_dataset.sh (7
+        named SNAP/nrvis graphs + a Zenodo-mirrored KONECT bundle), spanning
+        ego-networks (thousands of edges) to com-friendster (1.8B edges).
+      recommended_subset:
+        - {name: facebook_combined, vertices: 4039, edges: 88234}
+        - {name: higgs-social_network, note: "twitter-higgs, SNAP"}
+        - {name: soc-orkut-dir, note: "Network Repository (nrvis)"}
+        - {name: soc-sinaweibo, note: "Network Repository (nrvis)"}
+        - {name: web-ClueWeb09-50m, note: "Network Repository (nrvis), large"}
+        - {name: dogster, note: "KONECT, via RDMCE's Zenodo mirror"}
+        - {name: com-friendster, vertices: 65608366, edges: 1806067135}
+    protocol:
+      format: "COO plain text -> algorithm-specific preprocessed binary (conversion NOT timed; ~6h one-shot per RDMCE's own preprocessing.sh, reported separately)"
+      warmup: 1
+      reps: 3
+      statistic: "median (report min/max)"
+      timer: "wall-clock around the full executable invocation (RDMCE's own scripts don't isolate a device-side kernel timer; this spec keeps that scope but adds repetition — see notes_on_fairness)"
+      timing_scope: "process-level wall time from binary-graph load through enumeration completion; text-to-binary preprocessing excluded, timed once, reported separately"
+      preprocessing_reported: "separately, once per (graph, method): algorithm-specific binary format conversion (each of RDMCE / G2-AIMD / MCE-GPU needs its own format)"
+      timeout: "3600s per (graph, method) cell (RDMCE's own cutoff); DNF recorded explicitly — RDMCE's headline claim is completing where baselines DNF, so DNF rate is a first-class result here, not noise to be hidden"
+    metric:
+      primary: "time (s), median"
+      secondary: "maximal cliques enumerated per second = total_clique_count / time"
+    correctness: >
+      total maximal-clique count must match EXACTLY across every method
+      compared on the same graph (deterministic exact enumeration — integer
+      match, no tolerance). Flagged as currently UNVERIFIED in the surveyed
+      artifact: no automated cross-checker script was found in RDMCE's
+      scripts/ or exp/ directories (the exp/*.py plotting scripts were not
+      read in full and might do an implicit check — see open_questions).
+      This spec makes the check mandatory before any timing counts.
+
+notes_on_fairness:
+  - >
+    This spec has 5 variants, above the "1-4" guidance in the design
+    instructions, because the kcore-kclique track's 5 papers genuinely
+    target 4 distinct kernel problems (static k-core, dynamic k-core,
+    exact k-clique counting, approximate clique/triangle counting) plus a
+    5th architecturally-distinct problem (maximal clique enumeration,
+    unbounded output vs. bounded count). Forcing these into fewer variants
+    would blur correctness definitions that are genuinely incompatible
+    (exact integer match vs. bounded relative error vs. exact-match-on-an-
+    unbounded-output-set) — see survey.md's Divergences section for the
+    full reasoning.
+  - >
+    KCGPU's own paper times DAG-orientation preprocessing together with
+    k-clique counting and uses a 5h wall-clock cutoff as its DNF boundary;
+    kclique-count-exact's kernel-only default splits these out and reports
+    preprocessing once, following this project's general preprocessing
+    convention (see other tracks, e.g. graph-pattern-mining). KCGPU's own
+    reported numbers should be read as measuring a superset of what this
+    spec calls "kernel" and are not directly comparable to this spec's
+    kernel-only column without re-timing under this spec's scope.
+  - >
+    4 of the 5 surveyed papers effectively run each timed configuration
+    ONCE: RDMCE (single run + 3600s timeout), KCGPU (literally
+    `for(i=0;i<1;i++)` in main.cu, 5h DNF cutoff), and Shun20 (no stated
+    repetition count in the extracted evaluation text) all report what
+    appears to be a single measured sample per cell; LiuSZ24 is the
+    partial exception with an explicit `-rounds 3`. This spec adds
+    explicit warmup + repetition + median/min/max reporting to every
+    variant except kclique-count-approx, which already inherits a more
+    rigorous protocol directly from ProbGraph (see next note).
+  - >
+    ProbGraph's own timing protocol (omit first 1% as warmup, derive
+    enough samples for mean + 95% non-parametric CI) is the most rigorous
+    of the 5 papers and is adopted VERBATIM for kclique-count-approx
+    rather than replaced with this project's usual median-of-N convention,
+    since ProbGraph already cites and follows a named formal
+    parallel-benchmarking methodology reference — no reason to weaken it.
+  - >
+    Algorithm-class axis ("peeling vs. local/search algorithms", per the
+    design brief): kcore-static-peel and kcore-dynamic-batch use PEELING
+    (iteratively strip minimum-degree/minimum-core vertices in rounds or
+    buckets — this is true of LiuSZ24's PLDS/LDS/EKCore/AKCore, KCGPU's
+    kcore.cuh, and Shun20's WE/WI hypergraph k-core alike).
+    kclique-count-exact and kclique-count-approx instead SEARCH/COUNT over
+    an oriented DAG (no peeling, no iterative vertex removal). mce-enum
+    uses SEARCH-TREE ENUMERATION with dynamic work-stealing (RDMCE's
+    "root-down exposure"). KCGPU additionally exposes a distinct per-vertex
+    "local" k-clique-count mode (KCLIQUE_LOCAL, in kclique_local.cuh)
+    alongside its global-aggregate KCLIQUE mode — out of scope for
+    kclique-count-exact (which measures the global count) but noted here
+    as a candidate `kclique-count-local` variant if this track is
+    revisited with more local-algorithm papers.
+  - >
+    Static vs. dynamic/streaming is a hard problem split in the source
+    literature, not a protocol knob: LiuSZ24's PLDS/CLDS cannot be
+    meaningfully compared to KCGPU's or Shun20's one-shot static peeling on
+    the same axis (different cost model — amortized per-batch latency vs.
+    one-shot wall time on a fixed graph). Kept as two fully separate
+    variants (kcore-static-peel, kcore-dynamic-batch) per the design
+    brief's explicit instruction, rather than a "streaming: true/false"
+    field on one variant.
+  - >
+    KCGPU reports only the graph's DEGENERACY (one scalar, the largest
+    non-empty core number) via its count() API, not a full per-vertex
+    coreness array the way LiuSZ24's EKCore and Shun20's WE-kcore do.
+    kcore-static-peel's correctness gate accounts for this with a
+    scalar-vs-max comparison rather than requiring a full array match, but
+    this means KCGPU's own numbers are informative about degeneracy-only
+    computation cost, not full per-vertex coreness computation cost — a
+    real implementation-capability gap between the 3 papers in this
+    variant, not just a reporting-format difference.
+
+open_questions:
+  - >
+    Artifact mismatch for Shun20 (conf/ppopp/Shun20): `artifact_url` on
+    file is a third-party CS-course-project repo
+    (github.com/DevSheth/prallel-hypergraph-algorithms) that reimplements
+    only 4 of the paper's ~9 algorithms and does NOT include k-core
+    decomposition at all. The real artifact is github.com/jshun/ligra
+    (apps/hyper/HyperKCore.C, HyperKCore-Efficient.C). This survey used
+    jshun/ligra directly for source-code facts; recommend correcting
+    `artifact_url` in Phase 1's output/included.json and papers.json for
+    this paper — out of scope for this survey task itself.
+  - >
+    Hypergraph k-core (Shun20) is a structurally different operation
+    (bipartite VertexProp/HyperedgeProp frontier propagation over
+    vertex-hyperedge incidence, not neighbor-degree peeling on a plain
+    adjacency list) using a disjoint graph suite (SNAP-community-as-
+    hyperedge, KONECT bipartite, synthetic uniform-random hypergraphs) that
+    doesn't overlap kcore-static-peel's simple-graph suite. It is
+    intentionally NOT folded into kcore-static-peel (incommensurable) and
+    not given its own numbered variant either, since only 1 of 5 papers in
+    this track operates on hypergraphs. Recorded here as a candidate
+    `kcore-hypergraph` extension variant if this track gains more
+    hypergraph papers.
+  - >
+    RDMCE's scripts/ and exp/ directories (as surveyed) show no automated
+    correctness checker comparing RDMCE/G2-AIMD/MCE-GPU maximal-clique
+    counts on the same graph; mce-enum's correctness gate (exact count
+    match) is this spec's requirement, not something the surveyed artifact
+    currently does. The exp/*.py plotting scripts were not read in full and
+    might do an implicit cross-check — worth re-verifying before assuming
+    it's completely absent.
+  - >
+    Whether the DNF/completion-rate outcomes reported in mce-enum should be
+    taken from RDMCE's own paper claims ("completes on every test dataset
+    where baselines DNF") or independently re-derived was not resolved here
+    — RDMCE's claims are the paper's own contribution narrative and should
+    be re-verified empirically, not assumed, when this variant is actually
+    run.
+  - >
+    Shun20's T1/T72h timing-scope boundary (whether hypergraph loading is
+    excluded) could not be confirmed from the extracted PDF text alone,
+    unlike LiuSZ24/KCGPU where the scope is explicit; would need reading
+    `ligra/ligra.h`'s `parallel_main` wrapper directly if a
+    `kcore-hypergraph` variant is ever implemented.
+  - >
+    k=4 appears in both kclique-count-exact (KCGPU, GPU) and
+    kclique-count-approx (ProbGraph, CPU)'s exact-baseline reference by
+    design (allows a future cross-check), but the two papers' "exact"
+    k=4-counting implementations are independent (KCGPU's from-scratch GPU
+    orientation code vs. ProbGraph's GMS-suite CPU baseline) — their exact
+    reference numbers on the same graph should be independently verified to
+    agree before being treated as interchangeable ground truth.
+  - >
+    This track's kclique-count-exact variant (KCGPU) targets the same
+    mathematical count (k-clique counting, k=4..7 overlap) as the
+    `graph-pattern-mining` track's `clique_ladder` pattern set
+    (benchspecs/graph-pattern-mining/spec.yaml), evaluated there by
+    general-purpose subgraph-isomorphism engines (GraphFold's CF4-CF7,
+    GLumin's CliqueSolver). KCGPU is a k-clique-SPECIALIZED kernel (graph
+    orientation + degeneracy + warp-level binary encoding, no general
+    pattern DAG) — a different implementation family, kept as a separate
+    variant in this track rather than merged into graph-pattern-mining. A
+    future harness could usefully cross-report KCGPU against
+    GraphFold/GLumin on the same graphs to compare specialized-vs-general
+    clique counting, but that comparison is out of scope for either spec
+    as currently written.
+
+evidence:
+  conf/ppopp/PanQZ26: >
+    RDMCE MCE; 7 SNAP/nrvis/Zenodo-KONECT graphs incl. com-friendster
+    (31GB); overall_eval.sh runs each (method,dataset) once under a 3600s
+    GNU-time timeout; baselines G2-AIMD and MCE-GPU (p/px variants); wall
+    time via `time`, no repetition; no automated correctness checker found
+    in scripts/ or exp/.
+  conf/ppopp/LiuSZ24: >
+    batch-dynamic (2+eps)-approx k-core; 11 SNAP/KONECT-derived graphs with
+    pre-generated insertion/deletion/mixed edge streams; `-rounds 3` via
+    GBBS; sweeps PLDS vs LDS vs EKCore vs AKCore x delta x lambda x
+    batch-size x workers; reports avg/max/total runtime + space + error
+    ratio vs exact — the only one of the 5 papers with built-in
+    approximation-accuracy checking.
+  conf/ics/AlmasriHNXH22: >
+    exact k-clique counting on GPU (arXiv:2104.13209); 5 SNAP graphs
+    (as-skitter..com-friendster); k=4..11 swept manually (sweep loop
+    commented out in main.cu); single run per cell (`for(i=0;i<1;i++)`),
+    5h DNF cutoff; reported time INCLUDES DAG-orientation preprocessing,
+    EXCLUDES disk read; baselines ARB-COUNT and Pivoter (CPU only, no GPU
+    peer existed at publication); metric = seconds, no throughput unit in
+    the paper's own tables (code computes an unused ad hoc "teps" value).
+  conf/sc/BestaMLTIKAJPKGVMH22: >
+    approximate TC/4-clique/clustering via Bloom-filter and MinHash set
+    sketches (arXiv:2208.11469); ~30 SNAP/KONECT/DIMACS/NetRepo/WebGraph
+    real graphs + Kronecker synthetic; 1%-warmup + mean + 95% CI (cites a
+    formal parallel-benchmarking methodology reference — most rigorous
+    protocol of the 5); baselines = exact GAP/GMS implementations plus
+    Doulion/Colorful-TC/2 heuristics; metric is a 3-axis
+    (speedup, accuracy, memory) tuple per data point, not one number;
+    the automated repro script (launch_experiments.sh) omits 4-clique
+    counting (only tc/jp-jc/jp-cn/jp-ov are looped).
+  conf/ppopp/Shun20: >
+    hypergraph k-core decomposition (work-efficient vs work-inefficient
+    peeling, up to 733x speedup gap); 8 hypergraphs (5 real
+    SNAP-community/KONECT-bipartite-derived + 3 synthetic Rand1-3, up to
+    1e9 vertices/hyperedges); 72-core Cilk+Parlay machine; reports T1/T72h/
+    speedup, no stated repetition count in the extracted text; correctness
+    implicit (exact, deterministic, no automated check described).
+    ARTIFACT_URL ON FILE IS WRONG — points to a third-party CUDA course
+    project missing k-core entirely; real artifact is jshun/ligra
+    (apps/hyper/HyperKCore*.C), used for the facts above.

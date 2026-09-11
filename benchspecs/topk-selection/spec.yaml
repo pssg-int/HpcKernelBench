@@ -1,0 +1,253 @@
+kernel: topk-selection
+summary: >
+  Selecting the k largest elements from a set of n candidates, returned as
+  (value, index) pairs; measured as steady-state exact-selection kernel
+  throughput on a GPU-resident array (the shape this track's most
+  systematically-benchmarked paper actually tests), plus two
+  approximate-search variants — recall-gated ANN top-k over a
+  billion-scale index, and ranking-quality-gated top-k under
+  reduced-precision score computation — that this track's literature
+  treats as genuinely different claims with different correctness models,
+  not size variants of the same benchmark.
+operation: "topk(scores[n], k) -> (values[k], indices[k]), values sorted descending"
+
+variants:
+  - id: topk-array-kernel-exact
+    claim: >
+      exact top-k of a single GPU-resident array, steady-state kernel
+      throughput, single isolated call. The only variant in this track
+      with a mathematically well-defined single "correct" answer (up to
+      tie ordering) — matches AIR Top-K/GridSelect's own benchmark shape,
+      the most systematically-swept paper in this track.
+    inputs:
+      suite: "synthetic, generated on-device per call (curand)"
+      selection: >
+        n (array length) swept as powers of two from 2^15 to 2^30
+        (32,768 to ~1.07B elements); k swept two ways per n: (a) a
+        small-k regime k in {1, 10, 32, 100, 1000} matching realistic
+        ML/DB top-k usage (beam search, MoE routing, sparse-attention
+        top-k, DB TOP-N queries), and (b) a k-as-fraction-of-n sweep,
+        k/n in {2^-12, 2^-8, 2^-4, 2^-2} (k roughly 8..2^28 at the
+        largest n), always enforcing k < n. batch_size in {1, 32, 256}
+        (single-query vs. batched-query regimes; AIR Top-K's own sweep
+        uses {1, 100}).
+      recommended_subset: >
+        n in {2^20 (~1M, fits L2), 2^24 (~16M, exceeds L2, HBM-resident),
+        2^28 (~268M, large-HBM-resident)} x k in {10, 1000, n/100} x
+        batch_size in {1, 256} x all 3 distributions below = 54 configs,
+        a tractable subset of the full sweep for routine re-runs; the
+        full n-power x k-power sweep is the reference for headline claims.
+      dense_operand: >
+        input array: fp32, one of three distributions selectable at
+        generation time (AIR Top-K's own three, adopted verbatim):
+        (1) Uniform(0,1] via curandGenerateUniform;
+        (2) Normal(mean=0,stddev=1) via curandGenerateNormal;
+        (3) "Unfriendly"/adversarial: all but the low 12 bits of each
+        float's IEEE-754 bit pattern fixed to a common high-bit prefix
+        (masks entropy a radix-select pass would normally prune on) —
+        REQUIRED, not optional, since it is the only distribution in this
+        track's literature documented to change which algorithm wins.
+    protocol:
+      format: "raw unsorted array; no preprocessing/format-conversion step exists for this kernel class"
+      warmup: 20
+      reps: 100
+      statistic: "median (report min/max/stdev alongside)"
+      timer: "device-side events (CUDA events or equivalent)"
+      timing_scope: >
+        kernel only; each of the `reps` timed calls uses freshly-generated
+        random data (not the same buffer replayed), matching AIR Top-K's
+        own practice, to avoid caching artifacts; H2D/D2H excluded (data
+        generated device-resident).
+      preprocessing_reported: "n/a — no preprocessing step in this kernel class"
+    metric:
+      primary: "median time (ms) per call, reported per (n, k, batch_size, distribution) point"
+      secondary: "elements/sec = batch_size*n/time, for cross-n comparability"
+    correctness: >
+      sorted top-k value multiset must exactly match (bit-exact for fp32,
+      no tolerance — the reference is computed from the SAME input array,
+      so no rounding-order ambiguity exists) an independently-computed CPU
+      ground truth (full sort or nth_element); every returned index must
+      be < n and must map back to its claimed value in the input array;
+      no duplicate indices in the returned k-set. Checked on EVERY timed
+      repetition, not just the last (a fix vs. AIR Top-K's own practice of
+      checking only the final iteration to save time) — required because
+      the input changes every iteration in this spec (fresh random data
+      per call), so a bug that only manifests on some distributions would
+      be invisible under an only-check-once protocol.
+
+  - id: topk-e2e-ann-approx
+    claim: >
+      end-to-end approximate-nearest-neighbor top-k query: coarse-quantizer
+      (IVF) search + per-partition candidate scoring + top-k merge across
+      partitions, over a billion-scale real embedding index — UpANNS's own
+      benchmark shape, and the only variant where "n" means total DATASET
+      size rather than a single call's candidate-set size.
+    inputs:
+      suite: "SIFT1B, DEEP1B, SPACEV1B (real embedding datasets: 128-dim, 96-dim, 100-dim respectively)"
+      selection: >
+        all three, since each is used by exactly one branch of the only
+        surveyed artifact and none is redundant with another (different
+        dimensionality, different source domain).
+      recommended_subset: >
+        SIFT1M (1e6, quick smoke test) and SIFT1B (1e9, headline claim) at
+        minimum; DEEP1B and SPACEV1B for the full reference sweep.
+      dense_operand: >
+        query set: the dataset's own held-out query file (10,000 queries
+        for SIFT1B, standard ann-benchmarks convention); k in {1, 10, 100};
+        nprobe (search-width knob) in {32, 64, 128, 256}; batch_size
+        (queries per search call) in {1, 10, 100, 1000}.
+    protocol:
+      format: >
+        IVF-PQ index (product-quantized, KSUB=256 codebook rows), built
+        ONCE offline (training + population, `train_*.cpp`/`demo_*.cpp`'s
+        add step) — this one-shot index-build cost is measured and
+        reported separately (see preprocessing_reported), never folded
+        into per-query time.
+      warmup: 5
+      reps: >
+        20 REPEATED runs of the SAME query batch — a fix vs. UpANNS's own
+        practice of running the batch exactly once with no repeated-trial
+        statistic at all.
+      statistic: "median (report min/max/stdev alongside)"
+      timer: "wall-clock (std::chrono or gettimeofday), one bracket per named phase"
+      timing_scope: >
+        per-phase breakdown REQUIRED (matching UpANNS's own
+        instrumentation, made mandatory rather than incidental):
+        coarse-quantizer search, data transfer to accelerator,
+        on-accelerator search, result transfer back, host-side
+        merge/sort. Total end-to-end query time is the sum; index
+        build/train/add is excluded from this number.
+      preprocessing_reported: >
+        index build (train + populate) wall time reported separately,
+        once, per dataset — NOT amortized into per-query time, since it is
+        a one-shot cost paid once per dataset regardless of query volume
+        (unlike a per-call format conversion).
+      precision: "PQ-encoded approximate distances (index); fp32 exact re-rank optional if the technique supports it"
+    metric:
+      primary: "QPS (queries/sec) at each recall@k operating point (a recall-QPS curve across the nprobe sweep, not a single number)"
+      secondary: "ms per phase (median); index build time (s, once)"
+    correctness: >
+      Recall@k (k in {1,10,100}) against an exact brute-force
+      nearest-neighbor ground truth, computed once per dataset and
+      shipped/cached. Recall is not gated pass/fail before timing counts
+      (recall IS the accuracy metric here, unlike the other two variants'
+      hard correctness gates) — but a technique's QPS number is INVALID to
+      report standalone without its recall at the SAME nprobe operating
+      point (fixes UpANNS's own practice, and the wider ANN-benchmarking
+      literature's common practice, of quoting a headline QPS number
+      without pinning the recall it was measured at).
+
+  - id: topk-approx-precision
+    claim: >
+      approximate top-k over per-query similarity scores computed under
+      REDUCED-PRECISION fixed-point arithmetic (the scores themselves are
+      approximate, not just the search coverage) — Top-K SpMV's own
+      benchmark shape, distinct from topk-e2e-ann-approx because the
+      approximation source is numerical precision of the score
+      computation, not index/search-space coverage, and distinct from
+      topk-array-kernel-exact because correctness is a ranking-quality
+      metric, not exact value-set equality.
+    inputs:
+      suite: "synthetic sparse-embedding-similarity rows + 1 real (sparsified GloVe)"
+      selection: >
+        rows in {5M, 10M, 15M}; embedding cols (per-row candidate count)
+        in {512, 1024}; avg nnz/row in {20, 40}; distributions {uniform,
+        left-skewed Gamma}; plus GloVe (2.196M rows x 300 cols, 54.9M nnz,
+        real embedding data) — the union of Top-K SpMV's own synthetic
+        sweep and its one real dataset, since it is the only surveyed
+        paper in this variant's regime.
+      recommended_subset: "GloVe (the one real dataset) + synthetic rows=10M, cols=1024, avg-nnz/row=40, both distributions"
+      dense_operand: "K fixed at 100 (matches the only surveyed paper's own choice)"
+    protocol:
+      format: "packet-wise compressed CSR-like layout, precision-quantized at build time (build-time cost reported separately, once)"
+      warmup: 10
+      reps: 30
+      statistic: "median (report min/max/stdev alongside)"
+      timer: "device/accelerator-side event or on-board invocation counter"
+      timing_scope: >
+        kernel + top-k selection; host<->accelerator transfer measured and
+        reported SEPARATELY, never silently included (fixes Top-K SpMV's
+        own ambiguity, where neither the paper text nor the reviewed
+        harness states whether DMA sits inside the timed window).
+      preprocessing_reported: "packet-wise CSR compression + precision quantization, once, separately"
+      precision: "20-bit (Q1.19), 25-bit (Q1.24), 32-bit fixed (Q1.31), 32-bit float — all four reported side by side, not just the fastest"
+    metric:
+      primary: "throughput (queries/sec)"
+      secondary: "GB/s attained vs. peak HBM bandwidth (roofline-style)"
+    correctness: >
+      ranking-quality metrics vs. an exact fp64 CPU reference —
+      Precision@k, Kendall's tau, NDCG@k — REQUIRED to pass a minimum
+      threshold (NDCG@100 >= 0.95) before a precision configuration's
+      speed number counts as reportable (a fairness FIX: the source paper
+      plots quality and speed as separate curves without gating one on
+      the other, which lets a reader quote a low-bit config's raw speed
+      without its accuracy caveat attached).
+
+notes_on_fairness:
+  - >
+    AIR Top-K/GridSelect checks correctness only on the LAST of 100 timed
+    iterations (each of which uses freshly-generated random data) to save
+    time. Since a correctness bug could be data-dependent and the data
+    changes every iteration, this spec requires checking every repetition,
+    not just the last.
+  - >
+    UpANNS's public artifact runs its entire query-batch benchmark exactly
+    ONCE per configuration — no warmup, no repeated trial, no statistic
+    beyond a single wall-clock number per phase. This is the weakest
+    timing protocol of any paper surveyed across this project's
+    topk-selection AND spmv tracks combined. The spec fixes reps=20 for
+    the ANN variant specifically because UpANNS's per-query time is
+    dominated by network/PIM-transfer latency (not a cheap
+    microsecond-scale kernel), so 20 reps of a whole query batch is
+    tractable without the multi-hour cost concerns that apply to, e.g.,
+    AlphaSparse's format-search in the SpMV track.
+  - >
+    Top-K SpMV plots ranking-quality (Kendall's tau/NDCG) and speed as
+    independent curves with no stated pass/fail threshold connecting them
+    — a reader can cite the paper's fastest (lowest-bit) configuration's
+    speed without also citing its (potentially much worse) ranking
+    quality. This spec adds a mandatory NDCG@100 >= 0.95 gate before a
+    precision configuration's speed number is reportable at all.
+  - >
+    No surveyed paper reports a QPS number explicitly pinned to a recall
+    operating point in its headline claim (UpANNS's abstract states
+    "4.3x QPS vs Faiss" without stating at what recall). This spec
+    requires every topk-e2e-ann-approx QPS number to carry its recall@k
+    alongside it, never standalone.
+
+open_questions:
+  - >
+    A value-only (no-index) output mode is not benchmarked by any
+    surveyed paper — all three return (value, index) pairs since the
+    index is the actually-useful output in every real use case here.
+    Whether a value-only variant would show meaningfully different
+    performance (e.g. enabling algorithmic shortcuts that skip index
+    bookkeeping) is left as an untested extension.
+  - >
+    The three variants' "n" axes are not directly comparable (single-array
+    size vs. per-row candidate count vs. total dataset size behind an
+    index) — see survey.md's Divergences. A unified cross-variant
+    normalization (e.g. "effective candidates examined per top-k call")
+    was considered but not adopted, since it would require assumptions
+    about IVF partition-selectivity and per-row nnz that neither UpANNS
+    nor Top-K SpMV's artifacts expose cleanly enough to compute reliably.
+  - >
+    Top-K SpMV's exact host<->FPGA DMA inclusion could not be confirmed
+    from the reviewed harness (the same open question already flagged in
+    the spmv track's survey for this paper) — `topk-approx-precision`'s
+    "reported separately" requirement is a specification choice to force
+    clarity going forward, not a confirmed fact about the paper's own
+    number.
+  - >
+    UpANNS's PIM (Processing-in-Memory / UPMEM DPU) hardware is not
+    reproducible on commodity GPU/CPU hardware — the `topk-e2e-ann-approx`
+    variant's protocol is designed to be hardware-agnostic (any
+    accelerator implementing the same IVF-PQ pipeline), but re-running
+    UpANNS's OWN numbers specifically requires UPMEM DPU access (7 PIM
+    boards, 128GB, per the paper's abstract), which most benchmarking
+    setups will not have.
+
+evidence:
+  conf/sc/ZhangNLW23: "synthetic arrays, n=2^15..2^30, k=2^3..2^20 (both swept), batch in {1,100}; 3 distributions incl. adversarial radix-defeating; warmup=10, niter=100 (20 for large faiss configs), CUDA-event mean+-stddev; correctness checked only on last iteration, exact value-set match; CUB/SampleSelect/DrTopK/FAISS/RAFT baselines."
+  conf/dac/ParraviciniCSS21: "mostly synthetic sparse-embedding rows (5-15M rows x 512/1024 cols) + 1 real (GloVe, 54.9M nnz); NITER=30, no warmup found; reduced fixed-point precision (20/25/32-bit) vs 32-bit float; ranking-quality correctness (Kendall's tau, NDCG, Precision) vs exact fp64, not elementwise; CPU sparse_dot_topn / GPU cuSPARSE+Thrust baselines."
+  conf/sc/ChenZSLY25: "real billion-scale embeddings (SIFT1B/DEEP1B/SPACEV1B); TOPK in {1,10,100}, nprobe in {32,64,128,256}, NR_DPUS 500-900; SINGLE untimed-repetition wall-clock run per phase, no warmup/repeat statistic at all; Recall@{1,10,100} vs exact ground truth; CPU Faiss + PIM-naive baselines."

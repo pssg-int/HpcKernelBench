@@ -1,0 +1,261 @@
+kernel: community-detection
+summary: >
+  Discover a partition of a graph's vertices into communities that
+  (for the Louvain-family variants) maximizes modularity, measured as
+  wall-clock time to convergence with the resulting partition's quality
+  reported jointly and gated — a faster run that converges to a
+  materially worse partition does not count as an improvement. A separate
+  variant covers the track's two non-modularity algorithm families
+  (structural-entropy optimization, single-pass threshold clustering) so
+  their real contributions remain benchmarkable without conflating them
+  with modularity-comparable numbers.
+operation: >
+  C[V] = CommunityDetection(A[V,V] adjacency (sparse, CSR/edge-list),
+  weighted or unweighted); output is a vertex-to-community-ID labeling
+  over all V vertices; for Louvain-family variants the labeling is produced
+  by iterating (local-move phase to a modularity-gain threshold) then
+  (community aggregation into a coarser graph) until no further gain;
+  number of communities is DISCOVERED, not a caller-supplied parameter
+  (this is the key structural difference from the graph-partitioning track).
+
+variants:
+  - id: cd-kernel-modularity
+    claim: >
+      steady-state Louvain-family (modularity-maximizing) community
+      detection kernel time on a fixed real-graph suite, with final
+      modularity reported jointly and gated: a run whose modularity falls
+      below the quality floor is disqualified from the throughput ranking
+      regardless of how fast it completed
+    inputs:
+      suite: "union of SNAP ground-truth-community graphs used or referenced by the track's Louvain-family papers (GALA, NiuOSC26), plus canonical SNAP staples for size coverage"
+      selection: >
+        named SNAP graphs with disambiguated vertex/edge counts, undirected
+        (symmetrize directed inputs before running; report whether the
+        implementation under test does this itself or requires
+        pre-symmetrized input)
+      recommended_subset:
+        - "facebook_combined (SNAP ego-Facebook, 4,039 v / 88,234 e) — small control instance, matches HSSInfo's worked example"
+        - "com-DBLP (SNAP, ~317K v / 1.05M e, has ground-truth communities)"
+        - "com-Amazon (SNAP, ~334K v / 925K e, has ground-truth communities)"
+        - "com-Youtube (SNAP, ~1.13M v / 2.99M e, has ground-truth communities)"
+        - "com-Amazon-full / roadNet-CA-scale control not required; com-LiveJournal aka com-lj (SNAP, ~4.0M v / 34.7M e) — matches GALA's own README worked example exactly"
+        - "com-Orkut (SNAP, ~3.07M v / 117.2M e, has ground-truth communities)"
+        - "soc-LiveJournal1 (SNAP, ~4.85M v / 68.99M e, directed — symmetrize)"
+        - "com-Friendster (SNAP, ~65.6M v / 1.81B e) — large-scale control, matches this track's other large-graph BFS-track precedent (see benchspecs/bfs/spec.yaml)"
+      dense_operand: "N/A (no dense operand; edge weights default to 1.0 if the input graph is unweighted)"
+      size_classes: "small: <100K vertices (facebook_combined); medium: 100K-5M vertices (com-DBLP, com-Amazon, com-Youtube, com-lj, soc-LiveJournal1); large: >5M vertices (com-Orkut, com-Friendster)"
+    protocol:
+      format: "CSR or adjacency edge-list, built once from the SNAP download; graph load/format-build NOT counted in per-run community-detection time (see cd-e2e-preprocessing for the amortized/included version)"
+      warmup: "1 discarded full run (community detection is inherently one-shot per input, unlike BFS's repeated-root-search model, so 'warmup' here means one throwaway full convergence run to prime caches/GPU context, not a partial-iteration warmup)"
+      reps: "10 independent full runs on the SAME graph and SAME thread/GPU count, each with a FRESH random seed/tie-break state (do NOT fix a single seed across reps — the point of this variant is to characterize the nondeterminism that NiuOSC26 identifies as an open problem in existing parallel Louvain)"
+      statistic: "median time; report min/max/stddev of BOTH time AND final modularity across the 10 reps — a tight time distribution paired with a wide modularity distribution is itself a reportable, meaningful result (see cd-determinism-repeatability for a dedicated deep-dive variant)"
+      timer: "wall-clock (host-side, e.g. omp_get_wtime()/std::chrono/gettimeofday) or device-side events for GPU implementations, wrapping the community-detection call only"
+      timing_scope: "local-move + aggregation phases only; graph load/parse/CSR-build excluded and reported separately, once per graph instance"
+      preprocessing_reported: "separately, once per graph instance: graph load + format-build time (this is exactly what GALA's own artifact currently fails to separate — see notes_on_fairness)"
+      thread_gpu_disclosure: "REQUIRED: thread count (CPU) or GPU model + count (GPU) used for each reported number, since parallel schedule affects both time and the specific local optimum reached"
+      algorithm_family_disclosure: "REQUIRED: exact Louvain variant (vanilla Louvain / Leiden-style refinement / community-versioning / distance-2-coloring / other) and modularity-gain threshold used, since GALA's own -t default (1e-6) is not necessarily what a submitter should assume"
+    metric:
+      primary: "median wall-clock time to convergence (ms), across the 10 reps"
+      secondary: "median final modularity Q (report min/max across reps); iteration count (local-move + aggregation rounds)"
+    correctness: >
+      QUALITY GATE (operationalizes "faster but lower-modularity is not a
+      win"): compute a reference modularity Q_ref on the same graph using
+      an established, single-threaded, to-convergence Louvain reference
+      implementation (e.g. python-louvain / igraph community_multilevel,
+      resolution=1.0, default parameters). A submitted run's median
+      modularity Q_impl must satisfy Q_impl >= 0.98 * Q_ref (2% relative
+      tolerance, matching the track's few disclosed accuracy tolerances
+      elsewhere in this benchmark suite). Runs below this bar are
+      DISQUALIFIED from the throughput ranking regardless of speed and
+      must be reported as failing, not silently omitted.
+
+  - id: cd-e2e-preprocessing
+    claim: >
+      end-to-end throughput including one-shot graph loading and
+      CSR/adjacency-list construction; community detection is inherently
+      single-shot per input (no repeated-query amortization argument the
+      way BFS or SpMV have), so this variant reports ONE full run's total
+      time rather than an amortized-over-k number
+    inputs:
+      suite: "same recommended_subset as cd-kernel-modularity"
+      selection: "same as cd-kernel-modularity"
+      recommended_subset: "same list as cd-kernel-modularity"
+      dense_operand: "N/A"
+    protocol:
+      format: "raw edge list or Matrix Market input; graph load + CSR/adjacency-list build is IN SCOPE and timed as part of this variant"
+      warmup: "1 (full end-to-end pipeline: load once, detect once, discarded)"
+      reps: "same 10-rep, fresh-seed-per-rep protocol as cd-kernel-modularity, but each rep re-runs the FULL pipeline (load + detect) rather than reusing a pre-loaded graph"
+      statistic: "total_time = load_time + detection_time; report both total_time AND load_time alone, never only the blended number (this is exactly the GALA fairness gap identified in the survey — see notes_on_fairness)"
+      timer: "wall-clock (host-side) around the full pipeline"
+      timing_scope: "load + build + community detection; explicitly the number a naive end-user timing `time ./binary input.txt` would observe"
+      preprocessing_reported: "as part of total_time by construction, AND separately as its own standalone number"
+    metric:
+      primary: "median total_time (ms), across 10 reps"
+      secondary: "load_time_ms (standalone), kernel-only median time (cross-reference to cd-kernel-modularity on the same graph)"
+    correctness: "same quality gate as cd-kernel-modularity, applied to all 10 reps"
+
+  - id: cd-determinism-repeatability
+    claim: >
+      dedicated measurement of run-to-run partition variance under a fixed
+      thread/GPU count and fixed input — directly operationalizes
+      NiuOSC26's own subject matter (existing parallel Louvain implementations
+      lack a convergence guarantee and can converge to different local
+      optima across runs due to concurrent stale-data reads) as a
+      first-class, reportable variant instead of an implicit assumption
+    inputs:
+      suite: "com-lj and com-Orkut from the cd-kernel-modularity recommended_subset (medium and large size classes, enough concurrency to expose races) plus facebook_combined as a small sanity-check instance"
+      selection: "graphs large enough that the local-move phase has meaningful cross-thread contention (>1M edges) plus one small control instance"
+      recommended_subset: "com-lj, com-Orkut, facebook_combined"
+      dense_operand: "N/A"
+    protocol:
+      format: "same as cd-kernel-modularity"
+      warmup: "1 discarded run"
+      reps: "R = 30 independent full runs, SAME graph, SAME thread/GPU count, fresh seed/scheduling nondeterminism each time (do not pin thread affinity in a way that artificially removes the very races under study)"
+      statistic: "report the full empirical distribution of final modularity across the 30 reps: min, max, mean, stddev, and the count of reps that fail the cd-kernel-modularity quality gate (Q_impl < 0.98 * Q_ref)"
+      timer: "same as cd-kernel-modularity"
+      timing_scope: "community detection only, same as cd-kernel-modularity"
+      preprocessing_reported: "not the focus of this variant; load time may be excluded"
+      convergence_proof_disclosure: "REQUIRED: does the implementation claim a formal convergence guarantee (e.g. NiuOSC26's community-versioning/distance-2-coloring schemes) or not (e.g. naive concurrent Louvain, or GALA's/HSSInfo's schemes, which do not claim one in the surveyed sources)? An implementation WITH a convergence proof is expected (and should be shown) to have modularity stddev -> 0 across reps; this variant is exactly what would falsify that claim if it does not hold empirically."
+    metric:
+      primary: "modularity_stddev across 30 reps (lower is better/more reliable)"
+      secondary: "fraction of reps failing the cd-kernel-modularity quality gate; time_stddev across 30 reps"
+    correctness: "each individual rep still validated as a legal partition (every vertex assigned exactly one community ID); the quality GATE from cd-kernel-modularity is not applied per-rep here since failing reps are exactly what this variant is designed to surface and count, not filter out"
+
+  - id: cd-alt-objective-report
+    claim: >
+      time, memory, and the algorithm's OWN native objective value for the
+      track's two non-modularity algorithm families (HSSInfo's structural-
+      entropy minimization, ProbGraph's approximate Jarvis-Patrick
+      threshold clustering) — explicitly NOT cross-comparable in a
+      throughput ranking against cd-kernel-modularity's modularity-gated
+      numbers, since these algorithms are answering different questions;
+      where feasible, ALSO compute post-hoc modularity of the resulting
+      partition so a reader can cross-reference the two axes without the
+      spec falsely implying the numbers are interchangeable
+    inputs:
+      suite: "same recommended_subset as cd-kernel-modularity for HSSInfo-style entropy methods; ProbGraph's own broad named suite (SNAP/KONECT/DIMACS/NetworkRepo/WebGraph, see survey.md Table VIII summary) plus Kronecker synthetic graphs of varied m/n for threshold-clustering methods, since threshold-based accuracy is known (per ProbGraph's own Fig. 3-4) to depend heavily on degree-distribution skew"
+      selection: "graphs for which the algorithm under test can complete within a defined time/memory budget (report the budget used)"
+      recommended_subset: "same list as cd-kernel-modularity, plus ch-SiO/bio-CE-PG/econ-beacxc/bn-mouse-brain-1/dimacs-hat1500-3 as ProbGraph's own smallest-to-largest representative spread if benchmarking a threshold-clustering method specifically"
+      dense_operand: "N/A"
+    protocol:
+      format: "same as cd-kernel-modularity"
+      warmup: "1 discarded run, OR the first 1% of a longer repeated-trial run discarded (ProbGraph's own convention — either is acceptable, DISCLOSE which)"
+      reps: "10 independent runs; for threshold-clustering methods with no fixed seed (e.g. ProbGraph's time-based hash seed — see notes_on_fairness), this also serves as an implicit determinism check"
+      statistic: "median time and median native-objective value (entropy reduction, or relative-count accuracy vs. an exact/CSR baseline of the SAME algorithm); report min/max"
+      timer: "same as cd-kernel-modularity"
+      timing_scope: "kernel only for the entropy family (matches HSSInfo's own init/detection split); for threshold-clustering, kernel only excluding sketch-construction time, with sketch-construction reported separately once (ProbGraph's own §V-A/§VIII-G convention)"
+      preprocessing_reported: "separately: graph load time; for HSSInfo-style methods, the hybrid-sparse-structure construction time; for sketch-based threshold methods, the Bloom-filter/MinHash construction time"
+      objective_disclosure: "REQUIRED: exact objective being optimized/approximated (structural entropy / threshold-based common-neighbor-count clustering / other), since this is NOT modularity and must never be silently presented as a modularity number"
+    metric:
+      primary: "median time (ms); median memory footprint (peak RSS or peak GPU memory, MB) — memory is a first-class metric here per HSSInfo's own headline claim, not a footnote"
+      secondary: "native objective value (structural entropy reduction, or relative-count accuracy |cnt_approx - cnt_exact|/cnt_exact per ProbGraph's own definition); post-hoc modularity of the resulting partition IF the algorithm produces a hard vertex-to-community assignment amenable to a modularity computation (Jarvis-Patrick's edge-cluster output may need a connected-components pass first — disclose if so)"
+    correctness: >
+      no cross-family quality gate (there is no shared scale to gate
+      against); instead REQUIRE that the native-objective number and the
+      post-hoc-modularity number (if computed) are BOTH reported side by
+      side with time, so a reader cannot cite only the faster time without
+      also seeing whether the resulting partition is any good by either
+      standard.
+
+notes_on_fairness:
+  - >
+    The task's framing note — "a faster but lower-modularity result is not
+    a win" — is the central fairness risk in this track and is why
+    cd-kernel-modularity's correctness field is a hard GATE (disqualifying,
+    not merely a caveat) rather than a passive metric, unlike most of this
+    benchmark suite's correctness fields which check exactness/tolerance
+    but don't disqualify a legitimately-different-but-valid algorithmic
+    tradeoff. Modularity maximization is itself NP-hard and heuristic, so
+    "correct" doesn't mean "exact" here — it means "not meaningfully worse
+    than a trusted reference," which is why the gate uses a reference
+    implementation + tolerance rather than a closed-form check.
+  - >
+    GALA's own artifact times graph loading INSIDE its reported "elapsed
+    time" (`start = get_time()` called before `load_bin_graph`), while
+    HSSInfo's own artifact already separates `init time` from `community
+    detection time`. cd-e2e-preprocessing and cd-kernel-modularity together
+    fix this by making both numbers mandatory and separately visible for
+    every submission, adopting HSSInfo's own (better) convention as the
+    spec-wide default rather than GALA's.
+  - >
+    NiuOSC26 is the only one of the 4 papers whose entire contribution is a
+    convergence GUARANTEE for parallel Louvain under concurrency — existing
+    parallel implementations (including, plausibly, GALA's and the
+    Grappolo baseline NiuOSC26 itself builds on and improves) can converge
+    to different local optima across runs due to threads reading stale
+    modularity/community-weight data. cd-determinism-repeatability
+    operationalizes this as a first-class, measurable variant (a
+    reproducible run-to-run modularity spread) instead of leaving
+    "convergence" as an unverified claim in a paper's text — this is the
+    same "operationalize the paper's own claimed contribution as a
+    reportable variant" pattern used for bfs-reordering-cost in
+    benchspecs/bfs/spec.yaml.
+  - >
+    ProbGraph explicitly uses a time-based (non-reproducible) hash seed
+    ("We use the current time in milliseconds as a random seed", §VI-C) and
+    is transparent about this rather than hiding it — this is adopted as
+    the model for the objective_disclosure requirement in
+    cd-alt-objective-report: submitters must disclose seed handling rather
+    than the spec assuming determinism by default.
+  - >
+    ProbGraph itself makes the "faster-but-worse-quality is not a win"
+    argument against its OWN heuristic baselines (Reduced Execution,
+    Partial Graph Processing, AutoApproximate — all shown in the paper's
+    own Fig. 6 to be both slower AND less accurate than ProbGraph's
+    Bloom-filter/MinHash schemes) — i.e. the fairness principle this spec
+    enforces across algorithm families is one the track's own most rigorous
+    paper already applies internally to its own comparison set.
+  - >
+    HSSInfo's and ProbGraph's memory-centric framing (19x memory shrink;
+    storage budget s capped at 33% additional) is adopted as the model for
+    making memory a first-class primary metric in cd-alt-objective-report,
+    rather than relegating it to a footnote as cd-kernel-modularity does
+    (where time and modularity are primary and memory is not currently
+    tracked — a scope gap flagged in open_questions below).
+
+open_questions:
+  - >
+    No arXiv or open-access fulltext exists for NiuOSC26 (IPDPS 2026,
+    unpublished/paywalled at survey time) or HSSInfo (TPDS 2023, IEEE
+    Xplore paywalled, no arXiv mirror). Their evaluation methodology facts
+    above are reconstructed entirely from artifact code and README; actual
+    published dataset lists, thread-count sweeps, hardware, and
+    repetition/statistic conventions used IN THE PAPERS could not be
+    confirmed and may differ from what the code alone suggests. Revisit if
+    either becomes openly accessible.
+  - >
+    GALA's README and its own `data/prepare_graph.sh` script disagree on
+    the single documented worked-example graph (com-lj vs. com-amazon) —
+    unresolved which one is actually used in the PPoPP'25 paper's reported
+    numbers (paywalled, ACM DL DOI page returns only metadata via WebFetch).
+  - >
+    Whether GALA's or NiuOSC26's Louvain implementations produce
+    bit-reproducible partitions under a FIXED seed (as opposed to merely
+    "eventually converging" under NiuOSC26's proof) was not confirmed from
+    either artifact — cd-determinism-repeatability is designed to measure
+    this empirically since it cannot currently be confirmed by reading the
+    code alone.
+  - >
+    This spec does not yet define a memory metric for cd-kernel-modularity/
+    cd-e2e-preprocessing (only cd-alt-objective-report tracks memory as
+    primary) even though HSSInfo's whole contribution is memory reduction
+    on the SAME Louvain-adjacent territory. If a future Louvain-family
+    paper with a memory-efficiency claim joins this track, memory should
+    likely be promoted to a tracked secondary metric in
+    cd-kernel-modularity too, rather than being confined to the
+    alt-objective variant.
+  - >
+    No Leiden or pure label-propagation paper appears among the 4 surveyed
+    papers (Vite, referenced only as GALA's "-p 2" pruning-strategy name,
+    is a Grappolo-lineage tool but not itself one of the 4 papers). The
+    variants above are written to be extensible to a future Leiden
+    submission (Leiden's well-connectedness guarantee is a stronger
+    property than plain modularity-gain convergence and would need its own
+    disclosure field alongside algorithm_family_disclosure) but this has
+    not been exercised against a real Leiden paper's artifact.
+
+evidence:
+  conf/ipps/NiuOSC26: "modularity-maximizing Louvain, three OpenMP variants (D2CC, Grappolo++, community versioning); convergence GUARANTEE under concurrency is the paper's contribution; no dataset/timing-protocol confirmable from available sources (no arXiv, code-only)"
+  conf/ppopp/WangLLWM00Z25: "modularity-maximizing Louvain on GPU, -t modularity-gain threshold (default 1e-6), 4 pruning strategies incl. Vite-lineage; own driver times graph load INSIDE reported elapsed time (fairness gap); com-lj/com-amazon worked examples disagree between README and prepare script; no seed/determinism convention documented"
+  journals/tpds/ZhuSFX23: "NOT modularity — structural-information-theory (entropy) objective; greedy entropy-delta merge; own driver explicitly separates init time from community-detection time (good practice, adopted spec-wide); headline metric is memory (up to 19x shrink claimed); facebook_combined worked example, full dataset list cloud-hosted/unconfirmed; IEEE paywalled, no arXiv"
+  conf/sc/BestaMLTIKAJPKGVMH22: "NOT modularity — single-pass Jarvis-Patrick threshold clustering (|N_v cap N_u| > tau) via Bloom filter/MinHash approximate set intersection; accuracy = relative count difference vs exact SAME algorithm, not a global partition-quality metric; 1%-warmup-discard + 95% CI protocol (most rigorous of the four); time-based non-reproducible hash seed, explicitly disclosed; memory-bounded (storage budget s, capped 33% in eval); broad named SNAP/KONECT/DIMACS/NetRepo/WebGraph suite, full fulltext obtained via arXiv:2208.11469v3"

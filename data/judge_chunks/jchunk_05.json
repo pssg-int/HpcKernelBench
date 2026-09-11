@@ -1,0 +1,904 @@
+[
+ {
+  "key": "conf/asplos/0002PJ20",
+  "title": "Why GPUs are Slow at Executing NFAs and How to Make them Faster",
+  "venue": "ASPLOS",
+  "year": 2020,
+  "authors": [
+   "Hongyuan Liu 0002",
+   "Sreepathi Pai",
+   "Adwait Jog"
+  ],
+  "abstract": "Non-deterministic Finite Automata (NFA) are space-efficient finite state machines that have significant applications in domains such as pattern matching and data analytics. In this paper, we investigate why the Graphics Processing Unit (GPU)---a massively parallel computational device with the highest memory bandwidth available on general-purpose processors---cannot efficiently execute NFAs. First, we identify excessive data movement in the GPU memory hierarchy and describe how to privatize reads effectively using GPU's on-chip memory hierarchy to reduce this excessive data movement. We also show that in several cases, indirect table lookups in NFAs can be eliminated by converting memory rea",
+  "candidates": [
+   {
+    "url": "https://github.com/bigwater/gpunfa-artifact",
+    "desc": "",
+    "stars": 19,
+    "readme_head": "# NFA Processing on GPU\n## Artifact for *Why GPUs are Slow at Executing NFAs and How to Make them Faster* @ ASPLOS '2k20\n\n*The artifact contains the source code and Python/shell scripts. The scripts generate the throughput results in Table 3 of our paper. We also provide our raw experimental data and the scripts to reproduce other figures in our paper.*\n\n### Hardware dependencies\nWe developed and tested our work in two NVIDIA GPUs (Quadro P6000 and Tesla V100). We expect our code can run on GPUs with the compute capability no less than 5.0.\n\n### Software dependencies\nOur work requires CUDA 9.2 SDK. Our work uses cmake later than 3.10 for compilation. We use Python 3 for our scripts. \n\n#### Operating System\nWe test our work on Ubuntu 18.04. We expect it can work with mainstream Linux distributions.  \n\n#### Required Python packages:\n\n* matplotlib\n* numpy\n* pandas\n* scipy\n* xlrd\n\nIf you use `conda`, simply run\n```\nconda create --name gpunfa_env python=3.7 matplotlib numpy scipy pandas xlrd\nconda activate gpunfa_env\n```\nto install all the required Python packages. \n\n\n### Datasets\nAll data sets are from public available benchmark suites. We convert the automata files of them to ANML format. To facilitate this step, we provide the data set that is ready to use. Our scripts will automatically unzip these datasets. \n\n### Benchmarks\nIf the benchmark could not be downloaded due to GitHub's quota, try to download it [here](https://www.dropbox.com/s/havbbf1281eer0i/gpunfa_benchmarks.zip?"
+   }
+  ]
+ },
+ {
+  "key": "conf/asplos/0033XSRS21",
+  "title": "Analytical characterization and design space exploration for optimization of CNNs",
+  "venue": "ASPLOS",
+  "year": 2021,
+  "authors": [
+   "Rui Li 0033",
+   "Yufan Xu 0001",
+   "Aravind Sukumaran-Rajam",
+   "Atanas Rountev",
+   "P. Sadayappan"
+  ],
+  "abstract": "Moving data through the memory hierarchy is a fundamental bottleneck that can limit the performance of core algorithms of machine learning, such as convolutional neural networks (CNNs). Loop-level optimization, including loop tiling and loop permutation, are fundamental transformations to reduce data movement. However, the search space for finding the best loop-level optimization configuration is explosively large. This paper develops an analytical modeling approach for finding the best loop-level optimization configuration for CNNs on multi-core CPUs. Experimental evaluation shows that this approach achieves comparable or better performance than state-of-the-art libraries and auto-tuning ba",
+  "candidates": [
+   {
+    "url": "https://github.com/merrymercy/awesome-tensor-compilers",
+    "desc": "A list of awesome compiler projects and papers for tensor computation and deep learning.",
+    "stars": 2764,
+    "readme_head": "# Awesome Tensor Compilers\n![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)\n[![Maintenance](https://img.shields.io/badge/Maintained%3F-YES-green.svg)](https://github.com/merrymercy/awesome-tensor-compilers/graphs/commit-activity)\n\nA list of awesome compiler projects and papers for tensor computation and deep learning. \n\n## Contents\n- [Open Source Projects](#open-source-projects)\n- [Papers](#papers)\n  - [Survey](#survey)\n  - [Compiler and IR Design](#compiler-and-ir-design)\n  - [Auto-tuning and Auto-scheduling](#auto-tuning-and-auto-scheduling)\n  - [Cost Model](#cost-model)\n  - [CPU & GPU Optimization](#cpu-and-gpu-optimization)\n  - [NPU Optimization](#npu-optimization)\n  - [Graph-level Optimization](#graph-level-optimization)\n  - [Dynamic Model](#dynamic-model)\n  - [Graph Neural Networks](#graph-neural-networks)\n  - [Distributed Computing](#distributed-computing)\n  - [Quantization](#quantization)\n  - [Sparse](#sparse)\n  - [Program Rewriting](#program-rewriting)\n  - [Verification and Testing](#verification-and-testing)\n- [Tutorials](#tutorials)\n- [Contribute](#contribute)\n\n## Open Source Projects\n- [TVM: An End to End Machine Learning Compiler Framework](https://tvm.apache.org/)\n- [MLIR: Multi-Level Intermediate Representation](https://mlir.llvm.org/)\n- [XLA: Optimizing Compiler for Machine Learning](https://www.tensorflow.org/xla)\n- [Halide: A Language for Fast, Portable Computation on Images and Tensors](https:/"
+   },
+   {
+    "url": "https://github.com/KnowingNothing/compiler-and-arch",
+    "desc": "A list of tutorials, paper, talks, and open-source projects for emerging compiler and architecture",
+    "stars": 531,
+    "readme_head": "## Compilers and Architectures\n![GitHub last commit](https://img.shields.io/github/last-commit/KnowingNothing/compiler-and-arch)\n[![](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://github.com/sindresorhus/awesome)\n\nA list of awesome compilers and optimization techniques (applicable to compilers) for different architectures and emerging domains.\n\n>Note: Although some projects are not about compiler design or implementation themselves, we still include them if their techniques are suitable for automation and compiler design.\n\n## Contents\n\n\n- [Compilers and Architectures](#compilers-and-architectures)\n- [Contents](#contents)\n- [List of Conferences and Journals Considered](#list-of-conferences-and-journals-considered)\n- [Compiler Toolchain](#compiler-toolchain)\n- [Compiler for Distributed](#compiler-distributed)\n- [Compilers for AI chips](#compilers-for-ai-chips)\n- [Compilers for PIM](#compilers-for-pim)\n- [Compilers for Brain-inspired Hardware](#compilers-for-brain-inspired-hardware)\n- [Compilers for SIMT GPU](#compilers-for-simt-gpu)\n- [Compilers for CPU](#compilers-for-cpu)\n- [Compilers for Mobile and Edge](#compilers-for-mobile-and-edge)\n- [Compilers for RISC-V](#compilers-for-risc-v)\n- [Compilers for Configurable Hardware](#compilers-for-configurable-hardware)\n- [Compilers for Hyperdimensional Computing](#compilers-for-hyperdimensional-computing)\n- [Design Space Construction and Exploration](#design-space-constr"
+   },
+   {
+    "url": "https://github.com/HPCRL/ASPLOS_artifact",
+    "desc": "",
+    "stars": 13,
+    "readme_head": "# Artifact: Analytical characterization and design space exploration for optimization of CNNs\n## Note\n*Please be aware that all experiment in this repo & paper has the same \"cache flushing\" component.  When comparing to this repo, please ensure the same \"cache flushing\" compnent is applied in all experiments.  Missing of cache flush will results significant cache benefits, and introduces unfair comparison.\n\n*Please be aware that the bandwidth and capacity parameter are currently hard-coded, using the machine config of:\n      1 socket 1x8 core Intel i7-9700k(coffee lake)\n      1 socket 1x18 core Intel i9-10980xe (cascade lake)\n\n*Without changing the parameters, the experiment will not be correct.\n## Requirements \n* Python 3.8 (we recommend using miniconda https://docs.conda.io/en/latest/miniconda.html)\n  * create virtual env with python 3.8 (https://docs.python.org/3/tutorial/venv.html)\n  * activate virtual env (https://docs.python.org/3/tutorial/venv.html)\n  * modules required: amplpy, sympy, joblib (pip install)\n* cmake 3.19\n* Intel C++ Compiler (minimum version: 2019)\n* AMPL -- https://ampl.com/try-ampl/download-a-free-demo/ (minimum version:  20181102)\n* IPOPT -- https://ampl.com/products/solvers/all-solvers-for-ampl/ (minimum version:3.12.13)\n* LLVM version 10.0 (for extra expreiment on avx512 only)\n* likwid -- https://github.com/RRZE-HPC/likwid (for hardware counter measurements only)\n\n\n## Environment configuration suggestions\n* We suggest the user to directly download A"
+   }
+  ]
+ },
+ {
+  "key": "conf/asplos/HellstenSLLHEKS23",
+  "title": "BaCO: A Fast and Portable Bayesian Compiler Optimization Framework",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "authors": [
+   "Erik Orm Hellsten",
+   "Artur L. F. Souza",
+   "Johannes Lenfers",
+   "Rubens Lacouture",
+   "Olivia Hsu"
+  ],
+  "abstract": "We introduce the Bayesian Compiler Optimization framework (BaCO), a general purpose autotuner for modern compilers targeting CPUs, GPUs, and FPGAs. BaCO provides the flexibility needed to handle the requirements of modern autotuning tasks. Particularly, it deals with permutation, ordered, and continuous parameter types along with both known and unknown parameter constraints. To reason about these parameter types and efficiently deliver high-quality code, BaCO uses Bayesian optimization algorithms specialized towards the autotuning domain. We demonstrate BaCO's effectiveness on three modern compiler systems: TACO, RISE & ELEVATE, and HPVM2FPGA for CPUs, GPUs, and FPGAs respectively. For these",
+  "candidates": [
+   {
+    "url": "https://github.com/SoftWiser-group/NeuralPA",
+    "desc": "Neural Program Analysis",
+    "stars": 4,
+    "readme_head": "# Neural Program Analysis\n\nThis repository aims to provide a framework for neural network-based program analysis, making it easy for people to build neural networks and experiment with them.\n\n# Table of contents\n- [Automatic Program Repair](#automatic-program-repair)\n- [Type Inference](#type-inference)\n- [Artificial-Intelligence-in-Compiler-Optimization](#Artificial-Intelligence-in-Compiler-Optimization)\n\n# Automatic Program Repair\n| Year | Venue        | Paper                                                        | Code                                                         |\n| ---- | ------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |\n| 2023 | ESEC/FSE 2023 | Copiloting the Copilots: Fusing Large Language Models with Completion Engines for Automated Program Repair |               |\n| 2022 | EMNLP 2022   | Using Developer Discussions to Guide Fixing Bugs in Software |                                                              |\n| 2022 | ASE 2022     | SelfAPR: Self-supervised Program Repair with Test Execution Diagnostics |                                                   |\n| 2022 | ICSE 2022    | Neural Program Repair with Execution-based Backpropagation   |                                                              |\n| 2021 | PLDI 2021    | Learning to Find Naming Issues with Big Code and Small Supervision |                                                        |\n| 2021 | FSE 2"
+   },
+   {
+    "url": "https://github.com/zwang4/awesome-machine-learning-in-compilers",
+    "desc": "Must read research papers and links to tools and datasets that are related to using machine learning for compilers and systems optimisation",
+    "stars": 1681,
+    "readme_head": "# Awesome machine learning for compilers and program optimisation \n[![Awesome](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://github.com/sindresorhus/awesome)\n[![Maintenance](https://img.shields.io/badge/Maintained%3F-YES-green.svg)](https://github.com/zwang4/awesome-machine-learning-in-compilers/graphs/commit-activity)\n\nA curated list of awesome research papers, datasets, and tools for applying machine learning techniques to compilers and program optimisation.\n\n\n## Contents\n- [Papers](#papers)\n   - [Survey](#survey)\n   - [Iterative Compilation and Compiler Option Tuning](#iterative-compilation-and-compiler-option-tuning)\n   - [Instruction-level Optimisation](#instruction-level-optimisation)\n   - [Parallelism Mapping and Task Scheduling](#parallelism-mapping-and-task-scheduling)\n   - [Languages and Compilation](#languages-and-compilation)\n   - [Auto-tuning and Design Space Exploration](#auto-tuning-and-design-space-exploration)\n   - [Code Size Reduction](#code-size-reduction)\n   - [Cost and Performance Models](#cost-and-performance-models)\n   - [Domain-specific Optimisation](#domain-specific-optimisation)\n   - [Learning Program Representation](#learning-program-representation)\n   - [ML for Compilers and Systems Optimisation](#ml-for-compilers-and-systems-optimisation)\n   - [Memory/Cache Modelling/Analysis](#memorycache-modelinganalysis)\n- [Books](#books)\n- [Talks and Tutorials](#talks-and-tutorials)\n- [Software]("
+   },
+   {
+    "url": "https://github.com/shrutisaxena51/Artificial-Intelligence-in-Compiler-Optimization",
+    "desc": "A curated list of research papers, datasets, and tools for applying machine learning/Deep learning techniques to compilers and program optimization.",
+    "stars": 126,
+    "readme_head": "# Artificial-Intelligence-in-Compiler-Optimization\n[![Maintenance](https://img.shields.io/badge/Maintained%3F-YES-green.svg)](https://github.com/shrutisaxena51)\n\nA list of research papers, datasets, conference and talk and Projects for compilers and program optimization.\n\n## Contents\n- [Papers](#papers)\n   - [2024](#2024)\n   - [2023](#2023)\n   - [2022](#2022)\n   - [2021](#2021)\n   - [2020](#2020)\n   - [2019](#2019)\n   - [2018](#2018)\n   - [2017](#2017)\n   - [2016](#2016)\n   - [2015](#2015)\n   - [2014](#2014)\n   - [2013](#2013)\n   - [2012](#2012)\n   - [2011](#2011)\n   - [2010](#2010)\n   - [2009](#2009)\n   - [2008](#2008)\n   - [2007](#2007)\n   - [2006](#2006)\n   - [2005](#2005)\n   - [2004](#2004)\n   \n- [Books](#books)\n- [Talks and Tutorials](#talks-and-tutorials)\n- [Compiler Projects](#software)\n- [Benchmarks and Datasets](#benchmarks-and-datasets)\n- [Conferences](#conferences)\n- [Journals](#journals)\n- [How to Contribute](#how-to-contribute)\n\n### 2024\n\n- <img src=\"https://img.shields.io/badge/Auto_Tuning-lightgreen.svg\" alt=\"24-pages\" align=\"top\"> [BaCO: A Fast and Portable Bayesian Compiler Optimization Framework](https://arxiv.org/pdf/2212.11142.pdf) - Erik Hellsten, Artur Souza, Johannes Lenfers, Rubens Lacouture, Olivia Hsu, Adel Ejjeh, Fredrik Kjolstad, Michel Steuwer, Kunle Olukotun, Luigi Nardi. ASPLOS 2024. \n### 2023\n- <img src=\"https://img.shields.io/badge/AI-LLM-darkblue.svg\" alt=\"12-pages\" align=\"top\"> [Large Language Models for Compiler Optimization](https://arxiv."
+   }
+  ]
+ },
+ {
+  "key": "conf/asplos/BisbasLB0FMRJKS24",
+  "title": "A shared compilation stack for distributed-memory parallelism in stencil DSLs",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "authors": [
+   "George Bisbas",
+   "Anton Lydike",
+   "Emilien Bauer",
+   "Nick Brown 0002",
+   "Mathieu Fehr"
+  ],
+  "abstract": "Domain Specific Languages (DSLs) increase programmer productivity and provide high performance. Their targeted abstractions allow scientists to express problems at a high level, providing rich details that optimizing compilers can exploit to target current- and next-generation supercomputers. The convenience and performance of DSLs come with significant development and maintenance costs. The siloed design of DSL compilers and the resulting inability to benefit from shared infrastructure cause uncertainties around longevity and the adoption of DSLs at scale. By tailoring the broadly-adopted MLIR compiler framework to HPC, we bring the same synergies that the machine learning community already",
+  "candidates": [
+   {
+    "url": "https://github.com/AntonLydike/tack",
+    "desc": "A tool to catalogue your read papers",
+    "stars": 0,
+    "readme_head": "# Tack - A tool to catalogue your read papers\n\n`tack` is a simple cli-based tool, designed to work together with [Obsidian](https://obsidian.md/) to provide an\nefficient way to manage your papers.\n\nIt automatically grabs paper metadata from the internet and generates you markdown documents.\n\n## Usage:\n\nInstall with your favourite package manager `<anything> install tack`. (TODO: actually publish on pypi).\n\nBefore you can use `tack`, you need to set it up. For this type `tack migrate`. This will set up the DB and stuff.\n\nThen you can add papers through their DOI: `tack add <doi>`. This will fetch metadata and generate a markdown file like this in `~/papers/10.1145/3620666.3651344.md`:\n\n```md\n---\naliases:\n- A shared compilation stack for distributed-memory parallelism in stencil DSLs\nauthors:\n- George Bisbas\n- Anton Lydike\n// ...\nconference: ASPLOS '24\nurl: http://dx.doi.org/10.1145/3620666.3651344\nyear: 2024\n---\n# A shared compilation stack for distributed-memory parallelism in stencil DSLs\n## Notes\n\n## References\n- [[10.5555/3026877.3026899]]\n- [[10.1016/j.jpdc.2019.02.007|LFRic: Meeting the challenges of scalability and performance portability in Weather and Climate models]] (S.V. Adams et. al. - 2019)\n- [[10.1016/j.softx.2021.100707|GridTools: A framework for portable weather and climate applications]] (Anton Afanasyev et. al. - 2021)\n// ...\n```\n\nThese markdown files are meant to be managed through Obsidian+git.\n\nYou have links, backlinks, etc. Adding new papers works just "
+   }
+  ]
+ },
+ {
+  "key": "conf/asplos/LamJ0MGLLLRLRW024",
+  "title": "GPU-based Private Information Retrieval for On-Device Machine Learning Inference",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "authors": [
+   "Maximilian Lam",
+   "Jeff Johnson 0004",
+   "Wenjie Xiong 0001",
+   "Kiwan Maeng",
+   "Udit Gupta 0001"
+  ],
+  "abstract": "On-device machine learning (ML) inference can enable the use of private user data on user devices without revealing them to remote servers. However, a pure on-device solution to private ML inference is impractical for many applications that rely on embedding tables that are too large to be stored on-device. In particular, recommendation models typically use multiple embedding tables each on the order of 1--10 GBs of data, making them impractical to store on-device. To overcome this barrier, we propose the use of private information retrieval (PIR) to efficiently and privately retrieve embeddings from servers without sharing any private information. As off-the-shelf PIR algorithms are usually",
+  "candidates": [
+   {
+    "url": "https://github.com/facebookresearch/GPU-DPF",
+    "desc": "GPU-based Distributed Point Functions (DPF) and 2-server private information retrieval (PIR). ",
+    "stars": 59,
+    "readme_head": "# GPU Distributed Point Functions\n\nThis codebase implements a high-performance GPU implementation of a distributed point function, and exposes a simple and easy to use python interface. \n\nThis repository is the source code for the paper [GPU-based Private Information Retrieval for On-Device ML Inference](https://arxiv.org/abs/2301.10904).\n\n\n## Background\n\nA **Distributed Point Function (DPF)** is a cryptographic primitive that allows a client to **efficiently** and **privately** access an entry of a table replicated across two non-colluding servers.\n\n<p align=\"center\">\n<img src=\"https://github.com/facebookresearch/GPU-DPF/blob/main/imgs/dpf.png\" width=\"300\">\n</p>\n\nThe workflow for private table accesses using distributed point functions is:\n- Client **generates** two compact keys k_a, k_b that represents the secret index they wish to retrieve\n- Client **sends** k_a, k_b across the network to two non-colluding servers Server 1, Server 2 respectively\n- Server 1 and Server 2 **evaluate** the keys, and return the result\n- Client **sums** the returned shares to obtain the table entry\n\nBy using a DPF\n1) **No information about the client's secret index is revealed**\n    * Assuming no collusion between servers.\n2) **Network communication costs are minimized** \n    * Key sizes are *compact* on the order of 2KB for tables with up to 2^32 entries.\n    \n## How do Distributed Point Functions Work?\n\nWe describe how distributed point functions work [here](https://github.com/facebookresearch"
+   },
+   {
+    "url": "https://github.com/inpluslab-wuhui/Systems-for-Foundation-Models",
+    "desc": "",
+    "stars": 20,
+    "readme_head": "# Systems for Foundation Models\r\n\r\nA curated collection of academic papers related to foundation models. All papers in this collection are sorted based on the conference/journal name and the year of publication. Developers and researchers are welcome to contribute by adding more published papers to this list.\r\n\r\nKey Words: foundation model, large-scale models, model training, model inference, pipeline parallelism, model parallelism, tensor parallelism, data parallelism, pre-training, fine-tuning, zero-shot, model compression, data compression, gradient compression, memory footprint reduction, batching, heterogeneous system, distributed system,  network architecture\r\n\r\n## Table of Listed Conferences\r\n\r\n- [ACM SIGPLAN Symposium on Principles & Practice of Parallel Programming (PPoPP)](#PPoPP)\r\n\r\n- [Conference on Neural Information Processing Systems (NeurIPS)](#NIPS)\r\n\r\n- [International Conference for High Performance Computing, Networking, Storage and Analysis (SC)](#SC)\r\n\r\n- [USENIX Annual Technical Conference (USENIX ATC)](#ATC)\r\n\r\n- [International Conference on Architectural Support for Programming Languages and Operating Systems (ASPLOS)](#ASPLOS)\r\n\r\n- [North American Chapter of the Association for Computational Linguistics (NAACL)](#NAACL-HLT)\r\n\r\n- [International Conference on Machine Learning (ICML)](#ICML)\r\n\r\n- [European Conference on Computer Systems (EuroSys)](#EUROSYS)\r\n\r\n- [ACM SIGKDD Conference on Knowledge Discovery and Data Mining (KDD)](#KDD)\r\n\r\n- [USENIX Sympos"
+   }
+  ]
+ },
+ {
+  "key": "conf/asplos/AzamiFB25",
+  "title": "Efficient Lossless Compression of Scientific Floating-Point Data on CPUs and GPUs",
+  "venue": "ASPLOS",
+  "year": 2025,
+  "authors": [
+   "Noushin Azami",
+   "Alex Fallin",
+   "Martin Burtscher"
+  ],
+  "abstract": "The amount of scientific data being produced, transferred, and processed increases rapidly. Whereas GPUs have made faster processing possible, storage limitations and slow data transfers remain key bottlenecks. Data compression can help, but only if it does not create a new bottleneck. This paper presents four new lossless compression algorithms for single- and double-precision data that compress well and are fast even though they are fully compatible between CPUs and GPUs. Averaged over many SDRBench inputs, our implementations outperform most of the 18 compressors from the literature we compare to in compression ratio, compression throughput, and decompression throughput. Moreover, they ou",
+  "candidates": [
+   {
+    "url": "https://github.com/celerity/ndzip",
+    "desc": "A High-Throughput Parallel Lossless Compressor for Scientific Data",
+    "stars": 76,
+    "readme_head": "# ndzip: A High-Throughput Parallel Lossless Compressor for Scientific Data\n\nndzip compresses and decompresses multidimensional univariate grids of single- and double-precision IEEE 754\nfloating-point data. We implement\n\n- a single-threaded CPU compressor\n- an OpenMP-backed multi-threaded compressor\n- a SYCL-based GPU compressor (currently hipSYCL + NVIDIA only)\n- a CUDA-based GPU compressor\n\nAll variants generate and decode bit-identical compressed stream.\n\nndzip is currently a research project with the primary use case of speeding up distributed HPC applications by\nincreasing effective interconnect bandwidth.\n\n## Prerequisites\n\n- CMake >= 3.15\n- Clang >= 10.0.0\n- Linux (tested on x86_64 and POWER9)\n- Boost >= 1.66\n- [Catch2](https://github.com/catchorg/Catch2) >= 2.13.3 (optional, for unit tests and microbenchmarks)\n\n### Additionaly, for GPU support\n\n- CUDA >= 11.0 (not officially compatible with Clang 10/11, but a lower version will optimize insufficiently!)\n- An Nvidia GPU with Compute Capability >= 6.1\n- For the SYCL version: [hipSYCL](https://github.com/illuhad/hipSYCL) >= `8756087f`\n\n## Building\n\nMake sure to set the right build type and enable the full instruction set of the target CPU architecture:\n\n```sh\n-DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=\"-march=native\"\n```\n\nIf unit tests and microbenchmarks should also be built, add\n\n```sh\n-DNDZIP_BUILD_TEST=YES\n```\n\nDepending on your system, you might have to configure the correct C/C++ compilers to use (Clang >= 10.0 a"
+   }
+  ]
+ },
+ {
+  "key": "conf/asplos/SongTHLWMXSJY0L26",
+  "title": "XY-Serve: End-to-End Versatile Production Serving for Dynamic LLM Workloads",
+  "venue": "ASPLOS",
+  "year": 2026,
+  "authors": [
+   "Mingcong Song",
+   "Xinru Tang",
+   "Fengfan Hou",
+   "Jing Li",
+   "Wei Wei"
+  ],
+  "abstract": "Meeting growing demands for low latency and cost efficiency in production-grade large language model (LLM) serving systems requires integrating advanced optimization techniques. However, dynamic and unpredictable input-output lengths of LLM, compounded by these optimizations, exacerbate the issues of workload variability, making it difficult to maintain high efficiency on AI accelerators, especially DSAs with tile-based programming models. To address this challenge, we introduce XY-Serve, a versatile, Ascend NPU native, end-to-end production LLM-serving system. The core idea is an abstraction mechanism that smooths out the workload variability by decomposing computations into unified, hardwa",
+  "candidates": [
+   {
+    "url": "https://github.com/iliujunn/xyserve",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "# XY-Serve\n\nFull-stack paper reproduction repository on Ascend NPU for:\n\n**XY-Serve: End-to-End Versatile Production Serving for Dynamic LLM Workloads**\n\n> https://arxiv.org/abs/2412.18106\n\n## Scope\n\nXY-Serve reproduces the full serving stack described in the paper, including:\n\n- Serving framework with token-wise scheduling\n- APC (Attention-aware Page Cache) / KV cache management\n- Speculative decoding\n- Meta-Attention and SmoothGEMM Ascend C kernels\n- Runtime engine (model forward, model loader, execution engine, distributed)\n- vLLM Ascend integration\n\n## Current Status\n\n**P0-01 infrastructure only.** Repository skeleton and build metadata are in place.\nNo system or kernel functionality has been implemented yet.\n\n## Quick Start\n\n```bash\n./build.sh\n```\n\n## Build Requirements\n\n- CMake >= 3.20\n- C++17 compiler\n- Python >= 3.10\n\n## License\n\nThis project is licensed under the Apache License 2.0. See [LICENSE](LICENSE)\nfor the full text.\n\nThird-party components are governed by their respective licenses.\nSee [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for details.\n"
+   },
+   {
+    "url": "https://github.com/byungsoo-oh/ml-systems-papers",
+    "desc": "Curated collection of papers in machine learning systems",
+    "stars": 632,
+    "readme_head": "# Paper List for Machine Learning Systems\n\n![Awesome](https://awesome.re/badge.svg)\n[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/byungsoo-oh/ml-systems-papers/pulls)\n\nPaper list for broad topics in machine learning systems \n> NOTE: Survey papers are annotated with [Survey 🔍] prefix.\n\n## Table of Contents\n<!-- TOC -->\n\n- [Paper List for Machine Learning Systems](#paper-list-for-machine-learning-systems)\n  - [Table of Contents](#table-of-contents)\n  - [Data Processing](#data-processing)\n    - [Data pipeline optimization](#data-pipeline-optimization)\n    - [Caching and distributed storage for ML training](#caching-and-distributed-storage-for-ml-training)\n    - [LLM data plane](#llm-data-plane)\n    - [Others](#others)\n  - [Training System](#training-system)\n    - [ML job analysis on GPU clusters](#ml-job-analysis-on-gpu-clusters)\n    - [Resource scheduling](#resource-scheduling)\n    - [Distributed training](#distributed-training)\n    - [AutoML](#automl)\n    - [GNN training system](#gnn-training-system)\n  - [Inference System](#inference-system)\n  - [Attention Optimization](#attention-optimization)\n  - [Mixture of Experts (MoE)](#mixture-of-experts-moe)\n  - [Communication Optimization \\& Network Infrastructure for Distributed ML](#communication-optimization--network-infrastructure-for-distributed-ml)\n  - [Fault tolerance \\& Straggler mitigation](#fault-tolerance--straggler-mitigation)\n  - [GPU Memory Management \\& Optimization](#gpu-"
+   },
+   {
+    "url": "https://github.com/chenhongyu2048/LLM-inference-optimization-paper",
+    "desc": "Summary of some awesome work for optimizing  LLM inference",
+    "stars": 261,
+    "readme_head": "# LLM-inference-optimization-paper\n\nSummary of some awesome works for optimizing  LLM inference\n\nThis summary will including three parts:\n\n1. some **repositories** that you can follow\n2. some representative **person** or **labs** that you can follow\n3. some important **works** in the different research interests\n\n## Repositories\n\nFor example, [LLMSys-PaperList](https://github.com/AmberLJC/LLMSys-PaperList) contains many excellent articles, and is keeping updating (which I believe is the most important for a paperlist). [Awesome-LLM-Inference](https://github.com/DefTruth/Awesome-LLM-Inference) and [Awesome_LLM_Accelerate-PaperList](https://github.com/galeselee/Awesome_LLM_Accelerate-PaperList/) are also worth reading.\n\nBesides, [awesome-AI-system](https://github.com/lambda7xx/awesome-AI-system) works also very well. And you can find other repositories in its content.  \n\nThe log [\"Large Transformer Model Inference Optimization\"](https://lilianweng.github.io/posts/2023-01-10-inference-optimization/) helps me a lot at the beginning.  \n\nThis log [OpenAI Keynote on Building Scalable AI Infrastructure](https://www.servethehome.com/openai-keynote-on-building-scalable-ai-infrastructure/) seems to be a laeding guidance.  \n\n## Person/Lab\n\n**Follow others' research, and find yourself's idea.**  \n\nIt is not my intention to judge the work of these pioneers, and I understand that the shortness of my knowledge will lead me to leave out many important people.\nIf you have a different opinion, "
+   }
+  ]
+ },
+ {
+  "key": "conf/usenix/ShovonGMK23",
+  "title": "Towards Iterative Relational Algebra on the GPU",
+  "venue": "ATC",
+  "year": 2023,
+  "authors": [
+   "Ahmedur Rahman Shovon",
+   "Thomas Gilray",
+   "Kristopher K. Micinski",
+   "Sidharth Kumar"
+  ],
+  "abstract": "Iterative relational algebra (RA kernels in a fixed-point loop) enables bottom-up logic programming languages such as Datalog. Such declarative languages are attractive targets for high-performance implementations of relational data analytics in fields such as graph mining, program analysis, and social-media analytics. Language-level constructs are implemented via high-performance relational algebra primitives (e.g., projections, reorderings, and joins). Such primitives would appear a natural target for GPUs, obtaining high throughput on large datasets. However, state-of-the-art Datalog engines are still CPU-based, scaling best between 8--16 threads. While much has explored standalone RA ope",
+  "candidates": [
+   {
+    "url": "https://github.com/harp-lab/usenixATC23",
+    "desc": "",
+    "stars": 11,
+    "readme_head": "## Transitive Closure Computation\nThis repo contains the code, data, and instructions for the USENIXATC 2023 paper: [**Towards Iterative Relational Algebra on the GPU**](https://www.usenix.org/conference/atc23/presentation/shovon)\n\n![alt comparison](screenshots/comparison.png)\n\n## Datasets\n- Datasets are listed in [data folder](code/data).\n\n## Folder structure\n```\n.\n├── code\n│   ├── tc_cuda.cu: Main file to run our cuda implementations of transitive closure computation\n│   ├── hashjoin.cu: Standalone hashjoin implementation using CUDA\n│   ├── Makefile\n│   ├── output.log: Sample output of the CUDA TC benchmark\n│   ├── common\n│   │   ├── kernels.cu: Contains CUDA kernels\n│   │   ├── error_handler.cu: Error handling macros for CUDA\n│   │   └── utils.cu: Contains utility functions\n│   ├── Dockerfile\n│   ├── job_scripts: Job Scripts to run the CUDA implementations in ThetaGPU\n│   │   ├── hashjoin-job.sh\n│   │   ├── single-gpu-debug.sh\n│   │   └── single-gpu-job.sh\n│   ├── datalog_related\n│   │   ├── *.data: All data files prepared for Souffle\n│   │   ├── README.md\n│   │   ├── souffle: Contains souffle package\n│   │   ├── tc.dl: Datalog rules for generating Transitive closure\n│   │   └── tc_dl.cpp: Souffle generated C++ code\n│   ├── cudf_related\n│   │   ├── README.md\n│   │   ├── transitive_closure.py: Transitive closure computation using cuDF\n│   │   ├── environment.yml: Conda environment file from ThetaGPU\n│   │   └── cudf_submit.sh: Job script for ThetaGPU\n│   ├── chart_generatio"
+   },
+   {
+    "url": "https://github.com/arsho/tc",
+    "desc": "Transitive closure computation using iterative relational algebra in different programming models",
+    "stars": 2,
+    "readme_head": "## Transitive Closure Computation\nThis repo contains the code, data, and instructions to compute transitive closure in CUDA, SYCL(ported using SYCLomatic), and SYCL from scratch.\n\n\n## Dependencies\n### Hardware\n- The complete benchmark of the CUDA-based transitive closure computation experiment can be executed on an Nvidia A100 GPU with a minimum of 40 GB GPU memory. The ThetaGPU single-GPU node is a suitable choice.\n- Partial benchmarks can be run on other Nvidia GPUs, but they may result in program termination for certain datasets due to limited GPU memory, leading to an instance of the `std::bad_alloc: cudaErrorMemoryAllocation: out of memory` error.\n\n### NVIDIA CUDA Toolkit (version 11.4.2 or later)\n- Download and install the NVIDIA CUDA Toolkit from the NVIDIA website: [https://developer.nvidia.com/cuda-toolkit-archive](https://developer.nvidia.com/cuda-toolkit-archive)\n- Follow the installation instructions for your operating system. Make sure to install version 11.4.2 or later.\n\n## Run CUDA Implementation\n- To build and run the `Makefile`, navigate to the `code` directory containing the `Makefile`, `tc_cuda.cu`, and `hashjoin.cu` files and run the following command:\n```\ncd cuda_implementation\nmake run\n```\nThis will build the `tc_cuda.out` executable using the nvcc compiler and run the test target to execute the program.\n- After successful run, the output will be like:\n```shell\nBenchmark for OL.cedge_initial\n----------------------------------------------------------\n\n| D"
+   }
+  ]
+ },
+ {
+  "key": "conf/cgo/ZhangBCDKAS20",
+  "title": "Optimizing ordered graph algorithms with GraphIt",
+  "venue": "CGO",
+  "year": 2020,
+  "authors": [
+   "Yunming Zhang",
+   "Ajay Brahmakshatriya",
+   "Xinyi Chen",
+   "Laxman Dhulipala",
+   "Shoaib Kamil 0001"
+  ],
+  "abstract": "Many graph problems can be solved using ordered parallel graph algorithms that achieve significant speedup over their unordered counterparts by reducing redundant work. This paper introduces a new priority-based extension to GraphIt, a domain-specific language for writing graph applications, to simplify writing high-performance parallel ordered graph algorithms. The extension enables vertices to be processed in a dynamic order while hiding low-level implementation details from the user. We extend the compiler with new program analyses, transformations, and code generation to produce fast implementations of ordered parallel graph algorithms. We also introduce bucket fusion, a new performance ",
+  "candidates": [
+   {
+    "url": "https://github.com/GraphIt-DSL/graphit",
+    "desc": "GraphIt - A High-Performance Domain Specific Language for Graph Analytics",
+    "stars": 391,
+    "readme_head": "GraphIt Domain Specific Language and Compiler [![Build Status](https://travis-ci.org/GraphIt-DSL/graphit.svg?branch=master)](https://travis-ci.org/GraphIt-DSL/graphit)\n==========\nGraphIt is a high-performance Graph DSL. [Our website](http://graphit-lang.org) has more detailed tutorials and documentations for the language.\n\nDependencies\n===========\n\nTo build GraphIt you need to install\n[CMake 3.5.0 or greater](http://www.cmake.org/cmake/resources/software.html). This dependency alone will allow you to build GraphIt and generate high-performance C++ implementations. Currently, we support both Python 2.7 and Python 3 for the end-to-end tests.\n\nTo compile the generated C++ implementations with support for parallelism, you need CILK and OPENMP. One easy way to set up both CILK and OPENMP is to use intel parallel compiler (icpc). The compiler is free for [students](https://software.intel.com/en-us/qualify-for-free-software/student). There are also open source CILK (g++ >= 5.3.0 with support for Cilk Plus), and [OPENMP](https://www.openmp.org/resources/openmp-compilers-tools/) implementations.\n\n(Optional) To use NUMA optimizations on multi-socket machines, libnuma needs to be installed (on Ubuntu, sudo apt-get install libnuma-dev). We do note, a good number of optimized implementations do not require enabling NUMA optimizations. You can give GraphIt a try even if you do not have libnuma installed.\n\n(Optional) To use the python bindings for GraphIt, you need to install the following "
+   },
+   {
+    "url": "https://github.com/KnowingNothing/compiler-and-arch",
+    "desc": "A list of tutorials, paper, talks, and open-source projects for emerging compiler and architecture",
+    "stars": 531,
+    "readme_head": "## Compilers and Architectures\n![GitHub last commit](https://img.shields.io/github/last-commit/KnowingNothing/compiler-and-arch)\n[![](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://github.com/sindresorhus/awesome)\n\nA list of awesome compilers and optimization techniques (applicable to compilers) for different architectures and emerging domains.\n\n>Note: Although some projects are not about compiler design or implementation themselves, we still include them if their techniques are suitable for automation and compiler design.\n\n## Contents\n\n\n- [Compilers and Architectures](#compilers-and-architectures)\n- [Contents](#contents)\n- [List of Conferences and Journals Considered](#list-of-conferences-and-journals-considered)\n- [Compiler Toolchain](#compiler-toolchain)\n- [Compiler for Distributed](#compiler-distributed)\n- [Compilers for AI chips](#compilers-for-ai-chips)\n- [Compilers for PIM](#compilers-for-pim)\n- [Compilers for Brain-inspired Hardware](#compilers-for-brain-inspired-hardware)\n- [Compilers for SIMT GPU](#compilers-for-simt-gpu)\n- [Compilers for CPU](#compilers-for-cpu)\n- [Compilers for Mobile and Edge](#compilers-for-mobile-and-edge)\n- [Compilers for RISC-V](#compilers-for-risc-v)\n- [Compilers for Configurable Hardware](#compilers-for-configurable-hardware)\n- [Compilers for Hyperdimensional Computing](#compilers-for-hyperdimensional-computing)\n- [Design Space Construction and Exploration](#design-space-constr"
+   }
+  ]
+ },
+ {
+  "key": "conf/cgo/RohwedderHCCA23",
+  "title": "To Pack or Not to Pack: A Generalized Packing Analysis and Transformation",
+  "venue": "CGO",
+  "year": 2023,
+  "authors": [
+   "Caio Salvador Rohwedder",
+   "Nathan Henderson",
+   "João P. L. de Carvalho",
+   "Yufei Chen",
+   "José Nelson Amaral"
+  ],
+  "abstract": "Packing is an essential loop optimization for handcrafting a high-performance General Matrix Multiplication (GEMM). Packing copies a non-contiguous block of data to a contiguous block to reduce the number of TLB entries required to access it, avoiding expensive TLB misses. When copying data, packing can rearrange elements of the block to decrease the stride between consecutive accesses, improving spatial locality. Until now the use of packing has been limited to handcrafted GEMM implementations and to auto-tuning techniques. Existing loop optimizers, such as Polly and Pluto, either only apply packing to GEMM computations (Polly), or not at all (Pluto). This work proposes GPAT, a generalized ",
+  "candidates": [
+   {
+    "url": "https://github.com/CHN-ChenYi/GPAT-Plus-Artifacts",
+    "desc": "A course project for EECS 583 at UMich",
+    "stars": 0,
+    "readme_head": "# Artifacts for GPAT-Plus\n\nThis project is based on `C. Salvador Rohwedder et al. \"To pack or not to pack: A generalized packing analysis and transformation\" in Proceedings of the 21st ACM/IEEE International Symposium on Code Generation and Optimization, 2023, pp. 14–27`([10.1145/3579990.3580024](https://dl.acm.org/doi/10.1145/3579990.3580024)).\n\n## How to use it\n\n### Setup\n\nBuild a docker image using `./scripts/docker/Dockerfile` or directly import the docker image from [10.5281/zenodo.7517506](https://doi.org/10.5281/zenodo.7517506).\n\n### Run\n\nAlmost the same as the original artifacts.\n\n## Source code branches\n\nThe source code is in the `src/` folder, linked to the [GPAT-Plus](https://github.com/CHN-ChenYi/GPAT-Plus) repository. There are several branches of it:\n\n* `main`: GPAT\n* `if_analysis`: Accounting for Mutual Exclusive Branches in Cache Residency Analysis\n  * `baseline_if_analysis`: GPAT with some additional logging logics\n* `permutation`: More Fine-grained Permutation\n* `multithread_test`: Explore Multi-thread Impact. The running scripts are in `./src/scripts`\n"
+   }
+  ]
+ },
+ {
+  "key": "conf/cgo/ShaikhhaHH24",
+  "title": "A Tensor Algebra Compiler for Sparse Differentiation",
+  "venue": "CGO",
+  "year": 2024,
+  "authors": [
+   "Amir Shaikhha",
+   "Mathieu Huot",
+   "Shideh Hashemian"
+  ],
+  "abstract": "Sparse tensors are prevalent in many data-intensive applications. However, existing automatic differentiation (AD) frameworks are tailored towards dense tensors, which makes it a challenge to efficiently compute gradients through sparse tensor operations. This is due to irregular sparsity patterns that can result in substantial memory and computational overheads. We propose a novel framework that enables the efficient AD of sparse tensors. The key aspects of our work include a compilation pipeline leveraging two intermediate DSLs with AD-agnostic domain-specific optimizations followed by efficient C++ code generation. We showcase the effectiveness of our framework in terms of performance and",
+  "candidates": [
+   {
+    "url": "https://github.com/philzook58/awesome-egraphs",
+    "desc": "An awesome list of e-graph resources",
+    "stars": 345,
+    "readme_head": "# Awesome E-Graphs [![Awesome](https://awesome.re/badge.svg)](https://awesome.re)\n\nA curated list of resources related to e-graphs, equality saturation, and their applications. Contributions are welcome! Thanks to [Yihong Zhang](https://effect.systems/) for the initial [list](https://necessary-taker-84c.notion.site/Saturated-Knowledge-of-Equality-Saturation-9b298720aa724f8b8a72001398e88d9f) which is complementary to this one and still updated.\n\n## Table of Contents\n\n- [Awesome E-Graphs ](#awesome-e-graphs-)\n  - [Table of Contents](#table-of-contents)\n  - [Community](#community)\n  - [Implementations](#implementations)\n  - [General](#general)\n  - [Applications](#applications)\n    - [Hardware](#hardware)\n    - [Program Synthesis](#program-synthesis)\n    - [Program Optimization](#program-optimization)\n    - [Theorem Proving and Verification](#theorem-proving-and-verification)\n    - [Other](#other)\n  - [Blog Posts](#blog-posts)\n  - [Extraction](#extraction)\n  - [Scheduling](#scheduling)\n  - [EGRAPHS Workshop](#egraphs-workshop)\n  - [Rulesets](#rulesets)\n\n\n---\n\n## Community\n\n- **[egraphs.org](https://egraphs.org/)**\n- **[zulip](https://egraphs.org/zulip/)**\n- **[Community Meetings](https://egraphs.org/meeting/)** [youtube](https://www.youtube.com/@egraphs-community)\n- **[PLDI EGRAPHS Workshop](https://pldi24.sigplan.org/home/egraphs-2024)**\n\n## Implementations\n\n- **[egg](https://egraphs-good.github.io/)**\n- **[egglog](https://github.com/egraphs-good/egglog)**\n- **[egglog-python](ht"
+   },
+   {
+    "url": "https://github.com/amirsh/sdql_query",
+    "desc": "",
+    "stars": 11,
+    "readme_head": "SDQL Query\n----\n\nAn implementation of SDQL (Semi-ring Dictionary Query Language) in Scala for query processing. The backend of this work was primarily a student project and does not represent the best performance that can be achieved with SDQL. For a more performant implementation for query processing, refer to [sdql.py](https://github.com/edin-dal/sdqlpy).\n\n## Syntax\n\n* For more details, refer to the [OOPSLA'22 paper](https://dl.acm.org/doi/pdf/10.1145/3527333) or the more\n  recent [A semi-ring dictionary query language for data science](https://www.research.ed.ac.uk/en/publications/a-semi-ring-dictionary-query-language-for-data-science).\n* For comparison, `<` and `<=` are used instead of `>` and `>=`.\n* The following syntactic sugar constructs are not supported: array construction `[| x1, ..., xn |]` and key-set of\n  dictionary `dom`.\n\n## TPCH datasets\n\nGenerate datasets as follows:\n\n```sh\n# or clone it elsewhere\ngit clone https://github.com/edin-dal/tpch-dbgen\ncd tpch-dbgen  \nmake\n./dbgen -s 1 -vf\n# or move them elsewhere and create a symlink\n# (careful: macOS aliases are not symlinks!)\nmv *.tbl ../datasets/tpch\ncd ..\n```\n\n_Note: for the interpreter you will want a smaller scale factor like `-s 0.01`._\n\n### TPCH tables format\n\nThe data loader does not expect TPCH tables to have end-of-line `|` characters.\n\nStrip them:\n\n```sh\nsed -i 's/|$//' datasets/tpch/*.tbl\n```\n\nOn macOS:\n\n```sh\nsed -i '' 's/|$//' datasets/tpch/*.tbl\n```\n\n## Running tests\n\nYou can check everything works"
+   },
+   {
+    "url": "https://github.com/qiuchuy/compiler-papers",
+    "desc": "personal collections of compiler-related papers",
+    "stars": 0,
+    "readme_head": "# compiler-papers\npersonal collections of compiler-related papers, papers are tagged with:\n- [YEAR]: the year when the paper gets published.\n- [CONFERENCE/JOURNAL/PREPRINT/DEGREE]: \n    - if the paper gets publishend on a conference or journal, it is tagged with corresponding conference / journal.\n    - if the paper is a preprint, it is tagged with PREPRINT.\n    - if the paper is a degree thesis, it is tagged with DEGREE.\n\n# Table of Contents\n\n## compiler-for-ml\n\n- [2024][CGO]A Tensor Algebra Compiler for Sparse Differentiation.pdf\n- [2024][CGO]TapeFlow: Streaming Gradient Tapes in Automatic Differentiation.pdf\n- [2023][PREPRINT]deltaSD: Differentiable Programming for Sparse Tensors.pdf\n- [2024][CGO]oneDNN Graph Compiler: A Hybrid Approach for High-Performance Deep Learning Compilation.pdf\n\n## stateful-compiler\n\n- [2024][CGO]Enabling Fine-Grained Incremental Builds by Making Compiler Stateful.pdf\n- [2022][DEGREE]Fast Typesetting with Incremental Compilation.pdf\n\n## compiler-for-dsa\n\n- [2024][CGO]Enhancing Performance through Control-Flow Unmerging and Loop Unrolling on GPUs.pdf\n\n"
+   }
+  ]
+ },
+ {
+  "key": "conf/cgo/CicoliniCSC24",
+  "title": "One Automaton to Rule Them All: Beyond Multiple Regular Expressions Execution",
+  "venue": "CGO",
+  "year": 2024,
+  "authors": [
+   "Luisa Cicolini",
+   "Filippo Carloni",
+   "Marco D. Santambrogio",
+   "Davide Conficconi"
+  ],
+  "abstract": "Regular Expressions (REs) matching is crucial to identify strings exhibiting certain morphological properties in a data stream, resulting paramount in contexts such as deep packet inspection in computer security and genome analysis in bioinformatics. Yet, due to their intrinsic data-dependence characteristics, REs represent a complex computational kernel, and numerous solutions investigate pattern-matching efficiency in different directions. However, most of them lack a comprehensive ruleset optimization approach to truly push the pattern matching performance when considering multiple REs together. Thus, exploiting REs morphological similarities within the same dataset allows memory reductio",
+  "candidates": [
+   {
+    "url": "https://github.com/necst/iMFAnt",
+    "desc": "",
+    "stars": 12,
+    "readme_head": "[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10204679.svg)](https://doi.org/10.5281/zenodo.10204679)\n# One Automaton To Rule Them All: Beyond Multiple Regular Expressions Execution\n\nThis repository contains the source code of the paper ``One Automaton To Rule Them All: Beyond Multiple Regular Expressions Execution'' where we deal with the problem of efficient Regular Expressions (REs) matching.\nThe key idea of this work is to exploit REs morphological similarities within the same dataset to enable memory reduction when storing the patterns and improving the dataset-matching throughput. \nThis idea is expressed through:\n1. the Multi-RE Finite State Automata (MFSA) model that extends the Finite State Automata (FSA) model to improve REs parallelization by leveraging similarities within a specific application ruleset\n2. a multi-level compilation framework to manage REs merging and optimization to produce MFSA(s) automatically\n3. an execution engine called iMFAnt, which is an extension of the state-of-the-art iNFAnt algorithm \n\n# Table of contents\n\n1. [Repo Overview](#repocode)\n2. [CGO'24 AE Instructions](#cgo24ae)\n3. [Artifacts Setup](#art-setup)\n4. [Running the Experiments](#run-exp)\n5. [Charts Visualization](#viz)\n6. [Customization Options](#custom-exp)\n7. [Credits and Contributors](#credits)\n\n## Repo Overview <a name=\"repocode\"></a>\n* **```benchmark_scripts```** and **```benchmark_results```** contain the scripts to evaluate datasets similarity and the numericalresult of"
+   }
+  ]
+ },
+ {
+  "key": "conf/cgo/IvanovZDEM24",
+  "title": "Retargeting and Respecializing GPU Workloads for Performance Portability",
+  "venue": "CGO",
+  "year": 2024,
+  "authors": [
+   "Ivan R. Ivanov",
+   "Oleksandr Zinenko",
+   "Jens Domke",
+   "Toshio Endo",
+   "William S. Moses"
+  ],
+  "abstract": "In order to come close to peak performance, accelerators like GPUs require significant architecture-specific tuning that understand the availability of shared memory, parallelism, tensor cores, etc. Unfortunately, the pursuit of higher performance and lower costs have led to a significant diversification of architecture designs, even from the same vendor. This creates the need for performance portability across different GPUs, especially important for programs in a particular programming model with a certain architecture in mind. Even when the program can be seamlessly executed on a different architecture, it may suffer a performance penalty due to it not being sized appropriately to the ava",
+  "candidates": [
+   {
+    "url": "https://github.com/llvm/Polygeist",
+    "desc": "C/C++ frontend for MLIR. Also features polyhedral optimizations, parallel optimizations, and more!",
+    "stars": 622,
+    "readme_head": "# Build instructions\n\n## Requirements \n- Working C and C++ toolchains(compiler, linker)\n- cmake\n- make or ninja\n\n## 1. Clone Polygeist\n```sh\ngit clone --recursive https://github.com/llvm/Polygeist\ncd Polygeist\n```\n\n## 2. Install LLVM, MLIR, Clang, and Polygeist\n\n### Option 1: Using pre-built LLVM, MLIR, and Clang\n\nPolygeist can be built by providing paths to a pre-built MLIR and Clang toolchain.\n\n#### 1. Build LLVM, MLIR, and Clang:\n```sh\nmkdir llvm-project/build\ncd llvm-project/build\ncmake -G Ninja ../llvm \\\n  -DLLVM_ENABLE_PROJECTS=\"mlir;clang\" \\\n  -DLLVM_TARGETS_TO_BUILD=\"host\" \\\n  -DLLVM_ENABLE_ASSERTIONS=ON \\\n  -DCMAKE_BUILD_TYPE=DEBUG\nninja\nninja check-mlir\n```\n\nTo enable compilation to cuda add `-DMLIR_ENABLE_CUDA_RUNNER=1` and remove `-DLLVM_TARGETS_TO_BUILD=\"host\"` from the cmake arguments. (You may need to specify `CUDACXX`, `CUDA_PATH`, and/or `-DCMAKE_CUDA_COMPILER`)\n\nTo enable the ROCM backend add `-DMLIR_ENABLE_ROCM_RUNNER=1` and remove `-DLLVM_TARGETS_TO_BUILD=\"host\"` from the cmake arguments. (You may need to specify `-DHIP_CLANG_INCLUDE_PATH`, and/or `ROCM_PATH`)\n\nFor ISL-enabled polymer, `polly` must be added to the `LLVM_ENABLE_PROJECTS` variable.\n\nFor faster compilation we recommend using `-DLLVM_USE_LINKER=lld`.\n\n#### 2. Build Polygeist:\n```sh\nmkdir build\ncd build\ncmake -G Ninja .. \\\n  -DMLIR_DIR=$PWD/../llvm-project/build/lib/cmake/mlir \\\n  -DCLANG_DIR=$PWD/../llvm-project/build/lib/cmake/clang \\\n  -DLLVM_TARGETS_TO_BUILD=\"host\" \\\n  -DLLVM_ENABLE_ASSERTI"
+   },
+   {
+    "url": "https://github.com/ORNL/HeCBench",
+    "desc": "",
+    "stars": 300,
+    "readme_head": "# HeCBench\nThis repository contains a collection of heterogeneous computing benchmarks written with CUDA, HIP, SYCL/DPC++, and OpenMP-4.5 target offloading for studying performance, portability, and productivity. \n\n## Background, use cases and future work\nZ. Jin and J. S. Vetter, \"A Benchmark Suite for Improving Performance Portability of the SYCL Programming Model,\" 2023 IEEE International Symposium on Performance Analysis of Systems and Software (ISPASS), Raleigh, NC, USA, 2023, pp. 325-327, doi: 10.1109/ISPASS57527.2023.00041. (https://ieeexplore.ieee.org/document/10158214)\n\n# Software installation\n[AMD ROCm](https://rocmdocs.amd.com/en/latest/Installation_Guide/Installation-Guide.html)  \n[Intel DPC++ compiler](https://github.com/intel/llvm/blob/sycl/sycl/doc/GetStartedGuide.md) or [Intel oneAPI toolkit](https://software.intel.com/content/www/us/en/develop/articles/installation-guide-for-intel-oneapi-toolkits.html)  \n[NVIDIA HPC SDK](https://developer.nvidia.com/hpc-sdk)\n\n# Dependencies\nCertain benchmarks require [Boost](https://www.boost.org/releases/latest/), [GSL](https://www.gnu.org/software/gsl), [GDAL](https://github.com/OSGeo/gdal), GPU-aware Message Passing Interface(MPI) or vendors' collective communication libraries (e.g. NCCL).<br>\nBoost: hbc, ge-spmm, mmcsf, warpsort, gerbil<br>\nMPI:   miniDGS, miniWeather, pingpong, sparkler, allreduce, ccl, halo-finder<br>\nCCL:   ccl<br>\nGSL:   sss, xlqc<br>\nGDAL:  stsg<br>\nBZip2: gerbil\n\n# DVC (Data Version Control)\n\n[DVC](h"
+   },
+   {
+    "url": "https://github.com/pal-stdr/rodinia-gpu-forked",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "# Rodinia Benchmark for CUDA + Polygeist-GPU\n\n- (The original rodinia readme is at [README](README))\n\n- Benchmark in the light of `ivanradanov's` work [rodinia](https://github.com/ivanradanov/rodinia/tree/cgo24), based on the paper [Retargeting and Respecializing GPU Workloads for Performance Portability](https://c.wsmoses.com/papers/polygeist24.pdf). The repo link is at the `cgo24` branch of [Polygeist](https://github.com/llvm/Polygeist/tree/cgo24)\n\n\n\n\n# Objectives\n\n- Developing a benchmark for rodinia CUDA and Polygeist-GPU targeting CUDA.\n\n\n\n\n# Rodinia Compiler config Fix/Update logs\n\n- Most of the changes has been done w.r.t `ivanradanov` [rodinia's](https://github.com/ivanradanov/rodinia/tree/cgo24) `cgo24` branch. Some are based on our config.\n\n- Check [COMPILER_CONFIG_FIX_LOG.md](COMPILER_CONFIG_FIX_LOG.md) for details.\n\n\n\n# Pre-requisites\n\n- `CUDA-11.4` installed (because [rodinia](https://github.com/ivanradanov/rodinia/tree/cgo24) benchmark was done in `CUDA-11.4`)\n\n- For CUDA specific compilation flag knowledge, jump to [Docs/CUDA/TARGETING_GPU_ARCH_with_COMPILATION_FLAGS.md](Docs/CUDA/TARGETING_GPU_ARCH_with_COMPILATION_FLAGS.md).\n\n\n\n# How to use\n\n## How to compile + clean\n\n- `make CUDA` will create `bin/linux/cuda/` (i.e. `bin/linux/{target_name}`) dir and dump cubins by algo folder names (e.g. `bin/linux/cuda/backprop`).\n\n```sh\n# Compile CUDA target\nmake CUDA\n\n# Clean only CUDA target\nmake CUDA_clean\n\n# Clean CUDA, OMP, OPENCL (Not recommended)\nmake clean\n```\n\n\n#"
+   }
+  ]
+ },
+ {
+  "key": "conf/cgo/ZhangF25",
+  "title": "Code Generation for Cryptographic Kernels using Multi-word Modular Arithmetic on GPU",
+  "venue": "CGO",
+  "year": 2025,
+  "authors": [
+   "Naifeng Zhang",
+   "Franz Franchetti"
+  ],
+  "abstract": "Fully homomorphic encryption (FHE) and zero-knowledge proofs (ZKPs) are emerging as solutions for data security in distributed environments. However, the widespread adoption of these encryption techniques is hindered by their significant computational overhead, primarily resulting from core cryptographic operations that involve large integer arithmetic. This paper presents a formalization of multi-word modular arithmetic (MoMA), which breaks down large bit-width integer arithmetic into operations on machine words. We further develop a rewrite system that implements MoMA through recursive rewriting of data types, designed for compatibility with compiler infrastructures and code generators. We",
+  "candidates": [
+   {
+    "url": "https://github.com/newsniper-org/cubemoma",
+    "desc": "A multi-word modular arithmetic library based on CubeCL",
+    "stars": 0,
+    "readme_head": "# cubemoma\n\n[![Crates.io](https://img.shields.io/crates/v/cubemoma.svg)](https://crates.io/crates/cubemoma)\n[![Docs.rs](https://docs.rs/cubemoma/badge.svg)](https://docs.rs/cubemoma)\n[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)\n\n**cubemoma** is a Rust crate providing an efficient CPU-based implementation of Multi-word Modular Arithmetic (MoMA) for cryptographic kernels, inspired by the paper \"Code Generation for Cryptographic Kernels using Multi-word Modular Arithmetic on GPU\" by Naifeng Zhang and Franz Franchetti (arXiv:2501.07535v1, published January 13, 2025). This crate focuses on the CPU version, implementing finite field arithmetic over large primes (e.g., 448-bit) without relying on a code generator. It supports operations essential for Fully Homomorphic Encryption (FHE) and Zero-Knowledge Proofs (ZKPs), such as modular addition, multiplication, inversion, square roots, and Number Theoretic Transforms (NTT).\n\n## Description\n\nThis project adapts the MoMA formalization from the paper, which decomposes large integer arithmetic into machine-word operations (u64 limbs). Unlike the original GPU-focused work, cubemoma provides a static, const-generic Rust implementation for CPU environments. Key contributions from the paper include:\n\n- **MoMA Rewrite System**: Breaks down large bit-width integers (e.g., 256-768 bits for ZKPs, up to 1000+ bits for FHE) into recursive word-level operations compatible with compilers."
+   }
+  ]
+ },
+ {
+  "key": "conf/cgo/SomainiCASC25",
+  "title": "Combining MLIR Dialects with Domain-Specific Architecture for Efficient Regular Expression Matching",
+  "venue": "CGO",
+  "year": 2025,
+  "authors": [
+   "Andrea Somaini",
+   "Filippo Carloni",
+   "Giovanni Agosta",
+   "Marco D. Santambrogio",
+   "Davide Conficconi"
+  ],
+  "abstract": "Pattern matching based on Regular Expressions (REs) is a pervasive and challenging computational kernel used in several applications to identify critical information in a data stream. Due to the sequential data dependency of REs and the increasing data volume growth, hardware acceleration is gaining attention to address the limitation of general-purpose architectures. RE-oriented Domain-Specific Architectures (DSAs) combine the flexibility of translating REs into binary code with the efficiency of a specialized architecture, filling the gap between frozen hardware accelerators and the versatility of CPUs/GPUs. However, existing DSAs focus mainly on the efficiency execution challenge while mi",
+  "candidates": [
+   {
+    "url": "https://github.com/necst/cicero",
+    "desc": "An accelerator to which you can offload RE matching",
+    "stars": 14,
+    "readme_head": "# CICERO: A Domain-Specific Architecture for Efficient Regular Expression Matching [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13340217.svg)](https://doi.org/10.5281/zenodo.13340217)\nCode regarding Parravicini et al. 2021 paper can be found [here](https://github.com/necst/cicero/tree/CASES21).\n\nCicero is a domain specific architecture that can be employed to perform exact regular expression (RE) matching using FPGAs.\nThe cool fact about Cicero is that - as other software libraries one among the other [RE2](https://github.com/google/re2) - does not suffer from backtracking problem.\nThis means that when it elaborate a REs that carry some kind of non-determinsm (e.,g. a?a ) it does not take a guess and then backtrack but can explore all the different options in a single pass of the input string.\n\nIf you are interested in the topic take a look at [Russ Cox article](https://swtch.com/~rsc/regexp/regexp1.html).\n\n## System View\n\n![cicero-mlir-system](./figures/cicero-mlir-system.png)\n\nFrom a system perspective, Cicero features two components:\n\n1. **A compiler**: which compiles REs into a domain specific ISA binary\n2. **An architecture on FPGA**: which receives a compiled RE and an input string, and output wheter the input is matched by the RE or not.\n\n## Compiler Overview\n\nThe compiler's code can be found [here](https://github.com/necst/cicero_compiler_cpp). The compiler is implemented using MLIR and ANTLR4. The compilation pipeline can be described as follows:\n\n1. Parse tex"
+   },
+   {
+    "url": "https://github.com/necst/SoftwareCICERO",
+    "desc": "",
+    "stars": 1,
+    "readme_head": "# Softcore CICERO\n\nSoftware simulator for the [CICERO](https://github.com/necst/cicero) domain specific architecture.\n\nThis is a fork from [Valentina Sona](https://github.com/ValentinaSona) original [git repository](https://github.com/ValentinaSona/SoftwareCICERO)\n\n## Build\n\nTo build the library and the example application, install CMake, Make and a C++ compiler\n\n```bash\nmkdir build\ncd build\ncmake ..\nmake\n\n# Optionally run tests\nmake test\n```\n\n## Run example\n\n```bash\n./build/cicero ./test/programs/1\n```\n\n## Use the library\n\nInstantiate a CICERO object specifying:\n\n1. **Character window (min 1, multichar only)**: number of active characters in the sliding window.\n2. **Verbose setting (true/false)**: print execution information or match silently.\n\n```cpp\n#include \"CiceroMulti.h\"\n\nauto CICERO = Cicero::CiceroMulti(1, true);\n```\n\nThe simulator takes in input the program files compiled by [CICERO's compiler](https://github.com/necst/cicero_compiler).\n\nSet the program (can be set multiple times in the object lifetime) and run the desired matches:\n\n```cpp\nCICERO.setProgram(\"program/to/run\");\n\nbool result = CICERO.match(\"RKMS\");\nbool result2 = CICERO.match(\"RACS\");\n```\n\n## Paper Citation\n\nIf you find this repository useful, please use the following citations:\n\n```\n@inproceedings{somaini2025cicero,\n    title = {Combining MLIR Dialects with Domain-Specific Architecture for Efficient Regular Expression Matching},\n    author = {Andrea Somaini and Filippo Carloni and Giovanni Agosta and M"
+   },
+   {
+    "url": "https://github.com/thegoldgoat/thegoldgoat",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "# 👋 Ciao, I'm Andrea\n\nI am a Software and Compiler Engineer with a strong passion for creating high-performance, scalable software solutions. Currently pursuing my MSc in Computer Science and Engineering at Politecnico di Milano, I specialize in performance optimization, architecture-specific code generation, and advanced systems design.\n\n## 🔧 Key Skills & Interests\n\n- **Programming Languages & Tools**: C++, Python, Swift\n- **Tools**: MLIR, ONNX-MLIR, CMAKE\n- **Specializations**: Compiler design, neural network acceleration, cybersecurity\n- **Interests**: Low-level programming, performance tuning, and exploring innovative hardware/software co-design.\n\n## 📚 Notable Projects\n\n- (currently private code) **Novel MLIR Compiler for Accelerating Neural Networks with Process-In-Memory Architectures**  \n   Achieved substantial energy efficiency gains for GoogLeNet and VGG-16 models (37x and 1.3x respectively) by optimizing data movement with custom MLIR transformations and optimizations.\n- **[Porting LittleFS to Miosix OS](https://github.com/thegoldgoat/miosix-kernel)**  \n   Integrated a fail-safe file system into an embedded operating system, enabling a graceful recovery after power failure.\n- **[Toccami](https://thegoldgoat.github.io/toccami_linux/)**  \n   Created a remote virtual touchpad with multitouch gestures via a Linux kernel module and a cross-platform mobile app.\n\n## 📄 Publications & Research\n\n- **Upcoming CGO 2025 Paper**: \"Combining MLIR Dialects with Domain-Specific Arch"
+   }
+  ]
+ },
+ {
+  "key": "conf/cgo/TanejaLYML25",
+  "title": "LLM-Vectorizer: LLM-Based Verified Loop Vectorizer",
+  "venue": "CGO",
+  "year": 2025,
+  "authors": [
+   "Jubi Taneja",
+   "Avery Laird",
+   "Cong Yan",
+   "Madan Musuvathi",
+   "Shuvendu K. Lahiri"
+  ],
+  "abstract": "Vectorization is a powerful optimization technique that significantly boosts the performance of high performance computing applications operating on large data arrays. Despite decades of research on auto-vectorization, compilers frequently miss opportunities to vectorize code. On the other hand, writing vectorized code manually using compiler intrinsics is still a complex, error-prone task that demands deep knowledge of specific architecture and compilers. In this paper, we evaluate the potential of large-language models (LLMs) to generate vectorized (Single Instruction Multiple Data) code from scalar programs that process individual array elements. We propose a novel finite-state-machine mu",
+  "candidates": [
+   {
+    "url": "https://github.com/ADNRs/arXivDaily",
+    "desc": "Copied and modified from zezhishao/DailyArXiv",
+    "stars": 0,
+    "readme_head": "# Daily Papers\nThe project automatically fetches the latest papers from arXiv based on keywords.\n\nThe subheadings in the README file represent the search keywords.\n\nOnly the most recent articles for each keyword are retained, up to a maximum of 100 papers.\n\nYou can click the 'Watch' button to receive daily email notifications.\n\nLast update: 2026-07-17\n\n## Default\n| **Title** | **Date** | **Abstract** | **Comment** |\n| --- | --- | --- | --- |\n| **[Understanding Agent-Based Patching of Compiler Missed Optimizations](https://arxiv.org/abs/2607.02370v2)** | 2026-07-03 | <details><summary>Show</summary><p>Compiler missed optimizations refer to cases in which compilers failed to optimize certain code. It takes many compiler developers' efforts to implement or patch such missed optimizations. In this paper, we present a systematic study of how well agents patch compiler missed optimizations. We identify a significant challenge that patching a missed optimization requires more than just fixing the reported case, and instead requires generalizing to similar cases. We construct a benchmark of real-world LLVM missed optimization issues and compare agent-generated patches with patches from developers in terms of optimization scope. Our results show that coding agents often optimize the given examples, but many generated patches either cover only part of the developer-intended scope or partially overlap with it; in some cases, they further generalize beyond the reference patch. We further"
+   }
+  ]
+ },
+ {
+  "key": "conf/cgo/LopezKB26",
+  "title": "Compilation of Generalized Matrix Chains with Symbolic Sizes",
+  "venue": "CGO",
+  "year": 2026,
+  "authors": [
+   "Francisco López",
+   "Lars Karlsson",
+   "Paolo Bientinesi"
+  ],
+  "abstract": "Generalized Matrix Chains (GMCs) are products of matrices where each matrix carries features (e.g., general, symmetric, triangular, positive-definite) and is optionally transposed and/or inverted. GMCs are commonly evaluated via sequences of calls to BLAS and LAPACK kernels. When matrix sizes are known, one can craft a sequence of kernel calls to evaluate a GMC that minimizes some cost, e.g., the number of floating-point operations (FLOPs). Even in these circumstances, high-level languages and libraries, upon which users usually rely, typically perform a suboptimal mapping of the input GMC onto a sequence of kernels. In this work, we go one step beyond and consider matrix sizes to be symboli",
+  "candidates": [
+   {
+    "url": "https://github.com/HPAC/gmc_code_gen",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "# Code Generator for Generalized Matrix Chains\n\nThis project is the artifact accompanying the paper titled *Compilation of Generalized Matrix Chains with Symbolic Sizes* accepted for publication in **The IEEE/ACM International Symposium on Code Generation and Optimization (CGO) 2026**.\nGeneralized Matrix Chains (GMC) are ubiquitous linear algebra expressions that are commonly evaluated directly or indirectly through the invocation of high-performant kernels (such as those in BLAS/LAPACK).\nA GMC has the following form: $\\rm{op}(M_1) \\rm{op}(M_2) \\cdots \\rm{op}(M_n)$, where $M_i$ has size $q_{i-1} \\times q_i$, may exhibit different features (e.g., symmetric, triangular, positive-definite), and can be subjected to unary operators, such as transposition and inversion.\n\nThe central part of the artifact is the code generator itself.\nThe code generator is designed to function in the following way: First, at compile-time, it takes a GMC with symbolic sizes and generates code that *provably performs well* for any combination of matrix sizes in the chain; Second, at run-time, the produced code is used by the (prospective) user-code to evaluate a particular *instance* (combination of operand sizes) of the GMC that was given as input to the code generator.\nIf you are a user of the code generator, the workflow is the following:\n\n1. Feed the code generator with your GMC to evaluate and produce the corresponding code.\n2. Take the output code and integrate it into your codebase using the cor"
+   }
+  ]
+ },
+ {
+  "key": "conf/dac/DaiHYYZDXY022",
+  "title": "Heuristic adaptability to input dynamics for SpMM on CPUs",
+  "venue": "DAC",
+  "year": 2022,
+  "authors": [
+   "Guohao Dai 0001",
+   "Guyue Huang",
+   "Shang Yang",
+   "Zhongming Yu",
+   "Hengrui Zhang"
+  ],
+  "abstract": "Sparse Matrix-Matrix Multiplication (SpMM) has served as fundamental components in various domains. Many previous studies exploit GPUs for SpMM acceleration because GPUs provide high bandwidth and parallelism. We point out that a static design does not always improve the performance of SpMM on different input data (e.g., >85% performance loss with a single algorithm). In this paper, we consider the challenge of input dynamics from a novel auto-tuning perspective, while following issues remain to be solved: (1) Orthogonal design principles considering sparsity. Orthogonal design principles for such a sparse problem should be extracted to form different algorithms, and further used for perform",
+  "candidates": [
+   {
+    "url": "https://github.com/galeselee/6000D-Project",
+    "desc": "This is the repo for 6000D(Graph Processing and Analytics) final proj of HKUST-GZ",
+    "stars": 3,
+    "readme_head": "# 6000D-Project\n\nThis is the Project for DSAA 6000D(Graph Processing and Analytics, Prof. Luo) project. The main purpose of this repo is to reproduce the paper \"Heuristic Adaptability to Input Dynamics for SpMM on GPUs\" and profile the whole SparseSuite to find some insight and design space for optimization general spmm.\n\nPart of the code files are borrowed from [Ge-spmm](https://github.com/hgyhungry/ge-spmm) and [dgSPARSE](https://github.com/dgSPARSE). Thanks for their work and sharing.\n\n## Dependency\n1. cuda\n2. cusparse\n\n## Files description\n\n```\n├── data_example\n│   └── ash219.mtx  # SparseSuite data example\n├── download #Please kindly download the dataset, the whole dataset is over 300GB\n│   ├── download.py # script to download sparsesuite\n│   └── download.sh # script to launch the download.py\n├── README.md\n├── scripts\n│   ├── get_matrix_feature.cpp # collect the matrix feature, such as nrow, ncol, nnz \n│   ├── preprocess_data.py \n│   └── spmm.cu # launch the test\n├── experiment_result # experiments result for sparsesuite\n│   ├── 1024.csv\n│   ├── 128.csv\n│   ├── 16.csv\n│   ├── 20.csv\n│   ├── 256.csv\n│   └── 64.csv\n└── src\n    ├── kernel\n    │   ├── csrspmm_non_transpose.cu\n    │   ├── csrspmm_parreduce.cu\n    │   ├── csrspmm_rowcaching.cu\n    │   ├── csrspmm_seqreduce.cu\n    │   ├── gespmm.cc\n    │   ├── gespmm_csrcoo_v2.cu\n    │   ├── gespmm.h\n    │   ├── gespmm_v2.cu\n    │   ├── gespmm_v2.h\n    │   └── Makefile\n    └── util\n        ├── cuda_util.cuh\n        ├── mmio.hpp"
+   },
+   {
+    "url": "https://github.com/junyimei/paper-reading-list",
+    "desc": "Papers relevant with graph and GPU",
+    "stars": 12,
+    "readme_head": "# paper-reading-list\n\nJot down the awesome papers I've read. Mainly about graph sampling framework, GNN system, graph processing and GPU techniques. Inspired by [Literature on Graph Neural Networks Acceleration](https://github.com/BUAA-CI-Lab/Literatures-on-GNN-Acceleration#literature-on-graph-neural-networks-acceleration).\n\n- [paper-reading-list](#paper-reading-list)\n  - [Graph Sampling](#graph-sampling)\n    - [CPU Graph Sampling](#cpu-graph-sampling)\n    - [Graph Sampling on GPU and FPGA](#graph-sampling-on-gpu-and-fpga)\n  - [GNN | Graph Embedding](#gnn--graph-embedding)\n  - [Graph Processing](#graph-processing)\n  - [Other Topics of Interest](#other-topics-of-interest)\n    - [Sparse Matrix](#sparse-matrix)\n    - [Vector Search](#vector-search)\n    - [GPU-related Techniques](#gpu-related-techniques)\n    - [Compiler](#compiler)\n    - [Architecture](#architecture)\n\n\n## Graph Sampling\n\n### CPU Graph Sampling\n\n- [**ASPLOS 2023**] NosWalker: A Decoupled Architecture for Out-of-Core Random Walk Processing.\n\n  > _Shuke Wang, Mingxing Zhang, Ke Yang, et al._ [[paper]](https://dl.acm.org/doi/abs/10.1145/3582016.3582025)\n\n- [**ATC 2023**] SOWalker: An I/O-Optimized Out-of-Core Graph Processing System for Second-Order Random Walks.\n\n  > _Yutong Wu, Zhan Shi, et al._ [[paper]](https://www.usenix.org/conference/atc23/presentation/wu)\n\n- [**EuroSys 2023**] TEA: A General-Purpose Temporal Graph Random Walk Engine.\n\n  > _Chengying Huan, Shuaiwen Leon Song, et al._ [[paper]](https://dl.acm.o"
+   },
+   {
+    "url": "https://github.com/JackHCC/Arxiv-NLP-Reporter",
+    "desc": "每日自动获取Arxiv上NLP相关最新论文【Arxiv Natural Language Processing Paper Automatic Crawl Daily】",
+    "stars": 22,
+    "readme_head": "## Updated on 2022.04.12\n\n## NLP\n\n|Publish Date|Title|Authors|PDF|Code|\n|---|---|---|---|---|\n|**2022-04-11**|**Survey of Aspect-based Sentiment Analysis Datasets**|Siva Uday Sampreeth Chebolu et.al.|[2204.05232v1](http://arxiv.org/abs/2204.05232v1)|null|\n|**2022-04-11**|**\"FIJO\": a French Insurance Soft Skill Detection Dataset**|David Beauchemin et.al.|[2204.05208v1](http://arxiv.org/abs/2204.05208v1)|**[link](https://github.com/iid-ulaval/fijo-code)**|\n|**2022-04-11**|**Resources for Turkish Natural Language Processing: A critical survey**|Çağrı Çöltekin et.al.|[2204.05042v1](http://arxiv.org/abs/2204.05042v1)|null|\n|**2022-04-11**|**A Survey on Legal Judgment Prediction: Datasets, Metrics, Models and Challenges**|Junyun Cui et.al.|[2204.04859v1](http://arxiv.org/abs/2204.04859v1)|null|\n|**2022-04-10**|**Fake news detection using parallel BERT deep neural networks**|Mahmood Farokhian et.al.|[2204.04793v1](http://arxiv.org/abs/2204.04793v1)|null|\n|**2022-04-10**|**ClioQuery: Interactive Query-Oriented Text Analytics for Comprehensive Investigation of Historical News Archives**|Abram Handler et.al.|[2204.04694v1](http://arxiv.org/abs/2204.04694v1)|null|\n|**2022-04-10**|**\"That Is a Suspicious Reaction!\": Interpreting Logits Variation to Detect NLP Adversarial Attacks**|Edoardo Mosca et.al.|[2204.04636v1](http://arxiv.org/abs/2204.04636v1)|null|\n|**2022-04-09**|**KOBEST: Korean Balanced Evaluation of Significant Tasks**|Dohyeong Kim et.al.|[2204.04541v1](http://arxiv.org/abs/2"
+   }
+  ]
+ },
+ {
+  "key": "conf/dac/HuangLQSDX22",
+  "title": "Shfl-BW: accelerating deep neural network inference with tensor-core aware weight pruning",
+  "venue": "DAC",
+  "year": 2022,
+  "authors": [
+   "Guyue Huang",
+   "Haoran Li",
+   "Minghai Qin",
+   "Fei Sun 0002",
+   "Yufei Ding 0001"
+  ],
+  "abstract": "Weight pruning in deep neural networks (DNNs) can reduce storage and computation cost, but struggles to bring practical speedup to the model inference time. Tensor-cores can significantly boost the throughput of GPUs on dense computation, but exploiting tensor-cores for sparse DNNs is very challenging. Compared to existing CUDA-cores, tensor-cores require higher data reuse and matrix-shaped instruction granularity, both difficult to yield from sparse DNN kernels. Existing pruning approaches fail to balance the demands of accuracy and efficiency: random sparsity preserves the model quality well but prohibits tensor-core acceleration, while highly-structured block-wise sparsity can exploit ten",
+  "candidates": [
+   {
+    "url": "https://github.com/hgyhungry/ShflBW_Sparse_NN",
+    "desc": "",
+    "stars": 16,
+    "readme_head": "Block Sparse\n===\n\nThis project provides GPU kernels for sparse neural network inference on Tensor Cores. Specifically, our kernels assume that activations are dense, and parameters are pruned into a special pattern that can be permuted into block-wise-sparse. The following figure shows this sparsity pattern. For more details, you can refer to our [DAC'22 paper](https://arxiv.org/abs/2203.05016).\n\n![Shfl-BW: a Sparse Weight Pattern](docs/format.pdf)\n\n# Environment\nPrerequisite\n- NVIDIA GPU equipped with Tensor Core (Volta and later architecture)\n- Cuda toolkit (tested on v11)\n\nIf you can use docker, we have tested and recommend using `nvidia/cuda:11.1-cudnn8-devel-ubuntu20.04`.\n\n# How to build\n\n\n```bash\ncd this_repo/block_sparse\n# for V100\nmake GPU_CC=70\n# For other architecture, change 70 to its compute capability, e.g. 75 for T4 and 80 for A100\n```\nBuilding will generate `libblock_sparse.a` under `block_sparse/`. \n\n# How to use\nFolder `example/` contains two examples, for sparse GEMM and sparse convolution respectively. \n\nCompilation needs to link the generated `libblock_sparse.a`, and you can refer to `example/Makefile` for details.\n\n# How to benchmark\n```bash\n# Example for testing a GEMM (AxB, A is 4096x4096 10% density, B is 4096x4096 dense, sparsity type is Shfl-BW block-size = 64)\nblock_sparse/benchmark/benchmark.spmm.out --m 4096 --n 4096 --k 4096 --sparsity-type block --block-size 64 --d 0.1 --row-permute\n```\n```bash\n# Example for testing a Conv2D (Input feature: Batc"
+   }
+  ]
+ },
+ {
+  "key": "conf/dac/BasalamaWC23",
+  "title": "A Comprehensive Automated Exploration Framework for Systolic Array Designs",
+  "venue": "DAC",
+  "year": 2023,
+  "authors": [
+   "Suhail Basalama",
+   "Jie Wang 0022",
+   "Jason Cong"
+  ],
+  "abstract": "Many researchers studying the performance tuning of systolic arrays have based their works on oversimplified assumptions like considering only divisors for loop tiling or pruning based on off-chip data communication to reduce the design space. In this paper, we present a comprehensive design space exploration tool named Odyssey for systolic array optimization. Odyssey results show that limiting tiling factors to only divisors of the problem size can cause up to 39% performance loss, and pruning the design space based on off-chip data movement can miss optimal designs. We tested Odyssey using various matrix multiplication and convolution kernels and validated the results with FPGA implementat",
+  "candidates": [
+   {
+    "url": "https://github.com/UCLA-VAST/Odyssey",
+    "desc": "",
+    "stars": 3,
+    "readme_head": "# Odyssey\n\n## Publication\n\n+ Suhail Basalama, Jie Wang, Jason Cong. [A Comprehensive Automated Exploration Framework for Systolic Array Designs]. In DAC, 2023.\n\n## About\nThis repo contains the source code of Odyssey, an automated framework incorporating a hyprid genetic-mathematical programming search method, a padding-based search algorithm, and other randomized search methods. It can be used to explore the huge design space of systolic arrays. The framework is tested using the open-source [AutoSA framework](https://github.com/UCLA-VAST/AutoSA), but the methodology of our paper is applicable for other systolic array designs.\n\n\n## Content\n1. [Requirements and Dependencies](#requirements-and-dependencies)\n<!-- 2. [Project File Tree](#project-file-tree) -->\n3. [Running the Project](#running-the-project)\n\n\n## Requirements and Dependencies\nThe hybrid genetic/mathematical-programming method requires the installation of the [ampl solver](https://ampl.com/products/solvers/all-solvers-for-ampl/).\n\nAll other dependencies are python packages found in the requirement.txt\n\n<!-- ### Requirements -->\n\n<!-- \n\n## Project File Tree\nThe project file structure is as below:\n\n````\n.\n+-- dse_database          # database, graphs, codes to generate/analyze them\n    +-- [machsuite/poly]  # the source code, ds config, and database for each of the benchmarks\n    +-- programl          # the generated graphs for each of the kernels\n    +-- merlin_prj        # the Merlin project to run each of the kernels"
+   }
+  ]
+ },
+ {
+  "key": "conf/dac/LeeJLCZCSHH25",
+  "title": "iG-kway: Incremental k-way Graph Partitioning on GPU",
+  "venue": "DAC",
+  "year": 2025,
+  "authors": [
+   "Wan-Luan Lee",
+   "Shui Jiang",
+   "Dian-Lun Lin",
+   "Che Chang",
+   "Boyang Zhang"
+  ],
+  "abstract": "Recent advances in GPU-accelerated graph partitioning have achieved significant performance gains but remain limited to full graph partitioning, lacking support for incremental updates. This limitation is critical in CAD applications, where circuit graphs undergo iterative, incremental modifications during optimization. We present iG-kway, the first GPU-based incremental k-way graph partitioner. iG-kway features an incrementality-aware data structure and a refinement kernel that efficiently updates only affected vertices with minimal quality loss. Experiments show that iG-kway delivers up to $84 \\times$ speedup over the state-of-the-art G-kway with comparable partitioning quality.",
+  "candidates": [
+   {
+    "url": "https://github.com/pragnasri74/Incremental-k-way-Graph-Partitioning-on-GPU",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "# iG-kway (CUDA) — How to Build, Run, and Demonstrate\n\nThis repository contains an implementation of **iG-kway** (Incremental k-way Graph Partitioning on GPU) in **C++17 + CUDA**.\n\n## 1) What this project does\n\n- Full multilevel k-way partitioning (G-kway style)\n- Incremental updates: vertex/edge insert & delete\n- GPU balancing and refinement to maintain quality and balance\n\n## 2) Prerequisites\n\n- Linux\n- NVIDIA GPU + CUDA Toolkit (nvcc available)\n- CMake 3.20+\n- GCC/G++\n\nQuick check:\n\n```bash\nnvcc --version\ncmake --version\ng++ --version\n```\n\n## 3) Build \n\nFrom project root:\n\n```bash\n./scripts/build.sh [Debug|Release]\n```\n\nBinaries and the library are produced in `build/`.\n\n\n## 4) Run the packaged benchmarks(Datasets)\n\nThe project includes a small benchmark driver `ig_kway_bench`. Use the helper script:\n\n```bash\n./scripts/run_benchmarks.sh [graph_file] [k] [modifiers] [iterations]\n```\n\nExamples:\n\n- Run benchmark with a Matrix Market graph:\n\n```bash\n./scripts/run_benchmarks.sh datasets/coAuthorsCiteseer.mtx 4 1000 10\n```\n\nThis invokes `build/ig_kway_bench --graph <path> --k <k> --modifiers-per-iter <mods> --iterations <iters>`.\n\nAlternatively call the binary directly:\n\n```bash\n./build/ig_kway_bench --graph /path/to/graph.mtx --k 4 --modifiers-per-iter 1000 --iterations 10\n```\n\nSupported input formats: Matrix Market (`.mtx`, 1-based indices), METIS (`.graph`), or simple edge lists (`.txt`/`.tsv`). Self-loops are ignored; undirected edges are deduplicated.\n\n"
+   },
+   {
+    "url": "https://github.com/navadeep-munjam/cuda-project",
+    "desc": "CUDA PROGRAMIING",
+    "stars": 0,
+    "readme_head": "# iG-kway: Incremental k-way Graph Partitioning on GPU\n\n> Use the current, professor-ready docs in:\n> - `ig-kway/README.md` (build/run/tests instructions)\n> - `ig-kway/PROJECT_REPORT.md` (project architecture/report)\n\n> Production-level implementation of the paper:\n> **\"iG-kway: Incremental k-way Graph Partitioning on GPU\"**\n> DAC 2025 — Lee, Jiang, Lin, Chang, Zhang, Chung, Schlichtmann, Ho, Huang\n\n---\n\n## Table of Contents\n\n1. [Project Overview](#project-overview)\n2. [Architecture](#architecture)\n3. [Prerequisites](#prerequisites)\n4. [Directory Structure](#directory-structure)\n5. [Installation](#installation)\n6. [Quick Start](#quick-start)\n7. [Module Breakdown](#module-breakdown)\n8. [API Reference](#api-reference)\n9. [Configuration](#configuration)\n10. [Benchmarks & Reproducing Results](#benchmarks--reproducing-results)\n11. [Testing](#testing)\n12. [Performance Tuning](#performance-tuning)\n13. [Known Limitations](#known-limitations)\n14. [References](#references)\n\n---\n\n## Project Overview\n\niG-kway is the **first GPU-parallel incremental k-way graph partitioner**. Unlike full graph\npartitioning (FGP) which re-partitions from scratch on every modification, iG-kway supports:\n\n- **Incremental vertex insertion / deletion**\n- **Incremental edge insertion / deletion**\n- **GPU-native data structure** (bucket-list) that avoids CSR rebuilds\n- **Partition balancing + incremental refinement kernel** running entirely on GPU\n- **Up to 84× speedup** over G-kway on industrial circuit graphs\n"
+   }
+  ]
+ },
+ {
+  "key": "conf/hpdc/ZhangBW20",
+  "title": "High Accuracy Matrix Computations on Neural Engines: A Study of QR Factorization and its Applications",
+  "venue": "HPDC",
+  "year": 2020,
+  "authors": [
+   "Shaoshuai Zhang",
+   "Elaheh Baharlouei",
+   "Panruo Wu"
+  ],
+  "abstract": "Fueled by the surge of ever expanding successful applications of deep neural networks and the great computational power demanded, modern computer processors and accelerators are beginning to offer half precision floating point arithmetic support, and special units (neural engines) such as NVIDIA TensorCore on GPU and Google Tensor Processing Unit (TPU) to accelerate the training and prediction of deep neural networks. It remains unclear how neural engines can be profitably used in applications other than neural networks. In this paper we present an endeavor of accelerating and stabilizing a fundamental matrix factorization on neural engines---the QR factorization---which may open doors to mu",
+  "candidates": [
+   {
+    "url": "https://github.com/jaidonlybbert/MixedPrecisionBlockQR",
+    "desc": "CUDA implementation of mixed-precision block QR decomposition",
+    "stars": 5,
+    "readme_head": "# Mixed-Precision Block QR Decomposition\n>A rectangular matrix **A** can be factored into a product of an orthogonal matrix **Q**, and an upper triangular matrix **R**; **A** = **QR**.\n\n\\- Van Loan Golub. Matrix Computations, Fourth Edition.\n\n# Overview\nThe QR decomposition can be used as a non-linear least squares matrix solver. It is numerically stable, and well-suited for parallelism. These properties make it useful for processing matrix data from cameras and sensor arrays, such as for SLAM, background subtraction, radio communications, object encoding, point cloud visualization, and many more applications.\n\nThis project was started as a University of Washington graduate school project in collaboration with Amazon Lab126. The objective, a fast and correct parallel Block QR decomposition algorithm using half-precision FP16 matrix-matrix multiplies. The Mixed-precision Block QR algorithm is well-suited for large, wide matrices. Other QR algorithms are better suited for small or tall-and-skinny matrices. \n\n# Test Data\nOur test data is derived from the Euroc-MAV dataset to emulate using the QR decomposition to perform a non-linear least squares optimization for robot pose estimation and bundle adjustment for SLAM applications. The implementation works for arbitrarily sized matrices. The dimensions of the largest matrices in our test data were on the order of 2000 x 2000.\n\n# What this project is\n* 100% free to use for anything\n* A reference for future researchers implementing a"
+   }
+  ]
+ },
+ {
+  "key": "conf/hpdc/ZhaoDLLTCC20",
+  "title": "Significantly Improving Lossy Compression for HPC Datasets with Second-Order Prediction and Parameter Optimization",
+  "venue": "HPDC",
+  "year": 2020,
+  "authors": [
+   "Kai Zhao 0008",
+   "Sheng Di",
+   "Xin Liang 0001",
+   "Sihuan Li",
+   "Dingwen Tao"
+  ],
+  "abstract": "Today's extreme-scale high-performance computing (HPC) applications are producing volumes of data too large to save or transfer because of limited storage space and I/O bandwidth. Error-bounded lossy compression has been commonly known as one of the best solutions to the big science data issue, because it can significantly reduce the data volume with strictly controlled data distortion based on user requirements. In this work, we develop an adaptive parameter optimization algorithm integrated with a series of optimization strategies for SZ, a state-of-the-art prediction-based compression model. Our contribution is threefold. (1) We exploit effective strategies by using 2nd-order regression a",
+  "candidates": [
+   {
+    "url": "https://github.com/CODARcode/Z-checker",
+    "desc": "a library to characterize the data and check the compression results of lossy compressors",
+    "stars": 19,
+    "readme_head": "# Z-checker\na library to characterize the data and check the compression results of lossy compressors.\n\n**We strongly recommend QCAT (https://github.com/szcompressor/qcat), a lightweight variant of Z-checker. Each metric is implemented as both a standalone executable and an API call.**\n\nZ-checker-intaller can help you install everything (including compressors SZ and ZFP and other third-party libraries for plotting the figures). Z-checker-installer can be downloaded from http://github.com/CODARcode/z-checker-installer. Please read the user-guide of Z-checker for details.\n\nThis version supports CPU and MPI. If you are interested in the GPU version of Z-checker, please use cuZ-checker (https://github.com/CODARcode/cuZ-checker)\n\nFor quick data compression toolkit, you can use the qcat tool, which is included in this package. It can help you conveniently conduct data type conversion, file format conversion and quick data visualization, and compare the original data and decompressed data simply. The qcat library can also be found on github (https://github.com/szcompressor/qcat.git).\n\nPlease cite the following paper if you used Z-checker in your research/papers. Thanks!\n\nTao, D., Di, S., Guo, H., Chen, Z., & Cappello, F. (2019). Z-checker: A framework for assessing lossy compression of scientific data. The International Journal of High Performance Computing Applications, 33(2), 285–303. \nhttps://journals.sagepub.com/doi/abs/10.1177/1094342017737147\n\n\nCompressors: \n* SZ (autotuning):"
+   },
+   {
+    "url": "https://github.com/hpdslab/SZauto",
+    "desc": "",
+    "stars": 7,
+    "readme_head": "SZauto: SZ C++ Version that Supports Second-Order Prediction and Parameter Optimization\n=====\n(C) 2016 by Mathematics and Computer Science (MCS), Argonne National Laboratory.\nSee COPYRIGHT in top-level directory.\n\n* Major Authors: Sheng Di, Kai Zhao, Xin Liang\n* Supervisor: Franck Cappello\n* Other Contributors: Robert Underwood, Sihuan Li, Ali M. Gok\n\n## Citations\n**Kindly note**: If you mention SZ in your paper, the most appropriate citation is including these three references (***ICDE21, HPDC2020, Bigdata2018***), because they cover the design and implementation of the latest version of SZ.\n\n* SZ3 Algorithm: Kai Zhao, Sheng Di, Maxim Dmitriev, Thierry-Laurent D. Tonellot, Zizhong Chen, and Franck Cappello. \"[Optimizing Error-Bounded Lossy Compression for Scientiﬁc Data by Dynamic Spline Interpolation](https://ieeexplore.ieee.org/document/9458791)\", Proceeding of the 37th IEEE International Conference on Data Engineering (ICDE 21), Chania, Crete, Greece, Apr 19 - 22, 2021. (code: https://github.com/szcompressor/SZ3/)\n\n* SZauto: Kai Zhao, Sheng Di, Xin Liang, Sihuan Li, Dingwen Tao, Zizhong Chen, and Franck Cappello. \"[Significantly Improving Lossy Compression for HPC Datasets with Second-Order Prediction and Parameter Optimization](https://dl.acm.org/doi/10.1145/3369583.3392688)\", Proceedings of the 29th International Symposium on High-Performance Parallel and Distributed Computing (HPDC 20), Stockholm, Sweden, 2020. \n\n* SZ 2.0+: Xin Liang, Sheng Di, Dingwen Tao, Zizhong Che"
+   },
+   {
+    "url": "https://github.com/szcompressor/SZ2",
+    "desc": "Error-bounded Lossy Data Compressor (for floating-point/integer datasets)",
+    "stars": 171,
+    "readme_head": "SZ2: Error-bounded Lossy Compressor for HPC Data\n=====\n (C) 2016-2022 by Mathematics and Computer Science (MCS), Argonne National Laboratory.\n       See COPYRIGHT in top-level directory.\n\n* Major Authors: Sheng Di, Dingwen Tao, Xin Liang, Kai Zhao \n* Supervisor: Franck Cappello \n* Other Contributors: Robert Underwood, Sihuan Li, Ali M. Gok, Cody Rivera, Xiangyu Zou, Wen Xia\n\n## Note on SZ3\n* This repository contains SZ2, the previous generation of the SZ lossy compression framework.\n* SZ3 is the successor to SZ2 and is the recommended version for all new projects. It offers enhanced compression performance, modular design, and expanded API support.\n* For more information and to access the newest version, please visit:  [https://github.com/szcompressor/SZ3](https://github.com/szcompressor/SZ3)\n\n## Citations\n**Kindly note: This site contains the implementation of SZ2.x. The most appropriate citations for SZ2 are our ***BigData2018 and IPDPS2017*** papers below**.\n\n* SZauto: Kai Zhao, Sheng Di, Xin Liang, Sihuan Li, Dingwen Tao, Zizhong Chen, and Franck Cappello. \"[Significantly Improving Lossy Compression for HPC Datasets with Second-Order Prediction and Parameter Optimization](https://dl.acm.org/doi/10.1145/3369583.3392688)\", Proceedings of the 29th International Symposium on High-Performance Parallel and Distributed Computing (HPDC 20), Stockholm, Sweden, 2020. (code: https://github.com/szcompressor/SZauto/)\n\n* SZ 2.0+: Xin Liang, Sheng Di, Dingwen Tao, Zizhong Chen, Franck C"
+   }
+  ]
+ },
+ {
+  "key": "conf/hpdc/SaoLKTVP21",
+  "title": "Scalable All-pairs Shortest Paths for Huge Graphs on Multi-GPU Clusters",
+  "venue": "HPDC",
+  "year": 2021,
+  "authors": [
+   "Piyush Sao",
+   "Hao Lu 0001",
+   "Ramakrishnan Kannan",
+   "Vijay Thakkar",
+   "Richard W. Vuduc"
+  ],
+  "abstract": "We present an optimized Floyd-Warshall (Floyd-Warshall) algorithm that computes the All-pairs shortest path (APSP) for GPU accelerated clusters. The Floyd-Warshall algorithm due to its structural similarities to matrix-multiplication is well suited for highly parallel GPU architectures. To achieve high parallel efficiency, we address two key algorithmic challenges: reducing high communication overhead and addressing limited GPU memory. To reduce high communication costs, we redesign the parallel (a) to expose more parallelism, (b) aggressively overlap communication and computation with pipelined and asynchronous scheduling of operations, and (c) tailored MPI-collective. To cope with limited ",
+  "candidates": [
+   {
+    "url": "https://github.com/PoOnesNerfect/bit_gossip",
+    "desc": "Pathfinding library for calculating all node pairs' shortest paths in an unweighted undirected graph.",
+    "stars": 50,
+    "readme_head": "# bit_gossip\n\n[<img alt=\"github\" src=\"https://img.shields.io/badge/github-poonesnerfect/bit_gossip-8da0cb?style=for-the-badge&labelColor=555555&logo=github\" height=\"20\">](https://github.com/poonesnerfect/bit_gossip)\n[<img alt=\"crates.io\" src=\"https://img.shields.io/crates/v/bit_gossip.svg?style=for-the-badge&color=fc8d62&logo=rust\" height=\"20\">](https://crates.io/crates/bit_gossip)\n[<img alt=\"docs.rs\" src=\"https://img.shields.io/badge/docs.rs-bit_gossip-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs\" height=\"20\">](https://docs.rs/bit_gossip)\n\n**bit_gossip**, named after its implementation technique, is a simple pathfinding library for calculating all node pairs' shortest paths in an unweighted undirected graph.\n\nOnce the computation is complete, you can retrieve the shortest path between any two nodes in near constant time; I'm talking less than a microsecond!\n\nThis library is for you if your game:\n\n- has decent number of nodes/tiles (~1000), and\n- has hundreds or thousands of entities that need to find paths to a moving target.\n\nIf you have a static map of large number of nodes (>10,000),\nyou can use this library to compute all paths during the loading phase.\n\nAlso, computation is fast enough to be used not only in static maps but also in dynamically changing maps in games.\n\n- Computing all paths for 100 nodes takes only a few hundred µs on a modern CPU.\n- Computing all paths for 1000 nodes takes less than 50 ms on a modern CPU.\n- Computing all paths for 10000 nod"
+   }
+  ]
+ },
+ {
+  "key": "conf/hpdc/ChuHDDC0WH23",
+  "title": "Efficient Algorithm Design of Optimizing SpMV on GPU",
+  "venue": "HPDC",
+  "year": 2023,
+  "authors": [
+   "Genshen Chu",
+   "Yuanjie He",
+   "Lingyu Dong",
+   "Zhezhao Ding",
+   "Dandan Chen"
+  ],
+  "abstract": "Sparse matrix-vector multiplication (SpMV) is a fundamental building block for various numerical computing applications. However, most existing GPU-SpMV approaches may suffer from either long preprocessing overhead, load imbalance, format conversion, bad memory access patterns. In this paper, we proposed two new SpMV algorithms:flat andline-enhance, as well as their implementations, for GPU systems to overcome the above shortcomings. Our algorithms work directly on the CSR sparse matrix format. To achieve high performance: 1) for load balance, theflat algorithm uses non-zero splitting andline-enhance uses a mix of row and non-zero splitting; 2) memory access patterns are designed for both al",
+  "candidates": [
+   {
+    "url": "https://github.com/hpcde/spmv-acc",
+    "desc": "HIP acceleration of SpMV solver",
+    "stars": 13,
+    "readme_head": "# spmv-acc\n\nHIP acceleration for SpMV solver.\n\n## Citing SpMV-acc\nPlease cite SpMV-acc in your publications if it helps your research:\n```bib\n# For github user: you can also click the link in this repository landing page at the right sidebar, with the label \"Cite this repository.\"\n@inproceedings{chu_spmv_gpu:_2023,\n title = {Efficient Algorithm Design of Optimizing SpMV on GPU},\n isbn = {979-8-4007-0155-9/23/06},\n url = {http://doi.org/10.1145/3588195.3593002},\n doi = {10.1145/3588195.3593002},\n language = {en},\n urldate = {2023-6-20},\n booktitle = {Proceedings of the 32nd International Symposium on High-Performance Parallel and Distributed Computing (HPDC '23), June 16--23, 2023, Orlando, FL, USA},\n publisher = {ACM Press},\n author = {Chu, Genshen and He, Yuanjie and Dong, Lingyu and Ding, Zhezhao and Chen, Dandan and Bai, He and Wang, Xuesong and Hu, Changjun},\n year = {2023},\n numpages = {14},\n series = {HPDC '23},\n address = {Orlando, Florida},\n location = {Orlando, FL, USA},\n pages = {1--14},\n}\n```\n\n## Build\n### Pre-requirements\n- [ROCM](https://rocmdocs.amd.com): version 3.x or higher. For example: `module load compiler/rocm/3.9.1`\n- [HIP](https://github.com/ROCm-Developer-Tools/HIP)\n- [CMake](https://cmake.org): version 3.6 or higher.\n\n### Download dependency\nBefore building, we need to download [clipp](https://github.com/muellan/clipp) for command line arguments processing.\n```bash\n# pkg: https://github.com/genshen/pkg\npkg fetch\npkg install\n```\n\n### Build steps\n- Buil"
+   },
+   {
+    "url": "https://github.com/MatteoMorellini/GPU-Computing-Deliverable-1",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "# GPU Computing — Deliverable 1: Sparse Matrix-Vector Multiplication\n\nCSR-based SpMV kernels benchmarked on an NVIDIA A30 across ten matrices from the SuiteSparse Matrix Collection.\n\n**Author:** Matteo Morellini (268427) — University of Trento\n**Contact:** matteo.morellini@studenti.unitn.it\n\n## Overview\n\nSparse matrix-vector multiplication is bandwidth-bound and highly sensitive to row-length distribution, memory coalescing, and long-row handling. This work compares five CSR-based SpMV implementations on a single GPU, restricting the scope to kernels that operate directly on CSR (no format conversion overhead).\n\n## Kernels\n\n- **CSR-Scalar** — one thread per row. Weakest baseline; uncoalesced accesses and severe load imbalance on irregular rows.\n- **CSR-Vector** — one warp per row. Fully coalesced reads, but underutilized warps when rows are shorter than 32 elements.\n- **CSR-Adaptive** — dynamically groups contiguous rows into blocks and picks CSR-Stream or block-level CSR-Vector at runtime. Includes an improved variant with a dedicated `csr_longrow_kernel` for rows exceeding `NNZ_PER_BLOCK`.\n- **CSR-Partial-Overlap** — two-stage pipeline using `memcpy_async` (Ampere) to overlap global-to-shared transfers with computation.\n- **cuSPARSE** — NVIDIA's optimized baseline.\n\n## Experimental Setup\n\n- GPU: NVIDIA A30\n- Precision: Float32 (validated against a multicore OpenMP CPU CSR reference with double-precision accumulation and relative tolerance `1e-3`)\n- Timing: CUDA events, 100 "
+   }
+  ]
+ },
+ {
+  "key": "conf/hpdc/FirozPGHBCSHWLK25",
+  "title": "Optimizing Data Distribution and Kernel Performance for Efficient Training of Chemistry Foundation Models: A Case Study with MACE",
+  "venue": "HPDC",
+  "year": 2025,
+  "authors": [
+   "Jesun Sahariar Firoz",
+   "Franco Pellegrini",
+   "Mario Geiger",
+   "Darren Hsu",
+   "Jenna A. Bilbrey"
+  ],
+  "abstract": "Chemistry Foundation Models (CFMs) that leverage Graph Neural Networks (GNNs) operating on 3D molecular graph structures are becoming indispensable tools for computational chemists and materials scientists. These models facilitate the understanding of matter and the discovery of new molecules and materials. In contrast to GNNs operating on large homogeneous graphs, GNNs used by CFMs process a large number of geometric graphs of varying sizes, requiring different optimization strategies than those developed for large homogeneous GNNs. This paper presents optimizations for two critical phases of CFM training: data distribution and model training, targeting MACE - a state-of-the-art CFM. We add",
+  "candidates": [
+   {
+    "url": "https://github.com/exopoiesis/arxiv-radar-chemistry",
+    "desc": "Daily-curated chemistry-relevant papers from arXiv with abstracts, canonical tags, and generated Pages views.",
+    "stars": 0,
+    "readme_head": "## Updated on 2026.07.17\n\n> Top 50 most recent papers per topic. For full filtering by date or tag, see [GitHub Pages](./docs/).\n\n**Total corpus:** 15525 papers across 26 months.\n\n<details>\n  <summary>Table of Contents</summary>\n  <ol>\n    <li><a href=#molecular-representation--learning>Molecular Representation & Learning</a> (50)</li>\n    <li><a href=#generative-design--molecule-optimization>Generative Design & Molecule Optimization</a> (50)</li>\n    <li><a href=#property-prediction--admet>Property Prediction & ADMET</a> (50)</li>\n    <li><a href=#reaction-synthesis--catalysis>Reaction, Synthesis & Catalysis</a> (50)</li>\n    <li><a href=#quantum-chemistry--force-fields>Quantum Chemistry & Force Fields</a> (50)</li>\n    <li><a href=#protein--biomolecules>Protein & Biomolecules</a> (50)</li>\n    <li><a href=#large-language-models--materials>Large Language Models & Materials</a> (50)</li>\n    <li><a href=#viaauthor-whitelistpimd-mlips-water>via:author-whitelist:PIMD, MLIPs, water</a> (26)</li>\n    <li><a href=#viaauthor-whitelistml-chemistry-autonomous-discovery>via:author-whitelist:ML chemistry, autonomous discovery</a> (40)</li>\n    <li><a href=#viaauthor-whitelistdft-methodology-dispersion>via:author-whitelist:DFT methodology, dispersion</a> (27)</li>\n    <li><a href=#viaauthor-whitelistdft-water-defects>via:author-whitelist:DFT water, defects</a> (25)</li>\n    <li><a href=#viaauthor-whitelistdft-polarizable-water>via:author-whitelist:DFT, polarizable water</a> (36)</li>\n  "
+   },
+   {
+    "url": "https://github.com/exopoiesis/arxiv-radar-electrochemistry",
+    "desc": "Daily-curated electrochemistry-relevant papers from arXiv with abstracts, canonical tags, and generated Pages views. ",
+    "stars": 0,
+    "readme_head": "## Updated on 2026.07.17\n\n> Top 50 most recent papers per topic. For full filtering by date or tag, see [GitHub Pages](./docs/).\n\n**Total corpus:** 3314 papers across 26 months.\n\n<details>\n  <summary>Table of Contents</summary>\n  <ol>\n    <li><a href=#co2-reduction-and-formate>CO2 Reduction and Formate</a> (50)</li>\n    <li><a href=#sulfide-electrocatalysts>Sulfide Electrocatalysts</a> (50)</li>\n    <li><a href=#electrochemical-interfaces-and-solvation>Electrochemical Interfaces and Solvation</a> (50)</li>\n    <li><a href=#ion-transport-gradients-and-membranes>Ion Transport, Gradients, and Membranes</a> (50)</li>\n    <li><a href=#redox-and-autocatalytic-electrochemical-networks>Redox and Autocatalytic Electrochemical Networks</a> (50)</li>\n    <li><a href=#mineral-surfaces-and-geochemistry>Mineral Surfaces and Geochemistry</a> (50)</li>\n    <li><a href=#atomistic-modeling-of-sulfides-and-minerals>Atomistic Modeling of Sulfides and Minerals</a> (50)</li>\n    <li><a href=#machine-learned-potentials-for-sulfides-and-minerals>Machine-Learned Potentials for Sulfides and Minerals</a> (50)</li>\n    <li><a href=#sulfidation-phase-stability-and-corrosion>Sulfidation, Phase Stability, and Corrosion</a> (50)</li>\n    <li><a href=#aqueous-chemistry-and-solvation>Aqueous Chemistry and Solvation</a> (50)</li>\n    <li><a href=#origin-of-life-and-prebiotic-mineral-catalysis>Origin of Life and Prebiotic Mineral Catalysis</a> (50)</li>\n    <li><a href=#viaauthor-whitelistpimd-mlips-water>via:a"
+   }
+  ]
+ },
+ {
+  "key": "conf/ics/LiuDZ0CC23",
+  "title": "FAZ: A flexible auto-tuned modular error-bounded compression framework for scientific data",
+  "venue": "ICS",
+  "year": 2023,
+  "authors": [
+   "Jinyang Liu 0003",
+   "Sheng Di",
+   "Kai Zhao 0008",
+   "Xin Liang 0001",
+   "Zizhong Chen"
+  ],
+  "abstract": "Error-bounded lossy compression has been effective to resolve the big scientific data issue because it has a great potential to significantly reduce the data volume while allowing users to control data distortion based on specified error bounds. However, none of the existing error-bounded lossy compressors can always obtain the best compression quality because of the diverse characteristics of different datasets. In this paper, we develop FAZ, a flexible and adaptive error-bounded lossy compression framework, which projects a fairly high capability of adapting to diverse datasets. FAZ can always keep the compression quality at the best level compared with other state-of-the-art compressors f",
+  "candidates": [
+   {
+    "url": "https://github.com/JLiu-1/FAZ",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "\n\nFAZ: A flexible auto-tuned modular error-bounded compression framework for scientific data\n\n## Introduction\n\nThis is the source code of FAZ: A flexible auto-tuned modular error-bounded compression framework for scientific data\n\n## Dependencies\n\nPlease Installing the following dependencies:\n\n* Python >= 3.6\n* numpy \n* PyWavelets\n* pybind 11\n\n## 3rd party libraries/tools\n\n* Zstandard (https://facebook.github.io/zstd/). Not mandatory to be mannually installed as Zstandard v1.4.5 is included and will be used if libzstd can not be found by\n  pkg-config.\n\n## Installation\n\n* mkdir build && cd build\n* cmake -DCMAKE_INSTALL_PREFIX:PATH=[INSTALL_DIR] ..\n* make\n* make install\n\nThen, you'll find all the executables in [INSTALL_DIR]/bin and header files in [INSTALL_DIR]/include\n\n## Command Line Executable Usage\n\nYou can use the executable 'faz' command to do the compression/decompression, whose usage is identical to the sz3 command. Just run \"faz\" without any argument to check the instructions for its usage. You can use the \"-F 0\" argument to deactivate the default FAZ features and/or customize those hyper-parameters via a config file.\n\n\n\n\n\n\n"
+   }
+  ]
+ },
+ {
+  "key": "conf/ics/YangLWHT23",
+  "title": "Fast All-Pairs Shortest Paths Algorithm in Large Sparse Graph",
+  "venue": "ICS",
+  "year": 2023,
+  "authors": [
+   "Shaofeng Yang",
+   "Xiandong Liu",
+   "Yunting Wang",
+   "Xin He",
+   "Guangming Tan"
+  ],
+  "abstract": "Finding the All-Pairs Shortest Paths (APSP) in a graph is the key for various domains. Motivated by the graphs are sparse in most real-world applications, we store the whole graph as a compressed storage format in each process of the distributed computing clusters and combine the Floyd algorithm with the Dijkstra algorithm to solve the APSP problem in this work, which leads to the novel Fast APSP algorithm. In contrast to the state-of-the-art Part APSP algorithm, our algorithm adds some memory overhead to store the original sparse graph and uses local Floyd and global Dijkstra algorithms simultaneously. The payoff is the circumvention of expensive global communication, reducing one local FW ",
+  "candidates": [
+   {
+    "url": "https://github.com/Liu-xiandong/FastAPSP",
+    "desc": "The Fast APSP algorithm is used to solve the All-Pairs Shortest Paths (APSP) problem. The algorithm uses the divide and conquers strategy. First, divide the graph structure by METIS, and divide the input graph G into multiple subgraphs. Then the solution of the APSP problem is solved by computing the subgraph. The Fast APSP algorithm combines the SSSP algorithm and the Floyd-Warshall algorithm. Compared with the Part APSP algorithm, it eliminates the data dependence and communication between sub-graphs. The Fast APSP algorithm has achieved good performance in graphs with good properties.  We tested a lot of sparse graph data in the Suite sparse matrix collection and network repository, and the Fast APSP algorithm showed better performance than other APSP algorithms.",
+    "stars": 4,
+    "readme_head": "# Fast-APSP\nThe Fast APSP algorithm is used to solve the All-Pairs Shortest Paths (APSP) problem. The algorithm uses the divide and conquers strategy. First, divide the graph structure by METIS, and divide the input graph G into multiple subgraphs. Then the solution of the APSP problem is solved by computing the subgraph. The Fast APSP algorithm combines the SSSP algorithm and the Floyd-Warshall algorithm. Compared with the Part APSP algorithm, it eliminates the data dependence and communication between sub-graphs. The Fast APSP algorithm has achieved good performance in graphs with good properties. The algorithm diagram is as follows.\n\n<p align=\"center\"><img src=doc/fig.png></p>\n\nWe tested a lot of sparse graph data in the Suite sparse matrix collection and network repository, and the Fast APSP algorithm showed better performance than other APSP algorithms.\n\n## Dependency\n\n - g++ 7.50\n - METIS 5.1.0\n - cuda 10.1\n - Openmpi 4.0.2\n\n## Quickstart\n\n```shell\nmkdir build\ncd build\ncmake ..\n```\n\n## Usage\n\nHere are the basic usages of Fast APSP.\n\n```shell\n./EXE -f <graph> [options]\n\n[-f] Choose a graph which must in ./graph directory\n\n[-direct] Whether the input graph is a directed graph (DeFault: false)\n\n[-weight] Whether the input graph is a weighted graph (DeFault: false)\n\n[-k] Number of graph divisions\n```\n\nThe following interface code is performed.\n\n```\n#include \"fap/fap.h\"\n\nfap::fapGraph G(file, directed, weighted, K);\nG.preCondition();\nif (G.isSplit()) {\n    G.solveSubGraph(1,"
+   }
+  ]
+ },
+ {
+  "key": "conf/ics/Orenes-VeraSSJV23",
+  "title": "Wafer-Scale Fast Fourier Transforms",
+  "venue": "ICS",
+  "year": 2023,
+  "authors": [
+   "Marcelo Orenes-Vera",
+   "Ilya Sharapov",
+   "Robert S. Schreiber",
+   "Mathias Jacquelin",
+   "Philippe Vandermersch"
+  ],
+  "abstract": "We have implemented fast Fourier transforms for one, two, and three-dimensional arrays on the Cerebras CS-2, a system whose memory and processing elements reside on a single silicon wafer. The wafer-scale engine (WSE) encompasses a two-dimensional mesh of roughly 850,000 processing elements (PEs) with fast local memory and equally fast nearest-neighbor interconnections.",
+  "candidates": [
+   {
+    "url": "https://github.com/Sameeranjoshi/awesome-ai-accelerators",
+    "desc": "Literature regarding AI Hardwares from systems standpoint",
+    "stars": 7,
+    "readme_head": "# awesome-ai-accelerators\nA list of the awesome compilers, programming, performance, and porting-related papers and tutorials for AI accelerators like Sambanova, Cerebras, Graphcore, Groq, etc.\n\n\n## Contents\n- [AI accelerator Companies](#ai-accelerator-companies)\n- [Papers](#papers)\n- [Tutorials](#tutorials)\n- [Contribute](#contribute)\n\n## AI Accelerator Companies\n- [Cerebras](https://www.cerebras.net/)\n- [Sambanova](https://sambanova.ai/)\n- [Groq](https://groq.com/)\n- [Graphcore](https://www.graphcore.ai/)\n\n# To-Do Reading List\n\n### New Representation\n- [ ] [RVSDG: An Intermediate Representation for Optimizing Compilers](https://arxiv.org/pdf/1912.05036)\n  - [ ] [Program feature impact on the treewidth of the RVSDG IR](https://ntnuopen.ntnu.no/ntnu-xmlui/handle/11250/2827695)\n  - [ ] [Implementing RVSDG as a dialect of MLIR](https://ntnuopen.ntnu.no/ntnu-xmlui/bitstream/handle/11250/3088035/no.ntnu:inspera:142737689:35303838.pdf?sequence=1)\n### AMD AI Engine\n- [ ] [An End-to-End Programming Model for AI Engine Architectures](https://dl.acm.org/doi/pdf/10.1145/3665283.3665294?casa_token=n7zkyyiiWxAAAAAA:E1oXHB4BPgg_tBP9ASSqUwVkzMs7y5j8XalEEsJfT2Ir8CiTMlaLePJm-v4h5SknK8Y0DqnuDr1A)\n  - [ ] [Exploring the Versal AI Engines for Accelerating Stencil-based Atmospheric Advection Simulation] (https://dl.acm.org/doi/10.1145/3543622.3573047)\n  - [ ] [AN END-TO-END PROGRAMMING MODEL FOR AI ENGINE ARCHITECTURES, THESIS](file:///Users/u1418973/Downloads/Levental_uchicago_0330D_17419.pdf)\n"
+   },
+   {
+    "url": "https://github.com/apdelsm/Matrix-algorithms-in-cerebras",
+    "desc": "Matrix decomposition and multiplication on the Cerebras Wafer-Scale Engine (WSE) architecture",
+    "stars": 8,
+    "readme_head": "# Matrix algorithms in cerebras\n\n<div style=\"text-align: justify\">\n\nThis project were developed as part of my final project for the Cloud and High-Performance Computing Master's at Universitat Politècnica de València. It explores the use of the Cerebras Wafer-Scale Engine (WSE) for implementing and benchmarking classic linear algebra algorithms.\n\nA full version of this project, originally written in Spanish, is available in the [`docs/`](./docs/) folder with the name `TFM_AbdelSandova.pdf`. It contains detailed explanations, development insights, and extended performance analysis. This README serves as a summarized version in English.\n\n## Table of Contents:\n- [Objectives](#objectives)\n- [What is Cerebras](#what-is-cerebras)\n- [Why use Cerebras for linear algebra](#why-use-cerebras-for-linear-algebra)\n- [Implementation](#implementation)\n- [Results](#results)\n- [Challenges and Future Work](#challenges-and-future-work)\n- [Conclusions](#conclusions)\n- [References](#references)\n\n## Objectives\n\nThe main objective is to develop, analyze, and validate basic computational kernels of linear algebra on the Wafer-Scale Engine architecture.\n\n#### Specific Objectives\n\n- Analyze matrix multiplication, LU factorization, and QR factorization algorithms to determine which are best suited for the Wafer-Scale Engine architecture.\n- Design implementations of the selected algorithms, taking into account the communication and computation patterns of the WSE architecture.\n- Implement the proposed al"
+   }
+  ]
+ },
+ {
+  "key": "conf/ics/NeffZMHTKB24",
+  "title": "FuseIM: Fusing Probabilistic Traversals for Influence Maximization on Exascale Systems",
+  "venue": "ICS",
+  "year": 2024,
+  "authors": [
+   "Reece Neff",
+   "Mostafa Eghbali Zarch",
+   "Marco Minutoli",
+   "Mahantesh Halappanavar",
+   "Antonino Tumeo"
+  ],
+  "abstract": "Probabilistic breadth-first traversals (BPTs) are used in many network science and graph machine learning applications. In this paper, we are motivated by the application of BPTs in stochastic diffusion-based graph problems such as influence maximization. These applications heavily rely on BPTs to implement a Monte-Carlo sampling step for their approximations. Given the large sampling complexity, stochasticity of the diffusion process, and the inherent irregularity in real-world graph topologies, efficiently parallelizing these BPTs remains significantly challenging. In this paper, we present a new algorithm to fuse a massive number of concurrently executing BPTs with random starts on the in",
+  "candidates": [
+   {
+    "url": "https://github.com/pnnl/ripples",
+    "desc": "A C++ Library for Influence Maximization",
+    "stars": 35,
+    "readme_head": "Ripples\n*******\n\n.. image:: https://zenodo.org/badge/191654750.svg\n   :target: https://zenodo.org/badge/latestdoi/191654750\n\nRipples is a software framework to study the Influence Maximization problem.\nThe problem of Influence Maximization was introduced in 2001 by Domingos and\nRichardson [DR01]_ and later formulated as an optimization problem under the\nframework of submodular functions by Kempe et al. [KTR03]_.\n\nGiven a graph :math:`G`, a network diffusion model :math:`M`, and positive\ninteger :math:`k`, the influence maximization problem is the problem of\nselecting a set of seeds :math:`S` of cardinality :math:`k` such that\n:math:`\\mathop{\\mathbb{E}}[I(S)]` is maximized, where :math:`I(S)` is the\ninfluence function.\n\nOur goal with Ripples is to provide tools implementing fast and scalable\nstate-of-the-art approximation algorithms to solve the influence maximization\nproblem.\n\n.. [DR01] Pedro M. Domingos and Matthew Richardson. 2001. Mining the network\n          value of customers. In Proceedings of the seventh ACM SIGKDD\n          international conference on Knowledge discovery and data mining, San\n          Francisco, CA, USA, August 26-29, 2001. ACM, 57–66.\n\n.. [KTR03] Kempe, D., Kleinberg, J., & Tardos, É. (2003, August). Maximizing the\n           spread of influence through a social network. In Proceedings of the\n           ninth ACM SIGKDD international conference on Knowledge discovery and\n           data mining (pp. 137-146). ACM.\n\n\nPublications\n============\n\n.. [Clus"
+   }
+  ]
+ },
+ {
+  "key": "conf/ics/AkathoottXB25",
+  "title": "A Multi-GPU Algorithm for Computing Maximal Independent Sets in Large Graphs",
+  "venue": "ICS",
+  "year": 2025,
+  "authors": [
+   "Anju Mongandampulath Akathoott",
+   "Benila Virgin Jerald Xavier",
+   "Martin Burtscher"
+  ],
+  "abstract": "Computing a maximal independent set (MIS) of a graph is an important problem in many scientific applications.Several parallel algorithms exist to perform this computation quickly.Though the state-of-the-art GPU implementation is very efficient, it cannot process graphs that do not fit in the global memory of a single GPU.We propose MG-MIS, a multi-GPU algorithm that addresses this problem.It distributes the computation across the GPUs in a compute node and uses novel techniques to minimize inter-GPU communication.Our results show that, for graphs that require more than 32 GB memory, MG-MIS outperforms the state-of-the-art single-GPU code with UVM by a geometric mean of 17.73 on a system with",
+  "candidates": [
+   {
+    "url": "https://github.com/burtscher/MG-MIS",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "# MG-MIS v1.0\n\nMG-MIS is a fast single-node multi-GPU (CUDA) implementation for computing maximal independent sets (MIS) in large undirected graphs. The algorithm is optimized for graphs that do not fit in the global memory of a single GPU but fit in the combined global memory of all GPUs in a compute node. MG-MIS operates on graphs stored in binary CSR format.\n\n\n## Input generation\n\n### Generate inputs using Graph500\n\nDownload the code from `https://github.com/graph500/graph500`.\n\nNavigate to the `src` directory and compile the code:\n\n```\n  cd src\n  make\n```\n\nEnsure that `mpicc` is installed and the path to `openmpi` is specified in the `PATH` and `LD_LIBRARY_PATH` environment variables.\n\nRun the code:\n\n```\n  ./graph500_reference_bfs <scale> <edgefactor> graph.txt\n```\n\n#### Clean the generated graphs (remove self-loops and duplicate edges)\n\nCompile the code:\n```\n  g++ -O3 clean_graph500.cpp -o clean\n```\n\nRun the code:\n```\n  ./clean graph.txt graph.egr\n```\n\n### Generate inputs using Indigo3\n\nFollow the instructions at `https://github.com/burtscher/Indigo3Suite`.\n\n\n## Using MG-MIS\n\nThe MG-MIS CUDA code consists of the source files MG-MIS_10.cu and ECLgraph.h, located in the root directory of this repository. See the paper listed below for a description of MG-MIS. Note that MG-MIS is protected by the 3-Clause BSD license.\n\nThe MG-MIS code can be compiled as follows:\n```\n  nvcc -O3 -arch=sm_70 -Xcompiler -fopenmp MG-MIS_10.cu -o mis\n```\n\nTo compute a MIS of the input file `graph"
+   }
+  ]
+ },
+ {
+  "key": "conf/ics/DezfuliC25",
+  "title": "Loop Fusion in Matrix Multiplications with Sparse Dependence",
+  "venue": "ICS",
+  "year": 2025,
+  "authors": [
+   "Mohammad Mahdi Salehi Dezfuli",
+   "Kazem Cheshmi"
+  ],
+  "abstract": "Fusing parallel loops in consecutive matrix multiplications presents an opportunity for data locality optimization. However, irregular dependencies between iterations across the loops hinder existing compilers from performing this fusion. It also poses challenges for runtime methods, leading to excessive synchronization overhead or limited data reuse. This paper introduces tile fusion, a compiler approach that fuses tiles from the two parallel loops of matrix multiplications with sparse dependence between them. By enhancing data locality and providing balanced workloads, tile fusion accelerates graph neural network training and the solution of sparse linear systems, achieving geometric mean ",
+  "candidates": [
+   {
+    "url": "https://github.com/SwiftWare-Lab/tile-fusion",
+    "desc": "",
+    "stars": 3,
+    "readme_head": "# Tile-fusion\n\nThis repository is a research artifact for \"Loop Fusion in Matrix Multiplications with Sparse Dependence\", Mohammad Mehdi Salehi, Kazem Cheshmi, ICS25.\n\n## Build\nYou will need a C++ compiler (tested for GCC) and CMake to build this repository. MKL library is also needed for comparing the performance.\n\n```\ngit clone --recursive https://github.com/SwiftWare-Lab/tile-fusion.git\ncd tile-fusion/fusion/\nmkdir build\ncd build\ncmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=\"/path/to/mkl/latest/lib/intel64/;/path/to/mkl/latest/include/\" ..\nmake -j 8\n```\n\nreplace \"/path/to/mkl/\" with mkl directory path.\n\n## Fused Operation API\n\nThese functionalities are defined in \"tile-fusion.h\" file. For now spmm-spmm and gemm-spmm executer codes are available.\ninspector function:\n\n```C++\nswiftware::def::FusedSchedule swiftware::fusion::inspector(swiftware::def::CSRMatrix A, int NumThreads)\n```\n\nexecutor function for spmm-spmm and gemm-spmm when D = A * B * C:\n```C++\nswiftware::fusion::spMMSpMMExecutor(swiftware::def::CSRMatrix A, swiftware::def::CSRMatrix B, swiftware::def::Matrix C, swiftware::def::Matrix D, swiftware::def::FusedSchedule schedule, int NumThreads);\nswiftware::fusion::geMMSpMMExecutor(swiftware::def::CSRMatrix A, swiftware::def::Matrix B, swiftware::def::Matrix C, swiftware::def::Matrix D, swiftware::def::FusedSchedule schedule, int NumThreads);\n```\n\nData type apis:\n\n```C++\nswiftware::CSRMatrix(int M, int N, int* Ap, int* Ai, float* Ax);\nswiftware::Matrix(int M, i"
+   }
+  ]
+ },
+ {
+  "key": "conf/ics/0002HDSLC25",
+  "title": "Pushing the Limits of GPU Lossy Compression: A Hierarchical Delta Approach",
+  "venue": "ICS",
+  "year": 2025,
+  "authors": [
+   "Boyuan Zhang 0002",
+   "Yafan Huang",
+   "Sheng Di",
+   "Fengguang Song",
+   "Guanpeng Li"
+  ],
+  "abstract": "Modern GPU-based lossy compressors face significant challenges due to the imbalance in development between compression throughput and compression ratio. Most compressors tend to prioritize one metric while neglecting the other, leading to either redundant compressed files or inefficient kernel designs that hinder end-to-end throughput. This work introduces Aatrox , a generic single-kernel error-bounded lossy compressor specifically designed for GPUs, targeting applications that demand high performance and high compression ratio at the same time, such as large-scale quantum circuit simulations and large language model training. In particular, Aatrox features a novel hierarchical data blocking",
+  "candidates": [
+   {
+    "url": "https://github.com/szcompressor/cuSZp",
+    "desc": "Fast GPU error-bounded lossy compressor for floating-point data.",
+    "stars": 68,
+    "readme_head": "# cuSZp\n<a href=\"./LICENSE\"><img src=\"https://img.shields.io/badge/License-BSD%203--Clause-blue.svg\"></a>\n[![codecov](https://codecov.io/github/szcompressor/cuSZp/graph/badge.svg?token=Y9S48L75L7)](https://codecov.io/github/szcompressor/cuSZp)\n[![Documentation Status](https://readthedocs.org/projects/cuszp-documentation/badge/?version=latest)](https://cuszp-documentation.readthedocs.io/en/latest/?badge=latest)\n[![Build status](https://ci.appveyor.com/api/projects/status/sr6nbou988c9opv2?svg=true)](https://ci.appveyor.com/project/hyfshishen/cuszp)\n[![GitHub release](https://img.shields.io/github/v/release/szcompressor/cuSZp)](https://github.com/szcompressor/cuSZp/releases)\n\ncuSZp is an ultra-fast and user-friendly GPU error-bounded lossy compressor for floating-point data array (both single- and double-precision). In short, cuSZp has several key features:\n\n1. Fusing entire compression/decompression phase into **one CUDA kernel function**.\n2. Various system-level optimizations -- targeting **ultra-fast end-to-end throughput** (~300 GB/s on A100).\n3. Dimensionality (1D, 2D, and 3D) and three encoding modes (fixed, plain, or outlier modes) supported, ensuring **high compression ratio** for different data patterns.\n    - *fixed*: Only fixed-length encoding is used. This mode is designed for compressing unsmooth and non-structured scientific data or machine learning weights/tokens.\n    - *plain*: Dimension-aware delta encoding + fixed-length encoding. This mode is designed for scie"
+   }
+  ]
+ },
+ {
+  "key": "conf/ics/GengYLWZ26",
+  "title": "X-HD: Fast Hausdorff Distance Computation with Ray Tracing",
+  "venue": "ICS",
+  "year": 2026,
+  "authors": [
+   "Liang Geng",
+   "Zhehu Yuan",
+   "Rubao Lee",
+   "Fusheng Wang 0001",
+   "Xiaodong Zhang 0001"
+  ],
+  "abstract": "The Hausdorff distance (HD) is a mathematical measure of the similarity (or dissimilarity) between two sets of points, typically used to compare geometric shapes, images, or spatial distributions. HD computation has a broad range of applications in large-scale data analysis across domains like medical imaging, geospatial information systems, and graphics. As the volume of spatial data continues to grow rapidly, HD computation has become increasingly time-consuming, demanding effective and scalable hardware acceleration. Recent research on utilizing Ray Tracing (RT) cores to accelerate k-nearest neighbor (k-NN) search shed light on this problem, as k-NN is the building block of the HD algorit",
+  "candidates": [
+   {
+    "url": "https://github.com/pwrliang/X-HD",
+    "desc": "This repo releases the source code of ICS'26 paper named \"X-HD: Fast Hausdorff Distance Computation with Ray Tracing\"",
+    "stars": 1,
+    "readme_head": "# X-HD: Fast Hausdorff Distance Computation with Ray Tracing\n\n----------\n\n# Example\n```bash\n./bin/hd_exec \\\n    -input1 \"file path1\" \\\n    -input2 \"file path2\" \\\n    -n_dims \"number of dims\" \\\n    -input_type \"image/wkt/ply\" \\ # image is for the MRI images, wkb is for the geospatial datasets, and ply is for the graphics datasets\n    -variant \"eb/nn/itk/rt\" \\ # rt is the X-HD algorithm in the paper\n    -execution \"cpu/gpu\" \\ # cpu is for the CPU implementation, and gpu is for the GPU implementation. RT only has the GPU implementation.\n    -v=1\n```\n\nYou may find more options in flags.cc"
+   },
+   {
+    "url": "https://github.com/simon2/GPRTC",
+    "desc": "General Purpose Ray Tracing Cores",
+    "stars": 0,
+    "readme_head": "# General Purpose Ray Tracing Cores\n\nA curated list of papers that repurpose GPU **ray tracing (RT) cores** — hardware originally designed for graphics — to accelerate **non-rendering** workloads. RT cores provide fast BVH traversal and ray–primitive intersection, which map surprisingly well onto spatial queries, clustering, graph algorithms, and other compute problems.\n\nContributions welcome — open a PR to add missing papers.\n\n---\n\n## Contents\n\n- [Nearest Neighbor & Similarity Search](#nearest-neighbor--similarity-search)\n- [Spatial Indexing & Queries](#spatial-indexing--queries)\n- [Database Systems](#database-systems)\n- [Clustering](#clustering)\n- [Graph Algorithms](#graph-algorithms)\n- [Scientific & Numerical Computing](#scientific--numerical-computing)\n- [Systems & Architecture](#systems--architecture)\n\n---\n\n## Nearest Neighbor & Similarity Search\n\n| Year | Venue | Paper |\n|------|-------|-------|\n| 2022 | PPoPP | [RTNN: Accelerating Neighbor Search Using Hardware Ray Tracing](https://doi.org/10.1145/3503221.3508409) |\n| 2023 | ICS | [RT-kNNS Unbound: Using RT Cores to Accelerate Unrestricted Neighbor Search](https://doi.org/10.1145/3577193.3593738) |\n| 2024 | ASPLOS | [Juno: Optimizing High-Dimensional Approximate Nearest Neighbour Search with Sparsity-Aware Algorithm and Ray-Tracing Core Mapping](https://doi.org/10.1145/3620665.3640360) |\n| 2024 | ICS | [Arkade: k-Nearest Neighbor Search With Non-Euclidean Distances using GPU Ray Tracing](https://doi.org/10.1145/3650200"
+   }
+  ]
+ },
+ {
+  "key": "conf/ipps/00020C20",
+  "title": "Demystifying Tensor Cores to Optimize Half-Precision Matrix Multiply",
+  "venue": "IPDPS",
+  "year": 2020,
+  "authors": [
+   "Da Yan 0002",
+   "Wei Wang 0030",
+   "Xiaowen Chu 0001"
+  ],
+  "abstract": "Half-precision matrix multiply has played a key role in the training of deep learning models. The newly designed Nvidia Tensor Cores offer the native instructions for half-precision small matrix multiply, based on which Half-precision General Matrix Multiply (HGEMM) routines are developed and can be accessed through high-level APIs. In this paper, we, for the first time, demystify how Tensor Cores on NVIDIA Turing architecture work in great details, including the instructions used, the registers and data layout required, as well as the throughput and latency of Tensor Core operations. We further benchmark the memory system of Turing GPUs and conduct quantitative analysis of the performance. ",
+  "candidates": [
+   {
+    "url": "https://github.com/Jokeren/Awesome-GPU",
+    "desc": "Awesome resources for GPUs",
+    "stars": 635,
+    "readme_head": "Awesome-GPU\n=================\n\n   * [Architecture](#architecture)\n      * [Resources Management](#resources-management)\n      * [Parallelism](#parallelism)\n      * [Cache](#cache)\n      * [Memory](#memory)\n      * [White Papers](#white-papers)\n   * [Algorithms](#algorithms)\n      * [BLAS](#blas)\n      * [Stencils](#stencils)\n      * [Scans](#scans)\n   * [Applications](#applications)\n      * [Deep Learning](#deep-learning)\n   * [Tools](#tools)\n      * [Benchmarks](#benchmarks)\n      * [Models](#models)\n      * [Simulators](#simulators)\n      * [Profilers](#profilers)\n   * [Runtime](#runtime)\n      * [Scheduling](#scheduling)\n   * [Code Generation](#code-generation)\n      * [Compilers](#compilers)\n      * [Programming Models](#programming-models)\n      * [Profile Guided Optimization](#profile-guided-optimization)\n      * [Binaries](#binaries)\n\n## Architecture\n\n### Resources Management\n\n- **TECS'21**-[Reducing Energy in GPGPUs through Approximate Trivial Bypassing](https://dl.acm.org/doi/10.1145/3429440)\n- **ASPLOS'17**-[Locality-Aware CTA Clustering for Modern GPUs](http://dl.acm.org/citation.cfm?id=3037709)\n- **ASPLOS'17**-[Dynamic Resource Management for Efficient Utilization of Multitasking GPUs](http://dl.acm.org/citation.cfm?id=3037707)\n- **HPCA'17**-[Dynamic GPGPU Power Management Using Adaptive Model Predictive Control](http://ieeexplore.ieee.org/document/7920860/)\n- **ISCA'16**-[Transparent Offloading and Mapping (TOM): Enabling Programmer-Transparent Near-Data Processi"
+   },
+   {
+    "url": "https://github.com/bikrammajhi/100-days-of-GPU",
+    "desc": "This is my 🔥 100 Days of GPU — a wild, hands-on journey through CUDA/CUTLASS kernels, Triton spells, and PTX sorcery.",
+    "stars": 41,
+    "readme_head": "# ⚡🚀 100 Days of GPU Challenge 🎉🖥️\n\nWelcome to my **100 Days of GPU** journey!  \nThis repository is a public log of my learning, experiments, and projects as I dive deep into the world of:\n\n- GPU architecture  \n- CUDA programming  \n- Memory hierarchies  \n- Parallelism  \n- Acceleration for deep learning & scientific computing\n\n🎯 The goal: Develop a strong theoretical and practical understanding of GPU-based high-performance computing.\n\n---\n## 🧠📚 Stuff I’m Reading (or Should Be)\n\n- [**NVIDIA Tensor Core Evolution: From Volta to Blackwell**](https://newsletter.semianalysis.com/p/nvidia-tensor-core-evolution-from-volta-to-blackwell)\n- [**GB200 Hardware Architecture - Component Supply Chain & BOM**](https://newsletter.semianalysis.com/p/gb200-hardware-architecture-and-component)\n- [**Multi-Datacenter Training: OpenAI's Ambitious Plan To Beat Google's Infrastructure**](https://newsletter.semianalysis.com/p/multi-datacenter-training-openais)\n- [**100,000 H100 Clusters: Power, Network Topology, Ethernet vs InfiniBand, Reliability, Failures, Checkpointing**](https://newsletter.semianalysis.com/p/100000-h100-clusters-power-network)\n- [**Neural Network Quantization & Number Formats From First Principles**](https://newsletter.semianalysis.com/p/neural-network-quantization-and-number)\n- [**Dissecting the NVIDIA Hopper Architecture through Microbenchmarking and Multiple Level Analysis**](https://arxiv.org/pdf/2501.12084v2)\n- [**The Ultra-Scale Playbook: Training LLMs on GPU Clusters**](htt"
+   },
+   {
+    "url": "https://github.com/ahennequ/cuda-tensorcores-register-mapping",
+    "desc": "",
+    "stars": 19,
+    "readme_head": "# Cuda tensorcores register mapping\n\nSince the Volta architecture, NVIDIA's GPUs include tensorcores that can be used to accelerate matrix multiplication.\nEach warp is able to produce a 16x16 fragment of the output, stored in a distributed register cache. However, the layout of registers is unspecified. Because of this restriction, user code is limited to storing the fragment back to shared or global memory, using the provided API function, or applying pointwise operations that do not need to know the specific layout.\n\nThis tool aim to automatically extract the register mapping of the output fragment and deduce formulae for the row and the column of the element within the 16x16 fragment. The formulae depends on two variables:\n* `int tid = threadIdx.x % 32;` the thread index in the warp\n* `i` the id of the register in the thread (each thread contains 8 values of the fragment)\n\nThe layout also depends on the compute capability of the GPU and for Volta on the type of the fragment (float or half).\n\n## What can be done with this mapping ?\n\n* Apply rowwise or columnwise operations on registers\n* Make the matrix upper or lower triangular\n* Fill the matrix with procedural values\n\n## How to run on your card\n\n```bash\nnvcc -arch=sm_75 tensorcore_mapping.cu -o mapping\n./mapping\n```\n\n## Mapping on different compute capabilities\n\n### A100 (sm_80), Turing (sm_75)\n\nMapping:\n```\nElement / ThreadIdx:\n 0  1  0  1  0  1  0  1  4  5  4  5  4  5  4  5          0  0  1  1  2  2  3  3  0  0  1  1  2"
+   }
+  ]
+ }
+]

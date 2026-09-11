@@ -1,0 +1,88 @@
+kernel: spiking-neural-network
+summary: >
+  GPGPU simulation of a Leaky-Integrate-and-Fire (LIF) spiking neural
+  network over a fixed simulated biological duration, measuring wall-time
+  throughput (real-time factor) as a function of network topology
+  (population count/size, local-vs-remote connectivity mix), simulated
+  timestep count, and activity sparsity (firing rate), with a spike-train
+  correctness gate against a reference (non-GPU or higher-precision)
+  simulation required before any speed number counts.
+operation: >
+  For a network of P populations of N_p LIF neurons each, connected by
+  weighted/delayed synaptic projections (dense within-population,
+  sparse cross-population — the paper's own topology fixes ~80% of
+  projections to front/rear-neighbor populations and ~20% to arbitrary
+  remote populations): simulate T timesteps of dt=0.1ms each, where each
+  timestep updates every neuron's membrane potential V_i(t+dt) =
+  V_i(t)*decay + I_syn_i(t), emits a spike (and resets V_i) when V_i
+  crosses threshold, and propagates that spike's synaptic current to all
+  post-synaptic neurons after the projection's configured delay.
+variants:
+  - id: snn-lif-sim-throughput
+    claim: >
+      steady-state simulation throughput (simulated-ms of network
+      activity per wall-clock-second, i.e. real-time factor) for a fixed
+      LIF network topology and firing-rate regime, network-construction /
+      IR-compilation excluded and reported separately once. Matches
+      BSim's own test/gpu/standard_test.cpp harness and its GeNN
+      comparison points.
+    inputs:
+      suite: >
+        BSim's own synthetic CUBA-IF topology generator (no external SNN
+        benchmark suite exists in this artifact); union of network sizes
+        spanning small (fits one GPU's shared memory comfortably) to
+        large (stresses the paper's claimed multi-GPU scaling), at the
+        paper's own three named firing-rate regimes.
+      selection: >
+        number_of_populations x number_of_neurons_per_population grid,
+        crossed with the 3 firing-rate presets from the README
+        (100 Hz / 500 Hz / 2000 Hz, each defined by BSim's own 4-float
+        connection-parameter tuple), plus BSim's fixed 80%-local/20%-
+        remote connectivity split.
+      recommended_subset:
+        - {name: small-100Hz,  n_populations: 64,   neurons_per_pop: 1000, firing_rate_hz: 100,  params: [0.7, 0.5, 0.6, 0.3, 6]}
+        - {name: small-500Hz,  n_populations: 64,   neurons_per_pop: 1000, firing_rate_hz: 500,  params: [0.7, 0.9, 0.6, 0.2, 6]}
+        - {name: small-2000Hz, n_populations: 64,   neurons_per_pop: 1000, firing_rate_hz: 2000, params: [0.7, 1.3, 1.0, 2.0, 1, 50]}
+        - {name: medium-100Hz, n_populations: 512,  neurons_per_pop: 4000, firing_rate_hz: 100,  params: [0.7, 0.5, 0.6, 0.3, 6]}
+        - {name: medium-2000Hz, n_populations: 512, neurons_per_pop: 4000, firing_rate_hz: 2000, params: [0.7, 1.3, 1.0, 2.0, 1, 50]}
+        - {name: large-multi-gpu, n_populations: 4096, neurons_per_pop: 8000, firing_rate_hz: 500, params: [0.7, 0.9, 0.6, 0.2, 6], note: "targets BSim's dgx1 multi-GPU branch"}
+      neuron_model: "LIF (BSim's LIF_brian implementation), single precision (build.sh release float)"
+      simulated_duration: "1.0s simulated biological time (dt=0.1ms => T=10000 timesteps), matching BSim's own sg.run(0.1) tutorial example scaled x10 for a stable steady-state measurement window"
+    protocol:
+      warmup: "1 full simulated-duration run discarded (JIT/cache/GPU-clock warm-up) -- not specified in BSim's own README; this spec's own choice, applied uniformly since GPU kernel-launch and memory-pool warm-up effects are otherwise conflated into the first timed run"
+      reps: "5 independent runs, each with a different random seed for the topology's stochastic connectivity/weight generator (the SAME seed set must be used across all candidate simulators being compared)"
+      statistic: "median (report min/max) -- no statistic is stated in BSim's own README; this spec fixes it at 5+median following this project's convention for accelerator kernels with run-to-run variance (RASSM's median-of-N precedent, benchspecs/attention-kernel's attn-cpu-kernel-multicore)"
+      timer: "wall-clock around the T-timestep simulation loop only (std::chrono or CUDA events at the loop boundary); excludes process startup"
+      timing_scope: "steady-state timestep loop only; network construction (population/projection creation, IR compilation/codegen if BSim recompiles per-topology) excluded"
+      preprocessing_reported: "separately, once per topology: network-construction + code-generation/compilation wall time -- BSim is a codegen framework, so this one-shot cost can be substantial and must not be silently amortized into the per-timestep throughput number"
+      gpu_count: "report explicitly (1 GPU vs multi-GPU dgx1-branch); multi-GPU numbers are NOT comparable to single-GPU numbers without reporting the GPU count as a first-class axis"
+    metric:
+      primary: "real-time factor = simulated_duration_ms / wall_clock_ms (dimensionless; >1 means faster than biological real time)"
+      secondary: "ms per simulated timestep (T=10000 fixed above); speedup vs. GeNN (dimensionless x), matching BSim's own reported metric"
+    correctness: >
+      MANDATORY pre-timing gate (BSim's own release build logs firing
+      rate/membrane voltage but does not appear to wire an automated
+      pass/fail check into the benchmark driver -- this spec closes that
+      gap): per-neuron spike-train match against a reference simulator
+      (GeNN, or BSim's own double-precision build as an internal
+      reference) over the same simulated duration and identical random
+      seed -- required tolerance: aggregate firing-rate relative
+      difference < 5% AND per-neuron spike-count difference < 10% for at
+      least 95% of neurons (spike TIMING match to the exact timestep is
+      not required across different simulators/precisions, since discrete
+      LIF dynamics are chaotically sensitive to floating-point order of
+      operations at threshold-crossing boundaries — firing-rate/count
+      statistics are the field's practical correctness proxy).
+
+notes_on_fairness:
+  - "BSim's own README states no warmup/repeat/timer convention and no automated correctness gate wired into the benchmark driver (release build only logs firing rate/voltage for manual inspection). This spec's protocol (1 discarded warmup run, 5 seeded repeats, median+min/max, mandatory firing-rate correctness gate) is this project's own construction from SNN-simulator field convention, not extracted from the artifact -- flagged explicitly rather than presented as if sourced."
+  - "BSim's reported speedup (1.41x-9.33x vs GeNN) spans a wide range with no visible per-configuration breakdown of which topology/firing-rate combination produces which end of the range; recommended_subset's 3-firing-rate x 2-size grid is designed so a re-measurement can attribute the range to specific (topology, activity) axes rather than reporting one cherry-pickable number."
+  - "Chaotic sensitivity of discrete LIF spike timing to floating-point order-of-operations means a bit-exact or tight-tolerance spike-train match across different simulators (BSim vs GeNN) is not a meaningful correctness bar; this spec uses aggregate firing-rate/spike-count tolerances instead, an explicit deviation from a naive 'exact output match' correctness convention."
+
+open_questions:
+  - "BSim's exact timing methodology (which timer, single-run vs averaged) for its own reported 1.41x-9.33x GeNN comparison could not be recovered from the top-level README; the protocol specified here is this spec's own design, not a reproduction of BSim's literal benchmarking script (test/gpu/standard_test.cpp's internal timing code was not fetched)."
+  - "Whether BSim's release build's GFire.log/g_v.data outputs are suffient to reconstruct a full per-neuron spike train for the correctness gate above (as opposed to only aggregate firing rate) was not confirmed from the README alone."
+  - "The paper claims a general fine-grained IR that could in principle support neuron models beyond LIF, but the fetched README states 'the simulator only integrates the LIF model' -- whether other TPDS-paper-described optimizations (sparsity-aware load balance) generalize to non-LIF models is untested in this survey."
+
+evidence:
+  journals/tpds/QuZFZ20: "BSim: fine-grained IR + cross-population parallelism + sparsity-aware load balancing + multi-GPU LIF-SNN simulator; synthetic CUBA-IF topology (80% local/20% remote projections) via test/gpu/standard_test.cpp, 3 named firing-rate presets (100/500/2000 Hz); no stated warmup/repeat/timer convention or automated correctness gate in the fetched README; 1.41x-9.33x speedup vs GeNN."

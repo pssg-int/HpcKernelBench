@@ -1,0 +1,43 @@
+diff --git a/gpu_src/ilu0_gpu/nonsp/main.cpp b/gpu_src/ilu0_gpu/nonsp/main.cpp
+index 840df14..4938650 100644
+--- a/gpu_src/ilu0_gpu/nonsp/main.cpp
++++ b/gpu_src/ilu0_gpu/nonsp/main.cpp
+@@ -123,6 +123,19 @@ int main(int argc, char** argv) {
+         x[i] = 0.0;    // Initial solution approximation
+     }
+ 
++    // --- kernelbench patch (HPC-KernelBench cg-krylov integration): optional
++    // RHS override for spec conformance. Reads N little-endian float32 values
++    // from SPCG_RHS_FILE into rhs[] if the env var is set; otherwise the
++    // artifact's own rhs=1.0 default above is left completely untouched. Does
++    // not touch any solver/algorithm code (ARTIFACT_GUIDE.md rule 3).
++    {
++        const char* rhs_path = getenv("SPCG_RHS_FILE");
++        if (rhs_path) {
++            FILE* f = fopen(rhs_path, "rb");
++            if (f) { size_t nread = fread(rhs, sizeof(float), N, f); fclose(f); (void)nread; }
++        }
++    }
++
+     /* Create CUBLAS context */
+     cublasHandle_t cublasHandle = NULL;
+     checkCudaErrors(cublasCreate(&cublasHandle));
+@@ -415,6 +428,18 @@ int main(int argc, char** argv) {
+ 
+     checkCudaErrors(cudaMemcpy(x, d_x, N * sizeof(float), cudaMemcpyDeviceToHost));
+ 
++    // --- kernelbench patch (HPC-KernelBench cg-krylov integration): optional
++    // post-hoc solution dump for independent correctness verification by the
++    // harness (never read back by the solver itself, added after the solve
++    // is already complete). Does not touch any solver/algorithm code.
++    {
++        const char* x_out = getenv("SPCG_X_OUT_FILE");
++        if (x_out) {
++            FILE* f = fopen(x_out, "wb");
++            if (f) { fwrite(x, sizeof(float), N, f); fclose(f); }
++        }
++    }
++
+     /* Check result */
+     err = 0.0;
+ 

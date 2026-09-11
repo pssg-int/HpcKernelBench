@@ -1,0 +1,194 @@
+{
+ "kernel": "gnn-aggregation",
+ "papers": [
+  {
+   "key": "conf/ipps/AlvesMBFGR25",
+   "title": "Accelerating Graph Neural Networks Using a Novel Computation-Friendly Matrix Compression Format",
+   "venue": "IPDPS",
+   "year": 2025,
+   "doi": "10.1109/IPDPS64566.2025.00100",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/cbm4scale/CBM-IPDPS25",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "This paper proposes the Compressed Binary Matrix (CBM) format, a novel, computation-friendly compression scheme for binary matrices. CBM not only reduces the memory footprint of the matrix but also enables faster matrix multiplication between binary and dense, real-valued matrices. The CBM format can be applied to accelerate various graph-related tasks, where the (binary) adjacency matrix of the graph is repeatedly multiplied by another matrix, such as during inference and training of various types of Graph Neural Networks (GNNs). The format is evaluated on a shared-memory architecture in both serial and parallel settings. Experimental results show that CBM can reduce the memory footprint of real-world graphs up to <tex xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">$11 \\times$</tex>, and that the parallel matrix multiplication using CBM is more",
+   "one_liner": "CBM: compressed binary-matrix format, >5x faster GNN sparse-dense matmul than SOTA kernels."
+  },
+  {
+   "key": "conf/sc/HeLDL0M025",
+   "title": "StraGCN: GPU-Accelerated Strassen's Sparse-Dense Matrix Multiplication for Graph Convolutional Network Training",
+   "venue": "SC",
+   "year": 2025,
+   "doi": "10.1145/3712285.3759826",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/CGCL-codes/StraGCN",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Graph Convolutional Networks (GCNs) are a fundamental approach to deep learning on graph-structured data. However, they face a significant challenge in training efficiency due to the high computational cost of Sparse-Dense Matrix Multiplication (SpMM). This paper presents StraGCN, the first GPU-accelerated SpMM implementation based on Strassen’s algorithm particularly designed for GCN training. First, we propose a horizontal fusion model for GPU kernels as an alternative to the commonly used multi-stream CUDA model, significantly improving data locality of on-chip shared memory for Strassen’s SpMM. Second, StraGCN exploits the immutability of the adjacency matrix in GCNs to reuse intermediate results from submatrix operations, substantially reducing redundant computations. Third, we propose a two-stage matrix partitioning scheme to mitigate load imbalance caused by the irregular distribu",
+   "one_liner": "GPU Strassen's-algorithm SpMM for GCN training, 2-3.3x faster than GNNA/PyG/DGL"
+  },
+  {
+   "key": "conf/asplos/PengXSHZHKKD24",
+   "title": "MaxK-GNN: Extremely Fast GPU Kernel Design for Accelerating Graph Neural Networks Training",
+   "venue": "ASPLOS",
+   "year": 2024,
+   "doi": "10.1145/3620665.3640426",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/xiexi51/MaxK-GNN",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "In the acceleration of deep neural network training, the graphics processing unit (GPU) has become the mainstream platform. GPUs face substantial challenges on Graph Neural Networks (GNNs), such as workload imbalance and memory access irregularities, leading to underutilized hardware. Existing solutions such as PyG, DGL with cuSPARSE, and GNNAdvisor frameworks partially address these challenges. However, the memory traffic involved with Sparse-Dense Matrix Matrix Multiplication (SpMM) is still significant.",
+   "one_liner": "MaxK nonlinearity + fast GPU SpMM/SSpMM kernels cutting SpMM memory traffic in GNN training"
+  },
+  {
+   "key": "conf/ics/0001SLFY024",
+   "title": "FASTEN: Fast GPU-accelerated Segmented Matrix Multiplication for Heterogenous Graph Neural Networks",
+   "venue": "ICS",
+   "year": 2024,
+   "doi": "10.1145/3650200.3656593",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3650200.3656593",
+   "artifact_url": "https://github.com/Deep-Learning-Profiling-Tools/fasten",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "autotuning",
+   "abstract": "This paper introduces FASTEN, a cutting-edge library developed to address the computational challenges inherent in Heterogeneous Graph Neural Networks (HGNNs). The key focus of FASTEN is the optimization of segmented matrix multiplication, a critical operator where existing GNN frameworks and linear algebra libraries often fall short. FASTEN offers an array of solutions to these challenges, including a routing table designed for efficient workload scheduling, adaptive algorithms tailored for handling segments of different shapes and segmented dimensions, and a performance model-guided autotuner to select the best configurations. Furthermore, FASTEN implements interfaces to integrate with widely-used frameworks like PyG, ensuring straightforward adoption in existing HGNN models with minimal adjustments. We have performed comprehensive benchmarks on advanced GPU architectures, including NV",
+   "one_liner": "Autotuned GPU segmented matrix multiplication for heterogeneous GNNs"
+  },
+  {
+   "key": "conf/usenix/WangFWHD23",
+   "title": "TC-GNN: Bridging Sparse GNN Computation and Dense Tensor Cores on GPUs",
+   "venue": "ATC",
+   "year": 2023,
+   "doi": "",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/YukeWang96/TC-GNN_ATC23",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Recently, graph neural networks (GNNs), as the backbone of graph-based machine learning, demonstrate great success in various domains (e.g., e-commerce). However, the performance of GNNs is usually unsatisfactory due to the highly sparse and irregular graph-based operations. To this end, we propose TC-GNN, the first GNN acceleration framework based on GPU Tensor Core Units (TCUs). The core idea is to reconcile the\"Sparse\"GNN computation with the high-performance\"Dense\"TCUs. Specifically, we conduct an in-depth analysis of the sparse operations in mainstream GNN computing frameworks. We introduce a novel sparse graph translation technique to facilitate TCU processing of the sparse GNN workload. We implement an effective CUDA core and TCU collaboration design to fully utilize GPU resources. We integrate TC-GNN with the PyTorch framework for high programmability. Rigorous experiments show a",
+   "one_liner": "Sparse-graph translation maps GNN SpMM/SDDMM onto GPU tensor cores; 1.70x avg over DGL"
+  },
+  {
+   "key": "conf/hpdc/FuJH22",
+   "title": "TLPGNN: A Lightweight Two-Level Parallelism Paradigm for Graph Neural Network Computation on GPU",
+   "venue": "HPDC",
+   "year": 2022,
+   "doi": "10.1145/3502181.3531467",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/charlifu/TLPGNN",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Graph Neural Networks (GNNs) are an emerging class of deep learning models on graphs, with many successful applications, such as, recommendation systems, drug discovery, and social network analysis. The GNN computation includes both regular neural network operations and general graph convolution operations, which take the majority of the total computation time. Though several recent works have been proposed to accelerate the computation for GNNs, they face the limitations of heavy pre-processing, low efficient atomic operations, and unnecessary kernel launches. In this paper, we design TLPGNN, a lightweight two-level parallelism paradigm for GNN computation. First, we conduct a systematic analysis on the hardware resource usage of GNN workloads to deeply understand the specialties of GNN workloads. With the insightful observations, we then divide the GNN computation into two levels, i.e.",
+   "one_liner": "Two-level (vertex/feature) parallel GNN kernels beating DGL/GNNAdvisor/FeatGraph 3-8x"
+  },
+  {
+   "key": "conf/ppopp/WangFD22",
+   "title": "QGTC: accelerating quantized graph neural networks via GPU tensor core",
+   "venue": "PPoPP",
+   "year": 2022,
+   "doi": "10.1145/3503221.3508408",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3503221.3508408",
+   "artifact_url": "https://github.com/YukeWang96/QGTC_PPoPP22",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Over the most recent years, quantized graph neural network (QGNN) attracts lots of research and industry attention due to its high robustness and low computation and memory overhead. Unfortunately, the performance gains of QGNN have never been realized on modern GPU platforms. To this end, we propose the first Tensor Core (TC) based computing framework, QGTC, to support any-bitwidth computation for QGNNs on GPUs. We introduce a novel quantized low-bit arithmetic design based on the low-bit data representation and bit-decomposed computation. We craft a novel TC-tailored CUDA kernel design by incorporating 3D-stacked bit compression, zero-tile jumping, and non-zero tile reuse technique to improve the performance systematically. We incorporate an effective bandwidth-optimized subgraph packing strategy to maximize the transferring efficiency between CPU host and GPU device. We integrate QGTC",
+   "one_liner": "QGTC: Tensor-Core CUDA kernels for any-bitwidth quantized GNN computation, 2.7x over DGL"
+  },
+  {
+   "key": "journals/tpds/XuSYLJ22",
+   "title": "Accelerating Backward Aggregation in GCN Training With Execution Path Preparing on GPUs",
+   "venue": "TPDS",
+   "year": 2022,
+   "doi": "10.1109/TPDS.2022.3205642",
+   "arxiv": "2204.02662",
+   "oa_url": "https://arxiv.org/pdf/2204.02662",
+   "artifact_url": "https://github.com/Catriminal/EPPGCN",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "The emerging <italic xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">Graph Convolutional Network</i> (GCN) has been widely used in many domains, where it is important to improve the efficiencies of applications by accelerating GCN trainings. Due to the sparsity nature and exploding scales of input real-world graphs, state-of-the-art GCN training systems (e.g., GNNAdvisor) employ graph processing techniques to accelerate the message exchanging (i.e., aggregations) among the graph vertices. Nevertheless, these systems treat both the aggregation stages of forward and backward propagation phases as all-active graph processing procedures that indiscriminately conduct computations on all vertices of an input graph. In this article, we first point out that in a GCN training problem with a given training set on an input graph, its aggregation stages of b",
+   "one_liner": "Execution-path preparation turns GCN backward aggregation into partial-vertex GPU kernel, up to 6.6x"
+  },
+  {
+   "key": "conf/sc/HuYWYZL0ZW20",
+   "title": "FeatGraph: a flexible and efficient backend for graph neural network systems",
+   "venue": "SC",
+   "year": 2020,
+   "doi": "10.1109/SC41405.2020.00075",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/amazon-science/FeatGraph",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu",
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "abstract": "Graph neural networks (GNNs) are gaining popularity as a promising approach to machine learning on graphs. Unlike traditional graph workloads where each vertex/edge is associated with a scalar, GNNs attach a feature tensor to each vertex/edge. This additional feature dimension, along with consequently more complex vertex- and edge-wise computations, has enormous implications on locality and parallelism, which existing graph processing systems fail to exploit. This paper proposes FeatGraph to accelerate GNN workloads by co-optimizing graph traversal and feature dimension computation. FeatGraph provides a flexible programming interface to express diverse GNN models by composing coarse-grained sparse templates with fine-grained user-defined functions (UDFs) on each vertex/edge. FeatGraph incorporates optimizations for graph traversal into the sparse templates and allows users to specify opt",
+   "one_liner": "FeatGraph: co-optimized sparse templates + UDFs for GNN aggregation kernels, up to 32x speedup."
+  },
+  {
+   "key": "conf/sc/HuangD0Y20",
+   "title": "GE-SpMM: general-purpose sparse matrix-matrix multiplication on GPUs for graph neural networks",
+   "venue": "SC",
+   "year": 2020,
+   "doi": "10.1109/SC41405.2020.00076",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/hgyhungry/ge-spmm",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "The acceleration of Graph Neural Networks (GNNs) requires efficient and framework-compatible Sparse-Dense Matrix-Matrix Multiplication (SpMM). From the compatibility perspective, the sophisticated sparse matrix representations in state-of-the-art SpMM designs cause heavy preprocessing overhead for the framework. From the efficiency perspective, optimizations for SpMV (Sparse Matrix-Vector) do not apply well to SpMM, leading to redundant and uncoalesced global memory access. We propose GE-SpMM1, which takes the CSR format consistent with GNN frameworks to enable integration without the format transformation overhead. We use Coalesced Row Caching to ensure coalesced access to both sparse and dense data in the global memory. We use Coarse-grained Warp Merging to reduce redundant data loading among GPU warps. Experiments on a real-world graph dataset demonstrate up to 1.41× speedup over Nvid",
+   "one_liner": "GE-SpMM: CSR-native GNN SpMM with coalesced row caching and warp merging, beats cuSPARSE 1.41x."
+  },
+  {
+   "key": "conf/sc/TripathyYB20",
+   "title": "Reducing communication in graph neural network training",
+   "venue": "SC",
+   "year": 2020,
+   "doi": "10.1109/SC41405.2020.00074",
+   "arxiv": "2005.03300",
+   "oa_url": "https://arxiv.org/pdf/2005.03300",
+   "artifact_url": "https://github.com/PASSIONLab/CAGNET",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu",
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Graph Neural Networks (GNNs) are powerful and flexible neural networks that use the naturally sparse connectivity information of the data. GNNs represent this connectivity as sparse matrices, which have lower arithmetic intensity and thus higher communication costs compared to dense matrices, making GNNs harder to scale to high concurrencies than convolutional or fully-connected neural networks. We introduce a family of parallel algorithms for training GNNs and show that they can asymptotically reduce communication compared to previous parallel GNN training methods. We implement these algorithms, which are based on 1D, 1. 5D, 2D, and 3D sparse-dense matrix multiplication, using torch.distributed on GPU-equipped clusters. Our algorithms optimize communication across the full GNN training pipeline. We train GNNs on over a hundred GPUs on multiple datasets, including a protein network with ",
+   "one_liner": "1D/1.5D/2D/3D sparse-dense matmul parallel algorithms cutting communication in GNN training."
+  }
+ ]
+}

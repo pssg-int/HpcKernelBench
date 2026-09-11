@@ -1,0 +1,353 @@
+{
+ "kernel": "spmv",
+ "papers": [
+  {
+   "key": "conf/ics/ChunduryBLSM26",
+   "title": "Diagonal-Budgeted Trotterization for Efficient Quantum Hamiltonian Simulation",
+   "venue": "ICS",
+   "year": 2026,
+   "doi": "10.1145/3797905.3807869",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3797905.3807869",
+   "artifact_url": "https://github.com/srikarchundury/diaq_for_hamsim",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu",
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Efficient classical simulation of quantum Hamiltonian dynamics is often bottlenecked by exponential state growth and the overhead of generic sparse linear algebra. We introduce diagonal-budgeted Trotterization, a structure-aware strategy that decomposes Hamiltonians into factors preserving diagonal sparsity while tightly controlling fidelity loss. Our implementation, HamSim, utilizes a compact diagonal-sparse data layout and specialized C++/CUDA kernels to bypass the overheads of generic formats like CSR. By leveraging SIMD vectorization, multithreading, and GPU acceleration, HamSim achieves high performance across heterogeneous architectures. Benchmarks on the HamLib suite show that HamSim significantly outperforms Qiskit-Aer. On CPUs, HamSim attains speedups of 182–1, 269 × on optimization instances (TSP, MaxCut) and 4.8–841 × on physical models (TFIM, Heisenberg). On GPUs, it achieves",
+   "one_liner": "Diagonal-sparse data layout and CUDA/SIMD kernels for classical Hamiltonian sim, huge speedups over Qiskit-Aer"
+  },
+  {
+   "key": "conf/asplos/JainGC25",
+   "title": "RASSM: Residue-based Acceleration of Single Sparse Matrix Computation via Adaptive Tiling",
+   "venue": "ASPLOS",
+   "year": 2025,
+   "doi": "10.1145/3669940.3707219",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3669940.3707219",
+   "artifact_url": "https://github.com/gt-tinker/RASSM",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Single-Sparse-Matrix Kernels (SSMKs) such as SpMM, SDDMM, SpMV, and SpTS form the backbone of applications such as data analytics, graph processing, finite-element analysis, machine learning (including GNNs and LLMs), etc. This paper introduces Residue-based Acceleration of Single Sparse Matrix Computation via Adaptive Tiling (RASSM), an input-dependent, adaptive 2-dimensional tiling technique for SSMKs. The adaptation leverages the concept of a residue matrix: a data structure that compactly captures the pattern of non-zeros in the sparse matrix. With residues, we show it is possible to make intelligent decisions on adaptive tile sizes, resulting in increased cache occupancy. Residues allow for optimizations across both spatial and temporal locality. RASSM improves data movement and overall performance as compared to prior techniques. For example, using spatial analysis for SpMM on comm",
+   "one_liner": "Residue-guided adaptive 2D tiling for CPU sparse kernels; 1.36x over MKL SpMM, beats ASpT and J-Stream."
+  },
+  {
+   "key": "conf/dac/LinLDZLY25",
+   "title": "SSpMV: A Sparsity-aware SpMV Framework Empowered by Multimodal Machine Learning",
+   "venue": "DAC",
+   "year": 2025,
+   "doi": "10.1109/DAC63849.2025.11132896",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/lsl036/SSpMV",
+   "artifact_status": "likely",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "autotuning",
+   "abstract": "Sparse Matrix-Vector Multiplication (SpMV) is an essential sparse operation in scientific computing and artificial intelligence. Efficiently adapting SpMV algorithms to diverse matrices and architectures requires a framework capable of accurately recognizing sparse patterns and selecting the optimal implementation. In this work, we introduce Sparsity-aware SpMV (SSpMV), a framework that integrates expert-designed features with multimodal representations to adaptively predict the best-performing algorithm and parameters. For this purpose, we design a multimodal neural network called MM-Adapter, to capture diverse modalities to represent the computational features of SpMV. Experimental results demonstrate that MMAdapter achieves the highest accuracy of $81.05 \\%$, outperforming existing SpMV prediction models. Furthermore, SSpMV consistently delivers substantial performance improvements ov",
+   "one_liner": "ML-based SpMV algorithm/parameter autotuning beating sparse libraries on multi-core"
+  },
+  {
+   "key": "conf/ics/CongSC00Q25",
+   "title": "CB-SpMV: A Data Aggregating and Balance Algorithm for for Cache-Friendly Block-Based SpMV on GPUs",
+   "venue": "ICS",
+   "year": 2025,
+   "doi": "10.1145/3721145.3725746",
+   "arxiv": "2605.18515",
+   "oa_url": "https://arxiv.org/pdf/2605.18515",
+   "artifact_url": "https://github.com/xing-cong/CB-Sparse",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Sparse matrix-vector multiplication (SpMV) is crucial in computational science, engineering, and machine learning. Despite substantial efforts to improve SpMV performance on GPUs through various techniques, issues related to data locality, hardware utilization, and load balancing persist, leaving room for further optimization. This paper presents CB-SpMV, a cache-friendly SpMV optimization algorithm, using a novel data convergent and adaptable 2D blocking structure. The matrix in CB-SpMV is divided into independent sub-blocks, with virtual pointers aggregating different types of intra-block data for better cache-level data locality. To enhance hardware utilization, a block-aware column aggregation strategy and the selection of sub-block formats are proposed to accelerate computation and adapt to varying sparse matrices. Finally, an inter-block load-balancing algorithm is designed to ensu",
+   "one_liner": "Cache-friendly 2D-blocked GPU SpMV, up to 3.95x over cuSPARSE/TileSpMV/DASP"
+  },
+  {
+   "key": "conf/ipps/NoackKK25",
+   "title": "Accelerating Sparse Linear Solvers on Intelligence Processing Units",
+   "venue": "IPDPS",
+   "year": 2025,
+   "doi": "10.1109/IPDPS64566.2025.00095",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/esa-tu-darmstadt/graphene",
+   "artifact_status": "verified",
+   "platform": [
+    "other"
+   ],
+   "approach": "codegen",
+   "abstract": "This paper presents an open-source framework for solving large, sparse linear systems on Intelligence Processing Units (IPUs). The IPU is a massively parallel architecture consisting of thousands of independent cores connected by an all-to-all communication fabric. We introduce two Domain-Specific Languages, CodeDSL and TensorDSL, that allow us to express complex algebraic algorithms like solvers and preconditioners close to their mathematical notation. Our framework symbolically executes these DSLs to generate the dataflow graph, execution schedule, and the codelets required by IPU's programming model. The IPU's cacheless design allows us to reorder matrices without performance penalties. We present a novel matrix reordering strategy that enables efficient blockwise halo exchanges with the IPU's all-to-all communication fabric. Our framework implements a suite of parallel linear solvers",
+   "one_liner": "DSL-generated sparse linear solvers (SpMV/ILU/PBiCGStab) on Graphcore IPUs, up to 150x vs CPU/GPU."
+  },
+  {
+   "key": "conf/sc/QiuXFZD0WCC024",
+   "title": "A Conflict-aware Divide-and-Conquer Algorithm for Symmetric Sparse Matrix-Vector Multiplication",
+   "venue": "SC",
+   "year": 2024,
+   "doi": "10.1109/SC41406.2024.00054",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/qleonardo/DCS-SpMV",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu",
+    "arm-cpu"
+   ],
+   "approach": "autotuning",
+   "abstract": "Exploiting matrix symmetry to halve memory footprint offers an opportunity for accelerating memory-bound computations like Sparse Matrix-Vector Multiplication (SpMV). However, symmetric SpMV incurs data conflicts when concurrently writing the output vector. Previous approaches fail to address this issue efficiently. This paper proposes DCS-SpMV, a Divide-and-Conquer (DC) algorithm for efficient Symmetric SpMV. The key idea is to recursively divide the matrix-induced conflict graph into independent subgraphs for parallel execution, and construct separate subgraphs to avoid data conflicts. Our DC algorithm transforms the input matrix into a low-conflict part and a high-conflict part, which motivates us to design a conflict-aware hybrid solution that executes these two parts using DCS-SpMV and traditional SpMV respectively. We develop a machine learning model to predict an optimal hybrid im",
+   "one_liner": "DCS-SpMV: conflict-aware divide-and-conquer symmetric SpMV with ML-selected hybrid execution"
+  },
+  {
+   "key": "conf/sc/LuZWFLCY0C024",
+   "title": "AmgT: Algebraic Multigrid Solver on Tensor Cores",
+   "venue": "SC",
+   "year": 2024,
+   "doi": "10.1109/SC41406.2024.00058",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/SuperScientificSoftwareLaboratory/AmgT",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu",
+    "amd-gpu"
+   ],
+   "approach": "library",
+   "abstract": "Algebraic multigrid (AMG) methods are particularly efficient to solve a wide range of sparse linear systems, due to their good flexibility and adaptability. Even though modern parallel devices, such as GPUs, brought massive parallelism to AMG, the latest major hardware features, i.e., tensor core units and their low precision compute power, have not been exploited to accelerate AMG. This paper proposes AmgT, a new AMG solver that utilizes the tensor core and mixed precision ability of the latest GPUs during multiple phases of the AMG algorithm. Considering that the sparse general matrix-matrix multiplication (SpGEMM) and sparse matrix-vector multiplication (SpMV) are extensively used in the setup and solve phases, respectively, we propose a novel method based on a new unified sparse storage format that leverages tensor cores and their variable precision. Our method improves both the perf",
+   "one_liner": "AmgT: tensor-core/mixed-precision SpGEMM+SpMV kernels for AMG setup/solve, up to 2.2x over HYPRE"
+  },
+  {
+   "key": "conf/hpdc/ChuHDDC0WH23",
+   "title": "Efficient Algorithm Design of Optimizing SpMV on GPU",
+   "venue": "HPDC",
+   "year": 2023,
+   "doi": "10.1145/3588195.3593002",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/hpcde/spmv-acc",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Sparse matrix-vector multiplication (SpMV) is a fundamental building block for various numerical computing applications. However, most existing GPU-SpMV approaches may suffer from either long preprocessing overhead, load imbalance, format conversion, bad memory access patterns. In this paper, we proposed two new SpMV algorithms:flat andline-enhance, as well as their implementations, for GPU systems to overcome the above shortcomings. Our algorithms work directly on the CSR sparse matrix format. To achieve high performance: 1) for load balance, theflat algorithm uses non-zero splitting andline-enhance uses a mix of row and non-zero splitting; 2) memory access patterns are designed for both algorithms for data loading, storing and reduction steps; and 3) an adaptive approach is proposed to select appropriate algorithm and parameters based on matrix characteristics.",
+   "one_liner": "Flat and line-enhance CSR SpMV algorithms with adaptive selection on GPU"
+  },
+  {
+   "key": "conf/ics/ZhangWCMWEM23",
+   "title": "PERKS: a Locality-Optimized Execution Model for Iterative Memory-bound GPU Applications",
+   "venue": "ICS",
+   "year": 2023,
+   "doi": "10.1145/3577193.3593705",
+   "arxiv": "",
+   "oa_url": "https://www.osti.gov/servlets/purl/1994672",
+   "artifact_url": "https://github.com/neozhang307/PERKS",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Iterative memory-bound solvers commonly occur in HPC codes. Typical GPU implementations have a loop on the host side that invokes the GPU kernel as much as time/algorithm steps there are. The termination of each kernel implicitly acts the barrier required after advancing the solution every time step. We propose an execution model for running memory-bound iterative GPU kernels: PERsistent KernelS (PERKS). In this model, the time loop is moved inside persistent kernel, and device-wide barriers are used for synchronization. We then reduce the traffic to device memory by caching subset of the output in each time step in the unused registers and shared memory. PERKS can be generalized to any iterative solver: they largely independent of the solver's implementation. We explain the design principle of PERKS and demonstrate effectiveness of PERKS for a wide range of iterative 2D/3D stencil bench",
+   "one_liner": "Persistent-kernel locality optimization for iterative stencil/CG GPU kernels"
+  },
+  {
+   "key": "conf/ipps/ZhangLYDYLW23",
+   "title": "Memory-aware Optimization for Sequences of Sparse Matrix-Vector Multiplications",
+   "venue": "IPDPS",
+   "year": 2023,
+   "doi": "10.1109/IPDPS54959.2023.00046",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/Fliange/FBMPK",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu",
+    "arm-cpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "This paper presents a novel approach to optimize multiple invocations of a sparse matrix-vector multiplication (SpMV) kernel performed on the same sparse matrix A and dense vector x, like Ax, A <sup xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">2</sup> x, ⋯, A <sup xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">k</sup> x, and their linear combinations such as Ax + A <sup xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">2</sup> x. Such computations are frequently used in scientific applications for solving linear equations and in multi-grid methods. Existing SpMV optimization techniques typically focus on a single SpMV invocation and do not consider opportunities for optimization across a sequence of SpMV operations (SSpMV), leaving much room for performance impr",
+   "one_liner": "Memory-aware partitioning/pipelining for sequences of SpMV, beating Intel MKL on 4 CPU platforms"
+  },
+  {
+   "key": "conf/dac/SongCGC22",
+   "title": "Serpens: a high bandwidth memory based accelerator for general-purpose sparse matrix-vector multiplication",
+   "venue": "DAC",
+   "year": 2022,
+   "doi": "10.1145/3489517.3530420",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3489517.3530420",
+   "artifact_url": "https://github.com/UCLA-VAST/Serpens",
+   "artifact_status": "verified",
+   "platform": [
+    "fpga"
+   ],
+   "approach": "manual",
+   "abstract": "Sparse matrix-vector multiplication (SpMV) multiplies a sparse matrix with a dense vector. SpMV plays a crucial role in many applications, from graph analytics to deep learning. The random memory accesses of the sparse matrix make accelerator design challenging. However, high bandwidth memory (HBM) based FPGAs are a good fit for designing accelerators for SpMV. In this paper, we present Serpens, an HBM based accelerator for general-purpose SpMV, which features memory-centric processing engines and index coalescing to support the efficient processing of arbitrary SpMVs. From the evaluation of twelve large-size matrices, Serpens is 1.91x and 1.76x better in terms of geomean throughput than the latest accelerators GraphLiLy and Sextans, respectively. We also evaluate 2,519 SuiteSparse matrices, and Serpens achieves 2.10x higher throughput than a K80 GPU. For the energy/bandwidth efficiency,",
+   "one_liner": "HBM-based FPGA SpMV accelerator with memory-centric engines, beats GraphLily/Sextans/K80 GPU"
+  },
+  {
+   "key": "conf/ipps/YeHHLLJ22",
+   "title": "An Integral-equation-oriented Vectorized SpMV Algorithm and its Application on CT Imaging Reconstruction",
+   "venue": "IPDPS",
+   "year": 2022,
+   "doi": "10.1109/IPDPS53621.2022.00080",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/sysu-compsci/cscv",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "manual",
+   "abstract": "Sparse-matrix vector multiplication (SpMV) is a core routine in many applications. Its performance is limited by memory bandwidth, which is for matrix transport between processors and memory, and instruction latency in computations. Vectorized operations (SIMD) can dramatically improve the execution efficiency, but irregular matrices' sparsity pattern is not compatible with the style of SIMD execution. We present a new matrix format, Compressed Sparse Column Vector (CSCV), and a corresponding vectorized SpMV algorithm for matrices arising from integral equations. This SpMV algorithm can inherently suit wide SIMD instructions and reduce the memory bandwidth used. We implement this algorithm for Computed Tomography (CT) imaging reconstructions on both Intel and AMD x86 platforms and compare it with seven state-of-the-art SpMV implementations using different CT imaging matrices. Experimenta",
+   "one_liner": "CSCV sparse format + vectorized SpMV for CT imaging reconstruction, up to 3.7x over MKL"
+  },
+  {
+   "key": "conf/ipps/ChenSSTBL22",
+   "title": "Bit-GraphBLAS: Bit-Level Optimizations of Matrix-Centric Graph Processing on GPU",
+   "venue": "IPDPS",
+   "year": 2022,
+   "doi": "10.1109/IPDPS53621.2022.00056",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/hsung2/Bit-GraphBLAS",
+   "artifact_status": "likely",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "In a general graph data structure like an adjacency matrix, when edges are homogeneous, the connectivity of two nodes can be sufficiently represented using a single bit. This insight has, however, not yet been adequately exploited by the existing matrix-centric graph processing frameworks. This work fills the void by systematically exploring the bit-level representation of graphs and the corresponding optimizations to the graph operations. It proposes a two-level representation named Bit-Block Compressed Sparse Row (B2SR) and presents a series of optimizations to the graph operations on B2SR by leveraging the intrinsics of modern GPUs. Evaluations on NVIDIA Pascal and Volta GPUs show that the optimizations bring up to 40× and 6555× for essential GraphBLAS kernels SpMV and SpGEMM, respectively, making GraphBLAS-based BFS accelerate up to 433×, SSSP, PR, and CC up to 35×, and TC up to 52×.",
+   "one_liner": "Bit-Block CSR (B2SR) format; bit-level GraphBLAS SpMV/SpGEMM sped up to 6555x on GPU"
+  },
+  {
+   "key": "conf/sc/DuLWLTS22",
+   "title": "AlphaSparse: Generating High Performance SpMV Codes Directly from Sparse Matrices",
+   "venue": "SC",
+   "year": 2022,
+   "doi": "10.1109/SC41404.2022.00071",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/AnonymousRepo123/AlphaSparse",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu",
+    "arm-cpu"
+   ],
+   "approach": "autotuning",
+   "abstract": "Sparse Matrix-Vector multiplication (SpMV) is an essential computational kernel in many application scenarios. Tens of sparse matrix formats and implementations have been proposed to compress the memory storage and speed up SpMV performance. We develop AlphaSparse, a superset of all existing works that goes beyond the scope of human-designed format(s) and implementation(s). AlphaSparse automatically creates novel machine-designed formats and SpMV kernel implementations en-tirely from the knowledge of input sparsity patterns and hard-ware architectures. Based on our proposed Operator Graph that expresses the path of SpMV format and kernel design, AlphaS-parse consists of three main components: Designer, Format & Kernel Generator, and Search Engine. It takes an arbitrary sparse matrix as input while outputs the performance machine-designed format and SpMV implementation. By extensively eva",
+   "one_liner": "AlphaSparse auto-generates novel SpMV formats+kernels per input matrix, 3.2x over hand-designed formats"
+  },
+  {
+   "key": "conf/sc/CheshmiCD22",
+   "title": "Vectorizing Sparse Matrix Computations with Partially-Strided Codelets",
+   "venue": "SC",
+   "year": 2022,
+   "doi": "10.1109/SC41404.2022.00037",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/sparse-specialize/partially-strided-codelet",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "abstract": "The compact data structures and irregular computation patterns in sparse matrix computations introduce challenges to vectorizing these codes. Available approaches primarily vec-torize strided computation regions of a sparse code. In this work, we propose a locality-based codelet mining (LCM) algorithm that efficiently searches for strided and partially strided regions in sparse matrix computations for vectorization. We also present a classification of partially strided codelets and a differentiation-based approach to generate codelets from memory accesses in the sparse computation. LCM is implemented as an inspector-executor framework called LCM I/E that generates vectorized code for the sparse matrix-vector multiplication (SpMV), sparse matrix times dense matrix (SpMM), and sparse triangular solver (SpTRSV). LCM I/E outperforms the MKL library with an average speedup of 1.67x, 4.1x, and",
+   "one_liner": "Partially-strided codelet mining vectorizes SpMV/SpMM/SpTRSV, beats MKL by up to 4.1x"
+  },
+  {
+   "key": "journals/tpds/AzadSHGB22",
+   "title": "Combinatorial BLAS 2.0: Scaling Combinatorial Algorithms on Distributed-Memory Systems",
+   "venue": "TPDS",
+   "year": 2022,
+   "doi": "10.1109/TPDS.2021.3094091",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/PASSIONLab/CombBLAS",
+   "artifact_status": "verified",
+   "platform": [
+    "distributed",
+    "nvidia-gpu",
+    "cpu"
+   ],
+   "approach": "library",
+   "abstract": "Combinatorial algorithms such as those that arise in graph analysis, modeling of discrete systems, bioinformatics, and chemistry, are often hard to parallelize. The Combinatorial BLAS library implements key computational primitives for rapid development of combinatorial algorithms in distributed-memory systems. During the decade since its first introduction, the Combinatorial BLAS library has evolved and expanded significantly. This article details many of the key technical features of Combinatorial BLAS version 2.0, such as communication avoidance, hierarchical parallelism via in-node multithreading, accelerator support via GPU kernels, generalized semiring support, implementations of key data structures and functions, and scalable distributed I/O operations for human-readable files. Our article also presents several rules of thumb for choosing the right data structures and functions in",
+   "one_liner": "Combinatorial BLAS 2.0: distributed-memory sparse/graph BLAS primitives with GPU kernel support"
+  },
+  {
+   "key": "conf/dac/ParraviciniCSS21",
+   "title": "Scaling up HBM Efficiency of Top-K SpMV for Approximate Embedding Similarity on FPGAs",
+   "venue": "DAC",
+   "year": 2021,
+   "doi": "10.1109/DAC18074.2021.9586203",
+   "arxiv": "2103.04808",
+   "oa_url": "https://arxiv.org/pdf/2103.04808",
+   "artifact_url": "https://github.com/AlbertoParravicini/approximate-spmv-topk",
+   "artifact_status": "verified",
+   "platform": [
+    "fpga"
+   ],
+   "approach": "manual",
+   "abstract": "Top-K SpMV is a key component of similarity-search on sparse embeddings. This sparse workload does not perform well on general-purpose NUMA systems that employ traditional caching strategies. Instead, modern FPGA accelerator cards have a few tricks up their sleeve. We introduce a Top-KSpMV FPGA design that leverages reduced precision and a novel packet-wise CSR matrix compression, enabling custom data layouts and delivering bandwidth efficiency often unreachable even in architectures with higher peak bandwidth. With HBM-based boards, we are 100x faster than a multi-threaded CPU implementation and 2x faster than a GPU with 20% higher bandwidth, with 14.2x higher power-efficiency.",
+   "one_liner": "Top-K SpMV on HBM FPGA with packet-wise CSR compression and reduced precision; 100x vs CPU, 2x vs GPU."
+  },
+  {
+   "key": "conf/ipps/NiuLDJ0T21",
+   "title": "TileSpMV: A Tiled Algorithm for Sparse Matrix-Vector Multiplication on GPUs",
+   "venue": "IPDPS",
+   "year": 2021,
+   "doi": "10.1109/IPDPS49936.2021.00016",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/SuperScientificSoftwareLaboratory/TileSpMV",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "With the extensive use of GPUs in modern supercomputers, accelerating sparse matrix-vector multiplication (SpMV) on GPUs received much attention in the last couple of decades. A number of techniques, such as increasing utilization of wide vector units, reducing load imbalance and selecting the best formats, have been developed. However, the 2D spatial sparsity structure has not been well exploited in the existing work for SpMV on GPUs. In this paper, we propose an efficient tiled algorithm called TileSpMV for optimizing SpMV on GPUs through exploiting 2D spatial structure of sparse matrices. We first implement seven warp-level SpMV methods for calculating sparse tiles stored in a variety of formats, and then design a selection method to find the best format and SpMV implementation for each tile. We also adaptively extract nonzeros in the very sparse tiles into a separate matrix to maximi",
+   "one_liner": "TileSpMV: tiled 2D-sparsity-aware SpMV on GPU with per-tile format selection, up to 426x over BSR."
+  },
+  {
+   "key": "journals/tpds/AhmadYU21",
+   "title": "A Split Execution Model for SpTRSV",
+   "venue": "TPDS",
+   "year": 2021,
+   "doi": "10.1109/TPDS.2021.3074501",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/ParCoreLab/Split_SpTRSV",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu",
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Sparse Triangular Solve (SpTRSV) is an important and extensively used kernel in scientific computing. Parallelism within SpTRSV depends upon matrix sparsity pattern and, in many cases, is non-uniform from one computational step to the next. In cases where the SpTRSV computational steps have contrasting parallelism characteristics- some steps are more parallel, others more sequential in nature, the performance of an SpTRSV algorithm may be limited by the contrasting parallelism characteristics. In this work, we propose a split-execution model for SpTRSV to automatically divide SpTRSV computation into two sub-SpTRSV systems and an SpMV, such that one of the sub-SpTRSVs has more parallelism than the other. Each sub-SpTRSV is then computed using different SpTRSV algorithms, which are possibly executed on different platforms (CPU or GPU). By analyzing the SpTRSV Directed Acyclic Graph (DAG) a",
+   "one_liner": "Split-execution model dividing SpTRSV into two sub-solves plus SpMV across CPU/GPU, up to 10x speedup"
+  },
+  {
+   "key": "journals/tpds/LiAY21",
+   "title": "Adaptive SpMV/SpMSpV on GPUs for Input Vectors of Varied Sparsity",
+   "venue": "TPDS",
+   "year": 2021,
+   "doi": "10.1109/TPDS.2020.3040150",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/hpc-research-2020/spmspv-adaptive",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "autotuning",
+   "abstract": "Despite numerous efforts for optimizing the performance of Sparse Matrix and Vector Multiplication (SpMV) on modern hardware architectures, few works are done to its sparse counterpart, Sparse Matrix and Sparse Vector Multiplication (SpMSpV), not to mention dealing with input vectors of varied sparsity. The key challenge is that depending on the sparsity levels, distribution of data, and compute platform, the optimal choice of SpMV/SpMSpV kernel can vary, and a static choice does not suffice. In this article, we propose an adaptive SpMV/SpMSpV framework, which can automatically select the appropriate SpMV/SpMSpV kernel on GPUs for any sparse matrix and vector at the runtime. Based on systematic analysis on key factors such as computing pattern, workload distribution and write-back strategy, eight candidate SpMV/SpMSpV kernels are encapsulated into the framework to achieve high performanc",
+   "one_liner": "Adaptive SpMV/SpMSpV kernel-selection framework for varied input-vector sparsity on GPUs"
+  }
+ ]
+}

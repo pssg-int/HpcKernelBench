@@ -1,0 +1,460 @@
+[
+ {
+  "key": "conf/usenix/Wang0L0YD22",
+  "venue": "ATC",
+  "year": 2022,
+  "title": "StRAID: Stripe-threaded Architecture for Parity-based RAIDs with Ultra-fast SSDs",
+  "abstract": "Popular software storage architecture Linux Multiple-Disk (MD) for parity-based RAID (e.g., RAID5 and RAID6) assigns one or more centralized worker threads to efficiently process all user requests based on multi-stage asynchronous control and global data structures, successfully exploiting characteristics of slow devices, e.g., Hard Disk Drives (HDDs). However, we observe that, with high-performance NVMe-based Solid State Drives (SSDs), even the recently added multi-worker processing mode in MD achieves only limited performance gain because of the severe lock contentions under intensive write workloads. In this paper, we propose a novel stripe-threaded RAID architecture, StRAID, assigning a dedicated worker thread for each stripe-write (one-for-one model) to sufficiently exploit high parallelism inherent among RAID stripes, multi-core processors, and SSDs. For the notoriously performance-punishing partial-stripe writes, StRAID presents a two-phase stripe write mechanism to opportunistically aggregate stripe-associated writes to minimize write I/Os; and designs a parity cache to reduce write-induced read I/Os on parity disks. We evaluate a StRAID prototype with a variety of benchmarks and real-world traces. StRAID is demonstrated to consistently outperform MD by up to 5.8 times in write throughput without affecting the read performance.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/KwonLCHJ22",
+  "venue": "ATC",
+  "year": 2022,
+  "title": "Vigil-KV: Hardware-Software Co-Design to Integrate Strong Latency Determinism into Log-Structured Merge Key-Value Stores",
+  "abstract": "We propose \\emph{Vigil-KV}, a hardware and software co-designed framework that eliminates long-tail latency almost perfectly by introducing strong latency determinism. To make Get latency deterministic, Vigil-KV first enables a predictable latency mode (PLM) interface on a real datacenter-scale NVMe SSD, having knowledge about the nature of the underlying flash technologies. Vigil-KV at the system-level then hides the non-deterministic time window (associated with SSD's internal tasks and/or write services) by internally scheduling the different device states of PLM across multiple physical functions. Vigil-KV further schedules compaction/flush operations and client requests being aware of PLM's restrictions thereby integrating strong latency determinism into LSM KVs. We implement Vigil-KV upon a 1.92TB NVMe SSD prototype and Linux 4.19.91, but other LSM KVs can adopt its concept. We evaluate diverse Facebook and Yahoo scenarios with Vigil-KV, and the results show that Vigil-KV can reduce the tail latency of a baseline KV system by 3.19 times while reducing the average latency by 34%, on average.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/KalbfleischWB22",
+  "venue": "ATC",
+  "year": 2022,
+  "title": "Vinter: Automatic Non-Volatile Memory Crash Consistency Testing for Full Systems",
+  "abstract": "Non-volatile memory (NVM) is a new byte-addressable storage technology that is part of the processor's memory hierarchy. NVM is often exposed to applications via an in-kernel file system. To prevent data loss in the case of crashes, the file system implementation needs to be crash-consistent. Achieving crash consistency is difficult however, as special primitives need to be inserted at appropriate places in the program to ensure persistency in the presence of volatile caches. We introduce Vinter, a new approach to automated NVM crash consistency testing designed for full systems, including unmodified kernel software such as file systems. By tracing NVM accesses of a full system via dynamic binary translation, we capture interactions between user and kernel space code. With such traces, our system efficiently generates relevant crash states using a heuristic that determines NVM locations significant for crash consistency. Finally, it extracts the semantic representation of each crash state. This makes the automatic detection of operation-spanning violations of crash consistency properties such as atomicity feasible. Our approach further aids in fixing detected bugs by representing how bugs originate from simulated crashes which are annotated by trace metadata. Our evaluation on NVM file systems uncovers several previously unknown bugs, including bugs in the state-of-the-art file systems NOVA and NOVA-Fortis that lead to atomicity violations and data loss.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/JiaJWXS0LCLZL022",
+  "venue": "ATC",
+  "year": 2022,
+  "title": "Whale: Efficient Giant Model Training over Heterogeneous GPUs",
+  "abstract": "The scaling up of deep neural networks has been demonstrated to be effective in improving model quality, but also encompasses several training challenges in terms of training efficiency, programmability, and resource adaptability. We present Whale, a general and efficient distributed training framework for giant models. To support various parallel strategies and their hybrids, Whale generalizes the programming interface by defining two new primitives in the form of model annotations, allowing for incorporating user hints. The Whale runtime utilizes those annotations and performs graph optimizations to transform a local deep learning DAG graph for distributed multi-GPU execution. Whale further introduces a novel hardware-aware parallel strategy, which improves the performance of model training on heterogeneous GPUs in a balanced manner. Deployed in a production cluster with 512 GPUs, Whale successfully trains an industry-scale multimodal model with over ten trillion model parameters, named M6, demonstrating great scalability and efficiency.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/BergmanCBS22",
+  "venue": "ATC",
+  "year": 2022,
+  "title": "ZNSwap: un-Block your Swap",
+  "abstract": "We introduce ZNSwap , a novel swap subsystem optimized for the recent Zoned Namespace (ZNS) SSDs. ZNSwap leverages ZNS's explicit control over data management on the drive and introduces a space-efficient host-side Garbage Collector (GC) for swap storage co-designed with the OS swap logic. ZNSwap enables cross-layer optimizations, such as direct access to the in-kernel swap usage statistics by the GC to enable fine-grain swap storage management, and correct accounting of the GC bandwidth usage in the OS resource isolation mechanisms to improve performance isolation in multi-tenant environments. We evaluate ZNSwap using standard Linux swap benchmarks and two production key-value stores. ZNSwap shows significant performance benefits over the Linux swap on traditional SSDs, such as stable throughput for different memory access patterns, and 10 times lower 99th percentile latency and 5 times higher throughput for memcached key-value store under realistic usage scenarios.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/WangMKWLSLCC22",
+  "venue": "ATC",
+  "year": 2022,
+  "title": "Zero Overhead Monitoring for Cloud-native Infrastructure using RDMA",
+  "abstract": "Cloud services have recently undergone a major shift from monolithic designs to microservices running on the cloud-native infrastructure, where monitoring systems are widely deployed to ensure the service level agreement (SLA). Nevertheless, the traditional monitoring system no longer fulfills the demands of cloud-native monitoring, which is observed from our practical experience in Alibaba cloud. Specifically, the monitor occupies resources (e.g., CPU) of the monitored infrastructure, disturbing services running on it. For example, enabling monitor causes jitters/declines of online services in Alibaba's ''double eleven'' shopping festival with high loads. On the other hand, the quality of service (QoS) of monitoring itself, which is vital to track and ensure SLA, is not guaranteed with the high loaded system. In this paper, we design and implement a novel monitoring system, named Zero, for cloud-native monitoring. First, Zero achieves zero overhead to collect raw metrics from the monitored hosts using \\textit{one-sided} remote direct memory access (RDMA) operations, thus avoiding any interferences to cloud services. Second, Zero adopts receiver-driven model to collect monitoring metrics with high QoS, where credit-based flow control and hybrid I/O model are proposed to mitigate network congestion/interference and CPU bottlenecks. Zero has been deployed and evaluated in Alibaba cloud. Deployment results show that Zero achieves no CPU occupation at the monitored host and supports 1 sim 10k hosts with 0.1 sim 1s sampling interval using single thread for network I/O.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/000123",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "APRON: Authenticated and Progressive System Image Renovation",
+  "abstract": "The integrity and availability of an operating system are important to securely use a computing device. Conventional schemes focus on how to prevent adversaries from corrupting the operating system or how to detect such corruption. However, how to recover the device from such corruption securely and efficiently is overlooked, resulting in lengthy system downtime with integrity violation and unavailability. In this paper, we propose APRON, a novel scheme to renovate a corrupt or outdated operating system image securely and progressively. APRON concurrently and selectively repairs any invalid blocks on demand during and after the system boot, effectively minimizing the system downtime needed for a recovery. APRON verifies whether requested blocks are valid in the kernel using a signed Merkle hash tree computed over the valid, up-to-date system image. If they are invalid, it fetches corresponding blocks from a reliable source, verifies them, and replaces the requested blocks with the fetched ones. Once the system boots up, APRON runs a background thread to eventually renovate any other non-requested invalid blocks. Our evaluation shows that APRON has short downtime: it outperforms conventional recovery mechanisms by up to 28x. It runs real-world applications with an average runtime overhead of 9% during the renovation and with negligible overhead (0.01%) once the renovation is completed.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/LiJZ0X23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "Accelerating Distributed MoE Training and Inference with Lina",
+  "abstract": "Scaling model parameters improves model quality at the price of high computation overhead. Sparsely activated models, usually in the form of Mixture of Experts (MoE) architecture, have sub-linear scaling of computation cost with model size, thus providing opportunities to train and serve a larger model at lower cost than their dense counterparts. However, distributed MoE training and inference is inefficient, mainly due to the interleaved all-to-all communication during model computation. This paper makes two main contributions. First, we systematically analyze all-to-all overhead in distributed MoE and present the main causes for it to be the bottleneck in training and inference, respectively. Second, we design and build Lina to address the all-to-all bottleneck head-on. Lina opportunistically prioritizes all-to-all over the concurrent allreduce whenever feasible using tensor partitioning, so all-to-all and training step time is improved. Lina further exploits the inherent pattern of expert selection to dynamically schedule resources during inference, so that the transfer size and bandwidth of all-to-all across devices are balanced amid the highly skewed expert popularity in practice. Experiments on an A100 GPU testbed show that Lina reduces the training step time by up to 1.73x and reduces the 95%ile inference time by an average of 1.63x over the state-of-the-art systems.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/JiangJLP23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "Arbitor: A Numerically Accurate Hardware Emulation Tool for DNN Accelerators",
+  "abstract": "Recently there has been considerable attention on designing and developing hardware accelerators for deep neural network (DNN) training workloads. However, designing DNN accelerators is often challenging as many commonly used hardware optimization strategies can potentially impact the final accuracy of the models. In this work, we propose a hardware emulation tool called Arbitor for empirically evaluating DNN accelerator designs and accurately estimating their effects on DNN accuracy. Arbitor takes advantage of modern machine learning compilers to enable fast prototyping and numerically accurate emulation of common DNN optimizations like low-precision arithmetic, approximate computing, and sparsity-aware processing on general-purpose GPUs. Subsequently, we use Arbitor to conduct an extensive sensitivity study to understand the effects of these optimizations on popular models such as ResNet, Transformers, Recurrent-CNN, and GNNs. Based on our analysis, we observe that DNN models can tolerate arithmetic operations with much lower precision than the commonly used numerical formats support. We also demonstrate that piece-wise approximation is effective in handling complex non-linear operations in DNN models without affecting their accuracy. Finally, enforcing a high degree of structured sparsity in the parameters and gradients can significantly affect the accuracy of the models.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/WengYY0TYZ23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "Beware of Fragmentation: Scheduling GPU-Sharing Workloads with Fragmentation Gradient Descent",
+  "abstract": "Large tech companies are piling up a massive number of GPUs in their server fleets to run diverse machine learning (ML) workloads. However, these expensive devices often suffer from significant underutilization. To tackle this issue, GPU sharing techniques have been developed to enable multiple ML tasks to run on a single GPU. Nevertheless, our analysis of Alibaba production traces reveals that allocating partial GPUs can result in severe GPU fragmentation in large clusters, leaving hundreds of GPUs unable to be allocated. Existing resource packing algorithms fall short in addressing this problem, as GPU sharing mandates a new scheduling formulation beyond the classic bin packing. In this paper, we propose a novel measure of fragmentation to statistically quantify the extent of GPU fragmentation caused by different sources. Building upon this measure, we propose to schedule GPU-sharing workloads towards the direction of the steepest descent of fragmentation, an approach we call Fragmentation Gradient Descent (FGD). Intuitively, FGD packs tasks to minimize the growth of GPU fragmentation, thereby achieving the maximum GPU allocation rate. We have implemented FGD as a new scheduler in Kubernetes and evaluated its performance using production traces on an emulated cluster comprising more than 6,200 GPUs. Compared to the existing packing-based schedulers, FGD reduces unallocated GPUs by up to 49%, resulting in the utilization of additional 290 GPUs.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/LiMJTZG023",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "Bifrost: Analysis and Optimization of Network I/O Tax in Confidential Virtual Machines",
+  "abstract": "Existing confidential VMs (CVMs) experience notable network performance overhead compared to traditional VMs. We present the first thorough performance analysis of various network-intensive applications in CVMs and find that the CVM-IO tax, which mainly comprises the bounce buffer mechanism and the packet processing in CVMs, has a significant impact on network I/O performance. Specifically, the CVM-IO tax squeezes out virtual CPU (vCPU) resources of performance-critical application workloads and may occupy more than 50% of CPU cycles. To minimize the CVM-IO tax, this paper proposes Bifrost, a novel para-virtualized I/O design that 1) eliminates the I/O payload bouncing tax by removing redundant encryption and 2) reduces the packet processing tax via pre-receiver packet reassembly, while still ensuring the same level of security guarantees. We have implemented a Bifrost prototype with only minor modifications to the guest Linux kernel and the userspace network I/O backend. Evaluation results on both AMD and Intel servers demonstrate that Bifrost significantly improves the performance of I/O-intensive applications in CVMs, and even outperforms the traditional VM by up to 21.50%.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/VaswaniVFDGVWCK23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "Confidential Computing within an AI Accelerator",
+  "abstract": "We present IPU Trusted Extensions (ITX), a set of hardware extensions that enables trusted execution environments in Graphcore’s AI accelerators. ITX enables the execution of AI workloads with strong confidentiality and integrity guarantees at low performance overheads. ITX isolates workloads from untrusted hosts, and ensures their data and models remain encrypted at all times except within the accelerator’s chip. ITX includes a hardware root-of-trust that provides attestation capabilities and orchestrates trusted execution, and on-chip programmable cryptographic engines for authenticated encryption of code/data at PCIe bandwidth. We also present software for ITX in the form of compiler and runtime extensions that support multi-party training without requiring a CPU-based TEE. We included experimental support for ITX in Graphcore’s GC200 IPU taped out at TSMC’s 7nm node. Its evaluation on a development board using standard DNN training workloads suggests that ITX adds",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/GuiL0023",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "Cyclosa: Redundancy-Free Graph Pattern Mining via Set Dataflow",
+  "abstract": "Graph pattern mining is an essential task in many fields, which explores all the instances of user-interested patterns in a data graph. Pattern-centric mining systems transform the patterns into a series of set operations to guide the exploration and substantially outperform the embedding-centric counterparts that exhaustively enumerate all subgraphs. These systems provide novel specializations to achieve optimum search space, but the inherent redundancies caused by recurrent set intersections on the same or different subgraph instances remain and are difficult to trace, significantly degrading the performance. In this paper, we propose a dataflow-based graph pattern mining framework named Cyclosa to eliminate the above redundancies by utilizing the concept of computation similarity. Cyclosa is characterized by three features. First, it reorganizes the set operations for a pattern into a set dataflow representation which can elegantly indicate the possibility of redundancies while sustaining the optimal scheduling for high performance. Second, the dataflow-guided parallel execution engine decouples data access and computations to enable efficient results sharing. Third, the memory-friendly data management substrate can automatically manage the computation results with high reuse possibility. Evaluation of different patterns demonstrates that Cyclosa outperforms state-of-the-art pattern-centric systems GraphPi and SumPA by up to 16.28× and 5.52×, respectively.",
+  "hint_categories": [
+   "graph",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/ZhuSXSFMCWWLYCL23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "Deploying User-space TCP at Cloud Scale with LUNA",
+  "abstract": "The TCP remains the workhorse protocol for many modern large-scale data centers. However, the increasingly demanding performance expectations—led by advancement in both hardware (e.g., 100Gbps linkspeed network) and software (e.g., Intel DPDK support)—make the kernel-based TCP stack no longer a favorable option. Over the past decade, multiple parties have proposed various user-stack TCP stacks offering things-as-usual TCP support with significant performance improvement. Unfortunately, we find these proposals may not function well in the field, especially in large-scale deployments. In this paper, we present LUNA, a user-space TCP stack widely deployed at Alibaba Cloud. We demonstrate the design tradeoffs, emphasizing three unique features in thread, memory, and traffic models. Further, we discuss our lessons and experiences learned from the field deployment. The extensive microbenchmark evaluations and performance statistics collected from the production systems indicate that LUNA outperforms kernel and other user-space solutions with up to 3.5× in throughput and reduces up to 53% latency.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/JinAK23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "EPF: Evil Packet Filter",
+  "abstract": "The OS kernel is at the forefront of a system's security. Therefore, its own security is crucial for the correctness and integrity of user applications. With a plethora of bugs continuously discovered in OS kernel code, defenses and mitigations are essential for practical kernel security. One important defense strategy is to isolate user-controlled memory from kernel-accessible memory, in order to mitigate attacks like ret2usr and ret2dir. We present EPF (Evil Packet Filter): a new method for bypassing various (both deployed and proposed) kernel isolation techniques by abusing the BPF infrastructure of the Linux kernel: i.e., by leveraging BPF code, provided by unprivileged users/programs, as attack payloads. We demonstrate two different EPF instances, namely BPF-Reuse and BPF-ROP, which utilize malicious BPF payloads to mount privilege escalation attacks in both 32- and 64-bit x86 platforms. We also present the design, implementation, and evaluation of a set of defenses to enforce the isolation between BPF instructions and benign kernel data, and the integrity of BPF program execution, effectively providing protection against EPF-based attacks. Our implemented defenses show minimal overhead (",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/ChoiKAJK23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "EnvPipe: Performance-preserving DNN Training Framework for Saving Energy",
+  "abstract": "Energy saving is a crucial mission for data center providers. Among many services, DNN training and inference are significant contributors to energy consumption. This work focuses on saving energy in multi-GPU DNN training. Typically, energy savings come at the cost of some degree of performance degradation. However, determining the acceptable level of performance degradation for a long-running training job can be difficult. This work proposes ENVPIPE, an energy-saving DNN training framework. ENVPIPE aims to maximize energy saving while maintaining negligible performance slowdown. ENVPIPE takes advantage of slack time created by bubbles in pipeline parallelism. It schedules pipeline units to place bubbles after pipeline units as frequently as possible and then stretches the execution time of pipeline units by lowering the SM frequency. During this process, ENVPIPE does not modify hyperparameters or pipeline dependencies, preserving the original accuracy of the training task. It selectively lowers the SM frequency of pipeline units to avoid performance degradation. We implement ENVPIPE as a library using PyTorch and demonstrate that it can save up to 25.2% energy in single-node training with 4 GPUs and 28.4% in multi-node training with 16 GPUs, while keeping performance degradation to less than 1%.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/LaiYWLMSLZYQ00C23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "GLogS: Interactive Graph Pattern Matching Query At Large Scale",
+  "abstract": "Interactive GPM (iGPM) is becoming increasingly important, where a series of graph pattern matching (GPM) queries are created and submitted in an interactive manner based on the insights provided by the prior queries. To solve the iGPM problem, three key considerations must be taken into account: performance, usability and scalability, namely if results can be returned in a timely manner, if queries can be written in a declarative way without the need of imperative fine-tune, and if it can work on large graphs. In this paper, we propose the GLogS system that allows users to interactively submit queries using a declarative language. The system will compile and automatically compute optimal execution plans for the queries, and execute them on an existing distributed dataflow engine. In the evaluation, we compare GLogS with the alternatives systems Neo4j and TigerGraph. GLogS outperforms Neo4j by 51 × on a single machine due to better execution plans. Additionally, GLogS can scale to processing large graphs with distributed capability. While compared to TigerGraph, GLogS is superior in usability, featuring an optimizer that can automatically compute optimal execution plans, eliminating the need of manual query tuning as required in TigerGraph.",
+  "hint_categories": [
+   "graph"
+  ]
+ },
+ {
+  "key": "conf/usenix/WrengerRHDL23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "LLFree: Scalable and Optionally-Persistent Page-Frame Allocation",
+  "abstract": "Within the operating-system’s memory-management subsystem, the page-frame allocator is the most fundamental component. It administers the physical-memory frames, which are required to populate the page-table tree. Although the appearance of heterogeneous, nonvolatile, and huge memories has drastically changed the memory hierarchy, we still manage our physical memory with the seminal methods from the 1960s. With this paper, we argue that it is time to revisit the design of page-frame allocators. We demonstrate that the Linux frame allocator not only scales poorly on multi-core systems, but it also comes with a high memory overhead, suffers from huge-frame fragmentation, and uses scattered data structures that hinder its usage as a persistent-memory allocator. With LLFree, we provide a new lock- and log-free allocator design that scales well, has a small memory footprint, and is readily applicable to nonvolatile memory. LLFree uses cache-friendly data structures and exhibits antifragmentation behavior without inducing additional performance overheads. Compared to the Linux frame allocator, LLFree reduces the allocation time for concurrent 4 KiB allocations by up to 88 percent and for 2 MiB allocations by up to 98 percent. For memory compaction, LLFree decreases the number of required page movements by 64 percent.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/SunSSSWWZLYZW23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "Legion: Automatically Pushing the Envelope of Multi-GPU System for Billion-Scale GNN Training",
+  "abstract": "Graph neural network(GNN) has been widely applied in real-world applications, such as product recommendation in e-commerce platforms and risk control in financial management systems. Several cache-based GNN systems have been built to accelerate GNN training in a single machine with multiple GPUs. However, these systems fail to train billion-scale graphs efficiently, which is a common challenge in the industry. In this work, we propose Legion, a system that automatically pushes the envelope of multi-GPU systems for accelerating billion-scale GNN training. First, we design a hierarchical graph partitioning mechanism that significantly improves the multi-GPU cache performance. Second, we build a unified multi-GPU cache that helps to reduce the PCIe traffic incurred by accessing both graph topology and features. Third, we develop an automatic cache management mechanism that adapts the multi-GPU cache plan according to the hardware specifications to maximize the overall training throughput. Evaluations on various GNN models and multiple datasets show that Legion supports training billion-scale GNNs in a single machine and significantly outperforms the state-of-the-art cache-based systems.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/Zhang00JQ023",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "LoopDelta: Embedding Locality-aware Opportunistic Delta Compression in Inline Deduplication for Highly Efficient Data Reduction",
+  "abstract": "As a complement to data deduplication, delta compression further reduces the data volume by compressing non-duplicate data chunks relative to their similar chunks (base chunks). However, existing post-deduplication delta compression approaches for backup storage either suffer from the low similarity between many detected chunks or miss some potential similar chunks, or suffer from low (backup and restore) throughput due to extra I/Os for reading base chunks or add additional service-disruptive operations to backup systems. In this paper, we propose LoopDelta to address the above-mentioned problems by an enhanced embedding delta compression scheme in deduplication in a non-intrusive way. The enhanced delta compression scheme combines four key techniques: (1) dual-locality-based similarity tracking to detect potential similar chunks by exploiting both logical and physical locality, (2) locality-aware prefetching to prefetch base chunks to avoid extra I/Os for reading base chunks on the write path, (3) cache-aware filter to avoid extra I/Os for base chunks on the read path, and (4) inversed delta compression to perform delta compression for data chunks that are otherwise forbidden to serve as base chunks by rewriting techniques designed to improve restore performance. Experimental results indicate that LoopDelta increases the compression ratio by 1.24∼10.97 times on top of deduplication, without notably affecting the backup throughput, and it improves the restore performance by 1.2∼3.57 times.",
+  "hint_categories": [
+   "primitives",
+   "compression",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/Zhu0CCCS0PC23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "MSRL: Distributed Reinforcement Learning with Dataflow Fragments",
+  "abstract": "Reinforcement learning (RL) trains many agents, which is resource-intensive and must scale to large GPU clusters. Different RL training algorithms offer different opportunities for distributing and parallelising the computation. Yet, current distributed RL systems tie the definition of RL algorithms to their distributed execution: they hard-code particular distribution strategies and only accelerate specific parts of the computation (e.g. policy network updates) on GPU workers. Fundamentally, current systems lack abstractions that decouple RL algorithms from their execution. We describe MindSpore Reinforcement Learning (MSRL), a distributed RL training system that supports distribution policies that govern how RL training computation is parallelised and distributed on cluster resources, without requiring changes to the algorithm implementation. MSRL introduces the new abstraction of a fragmented dataflow graph, which maps Python functions from an RL algorithm's training loop to parallel computational fragments. Fragments are executed on different devices by translating them to low-level dataflow representations, e.g. computational graphs as supported by deep learning engines, CUDA implementations or multi-threaded CPU processes. We show that MSRL subsumes the distribution strategies of existing systems, while scaling RL training to 64 GPUs.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/BartolomeoYBHMO23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "Oakestra: A Lightweight Hierarchical Orchestration Framework for Edge Computing",
+  "abstract": "Edge computing seeks to enable applications with strict latency requirements by utilizing resources deployed in diverse, dynamic, and possibly constrained environments closer to the users. Existing state-of-the-art orchestration frameworks (e.g. Kubernetes) perform poorly at the edge since they were designed for reliable, low latency, high bandwidth cloud environments. We present Oakestra, a hierarchical, lightweight, flexible, and scalable orchestration framework for edge computing. Through its novel federated three-tier resource management, delegated task scheduling, and semantic overlay networking, Oakestra can flexibly consolidate multiple infrastructure providers and support applications over dynamic variations at the edge. Our comprehensive evaluation against the state-of-the-art demonstrates the significant benefits of Oakestra as it achieves approximately tenfold reduction in resource usage through reduced management overhead and 10% application performance improvement due to lightweight operation over constrained hardware.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/LinXR023",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "P2CACHE: Exploring Tiered Memory for In-Kernel File Systems Caching",
+  "abstract": "Fast, byte-addressable persistent memory (PM) is becoming a reality in products. However, porting legacy kernel file systems to fully support PM requires substantial effort and encounters the challenge of bridging the gap between block-based access granularity and byte-addressability. Moreover, new PM-specific file systems remain far from production-ready, preventing them from being widely used. In this paper, we propose P2CACHE, a novel in-kernel caching mechanism to explore how legacy kernel file systems can effectively evolve in the face of fast, byte-addressable PM. P2CACHE exploits a read/write-distinguishable memory hierarchy upon a tiered memory system involving both PM and DRAM. P2CACHE leverages PM to serve all write requests for instant data durability and strong crash consistency while using DRAM to serve most read I/Os for high I/O performance. Further, P2CACHE employs a simple yet effective synchronization model between PM and DRAM by leveraging device-level parallelism. Our evaluation shows that P2CACHE can significantly increase the performance of legacy kernel file systems -- e.g., by 200x for RocksDB on Ext4 -- meanwhile equipping them with instant data durability and strong crash consistency, similar to PM-specialized file systems.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/IvanovRDCHP23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "SAGE: Software-based Attestation for GPU Execution",
+  "abstract": "With the application of machine learning to security-critical and sensitive domains, there is a growing need for integrity and privacy in computation using accelerators, such as GPUs. Unfortunately, the support for trusted execution on GPUs is currently very limited -- trusted execution on accelerators is particularly challenging since the attestation mechanism should not reduce performance. Although hardware support for trusted execution on GPUs is emerging, we study purely software-based approaches for trusted GPU execution. A software-only approach offers distinct advantages: (1) complement hardware-based approaches, enhancing security especially when vulnerabilities in the hardware implementation degrade security, (2) operate on GPUs without hardware support for trusted execution, and (3) achieve security without reliance on secrets embedded in the hardware, which can be extracted as history has shown. In this work, we present SAGE, a software-based attestation mechanism for GPU execution. SAGE enables secure code execution on NVIDIA GPUs of the Ampere architecture (A100), providing properties of code integrity and secrecy, computation integrity, as well as data integrity and secrecy -- all in the presence of malicious code running on the GPU and CPU. Our evaluation demonstrates that SAGE is already practical today for executing code in a trustworthy way on GPUs without specific hardware support.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/00130HTZF023",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "SOWalker: An I/O-Optimized Out-of-Core Graph Processing System for Second-Order Random Walks",
+  "abstract": "Random walks serve as a powerful tool for extracting information that exists in a wide variety of real-world scenarios. Different from the traditional first-order random walk, the second-order random walk considers recent walk history in selecting the next stop, which facilitates to model higher-order structures in real-world data. To meet the scalability of random walks, researchers have developed many out-of-core graph processing systems based on a single machine. However, the main focus of out-of-core graph processing systems is to support first-order random walks, which no longer perform well for second-order random walks. In this paper, we propose an I/O-optimized out-of-core graph processing system for second-order random walks, called SOWalker. First, we propose a walk matrix to avoid loading non-updatable walks and eliminate useless walk I/Os. Second, we develop a benefit-aware I/O model to load multiple blocks with the maximum accumulated updatable walks, so as to improve the I/O utilization. Finally, we adopt a block set-oriented walk updating scheme, which allows each walk to move as many steps as possible in the loaded block set, thus significantly boosting the walk updating rate. Compared with two state-of-the-art random walk systems, GraphWalker and GraSorw, SOWalker yields significant performance speedups (up to 10.2×).",
+  "hint_categories": [
+   "graph"
+  ]
+ },
+ {
+  "key": "conf/usenix/JiMSYHKSK23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "STYX: Exploiting SmartNIC Capability to Reduce Datacenter Memory Tax",
+  "abstract": "Memory optimization kernel features, such as memory deduplication, are designed to improve the overall efficiency of systems like datacenter servers, and they have proven to be effective. However, when invoked, these kernel features notably disrupt the execution of applications, intensively consuming the server CPU's cycles and polluting its caches. To minimize such disruption, we propose STYX, a framework for offloading the intensive operations of these kernel features to SmartNIC (SNIC). STYX first RDMA-copies the server's memory regions, on which these kernel features intend to operate, to an SNIC's memory region, exploiting SNIC's RDMA capability. Subsequently, leveraging SNIC's (underutilized) compute capability, STYX makes the SNIC CPU perform the intensive operations of these kernel features. Lastly, STYX RDMA-copies their results back to a server's memory region, based on which it performs the remaining operations of the kernel features. To demonstrate the efficacy of STYX, we re-implement two memory optimization kernel features in Linux: (1) memory deduplication (ksm) and (2) compressed cache for swap pages (zswap), using the STYX framework. We then show that a system with STYX provides a 55-89% decrease in 99th-percentile latency of co-running applications, compared to a system without STYX, while preserving the benefits of these kernel features.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/MaZFZWFTYZW23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "SecretFlow-SPU: A Performant and User-Friendly Framework for Privacy-Preserving Machine Learning",
+  "abstract": "With the increasing public attention to data security and privacy protection, privacy-preserving machine learning (PPML) has become a research hotspot in recent years. Secure multi-party computation (MPC) that allows multiple parties to jointly compute a function without leaking sensitive data provides a feasible solution to PPML. However, developing efficient PPML programs with MPC techniques is a great challenge for users without cryptography backgrounds. Existing solutions require users to make efforts to port machine learning (ML) programs by mechanically replacing APIs with PPML versions or rewriting the entire program. Different from the existing works, we propose SecretFlow-SPU, a performant and user-friendly PPML framework compatible with existing ML programs. SecretFlow-SPU consists of a frontend compiler and a backend runtime. The frontend compiler accepts an ML program as input and converts it into an MPC-specific intermediate representation. After a series of delicate code optimizations, programs will be executed by a performant backend runtime as MPC protocols. Based on SecretFlow-SPU, we can run ML programs of different frameworks with minor modifications in a privacy-preserving manner. We evaluate SecretFlow-SPU with state-of-the-art MPC-enabled PPML frameworks on a series of ML training tasks. SecretFlow-SPU outperforms these works for almost all experimental settings (23 out of 24). Especially under the wide area network, SecretFlow-SPU is up to 4.1× faster than MP-SPDZ and up to 2.3× faster than TF Encrypted.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/GuoLLLZS23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "SingularFS: A Billion-Scale Distributed File System Using a Single Metadata Server",
+  "abstract": "Billion-scale distributed file systems play an important role in modern datacenters, and it is desirable and possible to support these file systems with a single metadata server. However, fully exploiting its performance faces unique challenges, including crash consistency overhead, lock contention in a shared directory, and NUMA locality. This paper presents SingularFS, a billion-scale distributed file system using a single metadata server. It includes three key techniques. First, SingularFS proposes log-free metadata operations to eliminate additional crash consistency overheads for most metadata operations. Second, SingularFS designs hierarchical concurrency control to maximize the parallelism of metadata operations. Third, SingularFS introduces hybrid inode partition to reduce inter-NUMA access and intra-NUMA lock contention. Our extensive evaluation shows that SingularFS consistently provides high performance for metadata operations on both private and shared directories, and has a steadily high throughput for the billion-scale directory tree.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/ZhaiHMZZZ23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "SmartMoE: Efficiently Training Sparsely-Activated Models through Combining Offline and Online Parallelization",
+  "abstract": "Deep neural networks are growing large for stronger model ability, consuming enormous computation resources to train them. Sparsely activated models have been increasingly proposed and deployed to reduce training costs while enlarging model size. Unfortunately, previous auto-parallelization approaches designed for dense neural networks can hardly be applied to these sparse models, as sparse models are data-sensitive and barely considered by prior works. To address these challenges, we propose SmartMoE to perform distributed training for sparsely activated models automatically. We find optimization opportunities in an enlarged space of hybrid parallelism, considering the workload of data-sensitive models. The space is decomposed into static pools offline, and choices to pick within a pool online. To construct an optimal pool ahead of training, we introduce a data-sensitive predicting method for performance modeling. Dynamic runtime selection of optimal parallel strategy is enabled by our efficient searching algorithm. We evaluate SmartMoE on three platforms with up to 64 GPUs. It achieves up to 1.88x speedup in end-to-end training over the state-of-the-art MoE model training system FasterMoE.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/WangFWHD23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "TC-GNN: Bridging Sparse GNN Computation and Dense Tensor Cores on GPUs",
+  "abstract": "Recently, graph neural networks (GNNs), as the backbone of graph-based machine learning, demonstrate great success in various domains (e.g., e-commerce). However, the performance of GNNs is usually unsatisfactory due to the highly sparse and irregular graph-based operations. To this end, we propose TC-GNN, the first GNN acceleration framework based on GPU Tensor Core Units (TCUs). The core idea is to reconcile the\"Sparse\"GNN computation with the high-performance\"Dense\"TCUs. Specifically, we conduct an in-depth analysis of the sparse operations in mainstream GNN computing frameworks. We introduce a novel sparse graph translation technique to facilitate TCU processing of the sparse GNN workload. We implement an effective CUDA core and TCU collaboration design to fully utilize GPU resources. We integrate TC-GNN with the PyTorch framework for high programmability. Rigorous experiments show an average of 1.70X speedup over the state-of-the-art DGL framework across various models and datasets.",
+  "hint_categories": [
+   "dense_la",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/OhLJYBWCY23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "TiDedup: A New Distributed Deduplication Architecture for Ceph",
+  "abstract": "This paper presents TiDedup, a new cluster-level deduplication architecture for Ceph, a widely deployed distributed storage system. Ceph introduced a cluster-level deduplication design before; unfortunately, a few shortcomings have made it hard to use in production: (1) Deduplication of unique data incurs excessive metadata consumption; (2) Its serialized tiering mechanism has detrimental effects on foreground I/Os, and by design, only provides fixed-sized chunking algorithms; and (3) The existing reference count mechanism resorts to inefficient full scan of entire objects, and does not work with Ceph’s snapshot. TiDedup effectively overcomes these shortcomings by introducing three novel schemes: Selective cluster-level crawling, an event-driven tiering mechanism with content defined chunking, and a reference correction method using a shared reference back pointer. We have fully validated TiDedup and integrated it into the Ceph mainline, ready for evaluation and deployment in various experimental and production environments. Our evaluation results show that TiDedup achieves up to 34% data reduction on real-world workloads, and when compared with the existing deduplication design, improves foreground I/O throughput by 50% during deduplication, and significantly reduces the scan time for reference correction by more than 50%.",
+  "hint_categories": [
+   "primitives",
+   "compression"
+  ]
+ },
+ {
+  "key": "conf/usenix/ShovonGMK23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "Towards Iterative Relational Algebra on the GPU",
+  "abstract": "Iterative relational algebra (RA kernels in a fixed-point loop) enables bottom-up logic programming languages such as Datalog. Such declarative languages are attractive targets for high-performance implementations of relational data analytics in fields such as graph mining, program analysis, and social-media analytics. Language-level constructs are implemented via high-performance relational algebra primitives (e.g., projections, reorderings, and joins). Such primitives would appear a natural target for GPUs, obtaining high throughput on large datasets. However, state-of-the-art Datalog engines are still CPU-based, scaling best between 8--16 threads. While much has explored standalone RA operations on the GPU, relatively less work focuses on iterative RA, which exposes new challenges (e.g., deduplication and memory management). In this short paper, we present a GPU-based hash-join implementation, leveraging (a) a novel open-addressing-based hash table implementation, (b) operator fusing to optimize memory access and (c) two variant implementations of deduplication. To evaluate our work, we implement transitive closure using our hash-join-based CUDA library and compared its performance against cuDF (GPU-based) and Souffl'e (CPU-based). We show favorable results against both, with gains up to 10.8× against cuDF and 3.9× against Souffl'e.",
+  "hint_categories": [
+   "graph",
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/GinzburgSF23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "VectorVisor: A Binary Translation Scheme for Throughput-Oriented GPU Acceleration",
+  "abstract": "Beyond conventional graphics applications, general-purpose GPU acceleration has had significant impact on machine learning and scientific computing workloads. Yet, it has failed to see widespread use for server-side applications, which we argue is because GPU programming models offer a level of abstraction that is either too low-level (e.g., OpenCL, CUDA) or too high-level (e.g., TensorFlow, Halide), depending on the language. Not all applications fit into either category, resulting in lost opportunities for GPU acceleration. We introduce VectorVisor, a vectorized binary translator that enables new opportunities for GPU acceleration by introducing a novel programming model for GPUs. With VectorVisor, many copies of the same server-side application are run concurrently on the GPU, where VectorVisor mimics the abstractions provided by CPU threads. To achieve this goal, we demonstrate how to (i) provide cross-platform support for system calls and recursion using continuations and (ii) make full use of the excess register file capacity and high memory bandwidth of GPUs. We then demonstrate that our binary translator is able to transparently accelerate certain classes of compute-bound workloads, gaining significant improvements in throughput-per-dollar of up to 2.9 × compared to Intel x86-64 VMs in the cloud, and in some cases match the throughput-per-dollar of native CUDA baselines.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/YasukataTAI23",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "zpoline: a system call hook mechanism based on binary rewriting",
+  "abstract": "This paper presents zpoline, a system call hook mechanism for x86-64 CPUs. zpoline employs binary rewriting and offers seven advantages: 1) low hook overhead, 2) exhaustive hooking, 3) it does not overwrite instructions that should not be modified, 4) no kernel change and no additional kernel module are needed, 5) source code of the user-space program is not required, 6) it does not rely on specially-modified standard libraries, and 7) it can be used for system call emulation. None of previous mechanisms achieve them simultaneously. The main challenge, this work addresses, is that it is hard to replace syscall/sysenter with jmp/call for jumping to an arbitrary hook function because syscall and sysenter are two-byte instructions, and usually more bytes are required to specify an arbitrary hook function address. zpoline resolves this issue with a novel binary rewriting strategy and special trampoline code; in a nutshell, it replaces syscall/sysenter with a two-byte callq *%rax instruction and instantiates the trampoline code at virtual address 0. We confirmed zpoline is functional on the major UNIX-like systems: Linux, FreeBSD, NetBSD, and DragonFly BSD. Our experiments show that zpoline achieves 28.1~761.0 times lower overhead compared to existing mechanisms which ensure exhaustive hooking without overwriting instructions supposed not to be modified, and Redis and a user-space network stack bonded by zpoline experience only a 5.2% performance reduction compared to the minimum overhead case while the existing mechanisms degrade 72.3~98.8% of performance.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/WilliamsAH24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "A Difference World: High-performance, NVM-invariant, Software-only Intermittent Computation",
+  "abstract": "Supporting long life, high performance, intermittent computation is an essential challenge in allowing energy harvesting devices to fulfill the vision of smart dust. Intermittent computation is the extension of long-running computation across the frequent, unexpected, power cycles that result from replacing batteries with harvested energy. The most promising intermittent computation support strategies combine programmer direction and compiler analysis to minimize run-time overhead and provide programmer control—without specialized hardware support. While such strategies succeed in reducing the size of non-volatile memory writes due to checkpointing, they must checkpoint continuously. Unfortunately, for Flash-based devices (by far the most ubiquitous), writing checkpoints is slow and gradually kills the device. Without intervention, Flash devices and software-only intermittent computation are fundamentally incompatible. To enable ubiquitous programmer-guided intermittent computation we design and implement Camel. The key idea behind Camel is the systematic bifurcation of program state into two \"worlds'' of differing volatility. Programmers compose intermittent programs by stitching together atomic units of computation called tasks. The Camel compiler ensures that all within-task data is placed in the volatile world and all between-task data is placed in the non-volatile world. Between tasks, Camel swaps the worlds, atomically locking-in the forward progress of the preceding task. In preparation for the next task, Camel resolves differences in world view by copying only differences due to the preceding task's updates. This systematic decomposition into a mixed-volatility memory allows—for the first time—long-life and high performance programmer-guided intermittent computation on Flash devices: Camel outperforms the state-of-the-art checkpointing system for Flash-based devices by up to 5x while eliminating the need for hardware support. Beyond Flash, Camel's differential buffer system improves performance by a factor of 2x compared to existing task-based approaches on FRAM platforms.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/SongKKLSJ24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "A Secure, Fast, and Resource-Efficient Serverless Platform with Function REWIND",
+  "abstract": "Serverless computing often utilizes the warm container technique to improve response times. However, this method, which allows the reuse of function containers across different function requests of the same type, creates persistent vulnerabilities in memory and file systems. These vulnerabilities can lead to security breaches such as data leaks. Traditional approaches to address these issues often suffer from performance drawbacks and high memory requirements due to extensive use of user-level snapshots and complex restoration processes. The paper introduces REWIND, an innovative and efficient serverless function execution platform designed to address these security and efficiency concerns. REWIND ensures that after each function request, the container is reset to an initial state, free from any sensitive data, including a thorough restoration of the file system to prevent data leakage. It incorporates a kernel-level memory snapshot management system, which significantly lowers memory usage and accelerates the rewind process. Additionally, REWIND optimizes runtime by reusing memory regions and leveraging the temporal locality of function executions, enhancing performance while maintaining strict data isolation between requests. The REWIND prototype is implemented on OpenWhisk and Linux and evaluated with serverless benchmark workloads. The evaluation results have demonstrated that REWIND provides substantial memory saving while providing high function execution performance. Especially, the low memory usage makes more warm containers kept alive thereby improving the throughput as well as the latency of function execution while providing isolation between function requests.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/FuSWC024",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "ALPS: An Adaptive Learning, Priority OS Scheduler for Serverless Functions",
+  "abstract": "FaaS (Function-as-a-Service) workloads feature unique patterns. Serverless functions are ephemeral, highly concurrent, and bursty, with an execution duration ranging from a few milliseconds to a few seconds. The workload behaviors pose new challenges to kernel scheduling. Linux CFS (Completely Fair Scheduler) is workload-oblivious and optimizes long-term fairness via proportional sharing. CFS neglects the short-term demands of CPU time from short-lived serverless functions, severely impacting the performance of short functions. Preemptive shortest job first—shortest remaining process time (SRPT)—prioritizes shorter functions in order to satisfy their short-term demands of CPU time and, therefore, serves as a best-case baseline for optimizing the turnaround time of short functions. A significant downside of approximating SRPT, however, is that longer functions might be starved. In this paper, we propose a novel application-aware kernel scheduler, ALPS (Adaptive Learning, Priority Scheduler), based on two key insights. First, approximating SRPT can largely benefit short functions but may inevitably penalize long functions. Second, CFS provides necessary infrastructure support to implement user-defined priority scheduling. To this end, we design ALPS to have a novel, decoupled scheduler frontend and backend architecture, which unifies approximate SRPT and proportional-share scheduling. ALPS’ frontend sits in the user space and approximates SRPT-inspired priority scheduling by adaptively learning from an SRPT simulation on a recent past workload. ALPS’ backend uses eBPF functions hooked to CFS to carry out the continuously learned policies sent from the frontend to inform scheduling decisions in the kernel. This design adds workload intelligence to workload-oblivious OS scheduling while retaining the desirable properties of OS schedulers. We evaluate ALPS extensively using two production FaaS workloads (Huawei and Azure), and results show that ALPS achieves a reduction of 57.2% in average function execution duration compared to CFS.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/LiGYWX24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "An Empirical Study of Rust-for-Linux: The Success, Dissatisfaction, and Compromise",
+  "abstract": "Developed for over 30 years, Linux has already become the computing foundation for today's digital world; from gigantic, complex mainframes (e.g., supercomputers) to cheap, wimpy embedded devices (e.g., IoTs), countless applications are built on top of it. Yet, such an infrastructure has been plagued by numerous memory and concurrency bugs since the day it was born, due to many rogue memory operations are permitted by C language. A recent project Rust-for-Linux (RFL) has the potential to address Linux's safety concerns once and for all -- by embracing Rust's static ownership and type checkers into the kernel code, the kernel may finally be free from memory and concurrency bugs without hurting its performance. While it has been gradually matured and even merged into Linux mainline, however, RFL is rarely studied and still remains unclear whether it has indeed reconciled the safety and performance dilemma for the kernel. To this end, we conduct the first empirical study on RFL to understand its status quo and benefits, especially on how Rust fuses with Linux and whether the fusion assures driver safety without overhead. We collect and analyze 6 key RFL drivers, which involve hundreds of issues and PRs, thousands of Github commits and mail exchanges of the Linux mailing list, as well as over 12K discussions on Zulip.We have found while Rust mitigates kernel vulnerabilities, it is beyond Rust's capability to fully eliminate them; what is more, if not handled properly, its safety assurance even costs the developers dearly in terms of both runtime overhead and development efforts.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/SuzukiIK24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Balancing Analysis Time and Bug Detection: Daily Development-friendly Bug Detection in Linux",
+  "abstract": "Linux, a battle-tested codebase, is known to suffer from many bugs despite its extensive testing mechanisms. While many of these bugs require domain-specific knowledge for detection, a significant portion matches well-known bug patterns. Even though these bugs can be found with existing tools, our simple check of Linux kernel patches suggests that these tools are not used much in the developer's daily workflow. The lack of usage is probably due to the well-known trade-off between analysis time and bug detection capabilities: tools typically employ complex analysis to effectively and comprehensively find bugs in return for a long analysis time, or focus on a short analysis time by only employing elementary analyses and thus can only find a very limited number of bugs. Ideally, developers expect the tools to incur short analysis time, while still finding many bugs to use them in daily development. This paper explores an approach that balances this trade-off by focusing on bugs that can be found with less computationally-complex analysis methods, and limiting the scope to each source code. To achieve this, we propose a combination of computationally lightweight analyses and demonstrate our claim by designing FiTx, a framework for generating daily development-friendly bug checkers that focus on well-known patterns. Despite its simplicity, FiTx successfully identified 47 new bugs in the Linux kernel version 5.15 within 2.5 hours, outperforming Clang Static Analyzer and CppCheck in both speed and bug detection. It demonstrates that focusing on less complex bug patterns can still significantly contribute to the improvement of codebase health. FiTx can be embedded into the daily development routine, enabling early bug detection without sacrificing developers' time.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/ChenMXG024",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "CPC: Flexible, Secure, and Efficient CVM Maintenance with Confidential Procedure Calls",
+  "abstract": "Confidential virtual machines (CVMs), while providing strong data privacy for cloud tenants, pose significant challenges to VM maintenance like live migration and snapshotting. Traditional host-based maintenance, while applicable to conventional VMs, is infeasible for CVMs due to the lack of trust in the host and the prevention of mandated intrusive access from the host. State-of-the-art approaches depend on non-trivial modifications to hardware and firmware and thus lead to notable compromises in security and/or performance. Furthermore, such approaches lack flexibility for upgrades and cross-platform compatibility, hindering the popularity of CVMs on the cloud. In this paper, we introduce Confidential Procedure Calls (CPCs), a flexible approach to the efficient and secure execution of CVM maintenance modules from within the guest. We have implemented prototypes on two leading CVM platforms. Our prototype on AMD SEV showcases the high performance of CPCs, with 3× (resource reclamation) or even 138× (live migration) faster than existing approaches. Our prototype on ARM CCA further confirms CPCs' outstanding security and flexibility.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/XieE0TH00V24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Centimani: Enabling Fast AI Accelerator Selection for DNN Training with a Novel Performance Predictor",
+  "abstract": "For an extended period, graphics processing units (GPUs) have stood as the exclusive choice for training deep neural network (DNN) models. Over time, to serve the growing demands in a more targeted manner, various artificial intelligence-specific hardware, referred to as AI accelerators , have been vigorously developed, aiming to provide more efficient DNN acceleration solutions. However, sufficient solutions are also heterogeneous and thus introduce complexities in accelerator selection. Given a DNN model and a training objective, such as throughput or price-performance ratio, it remains challenging to arrive at the optimal decision among many options due to high reimplementation costs and unexpected performance. To tackle this challenge, we propose Centimani , a performance predictor that accurately and rapidly predicts DNN training throughput on various AI accelerators, thereby facilitating the accelerator selection process. To achieve this goal, we first analyze typical AI accelerators and draw observations that abstract AI accelerator designs and guide our performance modeling approach. In particular, we construct a memory estimation model and decoupled performance models to select the most appropriate batch size and predict the execution time of DNN training. We validate our approach by applying Centimani to six common DNN models on four typical AI accelerators. Results show that Centimani predicts the throughput with an average accuracy of 93.1% on single-device training and 90.4% on multiple-device training, thus the optimal accelerator corresponding to the user's training objective can be obtained.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/XiaoTDCSK24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Conspirator: SmartNIC-Aided Control Plane for Distributed ML Workloads",
+  "abstract": "Modern machine learning (ML) workloads heavily depend on distributing tasks across clusters of server CPUs and specialized accelerators, such as GPUs and TPUs, to achieve optimal performance. Nonetheless, prior research has highlighted the inefficient utilization of computing resources in distributed ML, leading to suboptimal performance. This inefficiency primarily stems from CPU bottlenecks and suboptimal accelerator scheduling. Although numerous proposals have been put forward to address these issues individually, none have effectively tackled both inefficiencies simultaneously. In this paper, we introduce Conspirator, an innovative control plane design aimed at alleviating both bottlenecks by harnessing the enhanced computing capabilities of SmartNICs. Following the evolving role of SmartNICs, which have transitioned from their initial function of standard networking task offloading to serving as programmable connectors between disaggregated computing resources, Conspirator facilitates efficient data transfer without the involvement of host CPUs and hence circumvents the potential bottlenecks there. Conspirator further integrates a novel scheduling algorithm that takes into consideration of the heterogeneity of accelerators and adapts to changing workload dynamics, enabling the flexibility to mitigate the second bottleneck. Our evaluation demonstrates that Conspirator may provide a 15% end-to-end completion time reduction compared to RDMA-based alternatives while being 17% more cost-effective and 44% more power-efficient. Our proposed scheduler also helps to save 33% GPU hours compared to naive GPU-sharing schedulers by making close-to-optimal decisions while taking much less time than the optimal NP-Hard scheduler.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/GaoHSKJDYYZ24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Cost-Efficient Large Language Model Serving for Multi-turn Conversations with CachedAttention",
+  "abstract": "Interacting with humans through multi-turn conversations is a fundamental feature of large language models (LLMs). However, existing LLM serving engines executing multi-turn conversations are inefficient due to the need to repeatedly compute the key-value (KV) caches of historical tokens, incurring high serving costs. To address the problem, this paper proposes CachedAttention, a new attention mechanism that enables reuse of KV caches across multi-turn conversations, significantly reducing the repetitive computation overheads. CachedAttention maintains a hierarchical KV caching system that leverages cost-effective memory/storage mediums to save KV caches for all requests. To reduce KV cache access overheads from slow mediums, CachedAttention employs layer-wise pre-loading and asynchronous saving schemes to overlap the KV cache access with the GPU computation. To ensure that the KV caches to be accessed are placed in the fastest hierarchy, CachedAttention employs scheduler-aware fetching and eviction schemes to consciously place the KV caches in different layers based on the hints from the inference job scheduler. To avoid the invalidation of the saved KV caches incurred by context window overflow, CachedAttention enables the saved KV caches to remain valid via decoupling the positional encoding and effectively truncating the KV caches. Extensive experimental results demonstrate that CachedAttention significantly decreases the time to the first token (TTFT) by up to 87%, improves the prompt prefilling throughput by up to 7.8$\\times$ for multi-turn conversations, and reduces the end-to-end inference cost by up to 70%.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/Chai00JW0024",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Efficient Decentralized Federated Singular Vector Decomposition",
+  "abstract": "Federated singular value decomposition (SVD) is a foundation for many real-world distributed applications. Existing federated SVD studies either require external servers which downgrade privacy protection or leverage homomorphic encryption (HE) to get rid of external servers ( e.g. , being decentralized) but suffer from significant inefficiencies caused by extensive computational and communication overhead. This paper presents Excalibur, an efficient decentralized federated SVD system. At its core, Excalibur proposes a lightweight matrix protection method to reduce the computational degradation caused by cryptographic operations, improving computation performance. Furthermore, it designs a communication-efficient decentralized SVD workflow based on the quantitative analysis of the design space, optimizing communication performance. To validate the efficiency of Excalibur, we implement a fully functional Excalibur system and evaluate it with real-world applications. Our results show that Excalibur not only removes the external servers but also achieves 3.1× ~ 6.0× faster performance than state-of-the-art (SOTA) server-aided method on different shapes of billion-scale data. In addition, Excalibur exhibits > 23000× larger throughput than the SOTA HE-based system.",
+  "hint_categories": [
+   "dense_la"
+  ]
+ },
+ {
+  "key": "conf/usenix/0076ZHCLD24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Efficient Large Graph Processing with Chunk-Based Graph Representation Model",
+  "abstract": "Existing external graph processing systems face challenges in terms of low I/O efficiency, expensive computation overhead, and high graph algorithm development costs when running on emerging NVMe SSDs, due to their reliance on complex loading and computing models that aim to convert numerous random I/Os into a few sequential I/Os. While in-memory graph systems working with memory-storage cache systems like OS page cache or TriCache, offer a promising solution for large graph processing with fine-grained I/Os and easy algorithm programming, they often overlook the specific characteristics of graph applications, resulting in inefficient graph processing. To address these challenges, we introduce ChunkGraph, an I/O-efficient graph system designed for processing large-scale graphs on NVMe SSDs. ChunkGraph introduces a novel chunk-based graph representation model, featuring classified and hierarchical vertex storage, and efficient chunk layout optimization. Evaluations show that ChunkGraph can outperform existing external graph systems, as well as in-memory graph systems relying on general cache systems, running several times faster.",
+  "hint_categories": [
+   "graph"
+  ]
+ },
+ {
+  "key": "conf/usenix/CaiSY24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Ethane: An Asymmetric File System for Disaggregated Persistent Memory",
+  "abstract": "The ultra-fast persistent memories (PMs) promise a practical solution towards high-performance distributed file systems. This paper examines and reveals a cascade of three performance and cost issues in the current PM provision scheme, namely expensive cross-node interaction, weak single-node capability, and costly scale-out performance, which not only underutilizes fast PM devices but also magnifies its limited storage capacity and high price deficiencies. To remedy this, we introduce Ethane, a file system built on disaggregated persistent memory (DPM). Through resource separation using fast connectivity technologies, DPM achieves efficient and cost-effective PM sharing while retaining low-latency memory access. To unleash such hardware potentials, Ethane incorporates an asymmetric file system architecture inspired by the imbalanced resource provision feature of DPM. It splits a file system into a control-plane FS and a data-plane FS and designs these two planes to make the best use of the respective hardware resources. Evaluation results demonstrate that Ethane reaps the DPM hardware benefits, performs up to 68× better than modern distributed file systems, and improves data-intensive application throughputs by up to 17×.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/PangZLC0024",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Expeditious High-Concurrency MicroVM SnapStart in Persistent Memory with an Augmented Hypervisor",
+  "abstract": "The industry has embraced snapshotting to tackle the cold starts and efficiently manage numerous short-lived functions for microservice-native architectures, serverless computing, and machine learning inference. A cutting-edge research approach FaaSnap, while innovative in reducing page faults during on-demand paging through prefetching the profiled working set pages into DRAM, incurs high caching overheads and I/O demands, potentially degrading system efficiency and limiting concurrent MicroVM executions. This paper introduces PASS, a system leveraging byte-addressable persistent memory (PMEM) for cost-effective and highly concurrent MicroVM SnapStart execution. PASS, functioning as a PMEM-aware augmented hypervisor in the user space, revolutionizes MicroVM memory restoration. It constructs complete address indexing of the guest memory mapped to single-tier PMEM space, enabling zero-copy on-demand paging by exploiting PMEM's direct access feature. This approach bypasses the cache layer and maintains guest OS transparency, avoiding invasive modifications. Experimental results, derived from real-world applications, reveal that PASS substantially decreases SnapStart execution time, achieving up to 72% reduction compared to the Firecracker hypervisor on the PMEM filesystem, and 47% reduction compared to FaaSnap. Moreover, PASS achieves double the maximum concurrency compared to both Firecracker and FaaSnap. It improves the cost-effectiveness by 2.2x and 1.6x over the Firecracker and FaaSnap, respectively.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/GuWH24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Exploit both SMART Attributes and NAND Flash Wear Characteristics to Effectively Forecast SSD-based Storage Failures in Clusters",
+  "abstract": "Solid State Drives (SSDs) based on flash technology are extensively employed as high-performance storage solutions in supercomputing data centers. However, SSD failures are frequent in these environments, resulting in significant performance issues. To ensure the reliability and accessibility of HPC storage systems, it is crucial to predict failures in advance, enabling timely preventive measures. Although many failure prediction methods focus on improving SMART attributes and system telemetry logs, their predictive efficacy is constrained due to the limited capacity of these logs to directly elucidate the root causes of SSD failures at the device level. In this paper, we revisit the underlying causes of SSD failures and first utilize the device-level flash wear characteristics of SSDs as a critical indicator instead of solely relying on SMRAT data. We propose a novel Aging-Aware Pseudo Twin Network (APTN) based SSD failure prediction approach, exploiting both SMART and device-level NAND flash wear characteristics, to effectively forecast SSD failures. In practice, we also adapt APTN to the online learning framework. Our evaluation results demonstrate that APTN improves the F1-score by 51.2% and TPR by 40.1% on average compared to the existing schemes. This highlights the potential of leveraging device-level wear characteristics in conjunction with SMART attributes for more accurate and reliable SSD failure prediction.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/JalalianPHSF24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "ExtMem: Enabling Application-Aware Virtual Memory Management for Data-Intensive Applications",
+  "abstract": "For over forty years, researchers have demonstrated that operating system memory managers often fall short in supporting memory-hungry applications. The problem is even more critical today, with disaggregated memory and new memory technologies and in the presence of tera-scale machine learning models, large-scale graph processing, and other memory-intensive applications. Past attempts to provide application-specific memory management either required significant in-kernel changes or suffered from high overhead. We present ExtMem, a flexible framework for providing application-specific memory management. It differs from prior solutions in three ways: (1) It is compatible with today’s Linux deployments, (2) it is a general-purpose substrate for addressing various memory and storage backends, and (3) it is performant in multithreaded environments. ExtMem allows for easy and rapid prototyping of new memory management algorithms, easy collection of memory patterns and statistics, and immediate deployment of isolated custom memory management.",
+  "hint_categories": [
+   "graph"
+  ]
+ },
+ {
+  "key": "conf/usenix/TabatabaiSS24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "FBMM: Making Memory Management Extensible With Filesystems",
+  "abstract": "New memory technologies like CXL promise diverse memory configurations such as tiered memory, far memory, and processing in memory. Operating systems must be modified to support these new hardware configurations for applications to make use of them. While many parts of operating systems are extensible, memory management remains monolithic in most systems, making it cumbersome to add support for a diverse set of new memory policies and mechanisms. Rather than creating a whole new extensible interface for memory managers, we propose to instead use the memory management callbacks provided by the Linux virtual file system (VFS) to write memory managers, called memory management filesystems (MFSs). Memory is allocated by creating and mapping a file in an MFS's mount directory and freed by deleting the file. Use of an MFS is transparent to applications. We call this system File Based Memory Management (FBMM). Using FBMM, we created a diverse set of standalone memory managers for tiered memory, contiguous allocations, and memory bandwidth allocation, each comprising 500-1500 lines of code. Unlike current approaches that require custom kernels, with FBMM, an MFS can be compiled separately from the kernel and loaded dynamically when needed. We measure the overhead of using filesystems for memory management and found the overhead to be less than 8% when allocating a single page, and less than 0.1% when allocating as little as 128 pages. MFSs perform competitively with kernel implementations, and sometimes better due to simpler implementations.",
+  "hint_categories": []
+ }
+]

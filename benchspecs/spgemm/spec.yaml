@@ -1,0 +1,180 @@
+kernel: spgemm
+summary: >
+  Sparse general matrix-matrix multiplication throughput and scaling,
+  covering the single-device steady-state kernel (symbolic+numeric,
+  format-conversion excluded), the amortized end-to-end cost including
+  one-shot format conversion / row reordering, a tensor-core / mixed-
+  precision variant, and distributed multi-GPU strong scaling.
+operation: "C = A[M,K](sparse, CSR) * A[K,M](sparse, CSR)  — self-product (A x A); A x A^T and general A x B as noted secondary modes"
+
+variants:
+  - id: spgemm-square-kernel-f64
+    claim: >
+      steady-state device-side SpGEMM kernel throughput for C = A^2 in fp64,
+      one-time A/B format conversion excluded (reported separately, once);
+      symbolic (size-determination) phase and the result matrix's device
+      memory allocation are INCLUDED, since they are unavoidable,
+      data-dependent per-call costs, not amortizable preprocessing.
+    inputs:
+      suite: SuiteSparse Matrix Collection
+      selection: >
+        square, real-valued matrices with flops(A^2) >= 1e8 (2x the number
+        of naive/symbolic intermediate products) AND 1e5 <= nnz(A) <= 2e8
+        (secondary memory-fit bound, not the primary filter — SpGEMM cost
+        does not scale linearly with nnz(A) the way SpMV/SpMM does, so a
+        FLOP threshold on the actual target product, following Ocean and
+        TileSpGEMM, is the correct SpGEMM-specific selection criterion).
+      recommended_subset:
+        # Williams-et-al. classic 12 (reused by nearly all SpMV/SpGEMM papers
+        # since 2008; carried forward as TileSpGEMM's first 12, PPoPP'22 Table 2)
+        - {name: pdb1HYS, rows_cols: 36000, nnz_A: 4.3e6}
+        - {name: consph, rows_cols: 83000, nnz_A: 6.0e6}
+        - {name: cant, rows_cols: 62000, nnz_A: 4.0e6}
+        - {name: pwtk, rows_cols: 218000, nnz_A: 11.6e6}
+        - {name: rma10, rows_cols: 47000, nnz_A: 2.4e6}
+        - {name: conf5_4-8x8-05, rows_cols: 49000, nnz_A: 1.9e6}
+        - {name: shipsec1, rows_cols: 140000, nnz_A: 7.8e6}
+        - {name: mac_econ_fwd500, rows_cols: 206000, nnz_A: 1.3e6}
+        - {name: mc2depi, rows_cols: 525000, nnz_A: 2.1e6}
+        - {name: cop20k_A, rows_cols: 121000, nnz_A: 2.6e6}
+        - {name: scircuit, rows_cols: 170000, nnz_A: 1.0e6}
+        - {name: webbase-1M, rows_cols: 1000005, nnz_A: 3.1e6}
+        # TileSpGEMM's 6 large/hard extras (wide compression-rate spread: 1.1x-136x)
+        - {name: af_shell10, rows_cols: 1508065, nnz_A: 52.7e6}
+        - {name: pkustk12, rows_cols: 94000, nnz_A: 7.5e6}
+        - {name: SiO2, rows_cols: 155000, nnz_A: 11.3e6}
+        - {name: case39, rows_cols: 40000, nnz_A: 1.0e6}
+        - {name: TSOPF_FS_b300_c2, rows_cols: 56000, nnz_A: 8.8e6}
+        - {name: gupta3, rows_cols: 17000, nnz_A: 9.3e6}
+        # extra large-scale instances (from Ocean's own reproducible
+        # utils/square.csv, verified: 337 matrices, flops(A^2)>=1e8)
+        - {name: cage15, rows_cols: 5154859, nnz_A: 99.2e6}
+        - {name: dielFilterV3real, rows_cols: 1102824, nnz_A: 89.3e6}
+        - {name: nlpkkt120, rows_cols: 3542400, nnz_A: 96.8e6}
+        - {name: Serena, rows_cols: 1391349, nnz_A: 64.5e6}
+        - {name: Hook_1498, rows_cols: 1498023, nnz_A: 60.9e6}
+        - {name: audikw_1, rows_cols: 943695, nnz_A: 77.7e6}
+        - {name: road_usa, rows_cols: 23947347, nnz_A: 57.7e6}
+      dense_operand: "none (sparse x sparse); values fp64 as downloaded from SuiteSparse .mtx (pattern matrices assigned U(0.1,1.0) values, per common practice in Ocean/TileSpGEMM)"
+    protocol:
+      format: "CSR, as converted once from the downloaded .mtx (mtx->CSR conversion NOT timed, done at load time)"
+      warmup: 10
+      reps: 20
+      statistic: median (report min and max alongside)
+      timer: "device-side events (CUDA events or equivalent), spanning only the symbolic-count-or-estimate + numeric-multiply + C-allocation device work; NOT host-side gettimeofday-around-cudaDeviceSynchronize (used by TileSpGEMM/AmgT but vulnerable to host dispatch overhead and to missing-synchronize bugs)"
+      timing_scope: >
+        symbolic/estimation phase + numeric compute phase + device memory
+        allocation for C, all included; A/B mtx->CSR parsing and any
+        algorithm-internal one-time restructuring of A/B into a persistent
+        auxiliary layout (e.g. CSR->tile, CSR->mBSR, HLL sketch of B)
+        excluded and reported once under preprocessing_reported. H2D/D2H
+        transfer of A, B, C excluded (operands resident on device before
+        timing starts).
+      preprocessing_reported: "separately, once per matrix: format-conversion time (ms) and any persistent-structure build time (ms)"
+      required_breakdown: >
+        symbolic_ms and numeric_ms MUST be reported as separate numbers
+        alongside total_ms, not only the aggregate — this is the axis every
+        surveyed paper treats as the actual point of comparison (e.g. Ocean's
+        entire contribution is shrinking symbolic_ms from ~28% to ~4% of
+        total, which a total-only number would hide).
+      dnf_handling: "30s per-run timeout (per Ocean's config/bench.json); a method that fails/OOMs/times out on a matrix is recorded as DNF for that matrix, EXCLUDED from that matrix's geomean contribution (not penalty-filled with another tool's time, unlike Ocean's own convention, since penalty-filling silently rewards fragile methods with an artificial ceiling)"
+    metric:
+      primary: "GFLOP/s = 2*flops_naive / (time_ms * 1e6); flops_naive = the naive/symbolic count of scalar multiply-accumulate operations needed to form C from A and B BEFORE duplicate-index compression (i.e. sum over i,k of nnz(A row i)*nnz(B row k) for each A[i,k]!=0) — NOT 2*nnz(C). This matches the Ocean/TileSpGEMM convention and must be used uniformly since compression rates (intermediate products / nnz(C)) range 1.1x-136x across the recommended_subset, so a nnz(C)-based FLOP count would make heavy-cancellation matrices look implausibly fast."
+      secondary: ms (total, plus symbolic_ms/numeric_ms breakdown)
+    correctness: "max relative error vs. a reference CSR result (cuSPARSE fp64, or a validated CPU reference for matrices cuSPARSE cannot complete) < 1e-6 target, hard fail at 1e-4 (Ocean's config/bench.json convention: compare_relative_error/compare_autofail_relative_error); a correctness FAIL excludes that run from the reported metric entirely, it is not down-weighted"
+
+  - id: spgemm-e2e-preproc-f64
+    claim: >
+      end-to-end cost including one-shot format conversion / row reordering,
+      amortized over k=100 repeated SpGEMM calls on the SAME sparsity
+      pattern — answers "is the preprocessing worth it," following
+      clusterwise-spgemm's own break-even-iteration methodology rather than
+      hiding the preprocessing cost in a single figure caption.
+    inputs:
+      suite: SuiteSparse Matrix Collection
+      selection: "same recommended_subset as spgemm-square-kernel-f64"
+      dense_operand: "none (sparse x sparse)"
+    protocol:
+      format: "CSR input; one-shot conversion to the method's native layout (tiled/CSR-cluster/mBSR/etc.) timed once as preprocess_ms"
+      warmup: 2 (of the k repeated kernel calls, excluded from the amortized average)
+      reps: "k=100 repeated kernel calls on the identical A (same sparsity pattern each call — a synthetic repetition, not a claim that real workloads call SpGEMM k times on literally the same matrix; k=100 chosen to match the SpMM-track e2e convention and to be well past the largest break-even k clusterwise-spgemm itself reports for its slower reorderings)"
+      statistic: median of the k kernel-call times; amortized_ms = preprocess_ms/k + median(kernel_ms)
+      timer: same device/host-event convention as spgemm-square-kernel-f64
+      timing_scope: "preprocess_ms measured once; per-call kernel_ms measured identically to spgemm-square-kernel-f64's timing_scope"
+      preprocessing_reported: "preprocess_ms reported standalone AND folded into amortized_ms — both numbers published, never only the amortized one, so break-even k can be recomputed by a reader"
+    metric: {primary: "amortized GFLOP/s (using amortized_ms)", secondary: "preprocess_ms, break-even k (smallest k where amortized_ms <= unreordered kernel_ms)"}
+    correctness: "same gate as spgemm-square-kernel-f64, checked once (output C is identical regardless of preprocessing choice)"
+
+  - id: spgemm-tensorcore-mixed-precision
+    claim: >
+      tensor-core / mixed-precision SpGEMM throughput (fp16 storage or a
+      variable-precision block format, fp32 accumulation), against the
+      fp64 baseline's correctness and the fp64 baseline's kernel-only time
+      from spgemm-square-kernel-f64 as the speedup reference.
+    inputs:
+      suite: SuiteSparse Matrix Collection
+      selection: "matrices from recommended_subset that are numerically well-scaled enough for fp16 storage without over/underflow (concretely: the 16-matrix subset TileSpGEMM borrows from tSparse's own paper, since it was explicitly chosen to suit half-precision tensor cores; flag any recommended_subset matrix that overflows fp16 range as excluded-by-precision, not silently rescaled)"
+      dense_operand: "none (sparse x sparse)"
+    protocol:
+      format: "method's tensor-core-friendly block format (e.g. mBSR/tiled), conversion timed and reported exactly as in spgemm-e2e-preproc-f64 (this variant does NOT get a free pass on preprocessing accounting just because it's a precision variant)"
+      warmup: 10
+      reps: 20
+      statistic: median (report min/max)
+      timer: same device-event convention as spgemm-square-kernel-f64
+      timing_scope: same as spgemm-square-kernel-f64
+      preprocessing_reported: "separately, once, same convention as spgemm-square-kernel-f64"
+    metric: {primary: "GFLOP/s (same flops_naive definition)", secondary: "ms; speedup vs. this matrix's own fp64 spgemm-square-kernel-f64 GFLOP/s"}
+    correctness: "max relative error vs. fp64 cuSPARSE reference < 1e-2 — no surveyed paper published a mixed-precision SpGEMM tolerance (AmgT validates only indirectly, via downstream PCG convergence to 1e-5 residual, not an elementwise SpGEMM check); 1e-2 is this spec's own choice, set loose enough to accommodate fp16's ~3-decimal-digit precision but still catching gross errors, and should be revisited once a paper in this track actually publishes a number (see open_questions)"
+
+  - id: spgemm-distributed-strong-scaling-f64
+    claim: >
+      distributed multi-GPU/multi-node strong-scaling throughput and
+      parallel efficiency for C = A^2 on large unstructured matrices that do
+      not fit a single device, holding the matrix fixed and sweeping GPU/node
+      count.
+    inputs:
+      suite: "SuiteSparse + HipMCL repository (large unstructured matrices; no single flop-threshold criterion in the surveyed literature — union of Trident's Table 2 and Hussain's Table V named instances is used instead, since these are the only two surveyed papers with genuine distributed-scale evaluation)"
+      recommended_subset:
+        - {name: HV15R, rows_cols: 2017169, nnz_A: 283e6}
+        - {name: archaea, rows_cols: 1644227, nnz_A: 204e6}
+        - {name: eukarya, rows_cols: 3243106, nnz_A: 359e6}
+        - {name: cage15, rows_cols: 5154859, nnz_A: 99e6}
+        - {name: dielFilterV3real, rows_cols: 1102824, nnz_A: 89.3e6}
+        - {name: mouse_gene, rows_cols: 45101, nnz_A: 29e6}
+        - {name: Metaclust50, rows_cols: 282e6, nnz_A: null, note: "37B nnz(A); extreme-scale case, requires the batched/memory-constrained algorithm class (Hussain), not a plain single-pass distributed SpGEMM"}
+        - {name: Friendster, rows_cols: null, nnz_A: null, note: "from SuiteSparse; social-network graph, used by Hussain for triangle-counting-style A^2"}
+      dense_operand: "none (sparse x sparse)"
+    protocol:
+      format: "CSR (or the method's native distributed sparse format), format conversion/distribution excluded from measured time, reported once"
+      warmup: 1 (first trial discarded, per Trident's own convention)
+      reps: 6 (5 measured after the discarded warmup trial)
+      statistic: median (Trident itself uses mean of the 5; the spec uses median instead, per the general fairness principle, since large-scale runs are exactly where tail latency from network jitter or straggler ranks makes the mean misleading)
+      timer: "wall-clock around the collective SpGEMM call (MPI_Wtime or equivalent), barrier-synchronized immediately before start"
+      timing_scope: "full distributed SpGEMM: symbolic/batch-size-estimation communication+compute, local multiply, merge/redistribution of partial products — all included, since none of it is amortizable across GPU-count configurations (each GPU count is a different run, not a repeated call on a persistent structure)"
+      preprocessing_reported: "input distribution/partitioning time reported separately, once per (matrix, GPU-count) configuration"
+      required_breakdown: "symbolic-step time (compute + communication) reported separately from local-multiply and redistribution time, per Hussain's and Trident's own component breakdowns"
+    metric: {primary: "wall-clock time (s) and speedup vs. the smallest GPU/node count that completes without OOM", secondary: "parallel efficiency = (speedup / (GPU_count/GPU_count_baseline)); GFLOP/s using the same flops_naive definition as the single-device variants"}
+    correctness: "same relative-error gate as spgemm-square-kernel-f64, checked once per (matrix, GPU-count) configuration against a single-device or small-scale reference run of the same method (not necessarily cuSPARSE, which cannot run at this scale)"
+
+notes_on_fairness:
+  - "A x A dominates the surveyed literature (4/6 papers primary mode) purely because it needs only one input file; the spec keeps it as the default but this is a convenience convention, not evidence that A x A is representative of general SpGEMM workloads — see survey.md Divergences #1."
+  - "The spec deliberately INCLUDES symbolic-phase and result-allocation time inside the kernel-only variant's measured window, diverging from TileSpGEMM's own headline number (which excludes both, per its README's line-17/Fig.6-7 vs. line 8-14/Fig.10 split). Excluding allocation lets allocation-heavy matrices (e.g. TileSpGEMM's own 'gupta3' example) look artificially fast; the spec fixes this."
+  - "TileSpGEMM's public artifact ships with REPEAT_NUM=1 (single run, no warmup, despite computing a time_min variable that implies a multi-rep design was intended). The spec does not adopt this — it mandates warmup=10/reps=20/median regardless of what the artifact's default build does."
+  - "Ocean's own convention of penalty-filling a DNF baseline with the slowest valid time observed (rather than excluding it) inflates the apparent competitiveness of fragile baselines under a geomean; the spec excludes DNFs from that matrix's aggregate instead."
+  - "clusterwise-spgemm's amortization-break-even reporting (Fig. 10) is the only surveyed paper that treats one-shot preprocessing rigorously as an amortization question; the spec generalizes that methodology (k=100, report both raw preprocess cost and break-even k) to the GPU papers, none of which do this formally themselves."
+  - "AmgT cannot supply a clean 'kernel-only' SpGEMM number from its own artifact (time_spgemm is a level-aggregated sum across one AMG setup, not a per-call measurement); the spec's variants therefore treat AmgT as an evidence source for the tensor-core/mixed-precision and 'real embedded usage pattern' motivation, not as a source of directly reusable timing numbers."
+
+open_questions:
+  - "Exact matrix names/sizes used by AmgT and Hussain-CA-SpGEMM's full test set were not recoverable from the sources checked (AmgT: IEEE-only paper, no arXiv/OA link, so only the artifact code was inspected, not a workload table; Hussain: only the 7 headline matrices from Table V were retrievable via the ar5iv fulltext render, not any larger appendix table)."
+  - "No surveyed paper publishes a numeric correctness tolerance for a tensor-core/mixed-precision SpGEMM result; the spgemm-tensorcore-mixed-precision variant's 1e-2 relative-error gate is this spec's own choice (loose enough for fp16, tight enough to catch gross errors) and should be revisited once real data exists."
+  - "Trident's precision (fp32 vs fp64) was not confirmed from the fetched arXiv HTML sections; spec assumes fp64 by analogy with the rest of the distributed-SpGEMM literature (Hussain/CombBLAS) but this is unverified for Trident specifically."
+  - "Whether TileSpGEMM's paper-reported numbers (Fig. 6/7) actually came from a REPEAT_NUM>1 build is inferred from the code structure (a time_min-over-array pattern) but not confirmed textually anywhere in the paper or README; the public artifact's default (REPEAT_NUM=1) is the only reproducible ground truth available."
+  - "No surveyed paper reports a general A x B benchmark on two independently-sized/structured operands (as opposed to A x A, A x A^T, or an application-forced A x B like AMG's R.A.P); the spec's variants therefore cannot cite literature precedent for a pure 'mismatched-operand' A x B mode, only synthesize one by analogy — flagged here rather than silently added as a 5th variant."
+
+evidence:
+  conf/ics/LiG26: "Estimation-based GPU SpGEMM; 337/64 SuiteSparse matrices selected by flops(A^2)/flops(AA^T)>=1e8, warmup=10/bench=10 mean (config/bench.json), 30s DNF timeout w/ penalty-fill, symbolic/numeric explicitly broken out (28% -> ~4%+8%), correctness 1e-6 target/1e-4 autofail, GFLOP/s via 2x intermediate-product flops."
+  conf/ics/BellavitaPPVG26: "Distributed hierarchy-aware SpGEMM on Perlmutter; 10 named unstructured matrices, C=A^2 primary + C=A.R for AMG, 1 discarded + 5-trial mean, 4-400 A100 GPUs, baselines Trilinos/CombBLAS-SUMMA, geomean 1.54x speedup."
+  conf/ppopp/NiuLJS0022: "Single-GPU tiled CSR SpGEMM; 142 square SuiteSparse matrices w/ flops(A^2 and AA^T)>=1e9, 18-matrix Table-2 subset (Williams-12 + 6 hard cases) fully enumerated, shipped REPEAT_NUM=1 (no warmup/rep despite time_min code path), format-conversion+memory-allocation excluded from headline GFLOP/s and reported separately (Fig.10/12 vs Fig.6/7), FLOPs = 2x intermediate products."
+  conf/ipps/HussainSBA21: "Extreme-scale distributed SpGEMM (CombBLAS-based), batched to fit memory; 7 named matrices (protein-similarity/social/k-mer), C=A^2 primary + C=AA^T secondary, symbolic step explicitly measured (compute+comm breakdown), up to 262,144 cores, no stated warmup/rep protocol."
+  conf/sc/Islam00B25: "CPU shared-memory row-reordered/cluster-wise SpGEMM; 110 SuiteSparse matrices (>8M nnz for L2-cache-exceeding, <10B nnz memory bound), general A x B incl. tall-skinny B, 10-run mean, reordering cost NOT folded into per-call time — break-even iteration count reported instead (Fig.10), 64-thread single Perlmutter CPU node."
+  conf/sc/LuZWFLCY0C024: "Tensor-core/mixed-precision AMG solver (SpGEMM in setup=R.A.P, SpMV in solve), HYPRE-integrated; single setup/solve run (no warmup/rep), time_spgemm/time_spgemm_preprocess/time_spgemm_all tracked as level-aggregated sums (not per-call), correctness validated only indirectly via PCG convergence (tol 1e-5), fp64 vs fp16-tensor-core selected at build time (AmgT_FP64/AmgT_Mixed/cuSPARSE binaries)."

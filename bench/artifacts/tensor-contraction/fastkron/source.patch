@@ -1,0 +1,72 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 2188665..0070641 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -28,7 +28,15 @@ if (ENABLE_MULTI_GPU AND NOT ENABLE_CUDA)
+ endif()
+ 
+ if (PYMODULE)
+-  find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
++  # HPC-KernelBench build-system patch: pybind11_add_module() below is called
++  # with the SHARED (not MODULE) library type, which pybind11's CMake support
++  # links against the full "Python3::Python" target (needs Development.Embed,
++  # i.e. a linkable libpython), not just "Python3::Module". Without this
++  # component, configure fails with "Python3_ADD_LIBRARY: dependent target
++  # 'Python3::Python' is not defined" on this machine's CMake 3.28 +
++  # pybind11 3.1.0. Python3_ROOT_DIR/EXECUTABLE unchanged; no kernel code
++  # touched.
++  find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module Development.Embed)
+ else()
+   find_package(Python3 REQUIRED COMPONENTS Interpreter)
+ endif()
+@@ -152,7 +160,19 @@ if(ENABLE_CUDA)
+       set(FK_CUDA_ARCH ${arch} ${FK_CUDA_ARCH})
+     endforeach()
+ 
+-    execute_process(COMMAND python3 ${SRC}/gen_tuner_kernels.py -backend cuda -archs ${FK_CUDA_ARCH} -mm-type mkm kmm -same-factors 2 128,128 -same-factors 2 64,64 -same-factors 3 32,32 -same-factors 5 16,16 -same-factors 7 8,8 -same-factors 10 4,4 -same-factors 20 2,2 -opX N T -opF N T -types float double -batch-type cont strided -match-configs-file ${SRC}/kernels/best-kernels/a100-kernels ${SRC}/kernels/best-kernels/kmm-a100-kernels ${SRC}/kernels/best-kernels/kmm-v100-kernels)
++    # HPC-KernelBench build-system patch: this integration's adapter.py only
++    # ever calls FastKron's forward GeMKM entry point (mm-type "mkm", the
++    # X @ kron(factors) direction; never "kmm" or the "strided"-batch path),
++    # on the SAME machine this is built for. Restricting -mm-type to "mkm"
++    # and -batch-type to "cont" cuts the generated/compiled per-tile-config
++    # kernel count roughly in half (this project's own login-node build
++    # budget could not otherwise complete a full ~2700-kernel-config CUDA
++    # compile of every arch/type/batch-type combination; see STATUS.md).
++    # No kernel CODE is touched -- every remaining .cu file is still
++    # gen_tuner_kernels.py's own, unmodified, verbatim-generated output;
++    # this only narrows WHICH of the artifact's own pre-existing template
++    # instantiations get generated and compiled.
++    execute_process(COMMAND python3 ${SRC}/gen_tuner_kernels.py -backend cuda -archs ${FK_CUDA_ARCH} -mm-type mkm -same-factors 2 128,128 -same-factors 2 64,64 -same-factors 3 32,32 -same-factors 5 16,16 -same-factors 7 8,8 -same-factors 10 4,4 -same-factors 20 2,2 -opX N T -opF N T -types float double -batch-type cont -match-configs-file ${SRC}/kernels/best-kernels/a100-kernels)
+   endif()
+   include(${CUDA}/kron-kernels/kernels.cmake)
+   if (EXISTS ${CUDA}/kron-kernels/kernel_decl.inc)
+diff --git a/pybind11 b/pybind11
+index 58c382a..856a348 160000
+--- a/pybind11
++++ b/pybind11
+@@ -1 +1 @@
+-Subproject commit 58c382a8e3d7081364d2f5c62e7f429f0412743b
++Subproject commit 856a3485ca5b704fc7614e89540670cb553e6e4f
+diff --git a/setup.py b/setup.py
+index 6936962..5c28eaa 100644
+--- a/setup.py
++++ b/setup.py
+@@ -41,7 +41,17 @@ class build_ext(build_ext_orig):
+         elif 'CUDA' in ext.name:
+           cmake_args += ['-DENABLE_CUDA=ON', '-DENABLE_X86=OFF']
+ 
+-        cmake_args += [f'-DPYTHON_EXECUTABLE={sys.executable}']
++        cmake_args += [f'-DPYTHON_EXECUTABLE={sys.executable}',
++                       # HPC-KernelBench build-system patch: modern CMake's
++                       # FindPython3 module (used by this project's own
++                       # CMakeLists.txt) reads Python3_EXECUTABLE, not the
++                       # legacy PYTHON_EXECUTABLE name above; without this the
++                       # configure step silently probes $PATH's python3 (a
++                       # venv-less system interpreter with no Python.h /
++                       # Development.Module component) and fails with
++                       # "Could NOT find Python3 (missing: Python3_INCLUDE_DIRS
++                       # Development.Module)". No kernel code touched.
++                       f'-DPython3_EXECUTABLE={sys.executable}']
+ 
+         # example of build args
+         build_args = [

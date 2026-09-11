@@ -1,0 +1,303 @@
+kernel: lossless-compression
+summary: >
+  Measure bit-exact lossless compression/decompression of byte and multi-byte
+  integer streams across three distinct data domains this track's papers
+  actually target -- generic byte-stream/text/genomic corpora, HPC/scientific
+  multi-byte integer data (mostly SZ/cuSZ quantization-code streams and
+  sensor/detector data), and structured LLM-weight-tensor operands feeding a
+  downstream GEMM kernel -- reporting compression ratio and compress/decompress
+  throughput (GB/s) jointly, never one alone, gated by a hard bit-exact
+  roundtrip check.
+operation: >
+  compress: C = Compress(D) where D is a byte or multi-byte-integer stream (or,
+  for variant 3, a structured 2D weight tensor); decompress: D' = Decompress(C);
+  correctness requires D' == D bit-for-bit for every byte, not a statistical or
+  average tolerance -- unlike the lossy-compression track, there is no error
+  bound to trade off against ratio/throughput.
+
+variants:
+  - id: lossless-comp-cpu-byte-decode
+    claim: >
+      steady-state, multi-core CPU decompression throughput of standard
+      gzip/DEFLATE-format byte streams, scaled across a fixed 3-corpus suite
+      spanning generic text, genomic, and near-incompressible control data.
+      The corpus's own compression ratio is treated as a FIXED, once-measured
+      property of a reference encoder run -- never re-measured per
+      decompressor tool -- because the one paper defining this sub-domain
+      (Rapidgzip) is decompression-only and has no compression path of its
+      own to time.
+    inputs:
+      suite: >
+        Silesia corpus + 1 genomic (FASTQ) corpus + 1 synthetic
+        near-incompressible control corpus, all gzip/DEFLATE-encoded --
+        the exact 3-corpus set Rapidgzip's own HPDC'23 evaluation uses.
+      selection: >
+        the literal corpus set disclosed in Rapidgzip's fulltext evaluation
+        section, scaled by concatenating multiple gzip tarballs/files to
+        reach each target core-count's workload size (2-256x per Rapidgzip's
+        own scaling method).
+      recommended_subset:
+        - "Silesia corpus (12 standard files: dickens, mozilla, mr, nci, ooffice, osdb, reymont, samba, sao, webster, x-ray, xml), gzip -9, ratio ~3.1, concatenated 2-256x"
+        - "FASTQ genomic reads, SRA accession SRR22403185, gzip -9, ratio ~3.74"
+        - "base64-encoded random-content control (near-incompressible; isolates raw byte-shuffling throughput from match-finding payoff), gzip -9, ratio ~1.315"
+      reference_encoder: >
+        gzip -9, single fixed level, applied ONCE per corpus to produce the
+        input files under test -- compression ratio is reported as a corpus
+        property, not re-measured per decompressor tool under test.
+    protocol:
+      cpu_cores: "sweep {1, 16, 32, 64, 128} threads (trimmed subset of Rapidgzip's own {1,16,48,64,96,128,256} sweep to typical HPC-node core counts)"
+      warmup: 1 (discarded)
+      reps: 30 (within Rapidgzip's own disclosed 20-100-repeat range)
+      statistic: "mean +/- 1 standard deviation (Rapidgzip's own disclosed convention, the most statistically explicit protocol found in this track -- adopted as-is)"
+      timer: "wall-clock, process pinned via taskset"
+      timing_scope: "decompression only; input resident in tmpfs (/dev/shm), output sunk to /dev/null -- I/O deliberately routed around the measurement, not subtracted after the fact"
+      preprocessing_reported: "n/a -- input is the standard gzip container as-produced, no format conversion step"
+    metric:
+      primary: "decompression throughput GB/s = original (decompressed) bytes / decompression time"
+      secondary: "speedup vs. single-threaded GNU gzip baseline; corpus compression ratio (fixed per corpus, see reference_encoder -- reported once, not per decompressor tool)"
+    correctness: >
+      100% byte-exact match between decompressed output and the original
+      uncompressed corpus (memcmp-equivalent over the full file) -- imposed
+      by this spec since Rapidgzip's own disclosed evaluation methodology
+      text does not report an explicit round-trip verification step.
+
+  - id: lossless-comp-gpu-multibyte-dual-scope
+    claim: >
+      GPU compress/decompress kernel throughput on multi-byte scientific and
+      sensor integer data -- mostly SZ/cuSZ intermediate quantization-code
+      streams plus native detector data -- reported at TWO explicit scopes
+      (kernel-only vs. full-pipeline-incl-H2D/D2H) so the two incompatible
+      "end-to-end" meanings already identified in the lossy-compression
+      track (GPULZ's coarse CLI wall-clock default vs. the Huffman-decoder
+      paper's kernel-only convention) are never silently conflated. Block/
+      chunk/window parameters are explicitly disclosed and swept, not fixed,
+      since GPULZ's own Table 2 shows throughput varying by >2x across its
+      block-size grid alone.
+    inputs:
+      suite: >
+        SZ/cuSZ intermediate uint16 quantization-code streams (the shared
+        input class of GPULZ and the IPDPS'22 Huffman-decoder paper -- both
+        target cuSZ's lossless back-end stage) plus native uint16/uint32
+        detector/sensor data (MANS's EXAFEL sample, lsCOMP's light-source
+        data) plus 2 non-scientific integer/string controls from GPULZ's own
+        TPC-H set.
+      selection: >
+        named datasets used verbatim by >=2 of the 4 source papers targeting
+        this domain (GPULZ, the IPDPS'22 Huffman-decoder paper, MANS, lsCOMP
+        lossless mode), plus each paper's own single-paper-only set included
+        with full provenance rather than silently dropped.
+      recommended_subset:
+        - "HACC/vx quant-code (cosmology, 1D, 280,953,867 elements, uint16, cuSZ rel eb=1e-3 -- used verbatim by both GPULZ and the Huffman-decoder paper)"
+        - "Nyx/baryon_density quant-code (cosmology, 3D 512^3, uint16, cuSZ rel eb=1e-3 -- used by both source papers)"
+        - "Hurricane-ISABEL CLOUD+PRECIP+QCLOUD+QRAIN concatenated quant-code (weather, 3D 400x500x500, uint16, cuSZ rel eb=1e-3 -- used by both source papers)"
+        - "CESM-ATM/CLDICE quant-code (climate, 2D 26x1800x3600, uint16, cuSZ rel eb=1e-3 -- Huffman-decoder paper)"
+        - "EXAALT quant-code (molecular dynamics, 1D 2,338x106,711 elements, uint16, cuSZ rel eb=1e-3 -- Huffman-decoder paper)"
+        - "EXAFEL light-source detector frame (X-ray coherent scattering imaging, e.g. cssi.bin 600x1813x1558, uint32, NATIVE sensor data, not a quant-code -- MANS/lsCOMP domain)"
+        - "TPC-H int32 column (business/OLAP integers, non-scientific control, uint32 -- GPULZ)"
+        - "TPC-H utf-8 string column (non-scientific, non-numeric byte-stream control -- GPULZ)"
+      dense_operand: "n/a (not a GEMM-style kernel); flat 1D byte/symbol buffer, element width and dims passed via CLI flag per GPULZ/lsCOMP CLI convention"
+      layout: "row-major flat buffer as generated by the upstream cuSZ quantizer / detector readout; no reshaping"
+    protocol:
+      block_chunk_size:
+        values: [2048, 4096, 8192, 16384]
+        unit: bytes
+        note: "GPULZ's own disclosed grid; must be swept and reported (not silently fixed to one value) since compression throughput varies by up to ~2.3x across this range alone in GPULZ's own Table 2"
+      sliding_window: [32, 64, 128, 255]
+      symbol_length_bytes: [1, 2, 4]
+      warmup: 4 (reconciles lsCOMP's disclosed 3 and MANS's disclosed 5 into a single track-wide default)
+      reps: 10 (MANS's own CLI default and the Huffman-decoder paper's own NROUNDS)
+      statistic: "median (report min/max) -- explicitly OVERRIDES MANS's own best-of-10 reporting practice, which this spec treats as the kind of fairness flaw benchspec_instructions.md calls out (only reporting best-of-N)"
+      timer: "device-side events (CUDA events), matching the Huffman-decoder paper's own TIMER_START/STOP-around-decode-only pattern"
+      timing_scope_a: "kernel-only: compress()/decompress() device-pointer-to-device-pointer call only, H2D/D2H excluded -- the Huffman-decoder paper's own convention (separate TIMER blocks for HtD/decode/DtH)"
+      timing_scope_b: "full-pipeline: timer starts before H2D copy of input, stops after D2H copy of output lands on host -- what GPULZ's default CLI-printed 'e2e throughput' actually measures (a coarse process wall-clock, superset of scope (a), per its own README's nsys-profiling caveat)"
+      preprocessing_reported: >
+        the upstream cuSZ quantization step that produces the *-quant inputs
+        is a ONE-SHOT preprocessing cost, external to and reported separately
+        from this variant's compress/decompress kernel timing -- this variant
+        benchmarks the LOSSLESS back-end stage only (GPULZ's and the
+        Huffman-decoder's own shared framing), not the upstream lossy
+        quantizer.
+    metric:
+      primary: "compression ratio (original_bytes / compressed_bytes)"
+      secondary: "throughput GB/s at scope (a) and scope (b), both directions (compress AND decompress reported jointly, never one alone), numerator is ALWAYS original (uncompressed) byte count -- confirmed community convention (cross-checked from MANS's, GPULZ's, the Huffman-decoder's, and lsCOMP's own throughput formulas, all consistent)"
+    correctness: >
+      100% byte-exact roundtrip (bit-for-bit, memcmp-equivalent over every
+      byte), hard gate -- matches MANS's (std::memcmp, hard-aborts on
+      mismatch) and the Huffman-decoder paper's (CUHDUtil::equals, prints
+      "mismatch" on failure) own strongest disclosed practice, extended
+      track-wide to GPULZ and lsCOMP's lossless mode where their own public
+      artifacts print a correctness proxy (compression ratio; a one-off
+      "Max abs diff: 0") but stop short of a hard-coded pass/fail assertion
+      wired into the benchmark loop itself.
+
+  - id: lossless-comp-structured-operand-fused
+    claim: >
+      fused decompress+downstream-compute (decompress-GEMM) kernel throughput
+      for lossless-compressed LLM weight tensors vs. a dense uncompressed
+      baseline kernel, gated by a standalone bit-exact weight-roundtrip check
+      that is STRICTLY STRONGER than the correctness verification found in
+      the one source paper's (ZipServ) own public artifact, which checks only
+      downstream GEMM-output similarity and never the decompressed weight
+      tensor itself.
+    inputs:
+      suite: "named open LLM weight matrices, bf16, real per-layer (M,K) projection shapes"
+      selection: "the model-family x layer-shape list ZipServ's own kernel_benchmark/run.sh sweeps"
+      recommended_subset:
+        - "Llama3-8B: in=4096, FFN=14336, head_dim=1024, vocab=128256"
+        - "Llama3-70B: in=8192, FFN=28672, head_dim=1024, vocab=128256"
+        - "Llama3-405B: in=16384, FFN=53248, head_dim=1024, vocab=128256"
+        - "Qwen3-32B: in=5120, FFN=25600, head_dim=1024, vocab=151936"
+        - "Qwen2.5-72B: in=8192, FFN=29568, head_dim=1024, vocab=152064"
+        - "Qwen2.5-7B: in=3584, FFN=18944, head_dim=512, vocab=152064"
+        - "Gemma-3-27B: in=5376, FFN=21504, head_dim=2688, vocab=256000"
+        - "Mistral3-24B: in=5120, FFN=32768, head_dim=1024, vocab=131072"
+      dense_operand: >
+        N (batch x sequence) in {8, 16, 32}, bf16, standard layers
+        (Q_proj, K_proj, V_proj, O_proj, FFN_gate, FFN_up, FFN_down,
+        Embedding) plus fused merged-QKV and merged-FFN-gate-up variants,
+        as ZipServ's own run.sh enumerates.
+    protocol:
+      format: "TCA-TBE fixed-length triple-bitmap encoding (given; one-shot compression not timed in this variant)"
+      warmup: 10 (spec-imposed; STRICTLY STRONGER than ZipServ's own WARM_UP_ITERATION=0 hardcoded in test_mm.cu/test_decompress.cu)
+      reps: 50 (spec-imposed; STRICTLY STRONGER than ZipServ's own BENCHMARK_ITERATION=1)
+      statistic: "median (report min/max)"
+      timer: "device-side events (CUDA events), matching ZipServ's own test_mm.cu/test_decompress.cu instrumentation -- only the warmup/reps constants are corrected by this spec"
+      timing_scope: "kernel only; fused decompress+GEMM single launch (ZipServ's own 'load-compressed, compute-decompressed' design), weights device-resident, H2D/D2H excluded"
+      preprocessing_reported: "one-shot TCA-TBE weight compression, reported separately, once per model/layer-shape, never amortized into per-inference-call throughput"
+    metric:
+      primary: "fused-kernel throughput / speedup vs. dense cuBLAS bf16 GEMM baseline"
+      secondary: "compression ratio of the weight tensor (bytes_original / bytes_compressed); end-to-end inference throughput vs. a dense vLLM baseline, reported as a SEPARATE system-level number, never substituted for the kernel-level primary metric"
+    correctness: >
+      TWO-TIER gate, both required to pass before any timing counts --
+      stronger than ZipServ's own disclosed verification: (1) bit-exact
+      weight roundtrip: Decompress(Compress(W)) == W byte-for-byte for every
+      weight tensor, checked BEFORE any GEMM is timed (this check is ABSENT
+      from ZipServ's own public verify_compression.py, which only compares
+      downstream GEMM output); (2) fused-kernel GEMM output within the
+      standard bf16-Tensor-Core rounding tolerance of a cuBLAS bf16
+      reference (cosine similarity > 0.999, ZipServ's own disclosed
+      threshold, reused here). Tier (2) is necessarily a tolerance rather
+      than bit-exactness because bf16 Tensor Core matmul is not itself
+      bit-reproducible -- it validates the FUSED KERNEL's arithmetic, not
+      the compression's losslessness, which tier (1) alone establishes and
+      which this spec adds on top of what ZipServ's own artifact checks.
+
+notes_on_fairness:
+  - >
+    hZCCL (SC'24) is DELIBERATELY EXCLUDED from all 3 variants above, even
+    though it appears in this track's input list. Its own compressor is an
+    error-bounded LOSSY homomorphic codec (correctness verified via
+    PSNR/NRMSE/max-error against a swept relative error bound {1e-1..1e-4},
+    not bit-exactness) -- its contribution is "accelerate a collective
+    communication primitive by computing directly on compressed data,"
+    architecturally adjacent to but not itself lossless compression. Forcing
+    it onto this track's bit-exact axis would misrepresent what it actually
+    guarantees, exactly the same reasoning the lossy-compression track's
+    survey used to scope out lsCOMP's own integer-quantization lossy mode
+    and the TAC/TAC+ AMR family from ITS core variants.
+  - >
+    ZipServ markets itself as LOSSLESS weight compression, but its own
+    public verify_compression.py never compares the decompressed weight
+    tensor against the original byte-for-byte -- it only checks that a
+    downstream GEMM's output is numerically close (cosine similarity
+    > 0.999) to a bf16 cuBLAS reference, a check that is inherently
+    tolerant of bf16 rounding and could not detect a decompression bug that
+    happens to still produce a numerically-similar matmul result. Variant 3
+    above adds the missing bit-exact weight-roundtrip check as tier (1) of
+    its correctness gate specifically to close this gap, rather than
+    accepting ZipServ's own (weaker) self-verification as sufficient.
+  - >
+    MANS's own benchmark harness reports BEST-of-N throughput
+    (`std::max` across all post-warmup iterations) rather than mean or
+    median, despite exposing clean `--warmup`/`--runs` CLI flags that make a
+    fairer statistic trivial to compute from the same data. Variant 2 above
+    explicitly overrides this with median-of-10, per benchspec_instructions.md's
+    guidance to fix a literature-common flaw ("only reporting best-of-N")
+    rather than diplomatically inherit it.
+  - >
+    GPULZ's own README-printed "e2e throughput" is a coarse host-side
+    process-wall-clock number (the README itself recommends `nsys` for "more
+    accurate timing for the compression kernel"), while the Huffman-decoder
+    paper's own benchmark code cleanly separates H2D/decode/D2H into 3
+    independent timed blocks. Variant 2's dual-scope structure (mirroring
+    the lossy-compression track's own gpu-dual-scope variant) resolves this
+    by naming both scopes explicitly rather than letting either paper's
+    "e2e"/"end-to-end" label stand unqualified.
+  - >
+    hZCCL's standalone-compressor test driver
+    (testfloat_homocompress_fastmode1_arg.c) hardcodes `#define ITERATIONS
+    1` -- a literal single-shot `gettimeofday` measurement, no warmup, no
+    repetition -- the single weakest timing protocol discipline found
+    across both the lossy-compression and lossless-compression track
+    surveys conducted so far. This is a second, independent reason (beyond
+    its lossy correctness contract) that hZCCL's numbers as published are
+    not directly comparable to this spec's fixed protocol.
+  - >
+    Rapidgzip has no compression path of its own to benchmark (it is a
+    decompressor for pre-existing gzip files). Variant 1 does not force a
+    compression-throughput number onto it; instead the corpus's compression
+    ratio is fixed once via a stated reference encoder (gzip -9) and
+    decompression throughput stands alone as the headline metric for this
+    sub-domain, with the joint-ratio-and-throughput principle satisfied at
+    the corpus level rather than the per-tool level.
+
+open_questions:
+  - >
+    No arXiv/OA fulltext exists for 6 of the 7 track papers (only Rapidgzip
+    has an arXiv id in the track input). ZipServ, MANS, hZCCL, GPULZ's
+    equation-level detail, and the Huffman-decoder paper's exact timing were
+    all recovered from repo READMEs + raw benchmark source code rather than
+    the paper PDFs themselves (GPULZ's own PDF WAS recovered, repo-hosted,
+    via direct download + `pypdf` text extraction, since neither the arXiv
+    abstract page nor ar5iv's HTML conversion returned usable content for
+    it). If verified paper PDFs for ZipServ, MANS, hZCCL, and the
+    Huffman-decoder paper become available, the exact repetition/warmup/
+    hardware numbers above should be cross-checked against the papers'
+    own stated methodology, not just their code defaults.
+  - >
+    ZipServ's benchmark GPU is not pinned to a single model in its own
+    README (3 supported GPUs listed as a minimum-compute-capability
+    requirement: A100, A6000, RTX 4090); the abstract's "2.21x over cuBLAS"
+    figure's exact hardware is therefore unconfirmed from the sources read
+    here.
+  - >
+    Variant 2's `recommended_subset` list is a union across 4 different
+    papers' own dataset choices, none of which uses the exact same 8-item
+    list; unlike the lossy-compression track's SDRBench convergence, there
+    is no single standardized corpus this track's scientific-multibyte-data
+    papers share wholesale -- the union-with-provenance approach here is a
+    spec design choice, flagged as such rather than presented as a
+    literature-wide consensus suite.
+  - >
+    MANS's exact named real-world dataset list beyond its shipped
+    `testdata/exafel` sample could not be pinned down further without the
+    paywalled SC'25 paper PDF; its contribution to variant 2's
+    `recommended_subset` (EXAFEL) is the one dataset independently
+    confirmed from the repo itself, not the README's broader unnamed
+    "quantization-based datasets" claim.
+  - >
+    No independent round-trip verification could be confirmed for GPULZ
+    beyond its algorithmic argument (LZSS is dictionary-based and inherently
+    lossless by construction) -- no printed diff-check was found in its
+    Experimental Setup or Evaluation sections, unlike MANS and the
+    Huffman-decoder paper which both hard-gate on exact equality inside
+    their own harnesses.
+  - >
+    Whether ZipServ's `run.sh` (ncu-hardware-counter, single kernel launch)
+    or a Rapidgzip/Huffman-decoder-style repeated-wall-clock-average is the
+    "right" substitute for repetition on a system this fine-grained (a
+    single fused GEMM kernel launch, microseconds-scale) is left as an open
+    methodological question -- variant 3 above picks the repeated
+    CUDA-event-average approach for consistency with variant 2 and the
+    lossy-compression track's own GPU variant, but a hardware-counter-based
+    single-launch measurement (ZipServ's own `run.sh` approach) is a
+    legitimate alternative not fully explored here.
+
+evidence:
+  conf/hpdc/KnespelB23: "arXiv 2308.08955 fulltext (ar5iv): Silesia + FASTQ(SRR22403185) + base64-random corpora, 20-100 reps mean+-1stddev, /dev/shm source /dev/null sink, core sweep {1,16,48,64,96,128,256}, 9-tool baseline set (gzip/igzip/pigz/pugz/bgzip/pzstd/lbzip2/lz4/zstd), dual-socket AMD EPYC 7702 256-thread node"
+  conf/ics/ZhangTDYSTC23: "repo-hosted PDF (hpdps-group/ICS23-GPULZ/ICS23-GPULZ.pdf, pypdf-extracted) Sec 4.1-4.5: 6 datasets (TPC-H int32/string + 3 SDRBench cuSZ-quant uint16 + rtm fp32), C/W/S grid {2048,4096,8192,16384}x{32,64,128,255}x{1,2,4}, no disclosed warmup/rep/statistic, README's default throughput = wall-clock CLI e2e (nsys recommended for true kernel time), baselines CULZSS + nvCOMP LZ4 2.6.0, dual-platform (A100 HPC node / A4000 workstation)"
+  conf/sc/HuangYYLGLJWFHT25: "github.com/hpdps-group/MANS README + cpu/cpu_mans_bench.cpp raw source: --warmup 5 --runs 10 CLI defaults, reports BEST-of-N not mean/median (std::max across iters), std::memcmp hard bit-exact gate on every run, testdata/exafel light-source sample, 3-platform (CPU/NVIDIA/AMD)"
+  conf/ipps/RiveraDTYTC22: "github.com/codyjrivera/ipdps22-opthuffdec README + getdata.sh + opt-self-sync/{run.sh,src/demo.cc} raw source: 5 named cuSZ-quant-code datasets (HACC/EXAALT/CESM/Nyx/Hurricane) at r2r eb=1e-3, 1 untimed warmup + NROUNDS=10 timed mean, H2D/decode/D2H each in separate TIMER blocks (kernel-only), CUHDUtil::equals hard bit-exact gate, single V100 32GB, 4-decoder + cuSZ-builtin 5-way comparison"
+  conf/sc/HuangD0Z0J00LCC24: "github.com/ZCCLorg/zccl README + jobs/evaluate_compressor_NYX.sh + jobs/different_sizes.sh + examples/testfloat_homocompress_fastmode1_arg.c raw source: Nyx 512^3 6-field fp32 standalone-compressor bench (block size 36, rel eb sweep {1e-1..1e-4}), #define ITERATIONS 1 (no warmup, no repetition), PSNR/NRMSE/max-error correctness (explicitly NOT bit-exact) -- EXCLUDED from core spec variants, see notes_on_fairness"
+  conf/asplos/FanYPLLW0026: "github.com/xxyux/ZipServ README + kernel_benchmark/{run.sh,run_all_main.sh,test_mm.cu,test_decompress.cu,utils.h} + LInfer_py/verify_compression.py raw source: WARM_UP_ITERATION=0/BENCHMARK_ITERATION=1 hardcoded CUDA-event microbenchmark, separate ncu-hardware-counter sweep across 14 named LLM families x 8 layer-types x {8,16,32} batch, verify_compression.py checks ONLY downstream GEMM-output cosine similarity >0.999 vs bf16 cuBLAS, never the decompressed weight tensor itself"
+  conf/sc/HuangDUMCLSC25: "github.com/szcompressor/lsCOMP README (re-used from lossy-compression track survey, lossless-mode facts extracted): -b 1 1 1 1 -p 1 CLI flags reproduce exact lossless mode via the SAME fused kernel as lossy mode, 3-iteration GPU warmup disclosed, 'Max abs diff: 0' printed for the lossless worked example, throughput = orig_bytes/kernel-time (490.76 GB/s worked example, cross-checked), NVIDIA A100"

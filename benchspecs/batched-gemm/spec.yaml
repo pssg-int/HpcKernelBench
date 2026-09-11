@@ -1,0 +1,132 @@
+kernel: batched-gemm
+summary: >
+  Batched GEMM: many independent small-to-medium matrix multiplications
+  launched as a single batched/grouped operation, covering both the
+  uniform-shape case (every batch element is the same [M,K]x[K,N]) and the
+  variable-shape/segmented ("grouped GEMM") case that this track's one
+  surveyed paper (FASTEN) targets, where each of T segments has its own
+  row-count M_i sharing a common K and per-segment weight [K,N].
+operation: >
+  uniform: C_b[M,N] = A_b[M,K] * B_b[K,N] for b in 0..batch-1 (independent,
+  no cross-batch reuse). variable/segmented: given data[sum(M_i), K] and T
+  per-type weights W_t[K,N], C[sum(M_i), N] where rows belonging to segment
+  i are multiplied by W_{type(i)}; forward and backward (dC/dA, dC/dW) are
+  both in scope, since FASTEN benchmarks both.
+
+variants:
+  - id: batched-gemm-uniform-kernel
+    claim: >
+      steady-state kernel throughput of uniform-shape batched GEMM
+      (same M,N,K across the whole batch), preprocessing excluded. Not
+      directly evidenced by FASTEN's own artifact (which targets the
+      variable-shape case) but included as the natural counterpart the
+      track's axis list requires ("uniform vs variable batch"); shapes and
+      K values below are taken from FASTEN's own benchmarked feature widths
+      so the two variants stay comparable on K.
+    inputs:
+      suite: synthetic uniform-shape batched GEMM
+      selection: >
+        M=N in {128, 512, 2048} (small/medium/large batch-element size);
+        K in {16, 32, 64, 80, 128} (FASTEN's own correctness+perf K sweep,
+        reused here); batch_count in {8, 64, 512, 4096} (log-spaced,
+        bracketing FASTEN's T=100..1900 segment-count sweep at the low end
+        and extending to a compute-bound regime at the high end)
+      dense_operand: "fp32, U(-1,1); TF32 matmul path reported as a separate on/off axis (see protocol) since FASTEN's own perf script enables it silently"
+    protocol:
+      preprocessing: "one-shot: buffer allocation, kernel selection (Engine.AUTO's dispatch decision, if applicable) excluded from timed calls, reported once"
+      warmup: 10
+      reps: 50
+      statistic: "median (report min/max) — FASTEN's own test_perf/test_perf_random time exactly ONE call per (shape,engine) config via a single proton.scope with no repetition or statistic; this is a deliberate strengthening, not a value copied from the paper"
+      timer: "device-side kernel time (CUDA events), host synchronized before/after"
+      timing_scope: "kernel only (forward), or kernel + backward pass, reported as two separate numbers (not summed) — matches FASTEN's own forward/backward split"
+      tf32: "reported as an explicit on/off axis; fp32-labeled results with TF32 enabled must be flagged, not silently mixed with true fp32"
+      preprocessing_reported: "separately, once"
+    metric:
+      primary: "GFLOP/s (2*M*N*K*batch_count/time for forward; 2x that for backward, matching FASTEN's own get_matmul_flops backward-doubling convention)"
+      secondary: ms
+    correctness: "max relative error vs. cuBLAS batched GEMM (or a per-element torch.matmul loop reference) < 1e-3 for fp32/TF32-off, < 1e-2 for TF32-on; both element-wise (all batch elements must pass, not an aggregate/average)"
+
+  - id: batched-gemm-variable-kernel
+    claim: >
+      steady-state kernel throughput of variable-shape/segmented ("grouped")
+      GEMM on real per-type segment-size distributions, forward and backward,
+      preprocessing (engine/format dispatch) excluded but reported. This is
+      FASTEN's own actual benchmark shape and is kept as its own variant
+      rather than folded into batched-gemm-uniform-kernel because the
+      per-segment row count M_i varies (irregular workload distribution
+      across the batch), which materially changes load-balancing behavior
+      relative to the uniform case.
+    inputs:
+      suite: "6 real heterogeneous-graph relation-type segment distributions, reused verbatim from FASTEN's own artifact"
+      selection: "FASTEN's shipped datasets_csv: AIFB, AM, BGS, MUTAG, ACM, DBLP, IMDB, Freebase (8 named instances; each gives a fixed list of per-type segment sizes, i.e. a fixed T and M_i distribution, not resampled)"
+      recommended_subset: "all 8 (small enough to run exhaustively; this is the track's entire known real-workload evidence)"
+      feature_width: "K (=N, square weight per FASTEN's own other[T,K,K] convention) in {32, 64, 128} (FASTEN's own test_perf sweep)"
+      dense_operand: "fp32, U(-1,1); TF32 on/off reported separately, same as batched-gemm-uniform-kernel"
+    protocol:
+      preprocessing: "one-shot: engine dispatch (Engine.AUTO choosing Triton vs. torch/cutlass path) excluded from timed calls, reported once per (dataset,K) config"
+      warmup: 10
+      reps: 50
+      statistic: "median (report min/max) — same strengthening over FASTEN's single-call proton measurement as batched-gemm-uniform-kernel"
+      timer: "device-side kernel time (CUDA events)"
+      timing_scope: "kernel only, forward and backward reported as two separate numbers"
+      preprocessing_reported: "separately, once"
+    metric:
+      primary: "GFLOP/s (forward: 2*K*K*sum(M_i)/time; backward: 2x that, FASTEN's own doubling convention)"
+      secondary: ms
+    correctness: >
+      max relative error vs. a per-segment torch.matmul loop reference:
+      this spec requires rtol=1e-3/atol=1e-4 for TF32-off fp32, tighter
+      than FASTEN's own shipped test tolerance (atol=1e-1, rtol=1e-2,
+      loosened further to atol=1.0 for M/T>=2048) — see notes_on_fairness.
+      Checked per-segment, not on an aggregate/averaged output.
+
+notes_on_fairness:
+  - >
+    FASTEN's own perf benchmark (test_perf, test_perf_random) times exactly
+    one call per configuration via a single triton.profiler.scope, with no
+    warmup-then-repeat-then-statistic structure of its own. This spec
+    imposes warmup=10/reps=50/median on both variants, a strict
+    strengthening rather than a value read out of the paper's practice.
+  - >
+    FASTEN's shipped correctness tolerance (atol=1e-1, rtol=1e-2, loosened
+    to atol=1.0 for large M/T) is loose enough to mask real numerical
+    regressions, especially compounded by TF32 being enabled by default in
+    the perf script. This spec tightens the gate for the TF32-off case and
+    makes TF32-on/off an explicit reported axis instead of a silent default,
+    so a batched-GEMM technique cannot look faster purely by trading away
+    precision without that trade being visible in the result table.
+  - >
+    batched-gemm-uniform-kernel has no direct evidence in this track's one
+    surveyed paper (FASTEN only benchmarks the variable/segmented case) —
+    it is included because the track's own axis definition
+    ("uniform vs variable batch") requires it, using FASTEN's K values as
+    the one point of continuity between the two variants.
+
+open_questions:
+  - >
+    FASTEN's README headline speedups (13.65x vs CUTLASS, 4.72x vs cuBLAS)
+    could not be traced to a specific aggregation formula (mean/geomean
+    over which configs) from the files read; this spec's own median-based
+    protocol should be treated as a redefinition, not a reproduction, of
+    that headline number.
+  - >
+    Whether Engine.AUTO's dispatch decision (Triton vs. torch/cutlass path)
+    has a non-negligible one-time cost worth measuring as "preprocessing"
+    was not confirmed from the source read; assumed cheap (dictionary/
+    heuristic lookup) but not verified.
+  - >
+    No fp16/bf16 batched-GEMM evidence exists in this track's one paper
+    (FASTEN's tests explicitly skip float16 on CPU and don't exercise it on
+    GPU in the excerpts read) — left out of both variants rather than
+    invented.
+
+evidence:
+  conf/ics/0001SLFY024: >
+    Segmented/grouped GEMM for HGNNs (variable per-type M_i, shared K,
+    per-type [K,N] weight); K in {16,32,64,80,128}; 8 real HGNN relation-type
+    datasets (AIFB/AM/BGS/MUTAG/ACM/DBLP/IMDB/Freebase) + 2 synthetic slice
+    sets; forward+backward both benchmarked; single triton.profiler-scoped
+    call per config (no repetition/statistic in the released script); fp32
+    with TF32 enabled by default; correctness gated at atol=1e-1/rtol=1e-2
+    (loosened for large M/T); vs. pyg_lib CUTLASS-backed segment_matmul and
+    a plain-PyTorch-loop baseline. Repo README.md + test/test_ops.py.

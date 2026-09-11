@@ -1,0 +1,238 @@
+kernel: lattice-boltzmann
+summary: >
+  Throughput of an iterative lattice-Boltzmann (LBM) collision-streaming sweep
+  over a 3D lattice, across the two workload classes this track's papers
+  actually target: a regular cuboid domain (optionally with nested-grid
+  spatial/temporal refinement), and a sparse/complex-geometry domain where
+  indirect boundary/solid-fraction addressing dominates cost. Grounded in one
+  code-verified paper (MahmoudSM24 / Autodesk XLB); the other 4 surveyed
+  papers are abstract-only (see survey.md's Scope note — this track has NO
+  automated-pipeline-detected artifact; MahmoudSM24's artifact was found by
+  this survey's own manual search and corrects the pipeline's record).
+operation: >
+  For every lattice site x and every discrete velocity direction i in the
+  chosen velocity set (D2Q9 in 2D; D3Q19 or D3Q27 in 3D): collide
+  f_i(x) -> f_i*(x) via a collision operator (BGK single-relaxation-time or
+  KBC), then stream f_i*(x) -> f_i(x + e_i) along direction i's lattice
+  vector; solid/boundary sites additionally apply a bounce-back or
+  equilibrium boundary condition. One sweep = one collide+stream pass over
+  every lattice site, repeated for T timesteps.
+
+variants:
+  - id: lbm-regular-grid-kernel
+    claim: >
+      Steady-state per-timestep throughput of collide-stream on a regular
+      cuboid lattice, with or without nested-grid spatial/temporal
+      refinement, at a fixed lattice model/precision/collision-model
+      combination — the common denominator any regular-domain LBM
+      implementation can be measured against. Grounded directly in
+      `Autodesk/XLB`'s `examples/performance/mlups_3d.py` (single-resolution)
+      and `mlups_3d_multires.py` (nested-refinement) benchmark scripts.
+    inputs:
+      suite: >
+        Lid-driven cavity (LDC) at Reynolds number 5000 — XLB's own primary
+        performance-benchmark problem for both scripts surveyed. No other
+        paper in this track supplies a competing regular-domain benchmark
+        problem to union against (open question: whether a non-LDC regular
+        workload should be added once a second code-grounded paper is
+        found).
+      selection: "the one regular-domain benchmark problem confirmed from source across this track's only code-grounded paper."
+      recommended_subset:
+        - "100^3, single resolution"
+        - "200^3, single resolution"
+        - "100^3, 2 refinement levels (peeled-boundary refinement)"
+        - "200^3, 3 refinement levels"
+      dense_operand: >
+        one distribution-function array per velocity direction (19 for
+        D3Q19, 27 for D3Q27) per lattice site, initialized to the LDC's
+        prescribed lid velocity (u=0.1 in lattice units) and equilibrium
+        elsewhere — XLB's own `ldc_multires_setup`/equivalent single-res
+        setup convention.
+      grid_sizes: >
+        cube_edge in {100, 200} (XLB's own CLI examples; not independently
+        confirmed against MahmoudSM24's own paper-reported headline number,
+        which web search (not fulltext) suggests reaches 1596x840x840 on a
+        single A100 via refinement's memory savings — flagged as an open
+        question pending direct paper-PDF confirmation).
+      lattice_model: >
+        D3Q19 (default) or D3Q27, collision model BGK (default) or KBC
+        (KBC requires D3Q27) — all 4 combinations are valid CLI points in
+        the source artifact; report the combination used explicitly, never
+        silently default.
+      refinement: >
+        num_levels in {1 (no refinement), 2, 3}; refinement peels inward
+        from the domain boundary, concentrating resolution near the walls
+        (XLB's own `ldc_multires_setup` convention); mres_perf_opt in
+        {NAIVE_COLLIDE_STREAM, FUSION_AT_FINEST} is itself a reportable
+        implementation-choice axis, not folded into the headline number.
+    protocol:
+      iteration_count: >
+        T=1000 for num_levels=1 (matching XLB's own single-resolution CLI
+        example); T=1000 at the coarsest level for refined runs (finer
+        levels sub-cycle 2^(num_levels-1) times per coarsest step,
+        automatically, per XLB's own `calculate_mlups`).
+      warmup: >
+        10 full-sweep iterations, device-synchronized, discarded before
+        timing starts. THIS IS A DELIBERATE STANDARDIZATION: XLB's own
+        `mlups_3d.py` (single-resolution) already does exactly this; its
+        sibling `mlups_3d_multires.py` (refined) does NOT warm up at all in
+        the public artifact — this spec requires the warmup for BOTH grid
+        configurations, fixing the refined script's gap rather than
+        reproducing it (survey.md Divergence 1).
+      reps: 5
+      statistic: >
+        mean and std (report both, not just mean). FIX/EXTENSION: XLB's own
+        `mlups_3d.py` already supports exactly this via `--repetitions N`
+        (default 1) — this spec simply mandates N>=5 be used rather than
+        the CLI's own default of a single trial, and requires the refined
+        script (which has no repetition support at all in the public
+        artifact) be run N times externally and aggregated the same way.
+      timer: >
+        device-wide barrier (`wp.synchronize()` or equivalent) immediately
+        before start and immediately before stop, host `time.time()` (or
+        equivalent wall-clock call) in between — XLB's own convention in
+        both scripts, unchanged.
+      timing_scope: >
+        kernel only (collide+stream+BC for all T sweeps as one interval).
+        Grid/BC construction, JIT/kernel compilation (Warp/Neon backends
+        compile kernels on first call), and any GPU-side history recording
+        (`--report`) are excluded from the timed region — matches XLB's own
+        script structure (grid setup happens before `wp.synchronize();
+        start_time = time.time()`).
+      preprocessing_reported: >
+        not applicable at this variant's problem sizes (grid/BC setup is
+        O(N) index-array construction, not a distinct format-conversion
+        step); if Warp/Neon JIT-compiles device kernels on the first call
+        inside a cold process, that one-time compile cost must be reported
+        separately if it is not already excluded by the harness's own
+        setup/timing split (open question: not directly confirmed which
+        side of the timing boundary first-call JIT lands on in XLB's
+        scripts).
+    metric:
+      primary: >
+        MLUPS (Million Lattice Updates Per Second), SITE-level (not
+        per-direction): cube_edge^3 * effective_steps / elapsed_s / 1e6,
+        where effective_steps accounts for finer-level sub-stepping
+        (num_steps * 2^(num_levels-1)) when refinement is active — XLB's own
+        `calculate_mlups` formula, adopted verbatim. State the D3Q19-vs-D3Q27
+        direction count explicitly alongside any reported number (survey.md
+        Divergence 3 — equal MLUPS at D3Q27 is more total work than at
+        D3Q19).
+      secondary:
+        - "ms per timestep (mean +/- std across reps)"
+        - "effective GB/s (bytes moved = num_directions * sizeof(dtype) * 2 [read+write] * lattice_sites per sweep)"
+    correctness: >
+      max relative error <= 1e-5 in the macroscopic velocity/density fields
+      vs. an unoptimized/reference collide-stream implementation of the same
+      lattice model, precision, and T. THIS IS THIS SPEC'S OWN
+      RECOMMENDATION, NOT SOURCED FROM ANY PAPER IN THIS TRACK — flagged
+      explicitly as an open question (survey.md Divergence 4); XLB's repo
+      has a `tests/` tree implying some correctness coverage exists, but no
+      benchmark-script-level tolerance for this specific LDC case was
+      confirmed from the scripts read.
+
+  - id: lbm-complex-geometry-kernel
+    claim: >
+      Throughput of collide-stream on a sparse/complex-geometry domain
+      (porous media, vascular/arterial networks, arbitrary solid
+      boundaries), where indirect geometric addressing dominates cost —
+      the workload class 3 of this track's 5 surveyed papers independently
+      target (Herschlag, Gounley, Qin), none of which have a public
+      artifact. THIS VARIANT IS LITERATURE-DERIVED, NOT CODE-VERIFIED —
+      every field below is inferred from paper abstracts plus this track's
+      variant-1 protocol, not confirmed against any of these 3 papers' own
+      (unavailable) run scripts. Treat as a lower-confidence spec than
+      variant 1.
+    inputs:
+      suite: >
+        no shared/named benchmark suite could be confirmed across the 3
+        papers from abstracts alone; each names a different application
+        domain (Herschlag: unspecified "complex domains"; Gounley: implied
+        3D vascular/biomedical-adjacent from lab context, not stated
+        explicitly in the abstract; Qin: porous media, arterial blood flow,
+        tissue fluid, explicitly named in the abstract).
+      selection: >
+        OPEN QUESTION — this spec cannot fix a concrete named suite from
+        the available sources. A future revision should pull the specific
+        geometry files/porosity fractions each paper's (currently
+        unavailable) artifact or full paper PDF actually used.
+      recommended_subset: []
+      dense_operand: >
+        same per-direction distribution-function representation as variant
+        1, but with a solid/fluid indicator (bitmask, coded node-type array,
+        or sparse index list per Qin's "address index array and node
+        classification coding scheme") marking a substantial NON-cuboid
+        fraction of lattice sites as solid/excluded.
+      grid_sizes: "OPEN QUESTION — not stated in any surveyed abstract."
+    protocol:
+      iteration_count: "same T convention as variant 1 (not independently confirmed for this variant's papers)."
+      warmup: "same as variant 1: 10 discarded iterations (this spec's standardization, not sourced from these 3 papers)."
+      reps: 5
+      statistic: "mean and std (same convention as variant 1, for cross-variant comparability)."
+      timer: "device-side event pair or wall clock with explicit sync barrier (same convention as variant 1)."
+      timing_scope: >
+        kernel + indirect-addressing lookup only; the one-shot
+        geometry-classification/index-array-construction pass (Qin's "node
+        classification coding scheme", any porosity-mask precomputation)
+        is preprocessing and MUST be excluded from the per-step timed loop
+        and reported once, separately — this is the direct complex-geometry
+        analogue of the `stencil` track's Tensor-Core-preprocessing variant.
+      preprocessing_reported: "measured once, separately, as its own ms number — see timing_scope."
+    metric:
+      primary: >
+        MLUPS computed over FLUID (non-solid) sites only, not the bounding
+        cuboid's total site count — otherwise sparse/porous geometries would
+        report an artificially depressed number purely from counting solid
+        cells that do no work. Report the fluid-site fraction alongside the
+        MLUPS number so readers can reconstruct the bounding-box-relative
+        figure if desired.
+      secondary:
+        - "effective GB/s, same convention as variant 1, restricted to fluid-site traffic"
+        - "speedup vs. a fully-indirect (naive) addressing baseline on the same geometry, same hardware — the specific comparison Herschlag's own abstract frames as its headline result (semi-direct vs. indirect)"
+    correctness: "same 1e-5 relative-error convention as variant 1 (this spec's own recommendation, not sourced from these papers)."
+
+  - id: lbm-distributed-e2e
+    claim: >
+      End-to-end distributed-memory throughput/scaling for extreme-scale LBM
+      CFD (SunwayLB's own framing) — reported separately from, never
+      substituted for, a single-node kernel-only number from variant 1/2,
+      matching this whole cross-track survey's standard split between
+      kernel-only and end-to-end application variants.
+    inputs:
+      suite: "paper-native industrial CFD case; not specified in the surveyed abstract."
+      selection: "OPEN QUESTION — SunwayLB's own benchmark problem(s) not confirmed beyond 'industrial applications' framing in the abstract."
+      recommended_subset: []
+      grid_sizes: "OPEN QUESTION — not stated in the abstract; SunwayLB's own multi-level domain-decomposition scheme implies extreme-scale (many-node) grids, size unconfirmed."
+    protocol:
+      iteration_count: "paper-native; not confirmed."
+      warmup: "not confirmed whether SunwayLB's own harness discards a warmup run."
+      reps: 3
+      statistic: "median (report min/max) — this spec's own default per the cross-track convention, not sourced from SunwayLB's paper."
+      timer: "wall clock around the distributed compute loop; not independently confirmed."
+      timing_scope: "end-to-end whole-program distributed compute time, reported alongside (not instead of) a variant-1/2 kernel-only number when both exist for the same code."
+      preprocessing_reported: "domain-decomposition/mesh setup reported once, separately, never amortized."
+    metric:
+      primary: "GLUPS (Giga Lattice Updates Per Second) aggregate across all nodes — the natural extreme-scale extension of variant 1's MLUPS, matching how `stencil` track's K-Athena reports aggregate cell-updates/s."
+      secondary:
+        - "weak/strong scaling efficiency vs. node count"
+        - "MLUPS per node (for cross-checking against variant 1's single-device number when hardware overlaps)"
+    correctness: "domain-specific; not confirmed from the abstract. Flagged as an open question, deliberately not equated to variant 1/2's pointwise tolerance (same posture as `stencil` track's variant 3)."
+
+notes_on_fairness:
+  - "This track has ZERO papers with a Phase-1-pipeline-detected public artifact. One (MahmoudSM24/XLB) was found by this survey's own manual search and corrects that record; the other 4 remain genuinely artifact-less as far as this survey could determine. Any spec built here is necessarily lower-confidence than `stencil`'s, and this is stated up front rather than papered over with confident-sounding but unsourced numbers."
+  - "XLB's own two benchmark scripts disagree with each other on warmup rigor (mlups_3d.py: 10-iteration discarded warmup + N-repetition mean/std; mlups_3d_multires.py: single trial, no warmup). This spec mandates the more rigorous protocol for BOTH grid configurations rather than letting the refined-grid variant inherit the less rigorous script's practice."
+  - "Complex-geometry LBM (variant 2) is independently identified as a real, recurring sub-problem by 3 separate papers (Herschlag, Gounley, Qin) from 2 different research groups, which is why it earns its own variant despite zero of the 3 having a confirmed artifact — the convergent literature signal is strong even though the code-verification signal is absent."
+  - "MLUPS is made site-level (not per-direction) primary specifically so a D3Q19 and a D3Q27 kernel's numbers are NOT silently treated as equivalent 'work done' — this is the direct analogue of the `stencil` track's GCell-updates/s-vs-undisclosed-FLOP-convention fix (survey.md Divergence 3)."
+
+open_questions:
+  - "MahmoudSM24's own paper-reported headline grid size/hardware point (web search suggests 1596x840x840 on a single A100) could not be verified against the paper PDF directly (escholarship PDF was not text-extractable by this survey's tooling) — variant 1's grid_sizes field uses XLB's own CLI example sizes (100^3/200^3) instead, flagged as smaller than the paper's actual headline demonstration."
+  - "None of Herschlag, Gounley, Liu (SunwayLB), or Qin's OA/abstract sources yielded concrete grid sizes, precision, hardware, or MLUPS numbers — variant 2 and variant 3 are structurally underspecified relative to variant 1 and should be revisited once a paper PDF (not just abstract) from one of these 4 can be obtained and text-extracted."
+  - "Whether Warp/Neon backend JIT/kernel-compilation cost falls inside or outside XLB's own timed region in `mlups_3d.py`/`mlups_3d_multires.py` was not conclusively determined by reading the benchmark scripts alone (grid/BC setup precedes the timer start, but first-kernel-launch JIT compile inside the timed loop's first iteration was not ruled out) — flagged rather than asserted either way."
+  - "No correctness tolerance specific to this track's own papers could be sourced; the 1e-5 relative-error default in variants 1/2 is this spec's own recommendation by analogy to the `stencil` track's AN5D/PERKS convention, not derived from any lattice-Boltzmann paper itself."
+
+evidence:
+  conf/ipps/MahmoudSM24: "MahmoudSM24/XLB: D3Q19/D3Q27, BGK/KBC, fp32/fp32|fp64/fp64|fp64/fp32|fp32/fp16, LDC Re=5000, grid refinement via Neon backend (NAIVE_COLLIDE_STREAM vs FUSION_AT_FINEST), (E)MLUPS site-level metric; single-res script has 10-iter warmup + N-repetition mean+-std, multi-res script has neither (deliberate fix in this spec)."
+  journals/tpds/HerschlagLVR21: "Herschlag et al.: D3Q19, complex-geometry memory-access-scheme comparison (indirect vs semi-direct addressing), abstract only, no artifact found."
+  journals/tpds/GounleyVDVMR22: "Gounley et al.: regularized LBM, 3D, moment-representation storage + cache-aware propagation pattern for bandwidth/storage reduction, abstract only, no artifact found."
+  journals/tpds/LiuCLMLZFY24: "SunwayLB: extreme-scale industrial CFD on Sunway heterogeneous supercomputers, custom multi-level domain decomposition, abstract only, no artifact found (Sunway-architecture code is characteristically closed)."
+  journals/tpds/QinLLTW25: "Qin et al.: sparse complex geometries (porous media, arterial blood flow, tissue fluid), compact memory layout + address index array + node classification coding, abstract only, no artifact found."

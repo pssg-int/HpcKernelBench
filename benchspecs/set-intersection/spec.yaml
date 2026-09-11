@@ -1,0 +1,103 @@
+kernel: set-intersection
+summary: >
+  Per-edge sorted-adjacency-list set intersection (Jaccard-weight
+  computation: |N(u) intersect N(v)| / |N(u) union N(v)| for every edge
+  (u,v) in a graph), swept across list-length/degree skew and
+  intersection selectivity, comparing a degree-aware binned kernel
+  (tuned search-group-size/assembly-size per degree bin) against
+  fixed-configuration GPU baselines and a CPU multi-core algorithm, all
+  from the same codebase for an apples-to-apples comparison.
+operation: >
+  Given graph G=(V,E) in CSR (sorted neighbor lists per vertex): for
+  every edge (u,v) in E, compute J(u,v) = |N(u) intersect N(v)| /
+  |N(u) union N(v)|, where N(u), N(v) are u's and v's sorted neighbor-id
+  arrays (list-merge-style intersection, O(deg(u)+deg(v)) per edge
+  naively). Output: one Jaccard weight per edge, in CSR edge order.
+variants:
+  - id: setisect-degree-binned-kernel-gpu
+    claim: >
+      steady-state GPU kernel throughput for the degree-aware binned
+      intersection kernel (edges bucketed by endpoint degree, each bin
+      run with a search-group-size g / assembly-size a configuration),
+      compared against fixed-(g,a) GPU baselines from the SAME repo
+      (naive one-thread(-team)-per-edge, cuGraph) -- binning/ML-model-
+      inference (choosing g,a per bin) counted as one-shot preprocessing,
+      reported separately.
+    inputs:
+      suite: >
+        real-world graphs spanning low to high degree skew (power-law
+        coefficient / max-to-mean-degree ratio as the explicit selection
+        axis) since degree imbalance is this paper's own stated
+        motivation -- a uniform-degree synthetic graph is explicitly the
+        case where the degree-aware kernel's advantage should shrink to
+        near zero, and must be included as a control, not cherry-picked
+        out.
+      selection: >
+        SNAP/Network-Repository-class graphs (undirected, real-world),
+        chosen for a 100x-plus spread in max/mean degree ratio across the
+        set; both directed and undirected variants tested since the
+        artifact supports both via _DIRECTED.
+      recommended_subset:
+        - {name: roadNet-CA,    nodes: 1965206,  edges: 2766607,   degree_skew: low,    note: "near-uniform road-network degree, control case"}
+        - {name: com-DBLP,      nodes: 317080,   edges: 1049866,   degree_skew: moderate}
+        - {name: com-Amazon,    nodes: 334863,   edges: 925872,    degree_skew: moderate}
+        - {name: com-Youtube,   nodes: 1134890,  edges: 2987624,   degree_skew: high}
+        - {name: com-LiveJournal, nodes: 3997962, edges: 34681189, degree_skew: high}
+        - {name: com-Orkut,     nodes: 3072441,  edges: 117185083, degree_skew: high}
+        - {name: soc-Twitter-MPI, nodes: 41652230, edges: 1468365182, degree_skew: extreme, note: "stresses very-high-max-degree bin"}
+      list_length_sweep: "implicit via degree distribution above; degree bin boundaries (the 'ranges' field of BSim-style experiment.json) required to be reported explicitly per graph, not left as an undisclosed internal default"
+      intersection_selectivity: "reported per graph as the empirical distribution of J(u,v) values (mean/median Jaccard weight) -- low-selectivity (near-0 intersection, e.g. bipartite-like structure) and high-selectivity (near-1, e.g. clustered/community structure) graphs both required in the suite"
+    protocol:
+      warmup: "1 discarded run (not specified in the artifact's own -a-averages convention; added here since averaging without a discarded warmup biases the mean toward the cold-cache first run)"
+      reps: 10
+      statistic: "median (report min/max) -- DEVIATION from the artifact's own '-a number of averages -> mean' convention, since a raw mean is sensitive to GPU-clock-throttling or scheduling outliers across a 10-run set; fixed here following this project's general timing-protocol convention (see benchspecs/quantized-gemm, benchspecs/attention-kernel)."
+      timer: "device-side CUDA events, wrapping only the per-bin intersection kernel launches (excludes binning/argsort and ML-model inference)"
+      timing_scope: "kernel only: per-bin Jaccard-weight computation across all bins for the full edge set"
+      preprocessing_reported: "separately, once per graph: (1) CSR construction/sort, (2) degree-bin assignment (the 'binning' step), (3) ML-model (random forest) inference selecting (g,a) per bin -- all one-shot per graph, must not be silently folded into the per-run kernel time"
+    metric:
+      primary: "MEdges/s (millions of edges' Jaccard weights computed per second)"
+      secondary: "speedup vs. the repo's own _SIMPLE_GPU (naive fixed-config) and _CUGRAPH baselines (dimensionless x), matching the paper's own reported 12x avg / 35x max"
+    correctness: >
+      exact match required (Jaccard weight is a ratio of two exact
+      integer set-intersection/union sizes; no floating-point
+      approximation is involved in computing the counts, only in the
+      final division): intersection and union CARDINALITIES must match a
+      reference sequential CPU set-intersection exactly (integer
+      equality), and the resulting float64 ratio must match within
+      relative error < 1e-6 (float rounding only). MANDATORY pre-timing
+      gate on at least one small graph from the suite before any speed
+      number for that kernel configuration counts.
+
+  - id: setisect-cpu-multicore-kernel
+    claim: >
+      steady-state CPU shared-memory multi-core throughput for the SAME
+      Jaccard-weight computation, using the paper's own proposed
+      traditional-but-effective CPU algorithm -- claimed by the paper to
+      perform "comparably" to the GPU algorithms; this variant makes that
+      claim independently checkable rather than asserted.
+    inputs:
+      suite: same recommended_subset graphs as setisect-degree-binned-kernel-gpu
+      threading: "OMP_NUM_THREADS = total physical cores, thread-pinned; report core count and CPU model"
+    protocol:
+      warmup: "1 discarded run"
+      reps: 10
+      statistic: "median (report min/max)"
+      timer: "std::chrono high_resolution_clock, wrapping the full per-edge intersection loop across all threads"
+      timing_scope: "kernel only; CSR construction/sort excluded, reported once (see preprocessing_reported)"
+      preprocessing_reported: "separately, once per graph: CSR construction/sort"
+    metric: {primary: "MEdges/s", secondary: "speedup vs. single-thread CPU baseline (parallel efficiency), and vs. setisect-degree-binned-kernel-gpu's GPU number (cross-device comparison, clearly labeled as CPU-vs-GPU not same-hardware-class)"}
+    correctness: "identical exact-match gate as setisect-degree-binned-kernel-gpu"
+
+notes_on_fairness:
+  - "The paper's own timing convention (-a averages -> mean, no stated warmup) is replaced here with median + discarded warmup, since raw-mean-of-N without a warmup discard is the same class of bias this project's other specs correct (see benchspecs/attention-kernel's notes on PAT/MEATTEN/ByteTransformer)."
+  - "The paper's contribution is specifically about degree SKEW; a benchmark suite of only low-skew graphs would trivially favor the degree-aware kernel's baseline-parity case or, worse, only high-skew graphs would hide any overhead the binning/ML-inference step adds on well-behaved inputs. recommended_subset therefore spans low to extreme skew explicitly, including a near-uniform-degree control (roadNet-CA)."
+  - "Binning + ML-model inference is a real one-shot cost the paper does not appear to isolate from kernel time in its own reported numbers (not stated either way in the fetched README); this spec makes it a mandatory separately-reported preprocessing cost so the degree-aware kernel's speedup is not silently inflated by hiding that cost inside an amortization argument that was never stated."
+  - "cuGraph and the repo's other compiled-in baseline variants (_SIMPLE_GPU_EDGE, _DONGARRA, _INHOUSE_CUGRAPH) exist in the same codebase; this spec names cuGraph and _SIMPLE_GPU explicitly as the required comparison baselines since they are the two named in the paper's own claimed 12x/35x speedup context, and leaves the others as optional additional comparisons (see open_questions)."
+
+open_questions:
+  - "The exact algorithm behind the repo's _DONGARRA CMake option (a third GPU baseline) could not be identified from the fetched README alone -- if it corresponds to a specific named prior publication, it should be added as a required baseline rather than left optional."
+  - "Whether the paper's reported 35x-max / 12x-avg speedup was measured against _SIMPLE_GPU, _CUGRAPH, or some other configuration in this same repo could not be confirmed from the fetched README -- this spec requires reporting against BOTH named baselines to avoid ambiguity, but the paper's own headline number's exact baseline is unconfirmed."
+  - "No graph suite (named, with sizes) is bundled in the artifact's top-level listing; recommended_subset above is this spec's own standard SNAP/Network-Repository selection for degree-skew coverage, not the literal graph set used in the paper's own evaluation (not recoverable from the fetched README)."
+
+evidence:
+  conf/ipps/AljundiAK22: "Jaccard-ML: degree-aware binned GPU kernel with random-forest-predicted (search-group-size g, assembly-size a) per degree bin; also CPU multicore variant; -a averages->mean timing (no stated warmup); output dumped to {graph}.corr.bin, no stated automated correctness gate; up to 35x / avg 12x speedup vs GPU baselines compiled from the same repo (cuGraph, naive _SIMPLE_GPU); manual (g,a) tuning shown to get baseline to 5x faster, i.e. much of the ceiling is work-distribution tuning."

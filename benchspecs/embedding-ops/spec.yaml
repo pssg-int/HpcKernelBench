@@ -1,0 +1,120 @@
+kernel: embedding-ops
+summary: >
+  Embedding-table gather/pooling kernels as used by DLRM-style recommendation
+  models and by single-index gather workloads (knowledge-graph embeddings,
+  word embeddings), measured under both uniform and power-law-skewed row
+  access, with pooling-factor/batch axes matched to production-scale tables.
+operation: >
+  DLRM-style pooled: Y[b, :] = Pool_{j in bag(b)}( Table[idx_j, :] )  for
+  b in [0, batch), Pool in {sum, mean}, |bag(b)| = pooling_factor (may be
+  per-batch variable). Single-index (KGE/W2V-style): y[b, :] = f( Table1[i1(b),
+  :], Table2[i2(b), :], ... ) for a fused elementwise/bilinear function f
+  (e.g. TransE: Eemb[h]-Eemb[t]+Remb[r]).
+
+variants:
+  - id: embed-dlrm-pooled-kernel-f32
+    claim: >
+      steady-state pooled-embedding-gather kernel throughput, index/bag
+      construction excluded (reported separately, see embed-dlrm-e2e-preproc)
+    inputs:
+      table_suites:
+        - name: synthetic-small (RecFlex Model-A derived)
+          spec: "N tables, rows=1024 fixed, embed_dim in {4,8,16,32,64,128}"
+        - name: dlrm-terabyte-scale (RecFlex mlperf-config / EL-Rec Terabyte derived)
+          spec: "26 tables, rows spanning 3 to 40,000,000 (several capped at 40e6), embed_dim=64 uniform"
+        - name: dlrm-kaggle-scale (EL-Rec Kaggle, exact table_length list)
+          spec: "26 tables, feature_size=16, rows=[1461,581,9214729,2031648,306,24,12471,634,4,90948,5633,7607629,3183,28,14825,4995567,11,5606,2172,4,6431684,18,16,272266,105,138045]"
+      recommended_subset:
+        - "synthetic-small: all 6 embed_dim values at rows=1024 (6 tables)"
+        - "dlrm-terabyte-scale: full 26-table config (as shipped in RecFlex examples/models/mlperf/table_config.txt)"
+        - "dlrm-kaggle-scale: full 26-table config (as shipped in EL-Rec Figure11/ELRec_train.py)"
+      batch_size: [512, 2048, 4096]
+      pooling_factor:
+        one_hot: 1
+        multi_hot_fixed: [4, 8, 16, 32]
+        multi_hot_variable: "truncated-normal(mean=100, stddev=50, max=700), matching RecFlex/MLPerf quantile range [100,700]"
+      access_distribution:
+        uniform: "index ~ U(0, num_rows) per lookup, independent"
+        power_law: "index ~ power-law(alpha=3.0) over row id, matching RecFlex data_synthesis/data_generate.py get_power_law_probabilities; report alpha explicitly if varied"
+      dense_operand: "fp32, table values initialized U(-0.5/dim, 0.5/dim) (standard DLRM embedding init)"
+    protocol:
+      warmup: 25
+      reps: 100
+      statistic: median (report min/max alongside)
+      timer: device-side events (CUDA events or equivalent)
+      timing_scope: "gather+pool kernel only; index-bag construction, H2D/D2H of raw indices, and format conversion excluded and reported separately, once"
+      preprocessing_reported: "index/bag construction time reported separately, once, not amortized into the per-iteration number"
+    metric:
+      primary: "GB/s effective bandwidth = unique_rows_touched * row_bytes / time (unique_rows_touched depends on access_distribution and must be measured/reported per run, not assumed)"
+      secondary: [latency_us, row_hit_rate (fraction of lookups hitting a row already touched earlier in the same batch, reported whenever access_distribution=power_law)]
+    correctness: "output matches a reference nn.EmbeddingBag-equivalent computed in fp64 accumulation; max rel err < 1e-5 (fp32)"
+
+  - id: embed-dlrm-e2e-preproc
+    claim: >
+      end-to-end pooled-embedding path including one-shot per-batch index/bag
+      construction, amortized over k=128 batches (matches RecFlex
+      examples/end_to_end.py sample_batch_nums default)
+    inputs:
+      table_suites: "same as embed-dlrm-pooled-kernel-f32"
+      batch_size: "log-normal(mean=256, stddev=128, max=512), matching RecFlex query distribution, 128 sample batches per run"
+      access_distribution: "power_law(alpha=3.0), the harder/realistic case"
+    protocol:
+      warmup: "first 8 of the 128 batches excluded from the reported statistic (RecFlex's own script reports no warm-up; this spec adds one to avoid cold-cache bias)"
+      reps: "128 batches per run (post-warmup: 120), 5 full runs"
+      statistic: median of per-batch time, aggregated across the 5 runs
+      timer: "host wall clock (time.perf_counter) around the pooled-gather call; CUDA synchronize before stop"
+      timing_scope: "preprocessing (host-side bag/index parsing) INCLUDED per batch, amortization count k=120 explicit"
+      preprocessing_reported: "amortized into the per-batch number by construction of this variant; the un-amortized one-shot preprocessing-only time is ALSO reported separately for transparency"
+    metric:
+      primary: "GB/s effective bandwidth (as above), computed on the gather-only portion"
+      secondary: [latency_ms_per_batch, preprocessing_fraction_of_total_time]
+    correctness: "same gate as embed-dlrm-pooled-kernel-f32"
+
+  - id: embed-single-index-gather
+    claim: >
+      steady-state single-index (non-pooled) embedding gather + fused
+      elementwise/bilinear op, as used by KGE and word-embedding workloads
+      (cuKE, FULL-W2V style); preprocessing (graph/corpus loading, negative
+      sampling) excluded
+    inputs:
+      table_suites:
+        - name: kge-fb15k-scale
+          spec: "entity table [14951, 512], relation table [1345, 512], fp32; batch_size=1024, neg_sample_size=64"
+        - name: w2v-text8-scale
+          spec: "vocab table [71291, 128], fp32; effectively streaming batch = one sentence at a time (avg length ~16.7M words / 17,006 sentences ~= 983 words/sentence), negative_samples=5, window=5"
+        - name: w2v-1bword-scale
+          spec: "vocab table [555514, 128], fp32; negative_samples=5, window=5"
+      access_distribution:
+        kge_relation_ids: "power-law reuse within a batch (few relation types, many repeats) — report unique-relation-count/batch as the skew statistic"
+        kge_entity_ids: "uniform (as sampled by the KGE trainer's edge sampler)"
+        w2v_context_ids: "natural Zipfian word-frequency skew of the source corpus (Text8 or 1B-Word)"
+      recommended_subset: [TransE, TransH, TransR, TransF, RESCAL, neg_TransR, neg_TransF]
+    protocol:
+      warmup: 10
+      reps: 100
+      statistic: median (report min/max)
+      timer: device-side events (CUDA events)
+      timing_scope: "fused gather+arithmetic kernel only; graph/corpus loading and negative-sample generation excluded and reported separately, once"
+    metric:
+      primary: "GB/s effective bandwidth (bytes = rows gathered incl. duplicates * row_bytes; report both naive and unique-row-deduplicated GB/s given the relation-id reuse skew)"
+      secondary: [latency_ms, speedup_vs_pytorch_eager, speedup_vs_tvm]
+    correctness: "max rel err vs PyTorch-eager reference (fp64 accumulation) < 1e-5 (fp32)"
+
+notes_on_fairness:
+  - "cuKE, RecFlex, EL-Rec, FULL-W2V each report a different timing granularity (single kernel / kernel-vs-e2e split / full training step / full training epoch) — no paper's own number is directly comparable to another's. embed-dlrm-pooled-kernel-f32 and embed-single-index-gather fix a common kernel-only denominator; embed-dlrm-e2e-preproc gives the honest end-to-end number RecFlex already separates but EL-Rec/FULL-W2V do not."
+  - "None of the 4 papers reports GB/s; all are memory-bound. This spec makes GB/s primary and requires reporting the unique-rows-touched count under skew so the number isn't inflated by silently double-counting cache-hit rows as fresh traffic."
+  - "EL-Rec runs its 1000-iteration timing loop with zero warm-up iterations, which the spec explicitly does not carry over (warmup=25 / 10 mandated instead)."
+  - "None of the 4 papers reports a numeric max-rel-err correctness gate for the raw gather (EL-Rec/FULL-W2V substitute downstream task/embedding-quality metrics instead) — added here as a precondition orthogonal to any downstream-quality claim a paper wants to make separately."
+  - "RecFlex's power-law alpha=3.0 is adopted as the default skew parameter since it is the only paper in the track to parameterize skew explicitly; papers/systems claiming skew-robustness should also report at least one more skewed (alpha<3.0) and one less skewed (alpha>3.0 / near-uniform) point."
+
+open_questions:
+  - "No paper reports a cache/row-hit-rate number directly (cuKE and EL-Rec both build reuse/reordering optimizations around it but don't quantify it in the artifact scripts read); the row_hit_rate metric above is therefore a spec-level addition, not something validated against a paper's own reported number."
+  - "cuKE's benchmark scripts (test_cuke.py) show no explicit numeric-tolerance correctness check; whether one exists elsewhere in the repo (e.g. in test files not read) is unconfirmed."
+  - "RecFlex's end_to_end.py shows no explicit warm-up; whether warm-up is handled elsewhere (e.g. CUDA context/JIT warm-up before the timed script starts) was not confirmed by reading tune.py in full."
+  - "FULL-W2V's exact timer implementation (which clock/library) beyond 'mean and std of 5 runs' was not visible in the fulltext excerpt obtained."
+
+evidence:
+  conf/ipps/HuLJ24: "1 untimed warmup + 100 timed reps via torch.cuda.Event, mean-only, kernel-only latency, fp32, batch_size=1024/dim=512 default on FB15k, single-index gather + fused elementwise, vs PyTorch/TVM baselines."
+  conf/sc/PanZZXWSLR0D24: "Splits kernel-only (nsys gpukernsum) from 128-batch-accumulated end-to-end (untimed preprocess + time.perf_counter'd forward); power-law(alpha=3.0)-parameterized access skew; MLPerf-derived 26-table config up to 40M rows; vs TorchRec/HugeCTR/RECom."
+  conf/sc/WangWFMMD22: "Full 1000-iteration training-step wall clock (data load+fwd+bwd+optimizer), zero warmup, batch_size=4096, on real Kaggle/Terabyte/Avazu DLRM datasets with exact table sizes; correctness validated via downstream task accuracy not numeric tolerance; vs DLRM/TT-Rec/TorchRec/HugeCTR."
+  conf/ics/RandallA021: "Mean+std of 5 full training-epoch runs, words/sec throughput, Text8 (71,291 vocab) and 1B-Word (555,514 vocab) corpora with natural Zipfian access skew exploited via context-word reuse caching; quality validated via WS-353/SimLex/analogy not numeric tolerance; vs pWord2Vec/pSGNScc/accSGNS/Wombat on V100/TitanXp/P100."

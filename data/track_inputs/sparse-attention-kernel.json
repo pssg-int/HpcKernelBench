@@ -1,0 +1,73 @@
+{
+ "kernel": "sparse-attention-kernel",
+ "papers": [
+  {
+   "key": "conf/ipps/LiK26",
+   "title": "Achieving Low Latency Inference on High Resolution Images by Exploiting Sparsity in Vision Transformers",
+   "venue": "IPDPS",
+   "year": 2026,
+   "doi": "10.1109/IPDPS65963.2026.00070",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/KLab-AI3/ipdps-26_vit",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "autotuning",
+   "abstract": "Transformer based architectures have achieved great success in language, vision, and scientific domains. However, their self-attention mechanism incurs quadratic time and memory complexity, limiting scalability to high-resolution inputs. Structured sparse attention, such as local, global, or region-based masks, has been adopted in vision models like Vision Longformer, RegionViT, and DynamicViT to reduce computational cost. Yet, existing implementations often perform dense query-key multiplication followed by masking, or apply fixed tile sizes regardless of the sparsity layout, resulting in inefficient GPU utilization.We propose a tile-aware sparse attention scheduling framework that bridges algorithmic sparsity and hardware efficiency. Attention masks are represented as binary adjacency matrices and reordered using structure-aware techniques to expose localized dense blocks. These blocks",
+   "one_liner": "Tile-aware ILP scheduling for sparse ViT attention, up to 2.1x over FlashAttention fixed tiling."
+  },
+  {
+   "key": "conf/ppopp/DaiDRYLL0CS26",
+   "title": "Accelerating Sparse Transformer Inference on GPU",
+   "venue": "PPoPP",
+   "year": 2026,
+   "doi": "10.1145/3774934.3786434",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/HeyDavid633/PPoPP26-pap161-AE",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "autotuning",
+   "abstract": "Large language models (LLMs) are popular around the world due to their powerful understanding capabilities. As the core component of LLMs, accelerating Transformer through parallelization has gradually become a hot research topic. Mask layers introduce sparsity into Transformer to reduce calculations. However, previous works rarely focus on the performance optimization of sparse Transformer. In addition, current static operator fusion schemes fail to adapt to diverse application scenarios. To address the above problems, we propose STOF, a framework that incorporates optimizations for Sparse Transformer that enables flexible masking and Operator Fusion on GPU. For multi-head attention (MHA) structure, STOF maps the computation to row-wise or block-wise kernels with unique storage formats according to analytical modeling. For downstream operators, STOF maps the fusion scheme to compilation",
+   "one_liner": "STOF: row/block-wise sparse-attention kernels plus searched operator-fusion templates, 1.6x MHA speedup"
+  },
+  {
+   "key": "conf/ics/LiC25",
+   "title": "Fused3S: Fast Sparse Attention on Tensor Cores",
+   "venue": "ICS",
+   "year": 2025,
+   "doi": "10.1145/3721145.3730430",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3721145.3730430",
+   "artifact_url": "https://github.com/HPCForge/Fused3S",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Sparse attention is a core building block in many leading neural network models, from graph-structured learning to sparse sequence modeling.It can be decomposed into a sequence of three sparse matrix operations (3S): sampled dense-dense matrix multiplication (SDDMM), softmax normalization, and sparse matrix multiplication (SpMM).Efficiently executing the 3S computational pattern on modern GPUs remains challenging due to (a) the mismatch between unstructured sparsity and tensor cores optimized for dense operations, and (b) the high cost of data movement.Previous works have optimized these sparse operations individually or addressed one of these challenges.This paper introduces Fused3S, the first fused 3S algorithm that jointly maximizes tensor core utilization and minimizes data movement.Across real-world graph datasets, Fused3S achieves 1.6 -16.3 and 1.5 -14 speedup over state-of-the-art",
+   "one_liner": "Fused3S: fused SDDMM+softmax+SpMM sparse attention on tensor cores, up to 16x on H100/A30"
+  },
+  {
+   "key": "conf/ipps/TomczakK25",
+   "title": "Longer Attention Span: Increasing Transformer Context Length With Sparse Graph Processing Techniques",
+   "venue": "IPDPS",
+   "year": 2025,
+   "doi": "10.1109/IPDPS64566.2025.00107",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/KLab-AI3/Graph-Processing-Attention-IPDPS-2025",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Transformers have demonstrated great success in numerous domains including natural language processing and bioinformatics. This success stems from the use of the attention mechanism by these models in order to represent and propagate pairwise interactions between individual tokens of sequential data. However, the primary limitation of this operation is its quadratic memory and time complexity in relation to the input's context length - the length of a sequence over which the interactions need to be captured. This significantly limits the length of sequences that can be inferred upon by these models. Extensive research has been conducted to reduce the number of pairwise interactions to sub-quadratic in relation to the context length by introducing sparsity into the attention mechanism through the development of sparse attention masks. However, efficient implementations that achieve “true ",
+   "one_liner": "Graph-computing view of attention gives truly work-optimal sparse-mask kernels, beats FlashAttention, 160M token context"
+  }
+ ]
+}

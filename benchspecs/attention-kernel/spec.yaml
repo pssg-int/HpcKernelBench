@@ -1,0 +1,215 @@
+kernel: attention
+summary: >
+  Fused scaled-dot-product attention (the softmax(QK^T/sqrt(d))V core of
+  transformer models), measured as steady-state kernel throughput with
+  preprocessing (QKV projection, RoPE, KV-cache paging/block-table setup)
+  reported separately, split into prefill/full-sequence, decode/KV-cache, and
+  CPU-multicore variants that the surveyed literature treats as genuinely
+  different claims — plus a causal-vs-bidirectional mask axis and an
+  fp16/bf16 precision axis within each GPU variant.
+operation: >
+  O[B,H,Sq,d] = softmax( (Q[B,H,Sq,d] @ K[B,Hkv,Sk,d]^T) / sqrt(d) + mask )
+  @ V[B,Hkv,Sk,d]   (GQA when Hkv < H; MHA when Hkv == H; Sq == Sk for
+  prefill, Sq == 1 for decode)
+
+variants:
+  - id: attn-prefill-kernel-fp16bf16
+    claim: >
+      steady-state fused forward-pass attention kernel throughput for
+      prefill/training-style workloads (all of Q attends over all of K,V in
+      one call; no incremental KV cache), preprocessing (QKV projection,
+      RoPE application, mask/bias construction) excluded and reported
+      separately. This is the common denominator ByteTransformer, E.T.,
+      Hexcute's `benchmark_attention.py`, and FlashAttention-T's Figure-8
+      comparison all actually measure, and what RedFuser's MHA/MLA cascaded-
+      reduction fusion and MetaAttention's generated softmax-attention kernel
+      are drop-in candidates for.
+    inputs:
+      suite: >
+        union of shapes explicitly named/swept in the 9 surveyed papers'
+        artifacts, plus canonical open-model configs (BERT/ViT/Llama/
+        Mistral/Qwen) that the papers' own baselines target but do not
+        always spell out numerically in the fetched text.
+      selection: >
+        named shape presets drawn from (a) ByteTransformer's BERT-base sweep
+        (head_num=12, head_size=64, batch in {1,2,4,8,16}, seqlen in
+        32..1024), (b) Hexcute's benchmark_attention.py example
+        (batch=1, heads=32, head_size=64, seqlen=2048), (c) RedFuser's
+        named MHA/MLA sources (BERT, ViT, LLaMA-65B, DeepSeek-R1 MLA), and
+        (d) standard open-weight LLM attention configs (Llama2/3, Mistral,
+        Qwen3 — the latter also the vLLM serving target in PAT's own README)
+        for causal long-context coverage the ICS/IPDPS/SC-era papers predate.
+      recommended_subset:
+        - {name: bert-base-short, B: 32, H: 12, Hkv: 12, d: 64, S: 128, mask: bidirectional}
+        - {name: bert-base-long, B: 8, H: 12, Hkv: 12, d: 64, S: 512, mask: bidirectional}
+        - {name: bert-large, B: 16, H: 16, Hkv: 16, d: 64, S: 384, mask: bidirectional}
+        - {name: vit-large, B: 32, H: 16, Hkv: 16, d: 64, S: 577, mask: bidirectional}
+        - {name: gpt2-small, B: 8, H: 12, Hkv: 12, d: 64, S: 1024, mask: causal}
+        - {name: llama2-7b-mha, B: 8, H: 32, Hkv: 32, d: 128, S: 2048, mask: causal}
+        - {name: llama2-13b, B: 4, H: 40, Hkv: 40, d: 128, S: 4096, mask: causal}
+        - {name: llama3-8b-gqa, B: 8, H: 32, Hkv: 8, d: 128, S: 4096, mask: causal}
+        - {name: mistral-7b-gqa, B: 8, H: 32, Hkv: 8, d: 128, S: 8192, mask: causal}
+        - {name: qwen3-8b-gqa, B: 8, H: 32, Hkv: 8, d: 128, S: 4096, mask: causal}
+        - {name: deepseek-v2-lite-mla-approx, B: 8, H: 16, Hkv: 16, d: 128, S: 4096, mask: causal}
+        - {name: long-context-stress, B: 1, H: 32, Hkv: 8, d: 128, S: 32768, mask: causal}
+      dense_operand: >
+        Q,K,V initialized N(0,1) (or U(-1,1); RedFuser/MEATTEN use U(-1,1),
+        FlashAttention-family typically N(0,1) — either is acceptable but
+        must be fixed and reported since it affects softmax saturation),
+        fp16 and bf16 both required (RedFuser/Hexcute/MetaAttention/
+        FlashAttention-T all target Ampere+/Hopper where bf16 is standard;
+        ByteTransformer/E.T./MEATTEN's original artifacts are fp16-only or
+        fp32-CPU-only and are NOT required to submit a bf16 number).
+      mask: "causal AND bidirectional both required as separate sub-runs per shape (see Divergences)"
+    protocol:
+      warmup: 25
+      reps: 100
+      statistic: "median (report min/max alongside)"
+      timer: "device-side events (CUDA/HIP events), one event pair per iteration — not a single event pair wrapping a batch of iterations"
+      timing_scope: "kernel only; QKV projection, RoPE, mask/bias materialization, and H2D/D2H excluded"
+      preprocessing_reported: "separately, once, if the candidate requires an offline layout transform (e.g. Hexcute's layout synthesis, a compiled Triton kernel's autotune search)"
+      gpu_clock_locking: "recommended (Hexcute's practice: nvidia-smi -lgc to a fixed clock, restored after); if not done, report whether persistence/boost mode was enabled"
+    metric:
+      primary: >
+        TFLOP/s, causal-aware: flops = (mask==bidirectional ? 4 : 2) * B * H
+        * S^2 * d  (2 GEMMs x 2 flops/MAC, halved under causal masking since
+        only the lower triangle is computed)
+      secondary: "ms; achieved %% of GPU's fp16/bf16 tensor-core peak"
+    correctness: >
+      max abs error < 1e-2 vs. a fp32-accumulate reference (PyTorch
+      `torch.nn.functional.scaled_dot_product_attention` in fp32, or an
+      explicit fp64 CPU reference) — matching PAT's own hard-gated
+      max_error=1e-2 practice, applied uniformly here as a mandatory
+      pre-timing gate (not opt-in, correcting MEATTEN's disconnected
+      check-vs-benchmark practice). RMSE < 1e-3 vs. fp64 reported as a
+      secondary diagnostic (FlashAttention-T's numerical-stability standard).
+
+  - id: attn-decode-kv-cache-kernel
+    claim: >
+      steady-state single-query decode attention kernel throughput against a
+      KV cache — memory-bandwidth-bound, always causal, GQA-heavy. This is
+      PAT's primary claim and one of Hexcute's two attention benchmarks
+      (`benchmark_flash_decoding.py`); FlashAttention/FlashInfer/vLLM-FA and
+      the other prefix-aware baselines (FastTree, RelayAttention, DeFT,
+      Cascade Inference) that PAT compares against all target exactly this
+      operation.
+    inputs:
+      suite: >
+        (a) fixed-KV-length batched decode (uniform L across the batch, for
+        controlled comparison) and (b) PAT's tree-structured prefix-sharing
+        workload (variable, correlated L across the batch) as a required
+        sub-case, since prefix sharing is this track's one differentiating
+        real-world pattern (system prompts, RAG, tool schemas) that no other
+        attention-benchmark track (dense GEMM-style prefill) captures.
+      selection: >
+        GQA ratios drawn from PAT's own 4 tested configs plus Hexcute's
+        decoding example; batch sizes span PAT's saturating batch=1134
+        (A100-specific, to avoid tail-effect bubbles) down to small-batch
+        interactive serving (B=1,16).
+      recommended_subset:
+        - {name: pat-mha-a100-sat, B: 1134, H: 32, Hkv: 32, d: 128, L: 1024, layout: "paged, block_size=16"}
+        - {name: pat-gqa8-a100-sat, B: 1134, H: 64, Hkv: 8, d: 128, L: 1024, layout: "paged, block_size=16"}
+        - {name: pat-gqa4-a100-sat, B: 1134, H: 32, Hkv: 8, d: 128, L: 1024, layout: "paged, block_size=16"}
+        - {name: pat-gqa2-a100-sat, B: 1134, H: 16, Hkv: 8, d: 128, L: 1024, layout: "paged, block_size=16"}
+        - {name: mid-batch-medium-ctx, B: 256, H: 32, Hkv: 8, d: 128, L: 4096, layout: "paged, block_size=16"}
+        - {name: small-batch-long-ctx, B: 64, H: 32, Hkv: 8, d: 128, L: 16384, layout: "paged, block_size=16"}
+        - {name: hexcute-decode-example, B: 16, H: 16, Hkv: 16, d: 128, L: 1024, layout: "paged, block_size=16"}
+        - {name: prefix-tree-small, B_branches: [1, 4, 16], L_levels: [128, 256, 1024], layout: "paged, block_size=16", note: "PAT's own synthetic pattern"}
+        - {name: prefix-tree-realistic, B: 64, branch_factor: 8, shared_len: 512, unique_len: 256, prefix_ratio_pct: 60, layout: "paged, block_size=16", note: "approximates PAT's ToolAgent/Conversation trace statistics (51.9-75.0% prefix ratio)"}
+      dense_operand: "fp16 KV cache (PAT's own choice), fp32 softmax/accumulation; bf16 KV cache optional"
+    protocol:
+      warmup: 10
+      reps: 50
+      statistic: "median (report min/max); PAT's own script reports mean-of-~20 with no spread — this spec requires median + min/max instead"
+      timer: "device-side events (CUDA/HIP), one pair per iteration, torch.cuda.synchronize() (or equivalent) around each"
+      timing_scope: "kernel only; KV-cache/block-table construction and paging metadata excluded, reported once"
+      preprocessing_reported: "separately, once: block-table/page-table construction and (for prefix-tree case) prefix-tree detection/scheduling cost"
+    metric:
+      primary: >
+        achieved memory bandwidth, GB/s: bytes = B * 2(K+V) * L * Hkv * d *
+        sizeof(dtype), plus Q read and O write (small, include for
+        completeness). For the prefix-sharing sub-case, ALSO report bytes
+        against a deduplicated-read denominator (unique K,V blocks read
+        once, shared across all requests referencing them) to fairly credit
+        prefix-aware kernels (PAT, RelayAttention) vs. naive per-query
+        kernels that re-read shared KV redundantly — report BOTH the naive
+        and deduplicated bandwidth so the reader can see how much of a
+        kernel's advantage is algorithmic reuse vs. raw memory-system
+        throughput.
+      secondary: "ms/step (latency); TFLOP/s (flops = 4*B*H*L*d, secondary since this variant is memory- not compute-bound)"
+    correctness: >
+      max abs error < 1e-2 vs. a reference decode kernel (vLLM's
+      `flash_attn_with_kvcache`, or FlashInfer, in fp32 accumulation) —
+      PAT's own hard-gated tolerance, adopted uniformly and made mandatory
+      before any timing counts for ALL candidates, not just the paper's own
+      kernel.
+
+  - id: attn-cpu-kernel-multicore
+    claim: >
+      steady-state CPU-multicore fused attention kernel throughput, fp32,
+      full physical core count, full-sequence self-attention (no KV-cache
+      decode). The CPU analogue of attn-prefill-kernel — MEATTEN's ARM
+      target is the only CPU paper in this track, so this variant also
+      defines the fairness fixes needed on top of MEATTEN's own (loose)
+      released protocol.
+    inputs:
+      suite: "MEATTEN's own swept range, extended to include a couple of transformer-realistic points"
+      selection: "head_dim fixed at 64 (matches MEATTEN's hardcoded value); n_batch, n_head, seq_len swept"
+      recommended_subset:
+        - {name: meatten-sweep-short, B: 1, H: 8, d: 64, S: 80}
+        - {name: meatten-sweep-mid, B: 1, H: 8, d: 64, S: 800}
+        - {name: meatten-sweep-long, B: 1, H: 8, d: 64, S: 1600}
+        - {name: bert-base-cpu, B: 8, H: 12, d: 64, S: 128, mask: bidirectional}
+        - {name: bert-base-cpu-long, B: 1, H: 12, d: 64, S: 512, mask: bidirectional}
+        - {name: gpt2-small-cpu, B: 1, H: 12, d: 64, S: 1024, mask: causal}
+      dense_operand: "fp32, U(-1,1), matching MEATTEN's own generator"
+    protocol:
+      warmup: 5
+      reps: 20
+      statistic: >
+        median (report min/max) — DEVIATION FROM MEATTEN'S OWN
+        REPEAT=3 CONSTANT, which is too low to distinguish signal from
+        OS-scheduling/thermal noise on a multi-core CPU; fixed here to 20,
+        following this project's spmm-cpu-kernel-f32 precedent (RASSM's
+        median-of-N practice).
+      timer: "std::chrono high_resolution_clock or rdtsc, one timestamp pair per repetition"
+      timing_scope: "kernel only; excludes buffer allocation and I/O"
+      threading: "OMP_NUM_THREADS / pthreadpool threads = total physical cores, thread-pinned; report core count and ISA (NEON/SVE width) used"
+      preprocessing_reported: "separately, once, if the candidate requires a non-trivial data-layout repack for SIMD (MEATTEN's own stated contribution)"
+    metric: {primary: "GFLOP/s (flops per attn-prefill-kernel-fp16bf16's causal-aware formula)", secondary: "ms"}
+    correctness: >
+      max abs error < 1e-3 vs. a reference implementation (XNNPACK's
+      `xnn_run_operator` scaled-dot-product-attention, or a naive triple-loop
+      CPU reference) — MEATTEN's own tolerance value, but made a MANDATORY
+      pre-timing gate: MEATTEN's released `compareTensor()` exists but is
+      never called from the perf-timing driver in the surveyed source, so
+      correctness and performance are never verified together in the
+      original artifact. This spec closes that gap.
+
+notes_on_fairness:
+  - "PAT, MEATTEN, and ByteTransformer each measure a single latency number per config with either no reported spread (ByteTransformer) or too few repetitions to compute one meaningfully (MEATTEN's REPEAT=3). This spec requires median + min/max from >=20 per-iteration device-side timestamps for every variant, following the same fix applied in benchspecs/spmm/spec.yaml to RoDe/GE-SpMM/SMaT's batched-mean timing."
+  - "MEATTEN's own correctness check (compareTensor, abs diff < 1e-3) exists in the repo but is disconnected from the performance benchmark driver — the perf loop never calls it. This spec makes the correctness gate mandatory and part of the SAME run as the timed measurement, for every variant."
+  - "PAT's benchmark script hard-codes batch=1134 specifically to saturate one A100's SM count and avoid tail-effect bubbles; this is a legitimate steady-state-throughput choice but is NOT representative of small-batch interactive decode latency (the metric users usually care about for chat). This spec keeps PAT's saturating-batch shapes in the recommended_subset for throughput comparability with PAT's own numbers, but adds small-batch (B=1, 16) shapes so latency-sensitive candidates aren't penalized for not saturating."
+  - "Prefix-sharing bandwidth accounting is not standardized anywhere in the surveyed literature: PAT reports latency reduction %% without publishing a bytes-moved formula, so a prefix-unaware kernel and a prefix-aware kernel are compared only by wall-clock, which conflates algorithmic reuse with raw kernel efficiency. This spec requires reporting bandwidth against BOTH a naive (per-query, no dedup) and a deduplicated (unique-block) byte count, so the two effects are separable — see attn-decode-kv-cache-kernel's metric section."
+  - "Causal and bidirectional attention are pooled into a single wall-clock number by no paper surveyed (each paper picks one mask and stays there); this spec adds mask as an explicit required sub-case within attn-prefill-kernel-fp16bf16 so the ~2x FLOP difference is visible rather than silently baked into a single reported number."
+  - "RedFuser, Hexcute, and MetaAttention (the 3 compiler/codegen papers) are treated as candidate SUBMISSIONS to attn-prefill-kernel-fp16bf16 or attn-decode-kv-cache-kernel (whichever shape they report), not as a separate 'compiled kernel' variant — the fusion boundary between softmax and the surrounding GEMMs is an implementation strategy, not part of this benchmark's operation definition, so pooling them with hand-written kernels (FlashAttention, MEATTEN) under the same variant is the correct comparison, not a category error."
+  - "No fp8 attention variant is defined: none of the 9 papers benchmarks full QK^TV attention in fp8 (RedFuser and Hexcute's 'FP8' benchmark categories are quantized GEMM/MoE-routing, not attention). Adding an fp8-attention variant without literature grounding would violate the same-standard-as-the-track principle this spec otherwise follows; left as an open question."
+
+open_questions:
+  - "FlashAttention-T's exact warmup/repeat count inside its compiled fp16-fwd-bench CUDA/C++ binary was not visible from the README alone (only that it writes a CSV report); the binary's source was not fetched."
+  - "RedFuser's repo is a fork of Apache TVM/Relax with generic apps/tests boilerplate; no attention-specific benchmark driver distinct from the general TVM test harness was located in the top-level listing within this survey's time budget — Appendix A.5 of the paper (not machine-extractable from the fulltext render used) likely has the exact shapes."
+  - "MetaAttention's 'operator-specific tolerances' for its GPU correctness suite (tests/functional) were not given as concrete numbers in the README; this spec's 1e-2/1e-3 values for the GPU variants are NOT independently confirmed against MetaAttention's own thresholds."
+  - "E.T.'s (SC'21) timing protocol and correctness tolerance could not be extracted from the top-level README within this survey's time budget — only the kernel source (kernels/attention.cu, confirming fp16 + tensor-core MMA) and the 3 example-encoder test targets were read. A deeper pass would read test/encoder_*_test source directly."
+  - "LightSeq2's SC'22-specific evaluation section (as opposed to the monorepo README's mixed v1/v2/v3 numbers) was not independently retrieved; the arXiv abstract page (2110.05722) did not expose fulltext evaluation detail through the fetch tool used. The recommended_subset's BERT/GPT2/Transformer shapes are this spec's own choice, not lifted from a confirmed LightSeq2-specific table."
+  - "Whether Phase 2 wants a 4th variant specifically for the MLA (multi-head latent attention, DeepSeek-style) structural variant that RedFuser and (approximately) this spec's deepseek-v2-lite-mla-approx shape gesture at: MLA's low-rank KV compression changes the memory-traffic formula in attn-decode-kv-cache-kernel's metric (bytes moved is NOT simply 2*L*Hkv*d, since K and V are reconstructed from a shared latent), and none of the 9 papers surveyed publishes an MLA-specific byte-accounting formula. Left as a todo rather than guessed."
+
+evidence:
+  conf/asplos/YiZHYSWZZLL26: "GQA decode-only KV-cache attention; A100/H100; batch=1134 saturating + prefix-tree synthetic + real ToolAgent/Conversation traces; CUDA-event median-of-~20, 10-iter warmup; max_error=1e-2 hard-gated in script; vs FlashAttention2/FlashInfer/FastTree/RelayAttention(+)/DeFT/Cascade."
+  conf/asplos/TangLWSLXZL26: "cascaded-reduction compiler (softmax+GEMM fusion is one instance); MHA/MLA/MoE-routing/FP8-GEMM shapes from BERT/ViT/LLaMA-65B/DeepSeek/Qwen3; A10+H800; normalized speedup vs PyTorch eager/Dynamo/TVM/FlashAttention2/FlashMLA; timing protocol/tolerance not extractable from fetched text."
+  conf/cgo/ZhangDSHSP26: "layout-synthesis compiler; attention is 1 of 4 benchmarked kernel classes; A100/H100 PCIe with LOCKED gpu clocks (rare in this track); benchmark_attention.py example B=1,H=32,d=64,S=2048 prefill + separate flash-decoding B=1,H=16,d=128,L=1024; matches cuBLAS/FlashAttention baselines."
+  conf/ppopp/Xu0BXX00000C26: "tensor-vector-parallel FA variant; A100(ILP)/H100(TLP); standalone CUDA/C++ CSV-writing binaries bypass Python overhead; RMSE<1e-3 vs fp64 as a first-class reported result (Fig 11), not just a gate; 1.05-1.17x avg speedup vs FA2/FA3/Triton/FlashInfer (modest, honestly reported)."
+  conf/ppopp/ChenC0XMM0X00W026: "attention-DSL codegen framework; 62 configs H100 (Fig 11) + 25 configs MI250X (Fig 14), pytest-driven, CSV+PDF validated; correctness suite has 'operator-specific tolerances' (unspecified values); vs FlashAttention/FlashLinearAttention/native PyTorch."
+  conf/ics/FuYDS24: "ARM multi-core CPU self-attention; fused micro-kernels + SIMD layout; head_dim=64 hardcoded; n_batch/n_head/seq_len swept 80-1600; REPEAT=3 host-clock timing (loosest in track); compareTensor abs-diff<1e-3 check exists but NOT wired into perf driver; vs XNNPACK."
+  conf/ipps/ZhaiJWJZCLZ23: "padding-free BERT self-attention; A100; head_num=12,head_size=64 fixed, batch{1,2,4,8,16} x seqlen{32..1024} swept at avg_seqlen=60%%; fp16-only in released script; single-number-per-cell reporting (no visible repeat/median); vs PyTorch/PyTorch-JIT/TF-XLA/TurboTransformer/DeepSpeed/FasterTransformer."
+  conf/sc/WangWXHQDWL22: "Transformer/BERT/GPT2/ViT training+inference; 1xA100 training / 8xA100 inference; fp16 vs PyTorch-fp16-autocast and int8 vs PyTorch-QAT; monorepo README conflates v1/v2/v3, this SC'22 paper's own isolated numbers not independently confirmed."
+  conf/sc/ChenHPLG0D021: "BERT-style self-attention with tensor-tile pruning + attention-aware pruning + seqlen-aware optimization; V100S/CUDA11.4 (oldest paper, pre-Ampere); kernel source confirms fp16 + warp-level softmax + wmma tensor-core MMA; timing/tolerance/baseline numbers not extracted (time-budget open question)."

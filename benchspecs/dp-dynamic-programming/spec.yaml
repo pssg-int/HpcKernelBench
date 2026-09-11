@@ -1,0 +1,89 @@
+kernel: dp-dynamic-programming
+summary: >
+  All-Pairs Shortest Paths (APSP) on large sparse graphs via a hybrid dynamic
+  program: dense Floyd-Warshall recurrence tiled within METIS-partitioned
+  subgraphs, combined with global Dijkstra (SSSP) sweeps across subgraph
+  boundaries, run distributed across multiple MPI ranks / GPUs, to avoid the
+  all-to-all communication a naive blocked-Floyd-Warshall APSP requires.
+operation: >
+  Given a graph G=(V,E) (weighted or unweighted, directed or undirected),
+  compute shortest-path distance (and predecessor) between every pair of
+  vertices: d(k)[i][j] = min(d(k-1)[i][j], d(k-1)[i][k] + d(k-1)[k][j]) applied
+  locally per METIS partition, reconciled globally via per-boundary-vertex
+  Dijkstra sweeps across the k=1..|V| recurrence.
+variants:
+  - id: dp-apsp-partition-count-sweep
+    claim: >
+      steady-state solve throughput as a function of graph size and METIS
+      partition count K, one-shot METIS partitioning + sparse-format load
+      excluded from solve time and reported separately, since preprocessing
+      cost (partitioning) does not amortize the same way across problem sizes
+      and the paper's own contribution is specifically about avoiding
+      per-partition global communication at solve time.
+    inputs:
+      suite: "SuiteSparse Matrix Collection + Network Repository, matching the artifact's own stated dataset sources"
+      selection: "all real, connected, sparse graphs with |V| in [1e4, 2e7]; both weighted and unweighted, both directed and undirected variants tested where the source dataset provides them (the artifact's own 2x2 directory structure: weight-directed / weight-undirected / unweight-directed / unweight-undirected)"
+      recommended_subset:
+        - {name: "luxembourg_osm", note: "real road network, shipped in the artifact's own repo as its README worked example, unweighted undirected, |V| ~114K"}
+        - {name: "delaunay_n16", note: "synthetic Delaunay triangulation mesh, named in the artifact's own SLURM launch script, |V|=65536"}
+        - {name: "delaunay_n20, delaunay_n22, delaunay_n24", note: "same synthetic family, size-scaling points (SuiteSparse-standard Delaunay series)"}
+        - {name: "roadNet-CA, roadNet-PA, roadNet-TX", note: "SuiteSparse real road networks, |V| ~2M each, a natural size step above luxembourg_osm"}
+        - {name: "hugebubbles-00020, hugetrace-00020", note: "SuiteSparse large planar-mesh graphs, |V| >10M, approaching the paper's own 11.5M-vertex headline scale"}
+      partition_count: "K in {8, 32, 128, 512} (METIS -k; the artifact's own README example uses K=128, the SLURM script uses K=8), swept independently of graph size to isolate the paper's partitioning-communication tradeoff"
+    protocol:
+      warmup: 1
+      reps: 5
+      statistic: "median (report min/max)"
+      timer: "wall-clock (std::chrono or MPI_Wtime) wrapping the solve call only, e.g. G.solve() / G.solveSubGraph(); NOT recovered from the artifact's own source (fap.cpp contains no timing instrumentation) -- this protocol is this survey's own specification, not the artifact's confirmed default. See open_questions."
+      timing_scope: "solve only; METIS partitioning and sparse-graph load/preprocessing (G.preCondition()) are a separate, REQUIRED-reported one-shot cost, since they do not scale the same way with repeated solves and folding them in would hide the paper's own claimed benefit (avoided per-solve communication, not avoided one-time partitioning)"
+      preprocessing_reported: "METIS partition time and graph load time, once per (dataset, K) combination"
+    metric:
+      primary: "wall-clock solve time, s (or minutes for the largest instances), matching the paper's own reported metric -- APSP's per-vertex work is graph-structure-dependent, so a normalized flop-rate metric is not standard for this kernel"
+      secondary: "speedup vs CPU Dijkstra (serial, per-source) and vs GPU Dijkstra (per-source, parallel across GPUs), dimensionless x, matching the paper's own baseline comparisons"
+    correctness: >
+      MANDATORY pre-timing gate, matching the artifact's own confirmed
+      mechanism (fap/utils/checkResult.h): for each solved subgraph, sample
+      20 source vertices and, for each, 10 random destination vertices (200
+      pairs total); recompute the true shortest distance via a reference
+      Dijkstra implementation and require exact match (unweighted graphs:
+      integer hop-count equality; weighted graphs: floating-point distance
+      equality within 1e-5 relative, accounting for summation order
+      differences between the DP recurrence and the reference Dijkstra walk).
+      This is a SAMPLING-based check (200 of |V|^2 pairs), not exhaustive --
+      recommended strengthening (not in the artifact): full APSP
+      cross-validation against a reference all-pairs Dijkstra on small
+      instances (|V| <= 2000) as an additional, exhaustive gate.
+  - id: dp-apsp-graph-property-matrix
+    claim: >
+      solve throughput across the four structural graph-property combinations
+      (directed x weighted) the artifact's own codebase treats as first-class
+      cases, since the DP recurrence and the Dijkstra cross-check both behave
+      differently on each (directed graphs require asymmetric distance
+      matrices; unweighted graphs reduce Dijkstra to BFS-style hop counting).
+    inputs:
+      suite: "same SuiteSparse/Network-Repository sources as dp-apsp-partition-count-sweep"
+      selection: "one representative mid-size graph (|V| ~1e6) per each of the 4 combinations: weight-directed, weight-undirected, unweight-directed, unweight-undirected"
+      partition_count: "K=128 (the artifact's own README default)"
+    protocol:
+      warmup: 1
+      reps: 5
+      statistic: "median (report min/max)"
+      timer: "same as dp-apsp-partition-count-sweep"
+      timing_scope: "solve only, same separation as dp-apsp-partition-count-sweep"
+    metric:
+      primary: "wall-clock solve time, s"
+      secondary: "solve time ratio, directed / undirected, and weighted / unweighted, at matched |V| and K (isolates each property's individual cost)"
+    correctness: "same sampled Dijkstra spot-check as dp-apsp-partition-count-sweep, applied per graph-property combination"
+
+notes_on_fairness:
+  - "The artifact's own core solve path (fap.cpp) contains no timing instrumentation; this spec's protocol (warmup/reps/statistic/timer) is therefore a REQUIREMENT this survey imposes for reproducibility, not a description of a confirmed existing default -- flagged explicitly rather than presented as the paper's own practice."
+  - "The correctness mechanism the artifact does confirm (200-pair random Dijkstra spot-check) is real and unusually well-documented among this project's singleton-track artifacts, but is sampling-based; this spec keeps it as the practical default (matching the artifact's own convention and avoiding an expensive full-APSP recompute at scale) while recommending an additional exhaustive check on small instances, so a bug confined to untested vertex pairs is not silently missed at the scales where full verification is affordable."
+  - "The paper's own headline 11.5M-vertex / 2048-GPU result uses a dataset not identified in the sources fetched; this spec's recommended_subset instead uses SuiteSparse-named graphs at comparable or smaller scale so the benchmark is runnable without needing the paper's exact (unidentified) largest input."
+
+open_questions:
+  - "The paper's own timing protocol (warmup/repeat/statistic/timer, and precisely what code region is wrapped) was not recoverable from the sources fetched -- fap.cpp has no time/clock/MPI_Wtime calls in the portion read, meaning timing lives in an external driver not present in the surveyed repo tree."
+  - "The specific dataset name used for the paper's own 11,548,845-vertex / 2048-GPU headline result was not identified from the fetched README or scripts."
+  - "Whether the sampled correctness check (check_ans, 200 pairs) is run by default in the artifact's benchmark scripts, or is only available as an opt-in debugging call, was not confirmed beyond seeing it invoked from app/singleNodeExample.cpp's main()."
+
+evidence:
+  conf/ics/YangLWHT23: "Fast APSP: METIS graph partition + hybrid local-Floyd-Warshall / global-Dijkstra DP recurrence, distributed MPI+CUDA; datasets from SuiteSparse + Network Repository (luxembourg_osm and delaunay_n16 confirmed by name in the repo); no timing instrumentation found in fap.cpp; correctness via a 200-pair random-sample Dijkstra spot-check (checkResult.h, code-confirmed); reports wall-clock time and speedup-vs-baseline (16.97x vs CPU Dijkstra, 7.09x vs GPU Dijkstra, 7.09x vs Part APSP, 4.6x vs decentralized Part APSP); 11.5M-vertex graph solved in ~12.45 min on 2048 GPUs."

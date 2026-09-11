@@ -1,0 +1,390 @@
+<title>HPC-KernelBench Status</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#F3F5F8; --surface:#FFFFFF; --surface-2:#EAEEF3; --ink:#16202B; --muted:#5C6B7A; --line:#D7DEE6;
+  --accent:#0B5D74; --accent-ink:#FFFFFF; --accent-soft:#DCEEF3;
+  --ok:#1E7F4F; --ok-soft:#E1F3E8; --warn:#9A6B00; --warn-soft:#FBF0D3; --bad:#B4471D; --bad-soft:#F8E3DA;
+  --crit:#8B2635; --crit-soft:#F6DFE3; --off:#6B7785; --off-soft:#E6EAEF;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --display:"IBM Plex Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --measure:68ch; --radius:6px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1319; --surface:#151C24; --surface-2:#1B242E; --ink:#E4E9EE; --muted:#93A1AF; --line:#263241;
+    --accent:#5FB6CE; --accent-ink:#0B1A20; --accent-soft:#123745;
+    --ok:#5FC28C; --ok-soft:#14321F; --warn:#E0B44A; --warn-soft:#33290F; --bad:#E38A63; --bad-soft:#3A2116;
+    --crit:#E27B8B; --crit-soft:#3A1A20; --off:#9AA7B4; --off-soft:#232D38;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1319; --surface:#151C24; --surface-2:#1B242E; --ink:#E4E9EE; --muted:#93A1AF; --line:#263241;
+  --accent:#5FB6CE; --accent-ink:#0B1A20; --accent-soft:#123745;
+  --ok:#5FC28C; --ok-soft:#14321F; --warn:#E0B44A; --warn-soft:#33290F; --bad:#E38A63; --bad-soft:#3A2116;
+  --crit:#E27B8B; --crit-soft:#3A1A20; --off:#9AA7B4; --off-soft:#232D38;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+code,.mono{font-family:var(--mono);font-size:.92em}
+h1,h2,h3,h4{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.25}
+h1{font-size:2rem;font-weight:600;letter-spacing:-.01em}
+h2{font-size:1.35rem;font-weight:600}
+h3{font-size:1.05rem;font-weight:600}
+h4{font-size:.9rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+p{margin:0}
+.wrap{max-width:1280px;margin:0 auto;padding:0 24px}
+
+/* masthead */
+.mast{border-bottom:1px solid var(--line);background:var(--surface)}
+.mast .wrap{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:32px;padding-top:40px;padding-bottom:32px}
+.eyebrow{font-family:var(--mono);font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.thesis{margin-top:14px;max-width:var(--measure);color:var(--ink)}
+.thesis b{font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;align-self:start}
+.stat{background:var(--surface);padding:14px 16px}
+.stat .n{font-family:var(--display);font-size:1.7rem;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat .l{font-size:.78rem;color:var(--muted);margin-top:4px}
+.legend{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:10px 18px;font-size:.82rem;color:var(--muted);padding-top:6px;border-top:1px solid var(--line)}
+.legend .badge{margin-right:6px}
+
+/* toolbar */
+.toolbar{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.toolbar .wrap{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;padding-top:10px;padding-bottom:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:4px 11px;font:inherit;font-size:.8rem;cursor:pointer;line-height:1.3}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip:focus-visible,.search:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.search{flex:1 1 220px;min-width:180px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:var(--radius);padding:6px 10px;font:inherit;font-size:.88rem}
+.count{font-family:var(--mono);font-size:.8rem;color:var(--muted);margin-left:auto;white-space:nowrap}
+
+/* body grid */
+.grid{display:grid;grid-template-columns:230px minmax(0,1fr);gap:36px;padding-top:28px;padding-bottom:64px}
+.side{position:sticky;top:58px;align-self:start;max-height:calc(100vh - 70px);overflow:auto;font-size:.82rem;padding-right:6px}
+.side h4{margin:14px 0 6px}
+.side h4:first-child{margin-top:0}
+.side a{display:flex;align-items:center;gap:8px;color:var(--ink);padding:2px 0;font-family:var(--mono);font-size:.78rem}
+.side a .dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--off)}
+.side a.hidden{display:none}
+.dot.gated{background:var(--ok)}.dot.gate-fails{background:var(--bad)}.dot.built{background:var(--warn)}.dot.build-failed{background:var(--crit)}.dot.none{background:transparent;border:1px solid var(--line)}
+.dot.planned{background:transparent;border:1px dashed var(--muted)}
+
+main{min-width:0}
+section.intro{margin-bottom:34px}
+.prose{max-width:var(--measure)}
+.prose p+p{margin-top:10px}
+.prose ul{margin:8px 0 0;padding-left:1.2em}
+.prose li+li{margin-top:5px}
+.rule{border:0;border-top:1px solid var(--line);margin:28px 0}
+
+/* track */
+.track{border-top:2px solid var(--ink);padding-top:14px;margin-top:38px}
+.track.hidden{display:none}
+.track-head{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline}
+.track-head .kid{font-family:var(--mono);font-size:1.25rem;font-weight:500}
+.track-head .dom{font-size:.8rem;color:var(--muted)}
+.badge{display:inline-block;border-radius:4px;padding:1px 8px;font-size:.74rem;font-weight:600;letter-spacing:.02em;line-height:1.5;white-space:nowrap;font-family:var(--display)}
+.badge.gated{background:var(--ok-soft);color:var(--ok)}
+.badge.gate-fails{background:var(--bad-soft);color:var(--bad)}
+.badge.built{background:var(--warn-soft);color:var(--warn)}
+.badge.build-failed{background:var(--crit-soft);color:var(--crit)}
+.badge.skipped{background:var(--off-soft);color:var(--off)}
+.badge.deferred-hw{background:var(--surface-2);color:var(--ink);border:1px dashed var(--muted)}
+.badge.implemented{background:var(--accent-soft);color:var(--accent)}
+.badge.planned,.badge.no-domain,.badge.unknown{background:var(--off-soft);color:var(--off)}
+.badge.cent-core{background:var(--accent-soft);color:var(--accent);font-weight:500}
+.badge.cent-component{background:var(--warn-soft);color:var(--warn);font-weight:500}
+.badge.cent-tangential{background:var(--off-soft);color:var(--off);font-weight:500}
+/* H100 (sm_90) outcome badges -- prefixed h100 so they never clash with the A100 status badges */
+.badge.h100pass{background:var(--ok-soft);color:var(--ok)}
+.badge.h100recompile{background:var(--accent-soft);color:var(--accent)}
+.badge.h100reg{background:var(--crit-soft);color:var(--crit);border:1px solid var(--crit)}
+.badge.h100nki{background:var(--bad-soft);color:var(--bad)}
+.badge.h100gatefail{background:var(--bad-soft);color:var(--bad)}
+.badge.h100unsup{background:var(--off-soft);color:var(--off)}
+.badge.h100timeout{background:var(--warn-soft);color:var(--warn)}
+.badge.h100err{background:var(--crit-soft);color:var(--crit)}
+.badge.h100slow{background:var(--off-soft);color:var(--off)}
+.h100row{margin-top:4px;font-size:.78rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.h100row .tput{font-family:var(--display);color:var(--ink)}
+.h100row .rd{color:var(--ok)}
+.h100row .rdfail{color:var(--bad)}
+.track-body{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;margin-top:14px}
+.block h4{margin-bottom:6px}
+.summary{max-width:var(--measure)}
+.op{font-family:var(--mono);font-size:.84rem;background:var(--surface-2);border-radius:var(--radius);padding:8px 12px;margin-top:8px;white-space:pre-wrap;max-width:var(--measure)}
+table{border-collapse:collapse;width:100%;font-size:.84rem}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
+th,td{text-align:left;vertical-align:top;padding:7px 10px;border-bottom:1px solid var(--line)}
+th{font-family:var(--display);font-weight:600;font-size:.76rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;background:var(--surface-2)}
+tr:last-child td{border-bottom:0}
+td.mono,td .mono{font-family:var(--mono);font-size:.8rem}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.inputs{display:flex;flex-wrap:wrap;gap:6px}
+.tag{border:1px solid var(--line);border-radius:4px;padding:1px 7px;font-family:var(--mono);font-size:.76rem;background:var(--surface)}
+.kv{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 14px;font-size:.86rem;max-width:calc(var(--measure) + 14ch)}
+.kv dt{color:var(--muted);font-family:var(--display);font-size:.8rem;padding-top:2px}
+.kv dd{margin:0}
+.impls{display:flex;flex-wrap:wrap;gap:6px}
+.status-text{color:var(--muted);font-size:.8rem;margin-top:2px}
+.papers-list{font-size:.86rem;margin:0;padding-left:1.1em}
+.papers-list li+li{margin-top:3px}
+.venue{font-family:var(--mono);font-size:.76rem;color:var(--muted)}
+details{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
+details summary{cursor:pointer;padding:8px 12px;font-size:.86rem;font-family:var(--display);font-weight:500}
+details[open] summary{border-bottom:1px solid var(--line)}
+details .inner{padding:10px 12px;font-size:.86rem;max-width:calc(var(--measure) + 10ch);white-space:pre-wrap}
+.compact .tw{margin-top:10px}
+.findings li{margin-top:8px}
+.findings b{font-weight:600}
+.foot{border-top:1px solid var(--line);color:var(--muted);font-size:.8rem;padding:18px 0 40px}
+@media (max-width:1000px){.grid{grid-template-columns:minmax(0,1fr)}.side{display:none}.mast .wrap{grid-template-columns:minmax(0,1fr)}}
+@media (prefers-reduced-motion: no-preference){.track{scroll-margin-top:70px}}
+.track{scroll-margin-top:70px}
+</style>
+
+<header class="mast">
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">HPC-KernelBench · Phase 2 status · 2026-09-08 · + H100 baselines 2026-09-11</div>
+      <h1 style="margin-top:8px">HPC-KernelBench Status</h1>
+      <p class="thesis">A kernel-optimization benchmark for HPC. From <b>7029</b> main-track papers published since 2020 at 10 conferences and journals we selected <b>917</b> kernel-optimization papers, <b>308</b> of which have an open-source artifact, normalized into <b>91</b> kernel groups. Executable specifications (spec.yaml) exist for <b>93</b> tracks; <b>35</b> of them have a runnable reference implementation and a correctness gate in the harness, and <b>29</b> tracks have paper artifacts integrated as baselines. Each track below lists what problem is computed, what the inputs are, how timing and correctness are judged, which baseline papers exist, and whether they reproduce and pass the gate under our harness.</p>
+      <p class="thesis" style="margin-top:10px;color:var(--muted);font-size:.9rem">Every "gated" result is a functional check on a login node (shared A100, synthetic smoke inputs, reduced protocol); the harness marks all of them <code>conforming:false</code>. No formal timing on compute nodes has been done yet.</p>
+      <p class="thesis" style="margin-top:10px;color:var(--muted);font-size:.9rem"><b>H100 (sm_90) baselines</b> (how this A100-era code behaves on Hopper): each integrated artifact was also gated on an H100. The key finding — old <b>sm_80 binaries that embedded PTX run unchanged (JIT-forward), but SASS-only ones fail with <code>cudaErrorNoKernelImageForDevice</code> and only run once recompiled for sm_90</b>. Per artifact below, an <span class="badge h100pass">H100 PASS</span> / <span class="badge h100recompile">recompiled</span> / <span class="badge h100reg">regression</span> row shows the H100 outcome plus indicative throughput (smoke and, for the sparse/graph/ANN/tensor subset, real datasets — SuiteSparse, SNAP graphs, SIFT1M, FROSTT). Still indicative, <code>conforming:false</code> (clocks not lockable). Full write-up: <code>bench/H100_baselines.md</code>.</p>
+    </div>
+    <div class="stats" id="stats"></div>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="wrap">
+    <div class="chips" id="status-chips" role="group" aria-label="Filter by track status">
+      <button class="chip" data-f="all" aria-pressed="true">All tracks</button>
+      <button class="chip" data-f="implemented" aria-pressed="false">Implemented</button>
+      <button class="chip" data-f="with-artifacts" aria-pressed="false">With artifacts</button>
+      <button class="chip" data-f="has-gated" aria-pressed="false">Has a gated baseline</button>
+      <button class="chip" data-f="planned" aria-pressed="false">Planned</button>
+    </div>
+    <input class="search" id="search" type="search" placeholder="Search kernels, paper titles, artifact names…" aria-label="Search">
+    <span class="count" id="count"></span>
+  </div>
+</div>
+
+<div class="wrap grid">
+  <nav class="side" id="side" aria-label="Track index"></nav>
+  <main>
+    <section class="intro prose">
+      <h2>How the harness decides "reproduced"</h2>
+      <p>Each track's <code>spec.yaml</code> is parsed and enforced at run time; it is not documentation. Preprocessing (format conversion, index construction) is timed once and separately; <b>the correctness gate runs before timing</b>, and a failed gate yields no throughput number; warmup iterations are discarded; every iteration gets its own pair of timestamps; median plus min/max/stdev are reported. Numerical gates use the componentwise backward-error scale <code>|out−ref| / (|A|·|B|)</code>; structural gates compare sets, levels or scores exactly. The reference implementation never shares code objects with the implementation under test.</p>
+      <p>Artifact integration contract (<code>bench/ARTIFACT_GUIDE.md</code>): wrap the kernel, not the paper's benchmarking script; the artifact's own format conversion counts as preprocessing; patches are minimal and recorded one by one, only build-system changes are allowed, and an artifact whose kernel code must be edited to run is marked SKIP; the gate is never loosened, and a failed gate is a result; unsupported shapes must raise <code>NotImplementedError</code>, which the runner records as unsupported instead of crashing. Current scope: a single NVIDIA GPU; CPU-only, multi-GPU-only and FPGA artifacts are skipped with a documented reason.</p>
+      <p><b>Baseline selection rule (revised 2026-09-05)</b>: the early rule, "the 3 newest open-source artifacts per track", picked DSLs, LLM weight-sparsity kernels with a different input regime, and CPU implementations as SpMM baselines. Every (paper, track) pair now carries a kernel-centrality label: <span class="badge cent-core">core</span> the kernel is the paper's main contribution and is evaluated at the kernel level; <span class="badge cent-component">component</span> the kernel is part of a larger system, evaluated end-to-end, or generated by a compiler; <span class="badge cent-tangential">tangential</span> the kernel is merely called along the way. Added to this are regime match (whether the paper's evaluation inputs are of the same kind as the spec's input set) and single-GPU availability: core first, matching regime first, year only as a tiebreak. Adapters already integrated that fail the rule are kept as competitors but are not used as the Phase 3 "human SOTA" baseline.</p>
+      <p>Status meanings: <span class="badge gated">GATED</span> built and passed our correctness gate; <span class="badge gate-fails">GATE FAILS</span> built but fails the gate (mostly bugs in the artifact itself, with evidence in STATUS.md); <span class="badge built">BUILT</span> built, but the gate is blocked by the precision policy or cannot be verified independently; <span class="badge build-failed">BUILD FAILED</span> does not build with this machine's toolchain; <span class="badge skipped">SKIPPED</span> skipped with a documented reason (kernel not implemented, platform out of scope, inseparable fused operator, …); <span class="badge deferred-hw">DEFERRED (needs sm_90+)</span> the only obstacle is the GPU architecture (Hopper-only PTX, FP8, …); source and provenance are kept for integration on a newer machine, and each directory's <code>REQUIRES_GPU</code> states the requirement.</p>
+    </section>
+    <div id="tracks"></div>
+    <section class="compact" id="rest"></section>
+    <section class="prose findings" id="findings" style="margin-top:44px">
+      <h2>Real findings from integration</h2>
+      <p style="margin-top:8px">These are problems exposed by putting paper artifacts into a unified harness. Each is recorded in the corresponding <code>STATUS.md</code>; the released source was not modified.</p>
+      <ul>
+        <li><b>Split_SpTRSV (TPDS'21)</b>: two <code>__threadfence</code> calls in the synchronization-free executor are commented out, so the cross-block ready flag becomes visible before the data; matrices with ≥256 rows produce wrong results. A scratch build with the fences restored passes every gate at 1e-15.</li>
+        <li><b>PackKV (IPDPS'26)</b>: the kq kernel supports only hidden_dim ∈ {1024, 5120}; other shapes print "no such case", return 0 without an error, and the output is zero-initialized garbage.</li>
+        <li><b>STOF (PPoPP'26)</b>: the fine-grained mask <code>inner_bitmaps</code> is threaded through every signature but never dereferenced, so mixed tiles are silently computed as dense; the sliding-window gate rejects with err=6.83.</li>
+        <li><b>ZipServ</b>: uint8 underflow in decompression plus integer promotion flips the sign bit; its self-check uses only GEMM cosine similarity and cannot catch it. <b>MANS</b>: illegal memory access on general byte streams.</li>
+        <li><b>LOGAN (IPDPS'20)</b>: kernel macros hardcode match=+1/mismatch=-1/gap=-1, so the run-time scoring parameters have no effect; the direction parameter is dead code and extension is always bidirectional.</li>
+        <li><b>Hidet</b> fp32 convolution silently runs in TF32 (a 1×1 conv is rejected by the gate at 1.007e-3 against a 1e-3 bound). <b>FlashFFTStencil</b> is actually fp64 DMMA, not fp16. <b>MetaAttention</b> bidirectional attention is numerically wrong.</li>
+        <li><b>Ocean</b> never writes the trailing CSR sentinel; <b>Popcorn</b>'s SpGEMM is a <code>= delete</code> dead stub; <b>MaxK-GNN</b>'s custom kernel has no Python binding and is never called by the training pipeline; <b>StraGCN</b> hardcodes the dense stride, so odd feature dimensions are silently miscomputed.</li>
+        <li><b>GroupTC</b> assumes degree-ordered relabeling and otherwise counts exactly half the triangles; <b>GridSelect</b> silently returns wrong results for k&gt;2048; <b>Mille-feuille</b> ignores maxiter and divides time by the literal 100; <b>SPCG</b>'s "Convergence OK" is always true.</li>
+        <li><b>Quantix (PPoPP'26)</b>: the build references 3 non-existent files and the only quantization routine is debug placeholder code; <b>qfactory</b> silently outputs garbage for small group-size shapes; <b>Bit-GraphBLAS</b>'s public artifact does not contain the BFS described in the paper.</li>
+        <li><b>BLCO</b> frees uninitialized pointers and never zeroes its atomicAdd output. <b>BootCMatchGX</b> exports the solution vector with <code>%g</code>, i.e. 6 significant digits, so any independent residual check stalls near 1e-6 (passes the gate after changing to <code>%.17g</code>).</li>
+        <li><b>TurboFFT (PPoPP'25)</b>: the repository scripts never invoke the real code generator, so a direct build always fails; after running the generator, the unmodified headers compile completely. <b>cuFalcon</b>'s "FFT" is negacyclic ring evaluation, not a DFT.</li>
+        <li><b>ExaGeoStat/Chameleon</b>: dpotrf/dgemm residual 4.5 on the GPU path vs 4e-15 on CPU, a real GPU numerical bug. <b>Fringe-SGC</b>: a static accumulator is never reset, and the architecture can only express K4.</li>
+        <li>All three cg-krylov artifacts (SPCG, Mille-feuille, PERKS) genuinely stagnate without converging on cant; the gate rejects them, cross-checked against the scipy reference. This confirms the design point that "fast but not converged does not pass".</li>
+      </ul>
+      <h2 style="margin-top:34px">Environment and toolchain notes</h2>
+      <ul>
+        <li>The login node's default module drifted from cudatoolkit/12.9 to 13.2 while the harness's torch is cu128: the runner pins CUDA_HOME / PATH / CPATH / LIBRARY_PATH to 12.9 and its math_libs at start-up; every build script runs <code>source bench/artifacts/toolchain.sh</code>.</li>
+        <li>torch CUDA extensions need <code>LD_PRELOAD=/usr/lib64/libstdc++.so.6</code> at run time (CXXABI_1.3.15). Cray MPICH has no mpirun; a single rank executed directly is an MPI singleton. The CUDA 12.9 SDK has no <code>libnvToolsExt.so</code>.</li>
+        <li>Artifact clones (87, over 5 GB) are not in git; each directory has a <code>source.provenance</code> (remote, commit, re-clone command) and a <code>source.patch</code> when tracked files were modified.</li>
+      </ul>
+    </section>
+    <footer class="foot">Data is aggregated automatically from <code>benchspecs/*/spec.yaml</code>, <code>bench/kernelbench/domains/*</code>, <code>bench/artifacts/*/*/{adapter.py,STATUS.md}</code>, <code>output/benchmark_groups.json</code> and <code>output/included.json</code>; page file <code>kernel-papers/output/benchmark_status.html</code>.</footer>
+  </main>
+</div>
+
+<script id="data" type="application/json">/*__DATA__*/</script>
+<script>
+(function(){
+  const D = JSON.parse(document.getElementById('data').textContent);
+  const S = D.stats;
+  const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const STATUS_LABEL = {gated:'GATED', 'gate-fails':'GATE FAILS', built:'BUILT', 'build-failed':'BUILD FAILED', skipped:'SKIPPED', 'deferred-hw':'DEFERRED (needs sm_90+)', unknown:'—', implemented:'IMPLEMENTED', planned:'PLANNED (domain registered)', 'no-domain':'PLANNED (no domain module)'};
+  const badge = st => `<span class="badge ${esc(st)}">${esc(STATUS_LABEL[st]||st)}</span>`;
+  // H100 (sm_90) per-artifact outcome: class -> [css-suffix, label, tooltip]
+  const H100 = {
+    'PASS':      ['h100pass', 'H100 PASS', 'built for A100 (sm_80 PTX) and runs correctly on H100 via JIT-forward'],
+    'PASS-r':    ['h100recompile', 'H100 PASS (recompiled)', 'the A100 sm_80 binary would not run on H100 (no-kernel-image); recompiled for sm_90 it passes'],
+    'regression':['h100reg', 'H100 REGRESSION', 'passed on A100 but fails on H100 (sm_90-specific)'],
+    'nki':       ['h100nki', 'H100 no-kernel-image', 'SASS-only sm_80 binary; needs a heavy sm_90 rebuild not yet done'],
+    'gate-fail': ['h100gatefail', 'H100 gate-fail', 'runs on H100 but fails the gate (mostly reproducing the A100 verdict)'],
+    'unsupported':['h100unsup', 'H100 unsupported (smoke)', 'fixed-shape kernel; the generic smoke shapes are unsupported — needs its real workload'],
+    'timeout':   ['h100timeout', 'H100 timeout/hang', 'timed out or hung on H100 (some reproduce known A100 hangs)'],
+    'error':     ['h100err', 'H100 error', 'build/runtime error on H100 (DSL framework, segfault, or glibc block)'],
+    'slowbuild': ['h100slow', 'H100 build too slow', 'sm_90 rebuild does not finish in a practical time; deferred'],
+  };
+  const h100cell = h => {
+    if (!h) return '';
+    const m = H100[h.cls] || ['h100err', 'H100 '+h.cls, ''];
+    let s = `<div class="h100row"><span class="badge ${m[0]}" title="${esc(m[2])}">${esc(m[1])}</span>`;
+    if (h.gate) s += `<span title="H100 gate result">${esc(h.gate)}</span>`;
+    if (h.smoke_tput) s += `<span class="tput" title="indicative throughput, smoke inputs">${esc(h.smoke_tput)} (smoke)</span>`;
+    if (h.real) {
+      const cls = h.real.gate==='pass' ? 'rd' : 'rdfail';
+      const r = h.real.rate ? `${esc(h.real.rate)} ` : '';
+      s += `<span class="${cls}" title="real dataset: ${esc(h.real.matrices)} — gate ${esc(h.real.raw||'')}">▸ real: ${r}on ${esc(h.real.matrices)}${h.real.gate==='fail'?' ⚠ gate-fail':''}</span>`;
+    }
+    return s + '</div>';
+  };
+  const CENT_LABEL = {core:'core', component:'component', tangential:'tangential'};
+  const REG_LABEL = {matches:'regime matches', partial:'regime partial', mismatch:'regime mismatch'};
+  const eligible = o => !!(o && o.centrality==='core' && o.gpu_single_card && o.regime_match!=='mismatch');
+  const cent = o => o && o.centrality ? `<span class="badge cent-${esc(o.centrality)}" title="${esc(o.regime||'')}">${esc(CENT_LABEL[o.centrality])}${o.regime_match?` · ${esc(REG_LABEL[o.regime_match]||o.regime_match)}`:''}${o.gpu_single_card===false?' · no single-GPU path':''}</span>` : '';
+  const DOMAIN_LABEL = {sparse:'Sparse linear algebra', dense:'Dense linear algebra', ml:'ML kernels', graph:'Graph', solvers:'Solvers', spectral:'FFT/NTT', stencil:'Stencil', tensor:'Tensor', primitives:'Parallel primitives', compression:'Compression', annsearch:'Nearest-neighbor search', alignment:'Sequence alignment', automata:'Automata / regex', '':'No domain module yet'};
+
+  // ---- stats strip
+  document.getElementById('stats').innerHTML = [
+    [S.specs, 'tracks with an executable spec'], [S.implemented, 'kernels implemented in the harness'], [S.variants, 'benchmark variants'],
+    [S.adapters, 'artifact adapters'], [S.gated, 'baselines passing the gate'], [S.gate_fails+S.built, 'built but not passing the gate'],
+  ].map(([n,l]) => `<div class="stat"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('')
+  + `<div class="legend" style="background:var(--surface)"><span>Artifact outcomes (A100 / sm_80):</span><span>${badge('gated')}${S.gated}</span><span>${badge('gate-fails')}${S.gate_fails}</span><span>${badge('built')}${S.built}</span><span>${badge('build-failed')}${S.build_failed}</span><span>${badge('skipped')}${S.skipped}</span><span>${badge('deferred-hw')}${S.deferred_hw||0}</span><span>smoke ${esc(S.smoke)} green</span></div>`
+  + (S.h100_total ? `<div class="legend" style="background:var(--surface)"><span>H100 (sm_90) baselines:</span><span><span class="badge h100pass">H100 PASS</span>${S.h100_pass}/${S.h100_total}</span><span><span class="badge h100recompile">recompiled</span>${S.h100_recompile}</span><span><span class="badge h100reg">regression</span>${S.h100_regression}</span><span><span class="rd">real-dataset throughput</span> ${S.h100_realdata}</span><span style="color:var(--muted)">old sm_80 code on Hopper — details per artifact below &amp; in <code>bench/H100_baselines.md</code></span></div>` : '');
+
+  const impl = D.tracks.filter(t => t.status==='implemented');
+  const rest = D.tracks.filter(t => t.status!=='implemented');
+  const trackDot = t => {
+    const a = t.artifacts.filter(x=>x.has_adapter);
+    if (t.status!=='implemented') return 'planned';
+    if (a.some(x=>x.status==='gated')) return 'gated';
+    if (a.some(x=>x.status==='gate-fails')) return 'gate-fails';
+    if (a.some(x=>x.status==='built')) return 'built';
+    if (t.artifacts.some(x=>x.status==='build-failed')) return 'build-failed';
+    return 'none';
+  };
+
+  // ---- sidebar
+  const byDom = {};
+  impl.forEach(t => (byDom[t.domain] = byDom[t.domain]||[]).push(t));
+  let side = '';
+  Object.keys(byDom).sort().forEach(d => {
+    side += `<h4>${esc(DOMAIN_LABEL[d]||d)}</h4>` + byDom[d].map(t => `<a href="#t-${esc(t.kernel)}" data-k="${esc(t.kernel)}"><span class="dot ${trackDot(t)}"></span>${esc(t.kernel)}</a>`).join('');
+  });
+  side += `<h4>Planned (${rest.length})</h4><a href="#rest"><span class="dot planned"></span>see the table at the end</a>`;
+  document.getElementById('side').innerHTML = side;
+
+  // ---- helpers
+  const fmtTol = v => {
+    const bp = v.tolerance_by_precision || {};
+    if (Object.keys(bp).length) return Object.entries(bp).map(([k,x])=>`${k} ≤ ${x}`).join(' · ');
+    return v.tolerance==null ? (v.gate_kind==='structural' ? 'structural gate (exact comparison)' : 'not parsed') : `≤ ${v.tolerance}`;
+  };
+  const short = (s, n) => { s = String(s||''); return s.length>n ? s.slice(0,n-1)+'…' : s; };
+  const inputsBlock = v => {
+    const inp = v.inputs||{}; const parts = [];
+    if (inp.suite) parts.push(`<dt>Input set</dt><dd>${esc(inp.suite)}</dd>`);
+    if (inp.selection) parts.push(`<dt>Selection rule</dt><dd>${esc(short(inp.selection, 360))}</dd>`);
+    ['dense_operand','vector_operand','grid_sizes','size_classes','batch','patterns','graph_type','layout','precision'].forEach(k => { if (inp[k]) parts.push(`<dt>${esc(k)}</dt><dd>${esc(short(Array.isArray(inp[k])?inp[k].join(', '):inp[k], 300))}</dd>`); });
+    const rs = v.recommended_subset||[];
+    if (rs.length) parts.push(`<dt>Recommended subset</dt><dd><div class="inputs">${rs.slice(0,24).map(x=>`<span class="tag">${esc(x)}</span>`).join('')}${rs.length>24?`<span class="tag">+${rs.length-24}</span>`:''}</div></dd>`);
+    return parts.length ? `<dl class="kv">${parts.join('')}</dl>` : '<p class="status-text">The spec lists no concrete input set</p>';
+  };
+  const protoStr = p => [p.warmup!=null?`warmup ${p.warmup}`:null, p.reps!=null?`reps ${p.reps}`:null, p.statistic||null].filter(Boolean).join(' · ');
+  const metricStr = m => short((m&&m.primary)||'', 140);
+
+  const artifactRows = t => {
+    const rows = t.artifacts.map(a => {
+      const p = a.paper || {};
+      const title = p.title ? `${esc(p.title)}` : (a.paper_key ? `<span class="mono">${esc(a.paper_key)}</span>` : '—');
+      const venue = p.venue ? `<span class="venue">${esc(p.venue)} ${esc(p.year)}</span>` : '';
+      const link = (a.remote||p.url) ? ` <a href="${esc(a.remote||p.url)}" target="_blank" rel="noopener">repo</a>` : '';
+      const impl = a.IMPL_NAME ? `<div class="mono">${esc(a.IMPL_NAME)}${a.PRECISIONS&&a.PRECISIONS.length?` · ${esc(a.PRECISIONS.join('/'))}`:''}</div>` : '';
+      const caveat = (a.self_reported ? ' <span class="badge built">self-reported residual</span>' : '')
+        + (a.platform==='cpu' ? ' <span class="badge skipped">CPU implementation</span>' : '')
+        + (a.status==='skipped' && eligible(a) ? ' <span class="badge built">paper is core; released artifact not integrable</span>' : '')
+        + (a.requires_gpu ? `<div class="status-text mono">REQUIRES_GPU: ${esc(a.requires_gpu)}</div>` : '');
+      return `<tr><td><div>${title}</div><div>${venue}${link} ${cent(a)}</div></td><td class="mono">${esc(a.short)}${a.commit?`<div class="status-text">@ ${esc(a.commit)}</div>`:''}</td><td>${badge(a.status)}${caveat}${impl}<div class="status-text">${esc(short(a.status_text, 260))}</div>${h100cell(a.h100)}</td></tr>`;
+    }).join('');
+    return rows ? `<div class="tw"><table><thead><tr><th style="width:38%">Baseline paper</th><th style="width:14%">Artifact</th><th>Reproduction status under this harness</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="status-text">No artifact integrated yet</p>';
+  };
+  const papersNotAttempted = t => {
+    const tried = new Set(t.artifacts.map(a=>a.paper_key).filter(Boolean));
+    const rest = t.papers.filter(p => !tried.has(p.key));
+    if (!rest.length) return '';
+    const order = {core:0, component:1, tangential:2, undefined:3};
+    rest.sort((a,b)=> (order[a.centrality]??3)-(order[b.centrality]??3) || b.year-a.year);
+    const nElig = rest.filter(eligible).length;
+    const nOut = rest.filter(p=>p.centrality && !eligible(p)).length;
+    const why = nOut ? `${nOut} outside the current scope (CPU/distributed/FPGA without a single-GPU path, regime mismatch, or not core)` : '';
+    return `<details><summary>${rest.length} more papers in this group with an open-source artifact (not integrated)${nElig?`: <b>${nElig} still to integrate under the new rule</b> (core, single-GPU path, compatible regime)`:''}${nElig&&nOut?'; ':''}${why}</summary><div class="inner"><ul class="papers-list">${rest.map(p=>`<li>${esc(p.title)} <span class="venue">${esc(p.venue)} ${esc(p.year)} · ${esc((p.platform||[]).join(','))}</span> ${cent(p)}${p.url?` <a href="${esc(p.url)}" target="_blank" rel="noopener">repo</a>`:''}</li>`).join('')}</ul></div></details>`;
+  };
+
+  // ---- implemented tracks
+  document.getElementById('tracks').innerHTML = impl.map(t => {
+    const v0 = t.variants[0] || {};
+    const variantRows = t.variants.map(v => `<tr><td class="mono">${esc(v.id)}</td><td>${esc(short(v.claim, 220))}</td><td class="num">${esc(protoStr(v.protocol||{}))}</td><td>${esc(metricStr(v.metric))}</td><td>${esc(fmtTol(v))}</td></tr>`).join('');
+    const inputs = t.variants.map(v => `<details><summary>Inputs for ${esc(v.id)}</summary><div class="inner" style="white-space:normal">${inputsBlock(v)}</div></details>`).join('');
+    const impls = [...t.cpu_impls.map(x=>`<span class="tag">CPU · ${esc(x)}</span>`), ...t.cuda_impls.map(x=>`<span class="tag">CUDA · ${esc(x)}</span>`)].join('') || '<span class="status-text">No built-in implementation; every GPU implementation comes from an artifact</span>';
+    const gate = t.correctness_mode ? `<div class="status-text">Gate mode <code>${esc(t.correctness_mode)}</code>${t.reference_name?` · reference: ${esc(t.reference_name)}`:''}</div>` : '';
+    return `<section class="track" id="t-${esc(t.kernel)}" data-k="${esc(t.kernel)}" data-search="${esc((t.kernel+' '+t.summary+' '+t.papers.map(p=>p.title).join(' ')+' '+t.artifacts.map(a=>a.short+' '+(a.IMPL_NAME||'')).join(' ')).toLowerCase())}" data-impl="1" data-arts="${t.artifacts.some(a=>a.has_adapter)?1:0}" data-gated="${t.artifacts.some(a=>a.status==='gated')?1:0}">
+      <div class="track-head"><span class="kid">${esc(t.kernel)}</span><span class="dom">${esc(DOMAIN_LABEL[t.domain]||t.domain)} · <code>domains/${esc(t.domain)}.py</code></span>${badge('implemented')}<span class="dom">${t.papers.length} papers with an artifact · ${t.artifacts.filter(a=>a.has_adapter).length} adapters</span></div>
+      <div class="track-body">
+        <div class="block"><h4>Problem computed</h4><p class="summary">${esc(t.summary)}</p>${t.operation?`<div class="op">${esc(short(t.operation, 700))}</div>`:''}</div>
+        <div class="block"><h4>Benchmark variants and protocol</h4><div class="tw"><table><thead><tr><th>Variant</th><th>Claims to measure</th><th>Protocol</th><th>Primary metric</th><th>Correctness gate</th></tr></thead><tbody>${variantRows}</tbody></table></div></div>
+        <div class="block"><h4>Inputs</h4><div style="display:grid;gap:6px">${inputs}</div></div>
+        <div class="block"><h4>Built-in harness implementations (reference and floor)</h4><div class="impls">${impls}</div>${gate}</div>
+        <div class="block"><h4>Baseline papers and reproduction status</h4>${artifactRows(t)}<div style="margin-top:8px">${papersNotAttempted(t)}</div></div>
+        ${t.notes_on_fairness?`<details><summary>Fairness issues in this track's literature and how the spec handles them (notes_on_fairness)</summary><div class="inner">${esc(short(t.notes_on_fairness, 2600))}</div></details>`:''}
+      </div>
+    </section>`;
+  }).join('');
+
+  // ---- remaining tracks
+  const restRows = rest.sort((a,b)=> b.papers.length-a.papers.length || a.kernel.localeCompare(b.kernel)).map(t => {
+    const top = t.papers.slice(0,3).map(p=>`${esc(short(p.title,70))} <span class="venue">${esc(p.venue)}'${esc(String(p.year).slice(2))}</span>`).join('<br>');
+    const gpu = t.papers.filter(p=>(p.platform||[]).some(x=>x.includes('nvidia'))).length;
+    return `<tr data-search="${esc((t.kernel+' '+t.summary+' '+t.papers.map(p=>p.title).join(' ')).toLowerCase())}"><td class="mono">${esc(t.kernel)}</td><td>${badge(t.status)}${t.domain?`<div class="status-text">domains/${esc(t.domain)}.py</div>`:''}</td><td>${esc(short(t.summary, 260))}</td><td class="num">${t.papers.length} / ${gpu}</td><td>${top||'—'}</td></tr>`;
+  }).join('');
+  document.getElementById('rest').innerHTML = `<h2 id="rest-h">${rest.length} tracks not yet implemented</h2><p class="status-text" style="margin-top:6px">Specs are written; ${S.planned} are registered as planned in an existing domain module and ${S.no_domain} have no domain module yet. "Papers / GPU" is the number of papers in the group with an open-source artifact and how many of them list an NVIDIA GPU platform.</p><div class="tw"><table><thead><tr><th>Track</th><th>Status</th><th>Problem computed</th><th>Papers / GPU</th><th>Newest papers</th></tr></thead><tbody>${restRows}</tbody></table></div>`;
+
+  // ---- filtering
+  const chips = document.querySelectorAll('#status-chips .chip');
+  const search = document.getElementById('search');
+  let mode = 'all';
+  function apply(){
+    const q = search.value.trim().toLowerCase();
+    let shown = 0;
+    document.querySelectorAll('#tracks .track').forEach(el => {
+      let ok = true;
+      if (mode==='with-artifacts') ok = el.dataset.arts==='1';
+      else if (mode==='has-gated') ok = el.dataset.gated==='1';
+      else if (mode==='planned') ok = false;
+      if (ok && q) ok = el.dataset.search.includes(q);
+      el.classList.toggle('hidden', !ok);
+      const nav = document.querySelector(`#side a[data-k="${el.dataset.k}"]`); if (nav) nav.classList.toggle('hidden', !ok);
+      if (ok) shown++;
+    });
+    let restShown = 0;
+    document.querySelectorAll('#rest tbody tr').forEach(tr => {
+      let ok = (mode==='all' || mode==='planned');
+      if (ok && q) ok = tr.dataset.search.includes(q);
+      tr.hidden = !ok; if (ok) restShown++;
+    });
+    document.getElementById('rest').hidden = (mode!=='all' && mode!=='planned') || restShown===0;
+    document.getElementById('count').textContent = `${shown} implemented tracks · ${restShown} planned`;
+  }
+  chips.forEach(c => c.addEventListener('click', () => { chips.forEach(x=>x.setAttribute('aria-pressed','false')); c.setAttribute('aria-pressed','true'); mode = c.dataset.f; apply(); }));
+  search.addEventListener('input', apply);
+  apply();
+})();
+</script>

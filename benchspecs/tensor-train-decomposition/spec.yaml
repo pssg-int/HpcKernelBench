@@ -1,0 +1,286 @@
+kernel: tensor-train-decomposition
+summary: >
+  Tensor-Train (TT) decomposition of an N-mode tensor into a chain of small
+  3D TT-cores G^(1)..G^(N) such that X[i1..iN] ~= G^(1)[:,i1,:] G^(2)[:,i2,:]
+  ... G^(N)[:,iN,:] (matrix-chain product of the cores' slices). This
+  track's two papers exercise opposite halves of a TT system's lifecycle:
+  STTID DECOMPOSES a given sparse tensor into TT-cores under an accuracy
+  target; EL-Rec never decomposes anything but instead RECONSTRUCTS
+  (TT-core-products) a learned, fixed-TT-rank embedding table on every
+  training step. The spec keeps these as separate variants (see survey.md's
+  Divergences on "decomposition vs. reconstruction timing").
+operation: >
+  Decomposition (STTID): given sparse X[I1..IN] and accuracy target
+  epsilon, compute TT-cores G^(i)[R_{i-1}, I_i, R_i] (R_0=R_N=1) via
+  interpolative/skeleton decomposition such that the relative
+  reconstruction error < epsilon, subject to a rank ceiling R_i <= rmax.
+  Reconstruction (EL-Rec): given trained TT-cores G^(i)[R_{i-1}, q_i, R_i]
+  of fixed rank R_i (a training hyperparameter, not accuracy-derived) and
+  a TT-SHAPE factorization of an embedding index, compute the
+  matrix-chain product on-the-fly for each of many (batch-size) lookups
+  per training step.
+variants:
+  - id: tt-sparse-decomposition-kernel
+    claim: >
+      steady-state, one-shot sparse-tensor-to-TT-cores decomposition time
+      for a GIVEN accuracy target epsilon, with epsilon and the rank
+      ceiling rmax as required, disclosed parameters (the actual
+      compression-vs-error tradeoff axis this track's papers expose) --
+      the variant STTID is purpose-built for. TT-rank is reported as an
+      OUTPUT of the run (the per-mode ranks the rank-revealing
+      decomposition actually realized under epsilon), never as a
+      pre-fixed input, matching STTID's own artifact practice.
+    inputs:
+      suite: >
+        FROSTT (real, primary) + knowledge-graph hyperedge tensors (real,
+        supplementary) + synthetic random sparse tensors (scalability
+        supplementary), matching the 3-category split STTID's own run.sh
+        actually exercises rather than FROSTT alone
+      selection: >
+        FROSTT: order 4-5, nnz 3.1M-6.3M (STTID's own evaluated subset);
+        knowledge-graph: KG_JF17K and KG_WikiPeople, each in a 3D and 4D
+        variant (STTID's own named datasets, all 4 included -- not a
+        cherry-picked subset since the full named set is small); synthetic:
+        order 4-5, dense-index random sparse (matches STTID's Rnd5/Rnd6
+        generator)
+      recommended_subset:
+        - uber (183 x 24 x 1140 x 1717, 3.31M nnz, FROSTT)
+        - nips (2482 x 2862 x 14036 x 17, 3.10M nnz, FROSTT)
+        - chicago-crime-comm (6186 x 24 x 77 x 32, 5.33M nnz, FROSTT)
+        - chicago-crime-geo (6185 x 24 x 380 x 395 x 32, 6.33M nnz, FROSTT)
+        - KG_JF17K_3 (66 x 12270 x 12270, 25,820 nnz)
+        - KG_WikiPeople_4 (23 x 6536 x 6536 x 6536, 9,509 nnz)
+        - Rnd5 (100^4, 12,729 nnz, synthetic)
+        - Rnd6 (50^5, 27,843 nnz, synthetic)
+      dense_operand: >
+        accuracy target epsilon in {1e-4, 1e-7, 1e-10} (swept; 1e-10
+        matches STTID's own fixed value across every category, the other
+        two added to expose the compression-vs-error tradeoff the fixed
+        1e-10 value alone hides); rank ceiling rmax per category matching
+        STTID's own values (500 for FROSTT, 100000 for knowledge-graph,
+        5000-15000 for synthetic); fp64
+    protocol:
+      format: "given sparse COO/coordinate-list input; no separate
+        preprocessing format-conversion step beyond parsing (STTID reads
+        .tns files directly)"
+      warmup: 1 (spec addition -- STTID's own run.sh shows a single
+        invocation per config with no warmup step visible at the shell
+        level; flagged as a DEVIATION from STTID's own practice in
+        notes_on_fairness, not silently matched)
+      reps: 10 (spec default; STTID's own internal labeled-region timer
+        supports accumulating mean/min/max/stddev across repeated calls,
+        but whether run.sh's single shell-level invocation triggers
+        internal repetition was not confirmed -- see survey.md open
+        questions)
+      statistic: median (report min/max and stddev, matching the fields
+        STTID's own `timer.cpp` already accumulates)
+      timer: "std::chrono::high_resolution_clock (CPU path, matches
+        STTID's own `util/timer.cpp`); device-side CUDA events for the
+        GPU path"
+      timing_scope: >
+        decomposition only (rank-revealing factorization of every mode);
+        input parsing/loading excluded and reported separately
+      preprocessing_reported: separately, once (file parsing/loading time)
+    metric:
+      primary: "wall-clock time (s) to decompose, reported per (dataset,
+        epsilon) pair; realized per-mode TT-ranks reported alongside as
+        the compression-side outcome (not a separate sweep axis -- ranks
+        are DERIVED from epsilon, per STTID's own mechanism)"
+      secondary: "speedup of GPU (CUDA) vs. CPU implementation for the
+        same (dataset, epsilon); core density (TT-core nnz / TT-core
+        dense size) as a compression metric, matching STTID's own
+        `test_quality.py` report"
+    correctness: >
+      relative Frobenius reconstruction error ||reconstructed(TT-cores) -
+      X||_F / ||X||_F <= epsilon (the run's own accuracy target -- this is
+      STTID's own mechanism, not a spec-invented separate tolerance,
+      since epsilon IS the correctness gate here by construction, unlike
+      every other variant in this project's specs where correctness is a
+      gate independent of the swept parameter).
+
+  - id: tt-embedding-reconstruction-training-e2e
+    claim: >
+      end-to-end DLRM training throughput using a TT-compressed embedding
+      table of a FIXED, pre-chosen TT-rank (a training hyperparameter, not
+      an accuracy-target output), amortizing the per-lookup TT-core-product
+      "reconstruction" cost over k=1000 training iterations -- the variant
+      EL-Rec is purpose-built for. TT-rank and TT-shape (the factorization
+      of the embedding index/dimension into per-core sizes) are both
+      required, disclosed input parameters here, the reverse of the
+      decomposition variant's rank-as-output convention.
+    inputs:
+      suite: >
+        standard DLRM click-through-rate benchmark datasets, matching
+        EL-Rec's own 3-dataset practice (this project's fairness principle
+        does not flag this as cherry-picked, since these 3 ARE the
+        standard/near-exhaustive public DLRM CTR benchmark suite this
+        sub-literature uses, unlike STTID's single-vendor MovieLens-style
+        situation flagged elsewhere in this track's sibling tucker spec)
+      selection: "all 3 named real datasets EL-Rec's own artifact
+        evaluates: Kaggle Display Advertising Challenge, Criteo Terabyte,
+        Avazu CTR Prediction"
+      recommended_subset:
+        - kaggle-criteo-display-ads (feature_size 16)
+        - avazu-ctr (feature_size 16)
+        - criteo-terabyte (feature_size 64)
+      dense_operand: >
+        TT-rank in {64, 128, 256} (128 is EL-Rec's own default, swept
+        lower/higher to expose the compression-vs-model-quality tradeoff
+        the fixed-128 practice alone hides); TT-shape derived from
+        feature_size per EL-Rec's own convention (feature_size=16 ->
+        q_shape=[2,2,4]; feature_size=64 -> q_shape=[4,4,4]); batch size
+        4096 (matches EL-Rec's own artifact); precision fp32 (PyTorch
+        default, UNCONFIRMED against the paper text -- see open_questions)
+    protocol:
+      format: "TT-cores randomly initialized (no decomposition of an
+        existing embedding table -- learned from scratch via SGD, per
+        EL-Rec's own methodology); initialization is preprocessing,
+        excluded from the timed training loop, reported separately once"
+      warmup: none (matches EL-Rec's own artifact, where iteration 1 is
+        included in the same 1000-iteration timed window as iteration
+        1000 -- flagged as a DEVIATION from this project's general warmup
+        convention in notes_on_fairness, not silently imposed)
+      reps: 3 full k=1000-iteration runs (spec default; EL-Rec's own
+        `Figure11/ELRec_train.py` reports a single elapsed-time
+        measurement per run with no stated repetition count)
+      statistic: median (report min/max) of the k=1000 elapsed wall-clock
+        time; this deviates from EL-Rec's own apparent single-run
+        practice per this spec's general anti-single-sample fairness
+        principle
+      timer: "host wall-clock via `torch.cuda.synchronize()` bracketing a
+        CUDA-side timer (matches EL-Rec's own `time_wrap()` helper)"
+      timing_scope: >
+        full training step (forward + backward + optimizer update),
+        INCLUDING the per-lookup TT-core-product reconstruction cost
+        (the custom CUDA kernel in `models/Efficient_TT/`) -- reconstruction
+        is not a separable preprocessing step here, it happens on every
+        single iteration by construction, unlike the decomposition
+        variant's one-shot preprocessing
+      preprocessing_reported: separately, once (TT-core random
+        initialization; dataset loading/preprocessing)
+    metric:
+      primary: "training throughput: wall-clock time (s) per k=1000
+        iterations at batch size 4096 (equivalently, samples/s = 1000 *
+        4096 / time)"
+      secondary: "speedup vs. DLRM (dense embedding table, same batch
+        size/hardware), vs. FAE, and vs. TT-Rec (prior TT-compressed
+        system); memory footprint of the TT-compressed table vs. the
+        dense-embedding-table baseline"
+    correctness: >
+      PRIMARY (required) gate: none in the numerical-reconstruction sense
+      used by the decomposition variant -- EL-Rec's TT-cores are learned
+      from scratch, so there is no uncompressed ground-truth embedding
+      table to numerically check against (see survey.md Divergences).
+      Instead, the REQUIRED gate is downstream-task validity: the trained
+      model must reach a test-set loss/accuracy within a disclosed
+      tolerance of the dense-embedding-table (uncompressed) baseline
+      trained under the same protocol -- EL-Rec's own artifact validates
+      this via a separate script (`Table4/*_train_and_test.py`) producing
+      a loss curve (`loss.png`), which this spec treats as the REQUIRED
+      evidence a reported training-throughput number is not from a
+      degenerate/non-learning run, not merely optional secondary color.
+      Exact metric (test BCE loss vs. AUC) and tolerance were not
+      recovered from the sources reached (see open_questions) --
+      "within 1% relative test loss of the dense baseline" is this spec's
+      own placeholder default pending that confirmation.
+
+notes_on_fairness:
+  - >
+    TT-rank plays an OUTPUT role in the decomposition variant (derived
+    from an accuracy target epsilon) and an INPUT role in the
+    reconstruction/training variant (a pre-chosen hyperparameter with no
+    accuracy-target derivation). The spec never reports "TT-rank" as one
+    comparable cross-variant axis without this distinction spelled out,
+    per survey.md's Divergences -- doing so would misrepresent EL-Rec's
+    fixed-rank practice as if it searched for a target-accuracy rank the
+    way STTID does.
+  - >
+    STTID's own `run.sh` fixes epsilon at a single value (1e-10) across
+    every dataset category. This spec sweeps epsilon over 3 values instead
+    of adopting the single fixed value, per this spec's general principle
+    that a compression-vs-error tradeoff axis the papers themselves treat
+    as fixed should still be exposed as a sweep in the benchmark, since the
+    whole point of a spec parameter (per this track's key axes) is to make
+    that tradeoff visible, not to reproduce one paper's single operating
+    point.
+  - >
+    Neither paper's own artifact excludes a warmup region (STTID: no
+    shell-level warmup step; EL-Rec: iteration 1 counted identically to
+    iteration 1000). This spec preserves both practices explicitly (rather
+    than silently imposing this project's usual single-warmup-run default)
+    because each paper's own headline numbers are presumably computed the
+    same way, and a warmup exclusion here would make a reproduction
+    attempt diverge from the number being reproduced without a clear
+    reason to.
+  - >
+    EL-Rec's own artifact does not appear to state a repetition count for
+    its Figure-11 timing numbers (a single elapsed-time measurement per
+    configuration, from the fetched script). This spec's reps=3/median
+    default is a spec addition, per this project's general anti-single-
+    sample fairness principle, not evidence of the paper's own practice.
+  - >
+    EL-Rec's correctness gate is fundamentally a downstream-task-quality
+    check, not a numerical-reconstruction check (see Divergences) --
+    unlike every other variant in this project's tensor-track specs so
+    far, which gate on a numerical tolerance. This spec keeps that
+    task-quality gate as REQUIRED (not merely a reported secondary),
+    because for a learned-from-scratch compressed representation, task
+    quality is the only correctness notion that exists; dropping it would
+    let a training-throughput number come from a run that never actually
+    learned anything useful.
+
+open_questions:
+  - >
+    STTID's "up to 550x GPU speedup" headline figure's exact baseline and
+    per-dataset breakdown were not recovered (the paper's own fulltext was
+    not reachable; only the Zenodo metadata record and the artifact repo
+    were available).
+  - >
+    Whether STTID's internal labeled-region timer (`timer.cpp`) is invoked
+    multiple times per `run.sh` line (i.e., repetition happens inside the
+    binary, not visible at the shell level) was not confirmed by reading
+    the `main()` driver source directly.
+  - >
+    STTID's GPU model/hardware for its headline claim was not recovered.
+  - >
+    EL-Rec's precision (fp32 assumed, PyTorch default) was not explicitly
+    confirmed in the fetched training script.
+  - >
+    EL-Rec's exact Table-4 accuracy metric (test BCE loss vs. AUC vs.
+    something else) and the tolerance implicitly used for its own
+    "comparable accuracy" claims were not recovered -- this spec's "within
+    1% relative test loss" default is a placeholder, not evidence-derived,
+    and should be revisited once `Table4/ELRec_train_and_test.py` is read
+    in full.
+  - >
+    EL-Rec's GPU model/hardware and exact per-baseline Figure-11 numbers
+    were not recovered; only that a specific Docker image
+    (`happy233/zheng_dlrm:latest`) is referenced by the README.
+
+evidence:
+  conf/ipps/MengSPML26: >
+    IPDPS'26, sparse TT-ID (interpolative/skeleton decomposition,
+    sparsity-preserving TT-cores) on real FROSTT + knowledge-graph tensors
+    plus synthetic random tensors, order 3-5; epsilon FIXED at 1e-10
+    across every category in the artifact's own run.sh (this spec sweeps
+    it); rmax as a per-category rank ceiling; realized per-mode TT-ranks
+    are epsilon-derived OUTPUTS via a rank-revealing decomposition
+    (PRRLDU/nuclear-norm/QRCP); CPU and GPU (CUDA) implementations;
+    internal std::chrono labeled-region timer (mean/min/max/stddev);
+    relative-Frobenius reconstruction-error correctness tied directly to
+    epsilon; dense TT-ID as primary baseline, TT-SVD/TT-cross-LU/
+    TT-cross-QR for quality comparison; "up to 550x GPU speedup" (baseline
+    unconfirmed).
+  conf/sc/WangWFMMD22: >
+    SC'22, Tensor-Train-compressed DLRM embedding table trained end-to-end
+    from scratch via SGD, TT-rank=128 FIXED hyperparameter (not
+    accuracy-derived, unlike STTID); custom CUDA kernel for the batched
+    per-lookup TT-core-product ("reconstruction"); 3 real DLRM CTR
+    datasets (Kaggle, Criteo Terabyte, Avazu), batch size 4096; training
+    wall-clock over exactly k=1000 iterations, no warmup exclusion, single
+    elapsed-time measurement (this spec adds reps=3/median);
+    downstream-task loss/accuracy (not numerical reconstruction error) as
+    the correctness gate, via a separate script producing loss.png;
+    DLRM/FAE/TT-Rec (plus TorchRec/HugeCTR elsewhere in the artifact) as
+    baselines; multi-GPU (1/2/4) scaling tested; "speeds DLRM training 3x
+    on 1 GPU" headline (per Phase-1 one_liner).

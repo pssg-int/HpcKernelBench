@@ -1,0 +1,160 @@
+kernel: climate-kernel
+summary: >
+  Throughput of two structurally unrelated climate-adjacent kernels this
+  track's 2 papers actually cover: (1) a Tensor-Core-accelerated shallow-water
+  dynamical-core stencil (pure fluid dynamics, no physics parameterization),
+  and (2) a mixed-precision spherical-harmonic-transform + tile-low-rank
+  Cholesky kernel underlying a statistical climate emulator (no dynamics at
+  all — emulates ensemble statistics of prior GCM output). No shared input
+  suite or metric is imposed across the two; each gets its own variant
+  reflecting what its own paper actually measures. Grid-size/timing
+  conventions for variant 1 are shared with `benchspecs/stencil/spec.yaml`
+  (same paper, ozHOPE, cross-listed in both tracks).
+operation: >
+  Variant 1: U_out[p] = convolution-reformulated shallow-water stencil update
+  at grid point p on a spherical/latitude-longitude domain, for T timesteps,
+  computed via FP16 Tensor-Core MMA with Ozaki-scheme precision restoration.
+  Variant 2: given N=L^2 spatio-temporal sample points (L = latitude
+  resolution), compute forward spherical-harmonic transform -> SYRK
+  covariance matrix C=AA^T -> mixed-precision tile-low-rank Cholesky
+  factorization of C (repeated nruns times) -> inverse SHT -> MSE against a
+  reference; the emulator's usable output is one statistical field
+  realization per forward-factor-inverse pass.
+
+variants:
+  - id: climate-dyncore-kernel-fp16tc
+    claim: >
+      End-to-end speedup of a Tensor-Core-accelerated shallow-water
+      dynamical core over its FP64 (or working-precision) baseline on the
+      Williamson standard atmospheric-dynamics test suite, with accuracy
+      order-of-convergence preserved and reported ALONGSIDE speedup, never
+      substituted for it. Reused from `benchspecs/stencil/spec.yaml`'s
+      ozHOPE entry (same paper); reframed here around this track's own
+      dynamics-only framing.
+    inputs:
+      suite: >
+        the Williamson standard test suite for atmospheric dynamical cores
+        — domain-standard, not a synthetic grid sweep.
+      selection: "all 3 Williamson cases the paper evaluates."
+      recommended_subset:
+        - "Williamson case 2: steady-state geostrophic flow"
+        - "Williamson case 5/6-family: Rossby-Haurwitz wave"
+        - "perturbed jet flow"
+      dense_operand: >
+        FP16 Tensor-Core storage/compute with Ozaki-scheme precision
+        restoration tunable up to FP64-equivalent working precision.
+      grid_sizes: "HOPE's own default resolution for each Williamson case (not independently re-derived; paper-native, per `stencil` survey's own note that this is a domain-standard problem, not a size sweep)."
+    protocol:
+      iteration_count: "physics/CFL-determined per the Williamson case's own standard integration length (not independently confirmed from fulltext; open question)."
+      warmup: "1 full run discarded, if the harness cleanly separates setup from the timed integration loop (not independently confirmed for this specific repo)."
+      reps: 3
+      statistic: "median (report min/max) — this spec's own default, consistent with `stencil` track's application-variant convention; not independently sourced from ozHOPE's own repo/paper."
+      timer: "wall clock around the full timestep-integration loop; not independently confirmed from source."
+      timing_scope: "end-to-end whole-run compute time (all Tensor-Core MMA calls + Ozaki-scheme precision-restoration overhead), matching the paper's own 'end-to-end speedup' framing."
+      preprocessing_reported: "any one-time cuDNN-frontend graph construction / kernel-plan compilation reported once, separately, if applicable — not independently confirmed from source."
+    metric:
+      primary: "wall-clock speedup vs. the paper's own FP64/working-precision baseline on the same hardware (1.82x average, up to 4.34x, per the paper's own headline result)."
+      secondary:
+        - "order-of-convergence preservation (the paper's own first-class reported result, not just a pass/fail correctness gate)"
+        - "GPoint-updates/s or simulated-days/day, IF the paper's own physical-time-per-step can be recovered — OPEN QUESTION, not confirmed from available sources (survey.md Divergence 2)"
+    correctness: >
+      diagnostic variables compared against an FP64 reference solution per
+      Williamson case; convergence-order agreement is itself a reported
+      result. This is a genuinely stronger correctness story than a bare
+      pointwise tolerance (it validates that low precision doesn't silently
+      degrade the numerical method's asymptotic accuracy, not just that one
+      run's error is small).
+
+  - id: climate-emulator-solver-kernel
+    claim: >
+      Throughput of the mixed-precision SHT + tile-low-rank Cholesky kernel
+      underlying a statistical climate emulator, with the one-shot
+      forward-SHT/SYRK/matrix-norm phases reported separately (never
+      amortized into the per-run factorization time) and the factorization
+      phase itself repeated nruns times — the harness's OWN native
+      preprocessing/kernel split (survey.md Divergence 4), adopted verbatim
+      rather than imposed from outside.
+    inputs:
+      suite: >
+        real Earth System Model output ensembles (the paper's own training
+        data: 318 billion hourly temperature points, 35-year ensemble; 31
+        billion daily points, 83-year ensemble) — this is real climate data,
+        not a synthetic covariance matrix, matching the paper's own
+        "boosting Earth System Model outputs" framing.
+      selection: "the paper's own confirmed CLI example point (TESTS.md), used as the recommended smoke-test size; production-scale runs use the paper's own 0.976 EFlop/s Frontier-scale headline point (size not independently re-derived from fulltext)."
+      recommended_subset:
+        - "--latitude 120 --NB 1440 --N 14400 (confirmed CLI example from TESTS.md)"
+        - "Frontier full-scale run (--latitude and --NB not independently confirmed at this scale; open question)"
+      dense_operand: >
+        N=L^2 spatial covariance matrix (L = --latitude), tile size NB;
+        mixed-precision tile bands controlled via --band_dense_dp (fp64
+        band) / --band_dense_sp (fp32 band) / --band_dense_fp8 (fp8 band)
+        plus --adaptive_decision for automatic per-tile precision
+        selection.
+      grid_sizes: "N = latitude^2; report the --latitude value explicitly, not just N (the CLI's own primary size parameter)."
+    protocol:
+      iteration_count: >
+        the Cholesky-factorization (`hicma_parsec_potrf`) phase is repeated
+        --nruns times; forward SHT, forward-SHT-reshape, SYRK, and
+        matrix-norm each run exactly ONCE per invocation, per the harness's
+        own confirmed source structure — do not repeat these one-shot
+        phases even though the factorization phase IS repeated.
+      warmup: >
+        NOT discarded in the confirmed source (`for (int i = 0; i <
+        params->nruns; i++) hicma_parsec_potrf(...)` has no separate
+        warmup iteration before the timed/counted loop) — THIS SPEC
+        DEVIATES from the harness's own default and requires nruns>=1
+        EXTRA untimed factorization call be run first and discarded,
+        matching this whole survey effort's standard warmup discipline;
+        flagged explicitly as a fix, not a reproduction of the artifact's
+        own practice.
+      reps: "nruns >= 5 (the harness's own native repetition mechanism, set high enough for a stable mean/std; the confirmed TESTS.md example does not specify a value, defaulting presumably to the code's internal default — open question, not confirmed)."
+      statistic: >
+        mean and std across the nruns factorization calls (SYNC_TIME_PRINT
+        macro structure implies per-call timing is available; this spec
+        requires aggregating across nruns>=5 rather than reporting a
+        single-run number).
+      timer: >
+        SYNC_TIME_START/SYNC_TIME_PRINT macros (device/rank-synchronized
+        wall-clock timing) wrapping each phase independently — the
+        harness's own native timer, unchanged.
+      timing_scope: >
+        the Cholesky-factorization phase ONLY for the primary kernel
+        number (matches the harness's own nruns-loop boundary); forward
+        SHT + SYRK + matrix-norm + inverse SHT are reported as SEPARATE,
+        one-shot numbers per the next field, not folded into the
+        per-factorization-call throughput.
+      preprocessing_reported: >
+        forward SHT (with its own Gflop/s, per the harness's own printed
+        format), forward-SHT-reshape, matrix memory allocation, SYRK, and
+        matrix-norm computation are each reported ONCE, separately, by
+        phase — this is the harness's own native structure (confirmed from
+        source), not an external imposition.
+    metric:
+      primary: "sustained EFlop/s (exascale) or GFlop/s (smaller scale) of the mixed-precision factorization phase — the paper's own headline metric (0.976 EFlop/s on Frontier)."
+      secondary:
+        - "wall-clock time per factorization call, mean +/- std across nruns"
+        - "forward-SHT Gflop/s (the harness's own separately-printed number for this one-shot phase)"
+    correctness: >
+      Mean Square Error (MSE) between the emulator's inverse-SHT-reconstructed
+      field and a MATLAB reference result (`climate_emulator_diff_double`,
+      `climate_emulator_mse` — confirmed from source), computed once per
+      invocation (not per nruns repetition, since only the LAST
+      factorization's result is fed to the inverse-SHT/MSE stage in the
+      confirmed source structure). Exact MSE tolerance threshold not
+      confirmed from the source read — open question.
+
+notes_on_fairness:
+  - "This track's 2 papers do not share an input suite, metric, or even mathematical problem class — the spec deliberately does not force one. Any future paper added to this track should be evaluated for which of these 2 fundamentally different kernel classes (physical dynamical-core stencil vs. statistical-emulator linear algebra) it actually belongs to before being folded into either variant."
+  - "Neither paper reports simulated-days/day (SYPD), the standard production-climate-modeling throughput unit the parent task's own axis description calls out — this is flagged as an open question rather than silently computed via an unconfirmed conversion from either paper's own reported numbers."
+  - "HiCMA-PaRSEC's own harness already separates one-shot preprocessing (SHT, SYRK, norm) from a repeatable kernel phase (POTRF via --nruns) — this spec adopts that structure directly rather than imposing an external preprocessing/kernel split the way it had to for every other track surveyed so far, but it DOES add a warmup requirement the harness's own default lacks (deliberate fix, noted explicitly)."
+
+open_questions:
+  - "ozHOPE's own physical-time-per-simulated-step (needed to convert its reported speedup into a SYPD-comparable number) was not confirmed from the sources read (README + abstract only, no fulltext PDF/arXiv available for this paper per the `stencil` track's own survey)."
+  - "HiCMA-PaRSEC's Frontier-scale --latitude/--NB values for its own 0.976 EFlop/s headline run were not confirmed from the sources read (TESTS.md gives only a smoke-test-scale CLI example, --latitude 120); the production-scale point in variant 2's recommended_subset is a placeholder pending direct paper-PDF confirmation."
+  - "HiCMA-PaRSEC's MSE correctness-tolerance threshold (what counts as an acceptable emulator-vs-MATLAB-reference agreement) was not confirmed from the source files read (climate_emulator_mse.c's implementation was not fetched, only its call site)."
+  - "Whether HiCMA-PaRSEC's own harness ever runs a discarded warmup factorization call was not confirmed beyond the one loop structure read (`for i in range(nruns): potrf()`, no separate warmup call visible) — this spec assumes no warmup exists in the current public artifact and mandates adding one, but this should be re-verified against the full test-driver source (only testing_climate_emulator.c was read, not every helper it calls) before treating the 'no warmup' finding as certain."
+
+evidence:
+  conf/ipps/YaoZLX26: "ozHOPE: Ozaki-scheme FP16 Tensor Core acceleration of HOPE shallow-water dynamical core, Williamson standard test suite, avg 1.82x / up to 4.34x speedup, convergence-order-preserving correctness vs FP64 reference. (Same evidence entry as stencil/spec.yaml.)"
+  conf/sc/AbdulahBBCCGKKL24: "HiCMA-PaRSEC climate emulator: spherical-harmonic-transform + mixed-precision (fp64/fp32/fp16/fp8) tile-low-rank Cholesky factorization, N=latitude^2, nruns-repeated POTRF phase with one-shot SHT/SYRK/norm phases, MSE-vs-MATLAB correctness, 0.976 EFlop/s on Frontier, ACM Gordon Bell Prize for Climate Modelling 2024."

@@ -1,0 +1,90 @@
+{
+ "kernel": "string-regex-matching",
+ "papers": [
+  {
+   "key": "conf/cgo/SomainiCASC25",
+   "title": "Combining MLIR Dialects with Domain-Specific Architecture for Efficient Regular Expression Matching",
+   "venue": "CGO",
+   "year": 2025,
+   "doi": "10.1145/3696443.3708916",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3696443.3708916",
+   "artifact_url": "https://github.com/necst/cicero",
+   "artifact_status": "likely",
+   "platform": [
+    "other"
+   ],
+   "approach": "codegen",
+   "abstract": "Pattern matching based on Regular Expressions (REs) is a pervasive and challenging computational kernel used in several applications to identify critical information in a data stream. Due to the sequential data dependency of REs and the increasing data volume growth, hardware acceleration is gaining attention to address the limitation of general-purpose architectures. RE-oriented Domain-Specific Architectures (DSAs) combine the flexibility of translating REs into binary code with the efficiency of a specialized architecture, filling the gap between frozen hardware accelerators and the versatility of CPUs/GPUs. However, existing DSAs focus mainly on the efficiency execution challenge while missing the optimization opportunities that a structured compilation infrastructure can provide. This paper proposes a RE-tailored multi-level intermediate representation strategy embodied by the MLIR f",
+   "one_liner": "MLIR dialects generate regex-matching code targeting a domain-specific architecture"
+  },
+  {
+   "key": "conf/asplos/GeZ024",
+   "title": "ngAP: Non-blocking Large-scale Automata Processing on GPUs",
+   "venue": "ASPLOS",
+   "year": 2024,
+   "doi": "10.1145/3617232.3624848",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3617232.3624848",
+   "artifact_url": "https://github.com/getianao/ngAP",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Finite automata serve as compute kernels for various applications that require high throughput. However, despite the increasing compute power of GPUs, their potential in processing automata remains underutilized. In this work, we identify three major challenges that limit GPU throughput. 1) The available parallelism is insufficient, resulting in underutilized GPU threads. 2) Automata workloads involve significant redundant computations since a portion of states matches with repeated symbols. 3) The mapping between threads and states is switched dynamically, leading to poor data locality. Our key insight is that processing automata \"one-symbol-at-a-time\" serializes the execution, and thus needs to be revamped. To address these challenges, we propose Non-blocking Automata Processing, which allows parallel processing of different symbols in the input stream and also enables further optimiza",
+   "one_liner": "Non-blocking GPU automata processing with prefetch/memoization; avg 7.9x over SOTA GPU engine"
+  },
+  {
+   "key": "conf/cgo/CicoliniCSC24",
+   "title": "One Automaton to Rule Them All: Beyond Multiple Regular Expressions Execution",
+   "venue": "CGO",
+   "year": 2024,
+   "doi": "10.1109/CGO57630.2024.10444810",
+   "arxiv": "",
+   "oa_url": "https://re.public.polimi.it/bitstream/11311/1262662/1/mfse_midend_cgo24.pdf",
+   "artifact_url": "https://github.com/necst/iMFAnt",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Regular Expressions (REs) matching is crucial to identify strings exhibiting certain morphological properties in a data stream, resulting paramount in contexts such as deep packet inspection in computer security and genome analysis in bioinformatics. Yet, due to their intrinsic data-dependence characteristics, REs represent a complex computational kernel, and numerous solutions investigate pattern-matching efficiency in different directions. However, most of them lack a comprehensive ruleset optimization approach to truly push the pattern matching performance when considering multiple REs together. Thus, exploiting REs morphological similarities within the same dataset allows memory reduction when storing the patterns and drastically improves the dataset-matching throughput. Based on this observation, we propose the Multi-RE Finite State Automata (MFSA) that extends the Finite State Auto",
+   "one_liner": "MFSA merges multi-regex automata; ~6x matching throughput vs multiple parallel FSAs"
+  },
+  {
+   "key": "conf/ipps/WangWQW22",
+   "title": "GSpecPal: Speculation-Centric Finite State Machine Parallelization on GPUs",
+   "venue": "IPDPS",
+   "year": 2022,
+   "doi": "10.1109/IPDPS53621.2022.00053",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/l1ghtWang/GSpecPal",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Finite State Machine (FSM) plays a critical role in many real-world applications, ranging from pattern matching to network security. In recent years, significant research efforts have been made to accelerate FSM computations on different parallel platforms, including multicores, GPUs, and DRAM-based accelerators. A popular direction is the speculation-centric parallelization. Despite their abundance and promising results, the benefits of speculation-centric FSM parallelization on GPUs heavily depend on high speculation accuracy and are greatly limited by the inefficient sequential recovery. Inspired by speculative data forwarding used in Thread Level Speculation (TLS), this work addresses the existing bottlenecks by introducing speculative recovery with two heuristics for thread scheduling, which can effectively remove redundant computations and increase the GPU thread utilization. To ma",
+   "one_liner": "GSpecPal: speculation-centric FSM parallelization on GPU, 7.2x average speedup"
+  },
+  {
+   "key": "conf/asplos/0002PJ20",
+   "title": "Why GPUs are Slow at Executing NFAs and How to Make them Faster",
+   "venue": "ASPLOS",
+   "year": 2020,
+   "doi": "10.1145/3373376.3378471",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3373376.3378471",
+   "artifact_url": "https://github.com/bigwater/gpunfa-artifact",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Non-deterministic Finite Automata (NFA) are space-efficient finite state machines that have significant applications in domains such as pattern matching and data analytics. In this paper, we investigate why the Graphics Processing Unit (GPU)---a massively parallel computational device with the highest memory bandwidth available on general-purpose processors---cannot efficiently execute NFAs. First, we identify excessive data movement in the GPU memory hierarchy and describe how to privatize reads effectively using GPU's on-chip memory hierarchy to reduce this excessive data movement. We also show that in several cases, indirect table lookups in NFAs can be eliminated by converting memory reads into computation, to further reduce the number of memory reads. Although our optimization techniques significantly alleviate these memory-related bottlenecks, a side effect of these techniques is t",
+   "one_liner": "GPU NFA kernels via read privatization and dynamic load balancing; beats prior GPU and Automata Processor"
+  }
+ ]
+}

@@ -1,0 +1,13 @@
+diff --git a/BCMGX/src/datastruct/vector.cu b/BCMGX/src/datastruct/vector.cu
+index 5ac7f33..8ba2947 100644
+--- a/BCMGX/src/datastruct/vector.cu
++++ b/BCMGX/src/datastruct/vector.cu
+@@ -444,7 +444,7 @@ void print(vector<T>* v, int n_, FILE* fp)
+         if constexpr (std::is_same<T, int>::value) {
+             fprintf(fp, "%d\n", v_->val[i]);
+         } else if constexpr (std::is_same<T, double>::value) {
+-            fprintf(fp, "%g\n", v_->val[i]);
++            fprintf(fp, "%.17g\n", v_->val[i]);  /* HPC-KernelBench: full fp64 round-trip for the independent residual gate (was %g = 6 sig. digits) */
+         } else if constexpr (std::is_same<T, long>::value) {
+             fprintf(fp, "%ld\n", v_->val[i]);
+         } else {

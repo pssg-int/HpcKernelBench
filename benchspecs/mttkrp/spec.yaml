@@ -1,0 +1,206 @@
+kernel: mttkrp
+summary: >
+  Matricized-Tensor-Times-Khatri-Rao-Product, the dominant kernel in CP-ALS
+  tensor decomposition (and, via S3TTMc/S3TTMcTC, the closely related
+  symmetric Tensor-Times-Matrix-chain kernel used in Tucker/HOOI/HOQRI).
+  Given an N-mode sparse tensor X and N-1 dense factor matrices, compute the
+  mode-n unfolding of X contracted against the Khatri-Rao product of the
+  other factor matrices.
+operation: >
+  M = X_(n) * (A^(N) ⊙ ... ⊙ A^(n+1) ⊙ A^(n-1) ⊙ ... ⊙ A^(1))
+  where X is an N-mode sparse tensor (given in some sparse format), A^(i) are
+  dense I_i x R factor matrices, ⊙ is the Khatri-Rao (column-wise Kronecker)
+  product, and M is the dense I_n x R result. In practice M is computed
+  directly from the nonzeros of X (no explicit Khatri-Rao materialization).
+variants:
+  - id: mttkrp-general-kernel-fp64
+    claim: >
+      steady-state kernel throughput on general (asymmetric) real-world
+      sparse tensors, all modes reported, preprocessing/format-conversion
+      excluded and reported separately once
+    inputs:
+      suite: FROSTT (Formidable Repository of Open Sparse Tensors and Tools)
+      selection: >
+        union of tensors used across the track's real-tensor evaluation
+        (BLCO ICS'22, Table 2); order 3-4, nnz 3.1M-143.6M so every
+        candidate library/format in this track can load them in device
+        memory; excludes the 3 explicitly out-of-memory tensors (Amazon,
+        Patents, Reddit), which belong to the OOM/streaming variant instead
+      recommended_subset:
+        - nips (2.5K x 2.9K x 14K x 17, 3.1M nnz)
+        - uber (183 x 24 x 1.1K x 1.7K, 3.3M nnz)
+        - chicago-crime (6.2K x 24 x 77 x 32, 5.3M nnz)
+        - vast-2015-mc1 (165.4K x 11.4K x 2, 26M nnz)
+        - darpa (22.5K x 22.5K x 23.8M, 28.4M nnz)
+        - enron (6K x 5.7K x 244.3K x 1.2K, 54.2M nnz)
+        - nell-2 (12.1K x 9.2K x 28.8K, 76.9M nnz)
+        - flickr-4d (319.7K x 28.2M x 1.6M x 731, 112.9M nnz)
+        - delicious-4d (532.9K x 17.3M x 2.5M x 1.4K, 140.1M nnz)
+        - nell-1 (2.9M x 2.1M x 25.5M, 143.6M nnz)
+      dense_operand: "R (rank) in {16, 32, 64}, fp64, initialized U(-1,1)"
+    protocol:
+      format: "CSF, given / constructed once and NOT re-timed per call"
+      warmup: 10
+      reps: 50
+      statistic: median (report min/max)
+      timer: device-side events (CUDA/SYCL events) for GPU; std::chrono
+        steady clock for CPU
+      timing_scope: >
+        MTTKRP kernel only, all N modes computed and each reported
+        separately (per BLCO's own finding that per-mode time can vary
+        up to 12x under mode-specific formats — an all-mode-average or
+        mode-0-only number is not a sufficient basis for a claim)
+      preprocessing_reported: separately, once (format construction time)
+    metric:
+      primary: "GFLOP/s (2*R*nnz(X) flops for the whole all-mode MTTKRP;
+        report per-mode nnz*2*R for the per-mode breakdown)"
+      secondary: ms
+    correctness: >
+      max relative error vs. a reference dense/COO-based MTTKRP computed in
+      fp64 < 1e-6 (fp64 kernel) or < 1e-3 (fp32 kernel, see fp32 note below)
+  - id: mttkrp-general-e2e-preproc
+    claim: >
+      end-to-end throughput including one-shot preprocessing (sparse-format
+      construction and, for learned/autotuned systems, the format+schedule
+      search), amortized over k=100 CP-ALS-style MTTKRP calls -- k chosen
+      as a representative CP-ALS/HOOI iteration count (SySTeC/SymProp/BLCO
+      papers all run decomposition loops in the tens-to-low-hundreds of
+      iterations before convergence)
+    inputs:
+      suite: same as mttkrp-general-kernel-fp64
+      selection: same as mttkrp-general-kernel-fp64
+      recommended_subset: same as mttkrp-general-kernel-fp64
+      dense_operand: "R in {16, 32, 64}, fp64"
+    protocol:
+      format: "raw COO on input; format conversion/schedule search timed
+        once, amortized over k=100 subsequent kernel calls"
+      warmup: 10
+      reps: 50
+      statistic: median (report min/max) of the amortized per-call time
+        = (T_preprocess + k * T_kernel) / k
+      timer: same as mttkrp-general-kernel-fp64
+      timing_scope: >
+        one-shot preprocessing time reported explicitly and separately
+        from the amortized total (never silently folded in); for
+        learned-autotuner systems (WACO-style), preprocessing includes
+        BOTH format conversion AND the cost-model/search time -- report
+        these two sub-costs individually as well as their sum
+      preprocessing_reported: "explicit T_preprocess, plus the k used"
+    metric:
+      primary: "amortized GFLOP/s across k=100 calls"
+      secondary: "T_preprocess (s), amortization break-even k* (smallest k
+        at which the tuned/converted kernel beats the untuned/CSR baseline)"
+    correctness: same tolerance as mttkrp-general-kernel-fp64
+  - id: mttkrp-symmetric-kernel-fp64
+    claim: >
+      steady-state kernel throughput exploiting full input symmetry (all N
+      modes are mathematically equivalent, so only one canonical-mode
+      MTTKRP needs to be computed) on synthetic and hypergraph-derived
+      symmetric sparse tensors
+    inputs:
+      suite: >
+        synthetic Erdos-Renyi symmetric random sparse tensors (SySTeC
+        generator protocol) as primary; SymProp's 5 real hypergraph-derived
+        symmetric tensors (contact-school, trivago-clicks, walmart-trips,
+        stackoverflow, amazon-reviews) as an optional supplementary
+        real-data set
+      selection: >
+        order N in {3, 4, 5}; for each N, dimension size and density swept
+        to hit target UNNZ in {10^4, 10^5, 10^6}; for the hypergraph set,
+        use all 5 named datasets with max hyperedge cardinality capped at
+        the tensor order (per SymProp's own construction)
+      recommended_subset:
+        - synthetic-3d-nnz1e4-rank10
+        - synthetic-3d-nnz1e5-rank32
+        - synthetic-4d-nnz1e5-rank10
+        - synthetic-5d-nnz1e4-rank10
+        - contact-school (order 5, dim 245, unnz 12704, rank 12)
+        - trivago-clicks (order 6, dim 154987, unnz 208076, rank 4)
+        - walmart-trips (order 8, dim 62240, unnz 47560, rank 10)
+      dense_operand: "R (rank) in {2, 4, 8, 12, 16, 20}, fp64"
+    protocol:
+      format: "CSF for general baselines; CSS (compressed sparse symmetric)
+        or compact IOU format for symmetry-aware kernels -- format
+        conversion excluded from kernel timing, reported separately once"
+      warmup: 10
+      reps: 50
+      statistic: median (report min/max); also report min-of-(10000 runs
+        or 5s) as an alternative statistic to remain directly comparable
+        to SySTeC's own reported numbers
+      timer: std::chrono steady clock (CPU); device-side events (GPU)
+      timing_scope: >
+        kernel only, single canonical mode (mathematically sufficient for
+        fully symmetric input -- this is NOT the same simplification as
+        the mode-0-only practice flagged as a fairness issue for the
+        general/asymmetric variant); data rearrangement (transposition,
+        output replication to non-canonical triangles) excluded and
+        reported separately
+      preprocessing_reported: separately, once
+    metric:
+      primary: "GFLOP/s using the SYMMETRY-REDUCED flop count actually
+        performed (report the theoretical dense-equivalent GFLOP/s
+        alongside it so speedup-from-symmetry is visible, not hidden)"
+      secondary: ms
+    correctness: >
+      max relative error vs. a symmetrized dense/COO reference MTTKRP
+      (upper-triangle-and-replicate) in fp64 < 1e-6
+notes_on_fairness:
+  - "BLCO reports all N modes and shows up to 12x variation across modes
+    for the same tensor under mode-specific formats; WACO reports mode-0
+    only. The general-kernel variant resolves this by mandating all-mode
+    reporting; a mode-0-only number (as in WACO) is explicitly insufficient
+    evidence for a track-wide MTTKRP performance claim."
+  - "WACO's fp32 precision is a real, stated divergence from the other three
+    papers' fp64: the spec makes fp64 the default and calls for fp32 to be
+    reported as a clearly-labeled secondary result, not silently compared
+    against fp64 numbers from other systems."
+  - "SySTeC and SymProp both exclude output/data rearrangement
+    (transposition, non-canonical-triangle replication) from timed kernel
+    cost; BLCO reports format-construction cost separately with an explicit
+    amortization count. The spec requires ALL preprocessing costs
+    (format construction, autotuning search, output rearrangement) to be
+    reported explicitly, never silently mixed into per-iteration numbers,
+    following BLCO's practice rather than SySTeC/SymProp's silent exclusion."
+  - "WACO's headline numbers use the fastest of the top-10 SuperSchedules
+    the tuner's own cost model selected, evaluated on real hardware -- a
+    mild best-of-N practice. The e2e variant instead specifies reporting
+    the #1-ranked schedule the tuner actually picked, to avoid rewarding
+    systems for over-searching at evaluation time."
+  - "No paper in this track states an explicit correctness tolerance for
+    MTTKRP; the spec adds one (1e-6 relative error in fp64, matching common
+    practice for GFLOPS papers surveyed in the sibling tracks of this
+    project) rather than leaving correctness unchecked before timing counts."
+open_questions:
+  - "None of the 4 papers give a full, precise formula for what counts as a
+    'flop' in MTTKRP (e.g., whether the final scale-and-accumulate per
+    nonzero is counted as 2R or R flops). The spec's 2*R*nnz formula is the
+    common convention in the sparse-tensor literature but was not verified
+    against each paper's own internal flop counter."
+  - "BLCO's correctness-validation method for MTTKRP (tolerance, reference
+    implementation) is not described in the fetched paper text; likely
+    exists in the artifact but was not directly inspected."
+  - "SymProp targets S3TTMc/S3TTMcTC (Tucker-decomposition TTM-chain), which
+    is closely related to but not literally MTTKRP; its recommended_subset
+    entries above use the paper's own Tucker rank values, which may not be
+    the ideal rank range if a reader wants a pure symmetric-MTTKRP
+    (CP-ALS-style) comparison instead of Tucker/HOOI."
+  - "WACO's exact MTTKRP synthetic-tensor generation procedure (dimensions,
+    density distribution) is only described by reference to a third paper
+    (SpTFS); the generator was not independently reproduced for this
+    survey."
+evidence:
+  conf/ics/NguyenHCLTSRPC22: "FROSTT/HaTen2 real tensors, R=32, ALL modes reported, format-
+    construction timed separately with ~12-iteration amortization,
+    average-of-25 reps, fp64, MM-CSF/GenTen/F-COO baselines"
+  conf/cgo/PatelAA25: "synthetic Erdos-Renyi symmetric tensors (no public symmetric
+    corpus exists), rank swept 10-500, single canonical mode (symmetry-
+    justified), single-threaded, min-of-(10000 runs or 5s), data
+    rearrangement excluded, naive-Finch/TACO/SPLATT baselines"
+  conf/ipps/0001S0K25: "4 synthetic + 5 real hypergraph-derived symmetric tensors,
+    rank fixed per dataset (2-12) plus a separate 2-20 sweep, average-of-10,
+    32-core OpenMP, explicit fp64, TTMc-SPLATT/S3TTMc-CSS baselines"
+  conf/asplos/WonMEA23: "SuiteSparse-derived synthetic 3D tensors (SpTFS-style generation),
+    R=16 fixed, mode-0 only, fp32 (only fp32 paper in the track), search
+    cost separated and amortization analyzed over hundreds-to-thousands of
+    reps, median-of-50 during data collection then fastest-of-top-10 for
+    headline numbers, BestFormat/Fixed-CSF baselines"

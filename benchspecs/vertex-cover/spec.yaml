@@ -1,0 +1,146 @@
+kernel: vertex-cover
+summary: >
+  Exact GPU-parallel branch-and-bound search for Minimum Vertex Cover (MVC)
+  and Parameterized Vertex Cover (PVC, cover size <= k) on small-to-medium
+  undirected graphs, measured as search-tree wall time on a fixed mixed
+  suite of adversarial and real-world instances, with exact-optimum
+  correctness (this is an EXACT combinatorial problem, not an
+  approximation) as the hard gate before any timing counts.
+operation: >
+  cover[V] subset of V = VertexCover(A[V,V] adjacency (sparse, undirected),
+  mode in {MVC, k}); output is a vertex subset S such that every edge has
+  at least one endpoint in S; MVC minimizes |S|, PVC decides/returns S with
+  |S| <= k for a given k. A is unweighted, undirected, simple (no
+  self-loops/multi-edges after preprocessing).
+
+variants:
+  - id: vertex-cover-mvc-kernel
+    claim: >
+      steady-state GPU search-tree wall time to find the EXACT minimum
+      vertex cover on a fixed mixed suite of adversarial and real-world
+      graphs; the search-tree exploration itself is the entire timed
+      region (there is no separable "preprocessing" phase for this
+      problem beyond CSR/adjacency-list construction, which is one-shot
+      and reported separately)
+    inputs:
+      suite: "the paper's own test suite (20 named graphs across data/GraphDatabase, DIMACS 'hat' family + real-world networks + PACE-style exact instances) — this IS the paper's full disclosed suite, adopted verbatim since a singleton track has no other paper to union against"
+      selection: "all instances for which test/runGraphs.py's MVCS dict provides a known-optimal ground-truth size (required for the correctness gate below); this covers all 20 instances shipped in test/test_graphs/"
+      recommended_subset:
+        - "cop_hat300-1, cop_hat300-2, cop_hat300-3 (DIMACS hat family, 300 vertices, adversarial search-tree structure)"
+        - "cop_hat500-1, cop_hat500-2, cop_hat500-3 (DIMACS hat family, 500 vertices)"
+        - "cop_hat700-1, cop_hat700-2 (DIMACS hat family, 700 vertices)"
+        - "cop_hat1000-1, cop_hat1000-2 (DIMACS hat family, 1000 vertices)"
+        - "CAIDA (Internet AS-level topology, real-world, known-optimal cover 3683)"
+        - "Sister-Cities (real-world, known-optimal cover 5527)"
+        - "lastfm-asia (social network, real-world, known-optimal cover 3447)"
+        - "Power-Grid (real-world infrastructure network, known-optimal cover 2203)"
+        - "vc-exact_009, vc-exact_023 (PACE-style exact-track instances, known-optimal covers 21348 and 16013)"
+        - "formated_wikipedia_link_csb, formated_wikipedia_link_lo (Wikipedia hyperlink graphs)"
+        - "formated_movielens-100k_rating (bipartite-derived rating graph)"
+        - "formated_maayan-vidal, formated_maayan-figeys (protein-interaction networks)"
+      dense_operand: "N/A"
+      block_dim_sweep: "{64, 128, 256, 512, 1024} threads/block (paper's own grid-search dimension); report the best-performing block dim per graph AND the full sweep, since block-dim sensitivity is itself a reportable finding for this kernel"
+      root_depth: "16 (paper's own fixed value for the local-stack/global-worklist split point; disclose if varied)"
+    protocol:
+      format: "edge-list .txt read once into GPU-resident adjacency structure; read/build time excluded from search time, reported separately"
+      warmup: "1 full search-tree run on the SAME instance, discarded (paper's own script has no discard; this spec adds one to absorb first-call CUDA context/JIT overhead, material for the shorter DIMACS-hat instances)"
+      reps: 3
+      statistic: "median of 3, report min/max (paper's own script records all 3 repeats as data rows with no aggregation stated; this spec fixes median as the headline per the project's default convention)"
+      timer: "host-side wall clock around the search-tree traversal call (matches the paper's own Results.csv per-run timing row)"
+      timing_scope: "search-tree traversal only; edge-list parsing and adjacency-structure construction on the GPU are one-shot and excluded"
+      preprocessing_reported: "separately, once per graph: edge-list read + adjacency/CSR construction time"
+      version_disclosure: "REQUIRED: report which search-tree work-distribution strategy is used — local-stack, global-worklist, or hybrid ('stackonly' is the version tag used by the paper's own test driver) — since this is the paper's central algorithmic axis and materially changes both time and SM load-balance"
+    metric:
+      primary: "search wall time in milliseconds (median of 3)"
+      secondary: "min/max time across the 3 trials; nodes-explored count if instrumented (paper's own USE_COUNTERS=1 build exposes per-SM NODES_PER_SM, though that build mode is explicitly non-benchmark-representative per the README and should not be used for the primary timing number)"
+    correctness: >
+      EXACT problem, not approximate: returned |S| MUST equal the
+      known-optimal MVC size recorded in the suite's ground truth (from
+      the paper's own MVCS table, itself derived from exact external
+      solvers), AND S must be a valid cover (every edge has >=1 endpoint
+      in S, checked by brute-force edge scan). Any mismatch invalidates
+      that run entirely — there is no partial credit / approximation
+      ratio for this variant, since MVC-exact admits none.
+
+  - id: vertex-cover-pvc-kernel
+    claim: >
+      steady-state GPU search-tree wall time to DECIDE, for a given
+      parameter k, whether a vertex cover of size <= k exists (and return
+      one if so) — the parameterized decision variant, timed separately
+      from MVC-search because PVC's early-termination behavior (it can
+      stop as soon as ANY size-k cover is found, or prove none exists)
+      gives it a qualitatively different time profile than exhaustive
+      minimization
+    inputs:
+      suite: "same suite as vertex-cover-mvc-kernel"
+      selection: "same 20 named instances; k values derived as MVCS[graph] + offset for a spread of offsets spanning both 'yes' (offset >= 0) and near-threshold 'no' (offset < 0, if provable within a bounded search) cases"
+      recommended_subset: "same as vertex-cover-mvc-kernel"
+      dense_operand: "N/A"
+      k_offsets: "REQUIRED disclosure of the exact offsets tested per instance (paper's own script parameterizes K as a list of offsets added to the known-optimal MVCS value); this spec recommends at minimum offset in {0, +5, +20} to characterize the yes-instance time profile as slack increases"
+    protocol:
+      format: "same as vertex-cover-mvc-kernel"
+      warmup: 1
+      reps: 3
+      statistic: "median of 3, report min/max"
+      timer: "same as vertex-cover-mvc-kernel"
+      timing_scope: "search-tree traversal only, same exclusions as vertex-cover-mvc-kernel"
+      preprocessing_reported: "same as vertex-cover-mvc-kernel (shared across MVC/PVC runs on the same graph — do not re-time construction per k value)"
+      version_disclosure: "REQUIRED, same as vertex-cover-mvc-kernel"
+    metric:
+      primary: "search wall time in milliseconds (median of 3), reported as a function of k-offset (time-vs-slack curve)"
+      secondary: "min/max time; yes/no decision correctness"
+    correctness: >
+      EXACT decision problem: for offset >= 0 (a size-k cover is known to
+      exist since k >= optimal), the returned cover must have size <= k
+      and be valid; for offset < 0 tests, a correct implementation must
+      report non-existence (verified against the exact known-optimal size,
+      not by exhaustive re-verification, since MVCS gives ground truth).
+
+notes_on_fairness:
+  - >
+    MVC/PVC are EXACT combinatorial problems on this track's chosen
+    instance suite (the paper deliberately ships known-optimal answers for
+    every graph via its own MVCS table) — unlike most of the other
+    singleton tracks in this batch, there is no approximation-ratio or
+    quality-tradeoff axis here; correctness is a hard binary gate, and this
+    spec treats it that way rather than inventing a soft quality metric
+    that would not reflect how the paper itself evaluates.
+  - >
+    The paper's own test driver (test/runGraphs.py) does not discard a
+    warmup run — all 3 repeats become data rows. For the shorter DIMACS-hat
+    instances (300-1000 vertices), first-call GPU context/JIT overhead can
+    be a non-trivial fraction of total time; this spec adds an explicit
+    discarded warmup run the paper's own script lacks, applying the same
+    fairness discipline used across the rest of this survey batch (bfs,
+    betweenness, etc.) rather than reproducing an omission.
+  - >
+    The paper's own USE_COUNTERS=1 build is explicitly documented in the
+    README as "won't run efficiently" — i.e. it is a profiling-only mode
+    that perturbs the timing it would otherwise help explain. This spec
+    keeps per-SM load-balance instrumentation (NODES_PER_SM/Counters) as
+    optional supplementary output, never as part of the primary timed
+    variant, matching the paper's own documented caveat rather than
+    silently conflating a profiling build with a benchmark build.
+
+open_questions:
+  - >
+    Whether the paper's own reported headline numbers used all 5 BLOCK_DIM
+    values and reported the best, or fixed a single block_dim across all
+    instances, was not confirmed beyond the grid-search structure visible
+    in runGraphs.py; this spec requires disclosing the full sweep to avoid
+    ambiguity either way.
+  - >
+    The exact provenance/exact-solver used to produce the MVCS ground-truth
+    table (external ILP solver? a specific PACE-challenge submission?) was
+    not confirmed from the repo; flagged since the correctness gate for
+    this entire track depends on trusting that table.
+  - >
+    Whether HusseinAmro/component-aware-vertex-cover-gpu (a later,
+    related repo referencing this paper's problem, arXiv:2512.18334) is an
+    appropriate external baseline for this track, or a separate
+    contribution that should get its own track later, was not resolved —
+    left as a candidate baseline rather than folded into this spec's
+    variants.
+
+evidence:
+  conf/ipps/YamoutBJMH22: "arXiv:2204.10402; SLURM single-GPU single-node runs, 20-graph mixed suite (DIMACS hat family + real-world CAIDA/Sister-Cities/lastfm-asia/Power-Grid/Wikipedia/MovieLens/protein-interaction + PACE exact instances) with known-optimal ground truth (MVCS table) enabling exact correctness gate, grid search over block_dim in {64,128,256,512,1024} and fixed root_depth=16, REPEAT=3 with no explicit warmup discard in the paper's own script, wall time is the sole metric (no throughput/GFLOPs framing since this is a discrete search problem), profiling-only USE_COUNTERS build explicitly documented as non-benchmark-representative"

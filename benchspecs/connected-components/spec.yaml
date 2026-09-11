@@ -1,0 +1,474 @@
+kernel: connected-components
+summary: >
+  Connectivity-decomposition kernels on graphs (or, for one sub-problem,
+  regular pixel/voxel grids), covering the three genuinely distinct
+  sub-problems this track's own papers actually evaluate: biconnected
+  components (BCC, undirected), strongly connected components (SCC,
+  directed), and binary-image 2D/3D connected-component labeling (CCL,
+  regular grid, not a general sparse graph). Each sub-problem gets its own
+  variant family rather than being forced into a single shared shape, since
+  their operations, correctness definitions, and even connectivity
+  semantics ("8-connectivity" vs. "strongly reachable" vs. "removal of one
+  vertex disconnects") are not interchangeable.
+operation: >
+  BCC: label[V], componentHead[label] = BCC(A[V,V] adjacency (sparse,
+  symmetric/undirected CSR)); label[v] identifies which biconnected
+  component each non-root vertex's incident tree edge belongs to, and the
+  set of cut vertices/cut edges is derivable from label[] and
+  componentHead[] in O(1) per query.
+  SCC: scc_id[V] = SCC(A[V,V] adjacency (sparse, DIRECTED CSR)); scc_id[v]
+  identifies the strongly-connected component containing v, such that
+  contracting each scc_id-class to a single vertex yields a DAG.
+  Image-CCL: label[H,W] (2D) or label[D,H,W] (3D) = CCL(image[H,W] or
+  [D,H,W] (binary, foreground/background)); label assigns a unique positive
+  integer to every maximal foreground blob under a fixed connectivity rule
+  (8-connectivity for 2D, 26-connectivity for 3D), 0 for background.
+
+variants:
+  - id: cc-bcc-kernel-inmemory
+    claim: >
+      steady-state biconnected-components kernel time on named
+      undirected real-world graphs that fit in device/node memory, with
+      the internal connected-components subroutine's algorithm family
+      (Shiloach-Vishkin pointer-jumping vs. Afforest/k-out-sampling vs.
+      other) mandatorily disclosed, since both surveyed BCC papers show
+      this subroutine choice is consequential to reported performance
+    inputs:
+      suite: >
+        union of the real-graph families used across both surveyed BCC
+        papers (FAST-BCC-Filter/PEA-BCC's 30-graph Web/Social/Road/
+        Citation-Biological/Synthetic set; FAST-BCC's 27-graph
+        Social/Web/Road/k-NN/Synthetic set), overlapped with the bfs and
+        sssp specs' recommended_subset where the same underlying instance
+        is used, for cross-track comparability of the same graph under a
+        BFS/SSSP/BCC lens
+      selection: >
+        named graphs with disambiguated vertex/edge counts, appearing in
+        >=1 surveyed BCC paper's own evaluation; MUST already be
+        undirected OR be explicitly symmetrized as part of preprocessing
+        (see protocol.symmetrization_disclosure) — never silently treated
+        as undirected without disclosure, since both surveyed papers
+        symmetrize directed source graphs and this is a representativeness
+        caveat, not a free operation
+      recommended_subset:
+        - "com-LiveJournal (SNAP, ~4.8M v / 69M e, undirected) — shared with bfs/sssp specs"
+        - "com-Orkut (SNAP, ~3.1M v / 117M e, undirected) — shared with bfs/sssp specs"
+        - "com-Friendster (SNAP, ~65.6M v / 3.61B e, undirected) — shared with bfs/sssp specs"
+        - "GAP-road (GAP Benchmark Suite, ~23.9M v / 58M e, directed as generated -> symmetrize) — shared with bfs/sssp specs"
+        - "GAP-twitter (GAP Benchmark Suite, 61.6M v / 1.47B e symmetrized, directed as generated -> symmetrize) — shared with bfs/sssp specs"
+        - "europe_osm (DIMACS10, ~50.9M v / 108M e, undirected road network) — shared with bfs spec"
+        - "webbase-2001 (LAW webgraph, ~118M v / 1.02B e, directed -> symmetrize) — shared with bfs spec; also FAST-BCC-Filter's 'WB'"
+        - "it-2004 (LAW webgraph, ~41.3M v / 1.15B e, directed -> symmetrize) — shared with bfs spec; also FAST-BCC-Filter's 'IT'"
+        - "as-Skitter (SNAP, 1.70M v / 11.1M e, undirected) — exact size per FAST-BCC-Filter Table II, small/control instance"
+        - "coPapersDBLP (1.70M... 540K v / 15.2M e, undirected citation network) — exact size per FAST-BCC-Filter Table II, small/control instance"
+        - "hollywood-2009 (LAW, 1.14M v / 56.4M e, undirected co-appearance network) — exact size per FAST-BCC-Filter Table II"
+        - "kron_g500_logn20 (Kronecker generator, 1.05M v / 44.9M e, undirected synthetic) — exact size per FAST-BCC-Filter Table II, medium synthetic control paired with rgg below per the skewed-vs-unskewed discipline the bfs spec's Corder/urand handling established"
+        - "rgg_n_2_24_s0 (random geometric graph generator, 16.8M v / 133M e, undirected synthetic) — exact size per FAST-BCC-Filter Table II, unskewed counterpart to kron"
+        - "com-Youtube (SNAP, 1,134,890 v / 2,987,624 e, undirected) — exact size per FAST-BCC(PPoPP23)'s Table, small/control instance, shared naming with sssp spec's soc-Pokec-family control instance"
+      dense_operand: "N/A"
+      internal_cc_subroutine_disclosure: >
+        REQUIRED: report which algorithm family the BCC implementation's
+        internal connectivity subroutine (used both for the arbitrary
+        spanning-tree/skeleton construction and the final skeleton-CC-
+        labeling step) belongs to — one of {Shiloach-Vishkin pointer-
+        jumping, Afforest/k-out sampling (FAST-BCC-Filter's own disclosed
+        choice), union-find with path compression, other (name it)} — and
+        whether the SAME family is used for both internal CC calls or two
+        different ones, since FAST-BCC-Filter's own text notes ("we
+        acknowledge that alternative sampling techniques could yield
+        further improvements, depending on the graph type") that this
+        choice is graph-dependent and consequential without running a
+        dedicated ablation.
+      symmetrization_disclosure: >
+        REQUIRED if the source graph is directed as distributed: report
+        the symmetrization method (union of forward+reverse edges is the
+        standard choice) AND whether any edges were added purely to force
+        single-connectivity (FAST-BCC-Filter's disclosed practice) — the
+        latter changes the graph's actual biconnectivity structure before
+        benchmarking and must never be silent.
+    protocol:
+      format: "CSR, symmetrized/single-component-forced once if needed per symmetrization_disclosure; construction and any forcing edges NOT counted in per-search time but reported"
+      warmup: 1 (one full BCC computation, discarded)
+      reps: 5 (matches both surveyed BCC papers' own convention; NOTE the two papers disagree on statistic — see statistic field below, which this spec resolves)
+      statistic: >
+        median of 5 runs, REQUIRED to be explicitly named as median (not
+        mean) in every submission — resolving the FAST-BCC-Filter paper's
+        own internal median-for-GPU/mean-for-CPU-baseline inconsistency by
+        fixing one statistic for all implementations under test
+      timer: "device-side events (CUDA/HIP) for GPU implementations or std::chrono for CPU implementations, wrapping the full BCC computation (spanning-tree construction through final label assignment)"
+      timing_scope: "BCC computation only; graph loading, symmetrization, and single-connectivity-forcing (if used) are one-shot and excluded but reported separately"
+      preprocessing_reported: >
+        separately, once per graph: CSR/symmetrization build time,
+        single-connectivity-forcing time (if used) with the number of
+        edges added disclosed, and (for out-of-memory implementations)
+        batch-size hyperparameter and pass count per cc-bcc-oom-external
+        below
+      phase_breakdown_recommended: >
+        OPTIONAL but encouraged: report the per-phase time breakdown
+        (spanning-tree construction / Euler-tour or rooting / tag or
+        low-high computation / final CC-labeling), following both
+        surveyed papers' own practice of instrumenting this internally —
+        useful for readers comparing where an implementation's time
+        actually goes, not just its total
+    metric:
+      primary: "bcc_time_ms (median of 5 runs)"
+      secondary: >
+        speedup_vs_sequential_reference (self-relative, vs. a single-
+        threaded Hopcroft-Tarjan reference on the SAME machine, following
+        FAST-BCC's own self-relative-speedup practice); cut_vertex_count
+        and cut_edge_count as reported diagnostic outputs (not
+        performance metrics, but required for the correctness gate below
+        and useful for readers auditing graph structure)
+    correctness: >
+      REQUIRED gate before timing counts: (1) the number of biconnected
+      components reported must exactly match a single-threaded sequential
+      Hopcroft-Tarjan reference run once per graph (FAST-BCC's own
+      practice, the stronger of the two surveyed papers' checks); (2) for
+      at least one graph per size class, full BCC MEMBERSHIP (not just
+      count) must be spot-checked against the same reference, since a
+      matching count does not guarantee matching membership (component
+      counts can coincidentally match under a buggy labeling); (3) if
+      single-connectivity was forced via added edges, the reported BCC
+      structure must be re-validated as still corresponding to a valid
+      decomposition of the FORCED graph, not silently compared against
+      the original disconnected graph's (undefined) BCC structure.
+
+  - id: cc-bcc-oom-external
+    claim: >
+      biconnected-components cost when the input graph exceeds
+      accelerator memory, requiring a batched/external-memory algorithm —
+      makes FAST-BCC-Filter/PEA-BCC's out-of-memory contribution a
+      first-class, separately-reportable variant rather than folding it
+      into the in-memory variant's numbers, since the two are not
+      comparable without disclosing the memory-constraint regime each was
+      measured under
+    inputs:
+      suite: "same recommended_subset as cc-bcc-kernel-inmemory, restricted to instances too large to fit in the target device's memory at the stated batch/precision (report the memory budget used, e.g. 24GB vs 48GB, since PEA-BCC's own evaluation deliberately used two GPUs of different memory sizes to separately stress this variant)"
+      selection: "graphs for which BOTH an in-memory run (on a larger-memory device or a UVM/CPU fallback) AND an external/batched run can be measured, so a speedup-vs-fallback number is computable"
+      recommended_subset: "com-Friendster, GAP-web, webbase-2001, it-2004, GAP-kron — the largest instances in cc-bcc-kernel-inmemory's recommended_subset, per FAST-BCC-Filter's own OOM-triggering size class"
+      dense_operand: "N/A"
+    protocol:
+      format: "edge list partitioned into equal-sized batches on the host; batch transfer to device is IN SCOPE and timed as part of the algorithm, not as excluded preprocessing"
+      warmup: "1 full batched pass, discarded"
+      reps: 5
+      statistic: "median of 5 runs"
+      timer: "wall-clock (host-side) around the full multi-batch pipeline, since batch transfer/compute overlap makes device-side-only timing insufficient to capture the algorithm's actual behavior"
+      timing_scope: "the full out-of-memory algorithm including all batch transfers; this variant deliberately does NOT separate 'preprocessing' from 'kernel' the way cc-bcc-kernel-inmemory does, since batching IS the algorithm here"
+      batch_size_disclosure_required: true
+      batch_size_sensitivity_recommended: >
+        OPTIONAL but encouraged: report performance at >=3 batch sizes
+        spanning at least one order of magnitude, following PEA-BCC's own
+        Figure 7 discipline, since that paper found performance is
+        NON-MONOTONIC in batch size (smaller batches sometimes win via
+        better transfer/compute overlap) — a single batch-size number
+        without a sensitivity check risks reporting a locally-tuned rather
+        than representative result
+      fallback_baselines_required: >
+        REQUIRED: report at least one of {CPU-only fallback on the full
+        untruncated graph, UVM/unified-memory fallback on the same
+        accelerator} as a comparison point, following PEA-BCC's own
+        practice of benchmarking against both and finding UVM
+        specifically degrades badly (frequent page migration) once the
+        working set substantially exceeds device memory
+    metric:
+      primary: "oom_bcc_time_ms (median of 5 runs, full batched pipeline)"
+      secondary: "speedup_vs_cpu_fallback, speedup_vs_uvm_fallback (both self-relative to the same implementation family where possible); pass_count = number of full edge-list transfers required (theoretical I/O complexity is O(m/batch_size) passes, report the actual achieved count)"
+    correctness: "same gate as cc-bcc-kernel-inmemory, applied to the full graph's final BCC labels reconstructed from all batches"
+
+  - id: cc-scc-kernel
+    claim: >
+      steady-state strongly-connected-components kernel time on named
+      DIRECTED real-world and domain-specific graphs, with the
+      algorithm-family (max-ID-propagation vs. Forward-Backward/BFS-pivot
+      vs. spanning-tree+relaxed-sync) mandatorily disclosed, and with
+      graph REGIME (power-law vs. structured/mesh) treated as a first-
+      class axis since the one surveyed paper shows speedup is strongly
+      regime-dependent rather than a single blanket number
+    inputs:
+      suite: >
+        union of ECL-SCC's two graph classes: SuiteSparse-derived
+        power-law graphs (selected for baseline-comparability with
+        prior SCC papers) and MFEM-generated radiative-transfer mesh
+        graphs (a domain-specific, low-degree, deep-DAG workload family
+        unique to this sub-problem in either track surveyed)
+      selection: >
+        power-law instances: named SuiteSparse matrices used by >=1
+        surveyed SCC paper, explicitly directed (not requiring
+        symmetrization — symmetrizing would make the SCC problem
+        degenerate into WCC and must NEVER be applied here); mesh
+        instances: MFEM-library-generated meshes at multiple ordinates
+        per mesh family, exactly as the source paper constructs them,
+        since re-deriving an equivalent mesh-graph generator from
+        scratch is out of scope for a benchmark spec
+      recommended_subset:
+        - "cage14 (SuiteSparse, 1,505,785 v / 27,130,349 e, directed) — exact size per ECL-SCC Table 3, effectively single-SCC control instance"
+        - "soc-LiveJournal1 (SuiteSparse/SNAP, 4,847,571 v / 68,993,773 e, directed, 971,232 SCCs) — exact size per ECL-SCC Table 3, matches bfs/sssp specs' LiveJournal instance under a DIRECTED (non-symmetrized) lens, explicitly disambiguated from the symmetrized com-LiveJournal used elsewhere"
+        - "com-Youtube (SuiteSparse/SNAP, 1,134,890 v / 2,987,624 e, directed, 1,134,890 SCCs i.e. nearly all-trivial) — exact size per ECL-SCC Table 3"
+        - "wiki-Talk (SuiteSparse, 2,394,385 v / 5,021,410 e, directed, 2,281,879 SCCs) — exact size per ECL-SCC Table 3, high trivial-SCC-fraction control"
+        - "web-Google (SuiteSparse, 916,428 v / 5,105,039 e, directed, 412,479 SCCs) — exact size per ECL-SCC Table 3"
+        - "circuit5M (SuiteSparse, 5,558,326 v / 59,524,291 e, directed, 1 dominant SCC of 5,555,791 v) — exact size per ECL-SCC Table 3, single-giant-SCC control counterpart to the trivial-SCC-heavy instances above"
+        - "beam-hex mesh family (MFEM, 30 ordinates, 262,144 v / 769K e each, 262,144 trivial SCCs, DAG depth 318) — exact per ECL-SCC Table 1, small mesh, all-trivial-SCC edge case"
+        - "toroid-wedge mesh family (MFEM, 32 ordinates, 196,608 v / 486K e small / 1,572,864 v / 4M e large, mixed trivial+non-trivial SCCs) — exact per ECL-SCC Tables 1-2, most structurally diverse mesh family (non-trivial SCC sizes 2-5524)"
+        - "twist-hex mesh family (MFEM, 61 ordinates, 6,291,456 v / 19M e, single SCC = entire graph, DAG depth 1) — exact per ECL-SCC Table 2, opposite extreme from beam-hex: one giant SCC, no DAG structure at all"
+      dense_operand: "N/A"
+      algorithm_family_disclosure: >
+        REQUIRED: report the SCC algorithm's family as one of
+        {max-ID/signature-propagation with edge removal (ECL-SCC's own
+        family), Forward-Backward BFS-pivot with trim (Fleischer/
+        McLendon-descended, the family every OTHER surveyed SCC paper
+        including both baselines uses), spanning-tree + relaxed-
+        synchronization (iSpan's family), other (name it)} — since the
+        surveyed paper's central finding is that the RIGHT choice is
+        graph-regime-dependent (max-ID-propagation wins decisively on
+        low-degree/deep-DAG mesh graphs, is merely competitive to
+        sometimes-slower on power-law graphs where FB-family algorithms
+        are specifically optimized), a benchmark that doesn't disclose
+        which family is under test cannot separate "this implementation
+        is fast" from "this algorithm family suits this graph regime."
+      graph_regime_disclosure: >
+        REQUIRED: classify each tested graph as {power-law (few
+        high-degree vertices, typically one dominant giant SCC)} or
+        {structured/low-degree (near-constant vertex degree, typically
+        many small SCCs forming a deep DAG)} or {other, describe} — the
+        two regimes surveyed papers show behave qualitatively differently
+        under every SCC algorithm family tested.
+    protocol:
+      format: "directed CSR, built once; construction NOT counted in per-search time"
+      warmup: 1
+      reps: >
+        9 for individually-distinguishable graph instances (matches
+        ECL-SCC's own convention); for a mesh FAMILY with multiple
+        ordinates, report the per-ordinate median-of-9 individually AND
+        the across-ordinate mean/min/max — do NOT collapse straight to a
+        single family-level number without disclosing both aggregation
+        levels, since ECL-SCC's own two-level aggregation (median-of-9-
+        per-ordinate, then mean-across-ordinates) is easy to
+        misread as a simple repetition median if not made explicit
+      statistic: "median of 9 runs per graph instance; mean across ordinates for a mesh family, both reported"
+      timer: "device-side events or std::chrono, wrapping the SCC computation only"
+      timing_scope: >
+        SCC computation only, explicitly excluding graph reading, output,
+        verification, AND host-device transfer of the input graph (the
+        input is assumed already resident on the accelerator, following
+        ECL-SCC's own explicit, stated rationale — this must be disclosed
+        as an assumption, not a free default, since it differs from the
+        bfs/sssp specs' own convention of excluding only OUTPUT transfer)
+      preprocessing_reported: "N/A for host-device input transfer per timing_scope above (assumed pre-resident); CSR construction time reported separately if measured on the host before transfer"
+    metric:
+      primary: "throughput = vertices / scc_time_seconds, in millions of vertices/second (ECL-SCC's own metric, adopted here specifically because it is size-normalized across the very wide graph-size range this sub-problem's suite spans, from 262K-vertex meshes to multi-million-vertex power-law graphs)"
+      secondary: "scc_time_ms (median of 9, raw, for readers who want unnormalized numbers); number_of_SCCs, largest_SCC_size, DAG_depth as reported diagnostic outputs"
+    correctness: >
+      REQUIRED gate before timing counts: full SCC MEMBERSHIP (not just
+      component count) must exactly match a single-threaded sequential
+      Tarjan's-algorithm reference run once per graph instance — ECL-SCC's
+      own practice, the strongest correctness check found across either
+      track's connected-components-adjacent papers. A matching SCC count
+      alone is NOT sufficient (two different, both-wrong labelings can
+      coincidentally produce the same count).
+
+  - id: cc-image-ccl-2d3d
+    claim: >
+      steady-state binary-image connected-component-labeling kernel time
+      on named real image datasets, under a fixed connectivity rule
+      (8-connectivity 2D / 26-connectivity 3D), with the underlying
+      algorithm family and the specific test axis (plain average runtime
+      vs. density/granularity/blocksize sensitivity) both disclosed —
+      this variant is explicitly scoped to a REGULAR-GRID sub-problem,
+      not the general sparse-graph connectivity this spec's other 3
+      variants cover, and inherits the surveyed paper's own richer,
+      multi-axis test taxonomy rather than collapsing it to a single
+      number
+    inputs:
+      suite: "the YACCLAB project's own named 2D image dataset collection, since it is the only workload source surveyed for this sub-problem and is itself a maintained, versioned, community benchmark rather than a one-off paper artifact"
+      selection: "all 7 datasets used across YACCLAB's own correctness AND average-runtime test categories, for direct comparability with the project's own published numbers"
+      recommended_subset:
+        - "3dpes (surveillance video frames, binary foreground/background masks)"
+        - "fingerprints (biometric fingerprint scans)"
+        - "hamlet (historical document scan, binarized text page images)"
+        - "medical (medical imaging, binarized)"
+        - "mirflickr (general photography, binarized)"
+        - "tobacco800 (historical document scan corpus)"
+        - "xdocs (document image corpus)"
+      dense_operand: "N/A (binary image, not a dense operand in the linear-algebra sense; the pixel grid itself is the input structure)"
+      connectivity_rule: "8-connectivity for 2D (project-wide invariant, per YACCLAB's own stated convention: 'Notice that 8-connectivity is always used in the project'); 26-connectivity for the 3D extension where applicable — this is a FIXED protocol parameter, not a per-submission choice, unlike the sparse-graph variants' directed/undirected axis"
+      algorithm_family_disclosure: >
+        REQUIRED: report the labeling algorithm's family as one of
+        {block-based Union-Find (BUF, the surveyed paper's own
+        contribution), block-based Komura-Equivalence (BKE, the surveyed
+        paper's other contribution), classic (non-block) Union-Find,
+        raster-scan two-pass, decision-tree-based (e.g. the project's own
+        C_SAUF/C_BBDT/C_DRAG baselines), other (name it, from YACCLAB's
+        own 18-algorithm baseline list if applicable)}
+    protocol:
+      format: "binary image loaded via a standard image-decoding library (e.g. OpenCV imread), decode time NOT counted in per-image labeling time but reported separately"
+      warmup: 1
+      reps: "10 (YACCLAB's own disclosed default, tests_number.average = 10 in its config files)"
+      statistic: >
+        REQUIRED to be explicitly named (mean or median) per submission —
+        this spec could not confirm from YACCLAB's own reachable
+        configuration files which statistic its `average` test category
+        computes internally, so unlike this spec's other variants it does
+        NOT default to median; a submission under this variant MUST state
+        which statistic it used and, if reproducing YACCLAB's own
+        published numbers, must match YACCLAB's own (unconfirmed, flagged
+        in open_questions) convention or explicitly note the discrepancy
+      timer: "host-side high-resolution timer (std::chrono) or CUDA events for GPU algorithms, wrapping the labeling call only"
+      timing_scope: "labeling computation only; image decode/load and any output-writing excluded"
+      preprocessing_reported: "N/A (no separate preprocessing phase in this sub-problem beyond image decode, which is excluded from timing scope entirely rather than being a reportable one-shot cost, since it is dominated by an unrelated image-codec's performance, not the CCL algorithm's)"
+      test_axis_disclosure_required: >
+        REQUIRED: report which of YACCLAB's own test categories the
+        submitted numbers come from — at minimum `average` (plain
+        runtime) is required; `density`, `granularity`, and `blocksize`
+        sensitivity results are OPTIONAL but strongly encouraged given
+        this sub-problem's own benchmark framework already supports them
+        natively, and a bare `average` number without any sensitivity
+        context is easy to cherry-pick a favorable blocksize for
+    metric:
+      primary: "labeling_time_ms (per image, aggregated per dataset per the statistic named above)"
+      secondary: >
+        memory_access_count (YACCLAB's own `memory` test category
+        output, a hardware-portable secondary metric this sub-problem's
+        benchmark framework treats as first-class, unlike any other
+        variant in either track's specs); number_of_components as a
+        reported diagnostic output
+    correctness: >
+      REQUIRED gate before timing counts: full label-EQUIVALENCE match
+      against a reference labeling for every image in the dataset (not
+      merely a matching component count) — YACCLAB's own dedicated,
+      separately-runnable `correctness` test category, run against the
+      SAME 7 named datasets plus a synthetic `check` dataset — must pass
+      before any `average`/`density`/`granularity`/`blocksize` timing
+      numbers from the same implementation are considered valid.
+
+notes_on_fairness:
+  - >
+    This track's own 4 papers span 3 different sub-problems (BCC, SCC,
+    image-CCL) that a naive reading of the track name ("connected
+    components") would not predict, and none is a plain
+    weakly-connected-components paper in the Shiloach-Vishkin/Afforest
+    sense the track brief anticipated. Rather than force a shared variant
+    shape none of the 4 papers would actually populate meaningfully, this
+    spec defines 4 variants across the 3 real sub-problems (2 for BCC, 1
+    for SCC, 1 for image-CCL), each grounded in what its source paper(s)
+    actually measure — the same "survey what's real, don't force a
+    template" discipline the sibling bfs/sssp specs apply when a
+    surveyed paper's role is tangential to the track's nominal topic.
+  - >
+    Both surveyed BCC papers REQUIRE undirected, single-component input
+    and actively modify their source graphs to satisfy this (symmetrizing
+    directed graphs, and in one case adding edges purely to force
+    single-connectivity). This is a disclosed but real representativeness
+    concern: a graph's natural directedness and component structure are
+    edited away before biconnectivity is ever measured on it, meaning
+    "BCC performance on graph X" in this literature always means
+    "BCC performance on a MODIFIED version of graph X," not the graph as
+    distributed. The spec's symmetrization_disclosure and
+    single-connectivity-forcing disclosure fields make this modification
+    visible rather than implicit, but do not eliminate it — a genuinely
+    fair BCC benchmark would need either graphs that are natively
+    undirected/connected, or a standardized (not per-paper-invented)
+    modification protocol, neither of which the current 2-paper evidence
+    base is enough to establish; flagged as an open question.
+  - >
+    The internal connectivity-subroutine choice inside BCC algorithms
+    (Shiloach-Vishkin vs. Afforest/k-out-sampling vs. other) is exactly
+    the "algorithm family" axis the track brief asked this survey to
+    check, but it shows up one layer beneath each paper's own headline
+    contribution (the spanning-tree/skeleton construction), not at the
+    top level. FAST-BCC-Filter's own text flags this choice as
+    graph-type-dependent without running the ablation that would show how
+    much it matters. The spec's internal_cc_subroutine_disclosure field
+    surfaces this rather than leaving it as an unexamined implementation
+    detail, since a benchmark that doesn't ask "which CC family did you
+    actually call" cannot separate a BCC-specific algorithmic contribution
+    from a CC-subroutine choice that happened to be favorable.
+  - >
+    SCC's headline finding (ECL-SCC vs. SCC-GPU/iSpan) is REGIME-
+    DEPENDENT: a 6-8x win on mesh graphs, roughly parity (sometimes a
+    slight loss) on power-law graphs. This is the most honestly-disclosed
+    regime-dependence found across either track's survey — the paper does
+    not claim a single blanket speedup number. The spec's
+    graph_regime_disclosure field is designed specifically to prevent a
+    future submission from citing only the mesh-graph speedup (or only
+    the power-law comparison) without stating which regime the number
+    applies to, since the two regimes are evaluated on structurally
+    different graph families with no overlap in this survey's evidence
+    base.
+  - >
+    Image-CCL (YACCLAB/BUF/BKE) is included in this track's variant set
+    despite being a genuinely different domain (regular pixel grid, not
+    sparse graph) because it IS one of the 4 papers the track's
+    classification pipeline assigned to "connected-components," and the
+    project's own working discipline (per this repo's CLAUDE.md) is to
+    survey and spec what papers actually measure rather than silently
+    dropping an inconvenient one. Readers assembling a benchmark suite
+    across kernel categories should treat cc-image-ccl-2d3d as
+    measuring a related-but-distinct primitive from cc-bcc-* and
+    cc-scc-kernel, not as a fourth data point on the same underlying
+    "connectivity kernel" performance curve — the three variant families
+    are not meant to be aggregated into one blended connected-components
+    score.
+  - >
+    Timing-statistic naming (mean vs. median) is inconsistently disclosed
+    across all 4 papers, including one paper (FAST-BCC-Filter/PEA-BCC)
+    using DIFFERENT statistics for its own GPU vs. CPU-baseline numbers
+    within a single evaluation section. The spec fixes median as the
+    required default for the 3 sparse-graph variants (matching this
+    track's own majority practice and the sibling bfs/sssp specs) but
+    deliberately does NOT default the image-CCL variant's statistic,
+    since this survey could not confirm YACCLAB's own convention from
+    reachable sources — silently assuming median there risks
+    misrepresenting the very benchmark framework this variant is modeled
+    on.
+
+open_questions:
+  - >
+    FAST-BCC-Filter/PEA-BCC (IPDPS26)'s reachable evaluation section does
+    not describe an explicit per-run BCC-correctness check (its
+    artifact-evaluation appendix substitutes a reproduce-the-paper's-own-
+    figures check for a correctness-against-a-reference check); whether an
+    undisclosed correctness gate exists in the actual build/run scripts
+    was not resolved without executing the artifact, which was out of
+    scope for this survey. cc-bcc-kernel-inmemory's correctness
+    requirements are therefore modeled on FAST-BCC (PPoPP23)'s stronger,
+    explicit practice rather than on this paper's own (apparently weaker
+    or at least undisclosed) one.
+  - >
+    YACCLAB's exact timing statistic (mean vs. median across its
+    disclosed 10-repetition default) and its exact correctness-reference
+    implementation were not identified from the reachable
+    `config_*.yaml` files; resolving this would require reading
+    `performance_evaluator.h` / `yacclab_test.h` / `check_labeling.h` in
+    the C++ source, not reached given this survey's time budget. The
+    cc-image-ccl-2d3d variant's statistic field is left unresolved (REQUIRED
+    to be disclosed per-submission) rather than guessed, specifically
+    because of this gap.
+  - >
+    Whether the two BCC papers' input-graph modification (symmetrization
+    and, in one case, forced single-connectivity) measurably changes
+    reported BCC structure/speedup in a way that would differ from
+    benchmarking on natively-undirected, natively-connected graphs was
+    not investigated quantitatively — flagged as a fairness concern in
+    notes_on_fairness but not resolved.
+  - >
+    Whether FAST-BCC (PPoPP23)'s reported per-test time includes graph
+    loading/format-parsing was not confirmed from the reachable
+    README/script text (the benchmark script's CSV output format is
+    consistent with either interpretation); cc-bcc-kernel-inmemory's
+    timing_scope field states the spec's OWN required convention
+    (loading excluded) rather than assuming it matches this paper's
+    unconfirmed practice.
+  - >
+    Whether a genuinely unified "connectivity kernel" benchmark spanning
+    WCC, BCC, and SCC (the three problems that ARE comparable, unlike
+    image-CCL) would be more useful than three separate variant families
+    was considered but not attempted here, since no paper in this
+    4-paper sample evaluates more than one of these three problems in a
+    way that would let this survey ground a unified spec in actual
+    literature practice rather than inventing one from scratch.
+
+evidence:
+  conf/ipps/SahuARKB26: "arbitrary-spanning-tree BCC (not BFS-tree, Theorem 3.3), internal CC subroutine=GConn k-out-sampling (Afforest-family, disclosed), forces symmetrization+single-connectivity, 30+ real graphs/5 families exact Table-II sizes, median-of-5(GPU)/mean-of-5(CPU-baseline via CPU_ROUNDS) statistic mismatch within one paper, no explicit per-run correctness check found (AE appendix substitutes reproduce-paper-figures), excludes Gunrock/cuGraph/GBBS from baselines w/ stated reason, dedicated non-monotonic batch-size sensitivity study for OOM variant, real Zenodo artifact w/ full AD/AE appendix, 2 GPUs of different memory sizes used deliberately"
+  conf/ppopp/DongW0023: "Tarjan-Vishkin-descended O(n)-space skeleton (fence/plain edges), requires symmetric input, 27 graphs/5 families incl unique k-NN+grid/chain synthetic, explicit BCC-count-vs-sequential-Hopcroft-Tarjan correctness check, median-of-10 (strictest in track), metric=time+self-relative-speedup+vs-baseline-geomean, baselines=GBBS+SM14(connected-graphs-only caveat)+TV(memory-eval-only)+SEQ, CPU-only 96-core 4-socket, largest graphs in either track survey (Hyperlink12 3.56B v/226B e), regime-dependent result (10x vs GBBS on high-diameter, 1.6x on low-diameter)"
+  conf/sc/AlabandiSBB23: "max-ID-propagation family (novel vs FB/BFS-pivot every cited prior SCC paper uses), directed-by-definition, 2 structurally distinct graph classes (MFEM RTE meshes [unique workload] + 10 named SuiteSparse power-law), explicit SCC-MEMBERSHIP-vs-Tarjan correctness check (strongest in either track), median-of-9 w/ disclosed single-run exceptions, unique 2-level aggregation for mesh families, metric=throughput(vertices/sec, size-normalized, explicitly justified), explicitly excludes host-device transfer w/ stated GPU-resident-graph rationale, baselines=SCC-GPU+iSpan, honestly-disclosed regime-dependent results (6-8x on mesh, ~1x/sometimes-loses on power-law), 2 GPU gens x 2 CPU vendors"
+  journals/tpds/AllegrettiBG20: "DOMAIN MISMATCH: 2D/3D binary-image pixel/voxel CCL on regular grid, not sparse graphs; Union-Find(BUF)/Komura-Equivalence(BKE) block-based; named real image datasets (3dpes/fingerprints/hamlet/medical/mirflickr/tobacco800/xdocs); 7 independently-toggleable test categories (richest taxonomy in either track); dedicated label-equivalence correctness category; 10 reps disclosed, statistic (mean/median) NOT confirmed; 18-algorithm baseline set (richest in either track); 8-connectivity fixed project-wide invariant; living CI-tested infrastructure (2080Ti/CUDA 9.2+11.4 in CI badges), not a one-time paper artifact"

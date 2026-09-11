@@ -1,0 +1,22 @@
+diff --git a/DTC-SpMM/DTCSpMM_kernel.cu b/DTC-SpMM/DTCSpMM_kernel.cu
+index 914c340..697fe83 100644
+--- a/DTC-SpMM/DTCSpMM_kernel.cu
++++ b/DTC-SpMM/DTCSpMM_kernel.cu
+@@ -16,8 +16,15 @@
+ #include <vector>
+ #define WPB 8
+ #define EXE_TIME 1000
+-#define NUM_SM_GPU 128 // 4090
+-#define USE_SPUTNIK
++#define NUM_SM_GPU 128 // 4090 (unused by run_DTCSpMM / spmm_forward_improved_ptx_uint8_cuda -- the path this adapter wraps -- so left as upstream to keep the patch minimal)
++// USE_SPUTNIK disabled: gates ONLY the bundled Sputnik-baseline comparison
++// function spmm_forward_sputnik() (a competing baseline this repo bundles
++// for its own paper evaluation, not DTC-SpMM's own kernel), which otherwise
++// requires linking a full libsputnik.so build. Disabling it avoids that
++// build entirely while touching zero lines of DTC-SpMM's own ME-TCF kernel
++// path (spmm_forward_ptx_uint8_improved / run_DTCSpMM, wrapped by this
++// integration) -- see STATUS.md.
++// #define USE_SPUTNIK
+ using namespace nvcuda;
+ 
+ struct GpuTimer {

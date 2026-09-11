@@ -1,0 +1,124 @@
+{
+ "kernel": "other:ann-search",
+ "papers": [
+  {
+   "key": "conf/ics/GengYLWZ26",
+   "title": "X-HD: Fast Hausdorff Distance Computation with Ray Tracing",
+   "venue": "ICS",
+   "year": 2026,
+   "doi": "10.1145/3797905.3800509",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3797905.3800509",
+   "artifact_url": "https://github.com/pwrliang/X-HD",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "The Hausdorff distance (HD) is a mathematical measure of the similarity (or dissimilarity) between two sets of points, typically used to compare geometric shapes, images, or spatial distributions. HD computation has a broad range of applications in large-scale data analysis across domains like medical imaging, geospatial information systems, and graphics. As the volume of spatial data continues to grow rapidly, HD computation has become increasingly time-consuming, demanding effective and scalable hardware acceleration. Recent research on utilizing Ray Tracing (RT) cores to accelerate k-nearest neighbor (k-NN) search shed light on this problem, as k-NN is the building block of the HD algorithm. However, naively using an RT-accelerated k-NN library yields poor performance due to the lack of domain-specific optimizations, leading to poor utilization of hardware resources. In this paper, we",
+   "one_liner": "RT-core + CUDA Hausdorff-distance kernel, 5.3x over ITK"
+  },
+  {
+   "key": "conf/usenix/KimPNHKLL25",
+   "title": "PathWeaver: A High-Throughput Multi-GPU System for Graph-Based Approximate Nearest Neighbor Search",
+   "venue": "ATC",
+   "year": 2025,
+   "doi": "",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/AIS-SNU/PathWeaver",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Graph-based Approximate Nearest Neighbor Search (ANNS) is widely adopted in numerous applications, such as recommendation systems, natural language processing, and computer vision. While recent works on GPU-based acceleration have significantly advanced ANNS performance, the ever-growing scale of datasets now demands efficient multi-GPU solutions. However, the design of existing works overlooks multi-GPU scalability, resulting in naive approaches that treat additional GPUs as a means to extend memory capacity for large datasets. This inefficiency arises from partitioning the dataset and independently searching for data points similar to the queries in each GPU. We therefore propose PathWeaver, a novel multi-GPU framework designed to scale and accelerate ANNS for large datasets. First, we propose pipelining-based path extension, a GPU-aware pipelining mechanism that reduces prior work's r",
+   "one_liner": "Multi-GPU graph-based ANNS with pipelined path extension and pruning; 3.24x geomean over SOTA"
+  },
+  {
+   "key": "conf/ics/KamelYC25",
+   "title": "CLOVER: A GPU-native, Spatio-graph-based Approach to Exact kNN",
+   "venue": "ICS",
+   "year": 2025,
+   "doi": "10.1145/3721145.3730415",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3721145.3730415",
+   "artifact_url": "https://github.com/ampslab/clover-knn",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Finding the k nearest neighbours (kNN) of every point in a dataset is a key primitive in many GPU applications. Unfortunately, algorithmic techniques for kNN do not translate well to GPUs, require (offline) preprocessing, sacrifice accuracy, or require low query volume. Recently, ray-tracing cores have been proposed to accelerate exact kNN, but it is not well understood how these compare to grid-based methods. This work introduces a novel approach to exact kNN for spatial data that constructs and then traverses a graph from a random voronoi tesselation. On an NVIDIA V100, we answer ten million exact 30-NN queries with no prior preprocessing in 2.71s, about 4 × faster than an optimised grid-based method, 10 × faster than a GPU tree, and 230 × faster than FAISS. Furthermore, we show on an RTX card that RT-core methods are uncompetitive when query volume is high.",
+   "one_liner": "GPU-native graph-based exact kNN, 4-230x over grid/tree/FAISS"
+  },
+  {
+   "key": "conf/sc/ChenH0LYDY000025",
+   "title": "DRIM-ANN: An Approximate Nearest Neighbor Search Engine based on Commercial DRAM-PIMs",
+   "venue": "SC",
+   "year": 2025,
+   "doi": "10.1145/3712285.3759801",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3712285.3759801",
+   "artifact_url": "https://github.com/KMC20/DRIM-ANN",
+   "artifact_status": "verified",
+   "platform": [
+    "other"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Approximate nearest neighbor search (ANNS) is essential for applications like recommendation systems and retrieval-augmented generation (RAG) but is highly I/O-intensive and memory-demanding. CPUs face I/O bottlenecks, while GPUs are constrained by limited memory. DRAM-based Processing-in-Memory (DRAM-PIM) offers a promising alternative by providing high bandwidth, large memory capacity, and near-data computation. This work introduces DRIM-ANN, the first optimized ANNS engine leveraging UPMEM’s DRAM-PIM. While UPMEM scales memory bandwidth and capacity, it suffers from low computing power because of the limited processor embedded in each DRAM bank. To address this, we systematically optimize ANNS approximation configurations and replace expensive squaring operations with lookup tables to align the computing requirements with UPMEM’s architecture. Additionally, we propose load-balancing a",
+   "one_liner": "DRIM-ANN: ANNS engine on UPMEM DRAM-PIM using lookup tables instead of squaring, up to 2.67x over GPU"
+  },
+  {
+   "key": "conf/sc/ChenZSLY25",
+   "title": "UpANNS: Enhancing Billion-Scale ANNS Efficiency with Real-World PIM Architecture",
+   "venue": "SC",
+   "year": 2025,
+   "doi": "10.1145/3712285.3759777",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3712285.3759777",
+   "artifact_url": "https://github.com/steam009/UpANNS",
+   "artifact_status": "verified",
+   "platform": [
+    "other"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Approximate Nearest Neighbor Search (ANNS) is a critical component of modern AI systems, such as recommendation engines and retrieval-augmented large language models (RAG-LLMs). However, scaling ANNS to billion-entry datasets exposes critical inefficiencies: CPU-based solutions are bottlenecked by memory bandwidth limitations, while GPU implementations underutilize hardware resources, leading to suboptimal performance and energy consumption. To address these challenges, we introduce UpANNS, a novel framework leveraging Processing-in-Memory (PIM) architecture to accelerate billion-scale ANNS. UpANNS integrates four key innovations, including 1) architecture-aware data placement to minimize latency through workload balancing, 2) dynamic resource management for optimal PIM utilization, 3) co-occurrence optimized encoding to reduce redundant computations, and 4) an early-pruning strategy for",
+   "one_liner": "PIM-accelerated billion-scale ANNS with data placement and early-pruning top-k, 4.3x QPS vs Faiss"
+  },
+  {
+   "key": "conf/sc/JiangLZLHSRZRHA23",
+   "title": "Co-design Hardware and Algorithm for Vector Search",
+   "venue": "SC",
+   "year": 2023,
+   "doi": "10.1145/3581784.3607045",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/WenqiJiang/SC-ANN-FPGA",
+   "artifact_status": "verified",
+   "platform": [
+    "fpga"
+   ],
+   "approach": "codegen",
+   "abstract": "Vector search has emerged as the foundation for large-scale information retrieval and machine learning systems, with search engines like Google and Bing processing tens of thousands of queries per second on petabyte-scale document datasets by evaluating vector similarities between encoded query texts and web documents. As performance demands for vector search systems surge, accelerated hardware offers a promising solution in the post-Moore's Law era. We introduce FANNS, an end-to-end and scalable vector search framework on FPGAs. Given a user-provided recall requirement on a dataset and a hardware resource budget, FANNS automatically co-designs hardware and algorithm, subsequently generating the corresponding accelerator. The framework also supports scale-out by incorporating a hardware TCP/IP stack in the accelerator. FANNS attains up to 23.0× and 37.2× speedup compared to FPGA and CPU ",
+   "one_liner": "FANNS: FPGA hardware-algorithm co-design framework auto-generating vector search accelerators, up to 37x speedup"
+  },
+  {
+   "key": "conf/ppopp/000122",
+   "title": "RTNN: accelerating neighbor search using hardware ray tracing",
+   "venue": "PPoPP",
+   "year": 2022,
+   "doi": "10.1145/3503221.3508409",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/horizon-research/rtnn",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Neighbor search is of fundamental importance to many engineering and science fields such as physics simulation and computer graphics. This paper proposes to formulate neighbor search as a ray tracing problem and leverage the dedicated ray tracing hardware in recent GPUs for acceleration. We show that a naive mapping under-exploits the ray tracing hardware. We propose two performance optimizations, query scheduling and query partitioning, to tame the inefficiencies. Experimental results show 2.2X - 65.0X speedups over existing neighbor search libraries on GPUs. The code is available at https://github.com/horizon-research/rtnn.",
+   "one_liner": "RTNN: maps neighbor search onto GPU ray-tracing hardware via query scheduling/partitioning, up to 65x speedup"
+  }
+ ]
+}

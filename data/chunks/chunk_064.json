@@ -1,0 +1,476 @@
+[
+ {
+  "key": "conf/sc/HadadeKELREFRKJ25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Destination Earth: The Climate Change Adaptation Digital Twin",
+  "abstract": "We present the first digital twin framework that operationalizes the production of multi-decadal, global climate projections at kilometre-scale resolution, developed within the European Union’s Destination Earth initiative. Using three coupled Earth system models and selected impact-sector applications, we have built end-to-end workflows for both regular and on-demand climate projections on two EuroHPC supercomputers, LUMI and MareNostrum5. These workflows produced the first-ever multi-decadal simulations at 5 km resolution across all major Earth system components, using the same output parameters and grid, and achieving a production throughput of 0.6 simulated years per day and a climate data portfolio of 6.6 petabytes. We demonstrate the scalability of two of these Earth system models across both CPU and GPU-based systems at global resolutions up to 1 km, across atmosphere, ocean, land, and sea-ice, and report record-breaking full-machine performance on LUMI and MareNostrum5 of up to 97 simulated days per day at 1 km resolution.",
+  "hint_categories": [
+   "stencil_pde"
+  ]
+ },
+ {
+  "key": "conf/sc/LiHW0L0X25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Diff-MoE: Efficient Batched MoE Inference with Priority-Driven Differential Expert Caching",
+  "abstract": "The emerging Mixture-of-Experts (MoE) model mitigates the high compute cost of large-scale LLMs by sparsely activating a subset of experts during inference. However, MoE requires storing massive expert parameters, creating a severe memory bottleneck on resource-constrained GPUs. Existing approaches offload parameters to host memory and prefetch activated experts to GPU memory with sophisticated policies, but these solutions are tailored to single-batch inference and suffer from communication bottlenecks at larger batch sizes, limiting throughput. We identify two forms of locality in expert activation: a small set of experts are frequently invoked across inference (global locality), while others recur within short decoding bursts (temporal locality). To exploit this, we propose Diff-MoE, which introduces a differential cache hierarchy in GPU memory. Globally hot experts reside in per-layer high-priority caches, locally hot ones are dynamically managed in per-layer medium-priority caches under a priority-driven replacement policy, and the remaining cold experts are cached temporarily and evicted on demand. Moreover, Diff-MoE incorporates a lightweight predictor that prefetches experts likely needed in the next MoE layer, overlapping migration with computation to further reduce latency. Our evaluation shows that Diff-MoE improves inference throughput by 2.74 ×, 2.22 ×, and 1.55 × over DeepSpeed, Pre-gated MoE, and MoE-Infinity, respectively.",
+  "hint_categories": [
+   "dense_la",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/sc/TsarisLLWYB0WW25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Distributed Cross-Channel Hierarchical Aggregation for Foundation Models",
+  "abstract": "Vision-based scientific foundation models hold significant promise for advancing scientific discovery and innovation. This potential stems from their ability to aggregate images from diverse sources—such as varying physical groundings or data acquisition systems—and to learn spatio-temporal correlations using transformer architectures. However, tokenizing and aggregating images can be compute-intensive, a challenge not fully addressed by current distributed methods. In this work, we introduce the Distributed Cross-Channel Hierarchical Aggregation (D-CHAG) approach designed for datasets with a large number of channels across image modalities. Our method is compatible with any model-parallel strategy and any type of vision transformer architecture, significantly improving computational efficiency. We evaluated D-CHAG on hyperspectral imaging and weather forecasting tasks. When integrated with tensor parallelism and model sharding, our approach achieved up to a 75% reduction in memory usage and more than doubled sustained throughput on up to 1,024 AMD GPUs on the Frontier Supercomputer.",
+  "hint_categories": [
+   "stencil_pde",
+   "primitives",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/sc/XiaSP0ZHTLF25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Effective Node-Level Anomaly Detection in HPC Systems via Coarse-Grained Clustering and Fine-Grained Model Sharing",
+  "abstract": "High-performance computing (HPC) systems are crucial for scientific advancement and engineering breakthroughs. Unexpected performance degradation or system failures can severely impact these endeavors. This paper introduces NodeSentry, a novel unsupervised anomaly detection framework tailored for compute nodes of large-scale HPC systems. NodeSentry leverages a combined approach of coarse-grained clustering and fine-grained model sharing to effectively address the challenges posed by the massive node scales, frequent job transitions, and complex patterns characteristic of modern HPC deployments. Evaluation on two real-world HPC datasets demonstrates NodeSentry’s superior performance, achieving an F1-score exceeding 0.876. This represents a 0.560 average improvement over existing best baseline methods, while simultaneously reducing training overhead by an average of 45.69%. Furthermore, to promote reproducibility and contribute to the broader research community, we open-source NodeSentry’s codebase and introduce a novel clustering adjustment and anomaly labeling tool specifically designed for HPC systems.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/0002GHSWL25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Exploring and Mitigating Failure Behavior of Large Language Model Training Workloads in HPC Systems",
+  "abstract": "The exponential growth of Large Language Model (LLM) training demands in HPC systems has exposed critical reliability challenges, particularly from transient faults. Unlike resilience studies in conventional DNN inference, the massive parameter scale and iterative updates in LLM training trigger more complex failure patterns. To address these challenges, we introduce LLMFI, a new fault injection tool, and reveal six distinct failure behaviors through 300K+ fault injection experiments (exceeding 5K GPU node-hours). Our key insight is that, while most injected faults are eventually masked by the training iteration mechanism, a critical subset leads to catastrophic failures or performance degradation. Further, we propose LLMFT, a novel machine-learning-based fault tolerance framework that implements closed-loop error control via heuristic feature extraction, fault detector, and dual recovery mechanisms. Extensive evaluation demonstrates that LLMFT achieves an average of 97.61% F1-score in fault detection with only 0.01%–0.05% additional GPU memory overhead, effectively mitigating LLM training failures.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/sc/DaiW0JZHC25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "FT-Transformer: Resilient and Reliable Transformer with End-to-End Fault Tolerant Attention",
+  "abstract": "Transformer models rely on High-Performance Computing (HPC) resources for inference, where soft errors are inevitable in large-scale systems, making the reliability of the model particularly critical. Existing fault tolerance frameworks for Transformers are designed at the operation level without architectural optimization, leading to significant computational and memory overhead, which in turn reduces protection efficiency and limits scalability to larger models. In this paper, we implement module-level protection for Transformers by treating the operations within the attention module as a single kernel and applying end-to-end fault tolerance. This method provides unified protection across multi-step computations, while achieving comprehensive coverage of potential errors in the nonlinear computations. For linear modules, we design a strided algorithm-based fault tolerance (ABFT) that avoids inter-thread communication. Experimental results show that our end-to-end fault tolerance achieves up to 7.56 × speedup over traditional methods with an average fault tolerance overhead of 13.9%.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/sc/RajeMR0S25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "FaSTCC: Fast Sparse Tensor Contractions on CPUs",
+  "abstract": "Sparse tensor contractions are a core computational primitive in scientific computing and machine learning. Effective optimization of such contractions through loop permutation/tiling remains an open challenge. Our work perform the first comprehensive comparative analysis of data access costs and memory requirements for loop permutations for sparse tensor contractions. Based on these insights, we develop FaSTCC, a novel hashing-based parallel implementation of sparse tensor contractions. FaSTCC introduces a new 2D tiled contraction-index-outer scheme and a corresponding tile-aware design. Using probabilistic modeling, our approach automatically chooses between dense and sparse output tile accumulators and selects suitable tile size. We evaluate FaSTCC across two CPU platforms and a range of real-world workloads, demonstrating significant speedups on benchmarks from FROSTT and from quantum chemistry.",
+  "hint_categories": [
+   "sparse_la"
+  ]
+ },
+ {
+  "key": "conf/sc/LevittBZMCEFG25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Fine-grained Automated Failure Management for Extreme-Scale GPU Accelerated Systems",
+  "abstract": "As high-performance computing (HPC) systems scale in size, system wide hardware failure rates increase. Historical data from previous large-scale HPC installations illustrate this trend, with the mean time between failures (MTBF) decreasing steadily over the past decade. Recent studies from artificial intelligence and machine-learning (AI/ML) training extrapolate MTBF declining even further for future GPU accelerated systems. As MTBF decreases, mean time to repair (MTTR) becomes more pronounced, highlighting the need for efficient recovery strategies.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/BradleyAB25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Fringe-SGC: Counting Subgraphs with Fringe Vertices",
+  "abstract": "Subgraph Counting (SGC) is a fundamental component of many important applications, including cybersecurity, drug discovery, social network analysis, and natural language processing. However, current SGC approaches can only handle very small patterns (aka subgraphs) because the computational load increases exponentially with the size of the pattern. To overcome this limitation for certain patterns, we introduce a new technique and algorithm called Fringe-SGC for counting the exact number of times a subgraph occurs in a larger graph. Our approach conventionally searches only for the “core” of the subgraph and then uses set-based methods to compute the number of occurrences that the “fringes” add. Our evaluation shows that Fringe-SGC is able to count the instances of many subgraphs that are too large for state-of-the-art SGC frameworks. Furthermore, Fringe-SGC running on a GPU outperforms the state-of-the-art GPU-based SGC frameworks by up to 20 × on average, especially on patterns with many fringes.",
+  "hint_categories": [
+   "graph"
+  ]
+ },
+ {
+  "key": "conf/sc/HuangDLC25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "GPU Lossy Compression for HPC Can Be Versatile and Ultra-Fast",
+  "abstract": "This work proposes VGC, a versatile and ultra-fast GPU lossy compression framework designed to address the growing data challenges in high-performance computing (HPC). VGC captures dimension information in scientific data and supports three compression algorithms, achieving high compression ratios across diverse HPC domains. Built with a highly optimized GPU kernel, VGC delivers state-of-the-art throughput with error control. In addition to compression ratio and speed, VGC supports two distinctive modes that enhance its versatility. Memory-efficient Compression uses a kernel fission design to compute compressed size, allocate only the required GPU memory, and compress data without waste, effectively reducing memory footprint. Selective Decompression introduces an early stopping mechanism that enables direct access to regions of interest without decompressing the entire dataset.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/LiZ0R25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Generative Latent Diffusion for Efficient Spatiotemporal Data Reduction",
+  "abstract": "Generative models have demonstrated strong performance in conditional settings and can be viewed as a form of data compression, where the condition serves as a compact representation. However, their limited controllability and reconstruction accuracy restrict their practical application to data compression. In this work, we propose an efficient latent diffusion framework that bridges this gap by combining a variational autoencoder with a conditional diffusion model. Our method compresses only a small number of keyframes into latent space and uses them as conditioning inputs to reconstruct the remaining frames via generative interpolation, eliminating the need to store latent representations for every frame. This approach enables accurate spatiotemporal reconstruction while significantly reducing storage costs. Experimental results across multiple datasets show that our method achieves up to 10× higher compression ratios than rule-based state-of-the-art compressors such as SZ3, and up to 63% better performance than leading learning-based methods under the same reconstruction error.",
+  "hint_categories": [
+   "primitives",
+   "compression"
+  ]
+ },
+ {
+  "key": "conf/sc/XuZZC025",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Graphago: Accelerating SSD-based Graph Processing via Activity-Aware Graph Preprocessing",
+  "abstract": "SSD-based graph processing systems have emerged as a cost-effective solution for handling the ever-growing, large-scale graphs that exceed the memory capacity of a single machine. However, the mismatch between the large SSD access granularity (e.g., 4KB) and the small size of the graph vertex data leads to significant read amplification and low I/O efficiency. Despite existing works proposing techniques like dynamic active data gathering or reordering-based graph preprocessing to tackle this challenge, they inevitably cause problems such as expensive on-line computation overheads, inefficient graph traversal, and I/O imbalance, thus degrading the performance of graph processing.",
+  "hint_categories": [
+   "graph"
+  ]
+ },
+ {
+  "key": "conf/sc/RoyP0SGT25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "GreenMix: Energy-Efficient Serverless Computing via Randomized Sketching on Asymmetric Multi-Cores",
+  "abstract": "GreenMix is motivated by the renewed interest in asymmetric multi-core processors and the emergence of the serverless computing model. Asymmetric multi-cores offer better energy and performance trade-offs by placing different core types on the same die. However, existing serverless scheduling techniques do not leverage these benefits. GreenMix is the first serverless work to reduce energy and serverless keep-alive costs while meeting QoS targets by leveraging asymmetric multi-cores. GreenMix employs randomized sketching, tailored for serverless execution and keep-alive, to perform within 10% of the optimal solution in terms of energy efficiency and keep-alive cost reduction. GreenMix’s effectiveness is demonstrated through evaluations on clusters of ARM big.LITTLE and Intel Alder Lake asymmetric processors. It outperforms competing state-of-the-art schedulers, offering a novel approach for energy-efficient serverless computing.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/sc/JonesAG25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "HELM: Characterizing Unified Memory Accesses to Improve GPU Performance under Memory Oversubscription",
+  "abstract": "Unified Memory (UM) technologies simplify memory management across CPU and GPU domains in GPU-accelerated heterogeneous architectures through transparent data migration. However, the default migration mechanism can severely degrade performance when applications oversubscribe GPU memory. Existing approaches to mitigating this performance degradation often fail to generalize, as they target specific application types, require specialized hardware, or integrate opaque classification methods.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/LiLGLPK0C25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "HP-MDR: High-performance and Portable Data Refactoring and Progressive Retrieval with Advanced GPUs",
+  "abstract": "Scientific applications produce vast amounts of data, posing grand challenges in the underlying data management and analytic tasks. Progressive compression is a promising way to address this problem, as it allows for on-demand data retrieval with significantly reduced data movement cost. However, most existing progressive methods are designed for CPUs, leaving a gap for them to unleash the power of today’s heterogeneous computing systems with GPUs.In this work, we propose HP-MDR, a high-performance and portable data refactoring and progressive retrieval framework for GPUs. Our contributions are four-fold: (1) We carefully optimize the bitplane encoding and lossless encoding, two key stages in progressive methods, to achieve high performance on GPUs; (2) We propose pipeline optimization and incorporate it with data refactoring and progressive retrieval workflows to further enhance the performance for large data process; (3) We leverage our framework to enable high-performance data retrieval with guaranteed error control for common Quantities of Interest; (4) We evaluate HP-MDR and compare it with state of the arts using five real-world datasets. Experimental results demonstrate that HP-MDR delivers an average 13.68 × and 6.31 × throughput in data refactoring and progressive retrieval tasks, respectively. It also leads to 11.22 × throughput for recomposing required data representations under Quantity-of-Interest error control and 6.04 × performance for the corresponding end-to-end data retrieval, when compared with state-of-the-art solutions.",
+  "hint_categories": [
+   "compression"
+  ]
+ },
+ {
+  "key": "conf/sc/HuangXF000L25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "HStencil: Matrix-Vector Stencil Computation with Interleaved Outer Product and MLA",
+  "abstract": "Stencil computations are fundamental to various HPC and intelligent computing applications, often consuming significant execution time. The emergence of specialized matrix units presents new opportunities to accelerate stencil computations. While scalable matrix compute units provide substantial computing horsepower, prior efforts fail to fully utilize the computing capabilities for stencils due to suboptimal matrix-unit utilization, limited instruction-level parallelism, and low cache hit rates. This paper introduces HStencil, a novel stencil computing framework utilizing matrix and vector units. HStencil addresses these challenges through three contributions: 1) microkernels that jointly leverage matrix and vector units to enhance hardware utilization; 2) fine-grained instruction scheduling with interleaved execution to enhance instruction-level parallelism; and 3) spatial prefetch to sustain high performance when working sets exceed cache capacity. Evaluations on representative benchmarks demonstrate that HStencil achieves maximum speedups of 1.81x – 5.76x over auto-vectorization across different CPU platforms, delivers 31% - 91% higher performance versus state-of-the-art methods.",
+  "hint_categories": [
+   "stencil_pde"
+  ]
+ },
+ {
+  "key": "conf/sc/MoLXZ025",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Hetis: Serving LLMs in Heterogeneous GPU Clusters with Fine-grained and Dynamic Parallelism",
+  "abstract": "The significant resource demands in LLM serving prompts production clusters to fully utilize heterogeneous hardware by partitioning LLM models across a mix of high-end and low-end GPUs. However, existing parallelization approaches often struggle to scale efficiently in heterogeneous environments due to their coarse-grained and static parallelization strategies.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/ZhangA25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "High-Performance Branch-Free Algorithms for Extended-Precision Floating-Point Arithmetic",
+  "abstract": "We present new branch-free algorithms for floating-point arithmetic at double, triple, or quadruple the native machine precision. These algorithms are the fastest known by at least an order of magnitude and are conjectured to be optimal, not only in an asymptotic sense, but in their exact FLOP count and circuit depth. Unlike previous algorithms, which either use complex branching logic or are only correct on specific classes of inputs, our algorithms have computer-verified proofs of correctness for all floating-point inputs within machine overflow and underflow thresholds. Compared to state-of-the-art multiprecision libraries, our algorithms achieve up to 11.7 × the peak performance of QD, 34.4 × over CAMPARY, 35.6 × over MPFR, and 41.4 × over FLINT.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/ZhangWXYZC25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "HyTiS: Hybrid Tile Scheduling for GPU GEMM with Enhanced Wave Utilization and Cache Locality",
+  "abstract": "General matrix-matrix multiplication (GEMM) is a fundamental operation in both deep learning and scientific computing. To accelerate these workloads, GPUs with a large number of streaming multiprocessors (SMs) are widely used. However, as modern GPUs scale in core count and adopt larger tile sizes, the wave quantization problem induced by partially filled waves results in growing hardware underutilization and substantially degraded performance. Existing solutions to this problem often suffer from low execution efficiency or introduce additional synchronization overhead.",
+  "hint_categories": [
+   "dense_la"
+  ]
+ },
+ {
+  "key": "conf/sc/Islam00B25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Improving SpGEMM Performance Through Matrix-Reordering and Cluster-wise Computation",
+  "abstract": "Sparse matrix-sparse matrix multiplication (SpGEMM) is a key kernel in many scientific applications and graph workloads. Unfortunately, SpGEMM is bottlenecked by data movement due to its irregular memory access patterns. Significant work has been devoted to developing row reordering schemes towards improving locality in sparse operations, but prior studies mostly focus on the case of sparse-matrix vector multiplication (SpMV).",
+  "hint_categories": [
+   "dense_la",
+   "sparse_la"
+  ]
+ },
+ {
+  "key": "conf/sc/0001MCKMW25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Insights from Optimizing HPL Performance on Exascale Systems: A Comparative Analysis of Panel Factorization",
+  "abstract": "High performance LINPACK (HPL) remains the primary benchmark for evaluating supercomputing performance. It includes many parts with substantial internal complexity, and its performance is affected by a large number of parameters that interact in ways that are difficult to predict on large-scale heterogeneous supercomputer systems. We present a comprehensive performance analysis of HPL on Frontier, the world’s first exascale supercomputer, which achieved HPL performance of 1.35 exaflops. Through empirical parameter tuning, detailed modeling, and comparative evaluation, we uncover critical performance insights, share lessons learned, and outline best practices for effective parameter tuning on exascale systems. We introduce and evaluate two novel PDFACT strategies: a dedicated-thread (DT) variant and a GPU-based variant (GPUPDFACT) implementation using HIP cooperative groups, demonstrating that GPU-based factorization outperforms conventional CPU-based PDFACT on Frontier’s architecture. Our findings establish key performance factors for HPL on exascale systems and offer valuable guidance for future high-performance computing and benchmarking efforts.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/WangDLTSL25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "KAMI: Communication-Avoiding General Matrix Multiplication within a Single GPU",
+  "abstract": "Efficient general matrix-matrix multiplication (GEMM) has attracted significant research attention in HPC and AI workloads. While large-scale GEMM has nearly achieved the peak floating-point performance of GPUs, substantial opportunities for optimization remain in small and batched GEMM operations.",
+  "hint_categories": [
+   "dense_la",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/sc/XuYCGWSDWYLJZ0W25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Kilometer-Scale AI-Powered and Performance-Portable Earth System Model (AP3ESM) to Achieve Year-Scale Simulation Speed on Heterogeneous Supercomputers",
+  "abstract": "Kilometer-scale Earth system models (ESMs) necessitate exascale supercomputers to facilitate realistic simulations of weather phenomena and climate variability over a time span ranging from days to decades. We present AP3ESM, an ultra‑high‑resolution, AI‑Powered, Performance‑Portable ESM coupling atmosphere, land surface, ocean, and sea ice components. By leveraging the performance portability features of Kokkos and OpenMP, the AP3ESM operates efficiently on two heterogeneous systems while incurring minimal development overhead. Advanced optimization techniques, such as adaptive parallel algorithms, AI-enhanced physical parameterizations, and mixed-precision computations, have been implemented to further boost the computational efficiency. Breaking the 1-km resolution barrier, AP3ESM delivers 0.85 and 1.98 simulated-years-per-day (SYPD) for the standalone atmosphere and ocean components on 34.1 million Sunway cores and 16085 GPUs, respectively; the holistic AP3ESM achieves 0.54 SYPD on 37.2 million Sunway cores. Notably, the forecast experiment successfully captures Super Typhoon Doksuri in 2023 and its associated extreme rainfall across China.",
+  "hint_categories": [
+   "dense_la",
+   "stencil_pde"
+  ]
+ },
+ {
+  "key": "conf/sc/HuXSYZLJX0LG25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "LiquidGEMM: Hardware-Efficient W4A8 GEMM Kernel for High-Performance LLM Serving",
+  "abstract": "Quantization is a critical technique for accelerating LLM inference by reducing memory footprint and improving computational efficiency. Among various schemes, 4-bit weight and 8-bit activation quantization (W4A8) offers a strong balance between accuracy and performance. However, existing W4A8 GEMM kernels fall short in practice due to inefficient dequantization on CUDA Cores, which cannot keep pace with the high throughput of Tensor Cores. In this paper, we present LiquidGEMM, a hardware-efficient W4A8 GEMM kernel for efficient LLM serving. LiquidGEMM designs two key techniques: LiquidQuant, a hardware-efficient quantization method that enables fast, overflow-safe dequantization using just two arithmetic instructions per four elements; and an implicit fine-grained pipeline that fully overlaps weight loading, dequantization, and MMA across warp groups without software synchronization or redundant memory traffic. Experimental results show that LiquidGEMM achieves up to 2.90x speedup over state-of-the-art W4A8 kernels and up to 4.94x end-to-end system-level speedup. Compared to various quantized GEMM kernels in NVIDIA TensorRT-LLM, LiquidGEMM delivers 1.12-1.63x performance gains, and achieves up to 1.63x system-level speedup.",
+  "hint_categories": [
+   "dense_la",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/sc/YaoLHLZZ25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "LowDiff: Efficient Frequent Checkpointing via Low-Cost Differential for High-Performance Distributed Training Systems",
+  "abstract": "Distributed training of large deep-learning models often leads to failures, so checkpointing is commonly employed for recovery. State-of-the-art studies focus on frequent checkpointing for fast recovery from failures. However, it generates numerous checkpoints, incurring substantial costs and thus degrading training performance. Recently, differential checkpointing has been proposed to reduce costs, but it is limited to recommendation systems, so its application to general distributed training systems remains unexplored.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/HuangYYLGLJWFHT25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "MANS: Efficient and Portable ANS Encoding for Multi-Byte Integer Data on CPUs and GPUs",
+  "abstract": "Lossless compression is a classic technique for reducing data storage and transmission requirements. Asymmetric Numeral Systems (ANS) is a high-throughput, high-ratio lossless compression algorithm, but it lacks effective support for multi-byte data and cross-platform compatibility. To address this issue, we propose an Adaptive Data Mapping (ADM) scheme, which maps multi-byte integer data into single-byte space based on the data’s characteristics, improving the compression ratio of ANS while maintaining low encoding redundancy. We also optimize the ADM algorithm and the ANS encoder for GPU and CPU architectures, respectively, and combine them to create an efficient and portable ANS encoding method for multi-byte integer data, called MANS. Experimental results show that MANS improves compression ratios by an average of 1.24 ×, achieves 870.27MB/s throughput on CPUs, and delivers up to 288.45 × and 135.86 × speedups on an NVIDIA A100 and an AMD MI210 GPU compared to the CPU version—demonstrating its efficiency and portability across platforms.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/LiPNW0CZHWHC25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "MISA-AKMC : Achieve Kinetic Monte Carlo Simulation of 20 Quadrillion Atoms on GPU Clusters",
+  "abstract": "The Atomic Kinetic Monte Carlo (AKMC) method provides insights into the macroscopic behavior of materials through atomistic-level simulations and finds broad applications in materials science innovation. Improving simulation scale and performance remains a consistent focus in the development of parallel AKMC software. We port the AKMC software to GPU clusters. To alleviate the memory pressure in large-scale complex system simulations, we redesign the data layout and propose the Lattice Data Compression and Vacancy Data Decompression algorithms. Additionally, We propose a multi-level pipeline scheme combined with an on-demand communication forwarding and merging strategy to reduce data transfer and communication overhead. Compared to state-of-the-art KMC software, MISA-AKMC achieves a 10.41-fold improvement in computational throughput and a 52.07-fold expansion in simulation scale. We implement the first true micrometer-scale AKMC simulation involving 20 quadrillion atoms on GPU clusters. MISA-AKMC achieves 96.03% parallel efficiency in weak scaling and 85.29% in strong scaling on 16,000 GPUs.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/MauryaRCN25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "MLP-Offload: Multi-Level, Multi-Path Offloading for LLM Pre-training to Break the GPU Memory Wall",
+  "abstract": "Training LLMs larger than the aggregated memory of multiple GPUs is increasingly necessary due to the faster growth of LLM sizes compared to GPU memory. To this end, multi-tier host memory or disk offloading techniques are proposed by state of art. Despite advanced asynchronous multi-tier read/write strategies, such offloading strategies result in significant I/O overheads in the critical path of training, resulting in slower iterations. To this end, we propose MLP-Offload, a novel multi-level, multi-path offloading engine specifically designed for optimizing LLM training on resource-constrained setups by mitigating I/O bottlenecks. We make several key observations that drive the design of MLP-Offload, such as I/O overheads during the update dominate the iteration time; I/O bandwidth of the third-level remote storage tier remains unutilized; and, contention due to concurrent offloading amplifies I/O bottlenecks. Driven by these insights, we design and implement MLP-Offload to offload the optimizer states across multiple tiers in a cache-efficient and concurrency-controlled fashion to mitigate I/O bottlenecks during the backward and update phases. Evaluations on models up to 280B parameters shows that MLP-Offload achieves 2.5 × faster iterations compared to the state-of-the-art LLM training runtimes.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/WangXY0C25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "MXBLAS: Accelerating 8-bit Deep Learning with a Unified Micro-Scaled GEMM Library",
+  "abstract": "Micro-scaling General Matrix Multiplication (MX-GEMM), which leverages 8-bit micro-scaling format (MX-format) inputs, represents a significant step forward in accelerating deep learning workloads. The MX-format space is diverse, encompassing various scaling patterns and granularities. However, current MX-GEMM implementations typically adopt a model-oriented approach, where format customization is tailored to individual models. This results in three key limitations: rigid problem-kernel coupling, inefficient promotion operations, and overlooked quantization overhead.",
+  "hint_categories": [
+   "dense_la"
+  ]
+ },
+ {
+  "key": "conf/sc/Han0JLACZ0025",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Matrix Is All You Need: Rearchitecting Quantum Chemistry to Scale on AI Accelerators",
+  "abstract": "Scientific computing remains fundamentally misaligned with the execution paradigm of modern AI accelerators, which rely on structured, low-precision matrix operations for performance and scalability. Quantum chemistry exemplifies this gap through three core scalability limits: irregular computational patterns, fragmented hardware utilization, and limited scientific reach. In this work, we present Mako, a quantum chemistry system that rearchitects first-principles electronic structure computations as high-performance matrix-aligned kernels to scale on modern AI accelerators. Mako integrates three co-designed components: KernelMako reformulates ERI evaluation into structured matrix operations and leverages CUTLASS to enable transparent, composable MatMul pipelines; QuantMako introduces physics-informed, stage-aware quantization to exploit low-precision compute potential while preserving scientific fidelity; CompilerMako captures static execution patterns across angular momentum classes and automates kernel fusion and architecture-tuned specialization. Mako achieves up to 20× end-to-end speedup on high-angular-momentum basis sets. It sustains over 90% parallel efficiency on a single node and 70% across 64 GPUs, completing the accurate energy calculation of ubiquitin (1,231 atoms, def2-TZVP) from days to just 58 minutes. By restructuring quantum chemistry to align with the AI software-hardware stack, Mako demonstrates how scientific workloads can inherit deep learning–style scalability—scaling beyond the long-standing limits of irregularity, fragmentation, and complexity.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/sc/LiakopoulosSHLY25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "MaverIQ: Fingerprint-Guided Extrapolation and Fragmentation-Aware Layering for Intent-Based LLM Serving",
+  "abstract": "Large Language Models (LLMs) are becoming ubiquitous across industries, where applications demand they fulfill diverse user intents. However, developers currently face the challenge of manually exploring numerous deployment configurations—combinations of parallelism and compression techniques that impact resource usage, latency, cost, and accuracy—to meet these intents. Previous works automate configuration selection and deployment, but, they (a) rely on expensive profiling, and (b) suboptimally utilize the fragmented resource availability in multi-tenant GPU clusters, inflating operational costs for the provider. Moreover, none of these solutions tailors deployment configuration decisions to diverse user intents.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/YuDSSW0XYB25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "MetoHash: A Memory-Efficient and Traffic-Optimized Hashing Index on Hybrid PMem-DRAM Memories",
+  "abstract": "Persistent memory (PMem) brings new design considerations in realizing high-performance and scalable hashing indexes. We uncover that existing hashing indexes for PMem still suffer from traffic amplification and memory inefficiency. We present MetoHash, a memory-efficient and traffic-optimized hashing index on hybrid PMem-DRAM memories. MetoHash proposes a three-layer index structure spanning across CPU caches, DRAM, and PMem for data management. It aggregates the incoming key-value items in CPU caches for fast inserts, which are then arranged in DRAM and flushed to PMem, to eliminate traffic amplification. MetoHash also uses fingerprinting to reduce unnecessary probings over PMem and removes duplicate items during bucket relocations. We implement MetoHash on PMem with persistent and volatile CPU caches, and show that compared to state-of-the-art hashing indexes for PMem, MetoHash improves the throughput by 86.1–257.6% under various workloads.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/KuriyamaAGHDIGT25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Microscopic-Level Mouse Whole Cortex Simulation Composed of 9 Million Biophysical Neurons and 26 Billion Synapses on the Supercomputer Fugaku",
+  "abstract": "Understanding the brain remains a major scientific challenge due to its complex structure and function. Unlike artificial neural networks, the biological brain features diverse biophysical properties essential to its function. Building an accurate digital replica using extensive anatomical and physiological data, which are available in standardized public databases, has emerged as a promising approach. In this study, a light-weight biophysical neuron simulator was developed and optimized to the supercomputer Fugaku. Good strong scaling was demonstrated in a benchmark model upto 152,064 compute nodes with 7.13 petaflops performance. In a more realistic scenario, a whole cerebral cortex of a mouse, consisting of 9 million biophysical neurons and 26 billion synapses, was simulated on the full-scale Fugaku with 145,728 nodes. These suggest that the present high-performance computing technology is ready to support the construction of a digital replica of the whole mammalian brain.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/FengCZLQWCWHLZZ25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Million-Atom Ab Initio Electron Dynamics: Discontinuous Galerkin Real-Time Time-Dependent Density Functional Theory",
+  "abstract": "Over the past decades, first-principles real-time time dependent density functional theory(rt-TDDFT) simulations have been limited to systems with only thousands of atoms. We propose a novel method based on the discontinuous Galerkin adaptive local basis, significantly reducing global communication in rt-TDDFT. We further introduce a tensor compression technique that leverages basis locality to avoid repeated evaluation of multi-center integrals in hybrid functionals, greatly reducing computational cost. To overcome the projection bottleneck in our basis sets, we design a fused Gemm-Reduce operation that achieves several times higher floating-point efficiency than standard BLAS combination. Our implementation reaches 34.8% of theoretical peak performance on 524,288 CGs of the New Sunway supercomputer and simulates electronic dynamics of systems with over one million atoms for both local-semi-local and hybrid functionals. This work improves computational scale by two orders of magnitude, opening new possibilities for exploring ultrafast dynamics in large-scale materials and nanophotonic devices.",
+  "hint_categories": [
+   "dense_la"
+  ]
+ },
+ {
+  "key": "conf/sc/ZhengSPL25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Minimizing Power Waste in Heterogenous Computing via Adaptive Uncore Scaling",
+  "abstract": "High-performance computing (HPC) systems are essential for scientific discovery and engineering innovation. However, their growing power demands pose significant challenges, particularly as systems scale to the exascale level. Prior uncore frequency tuning studies have primarily focused on conventional HPC workloads running on CPU-only systems. As HPC advances toward heterogeneous computing, integrating diverse GPU workloads on heterogeneous CPU-GPU systems, it becomes imperative to revisit and enhance uncore scaling. Our investigation reveals that uncore frequency scales down only when CPU power approaches its thermal design power (TDP), which is rare in GPU-dominant applications. As a result, modern computing systems experience unnecessary power waste. In this study, we present MAGUS, a user-transparent uncore frequency scaling runtime for heterogeneous computing. MAGUS dynamically adjusts uncore frequencies according to distinct application execution phases, effectively minimizing power waste caused by consistently using maximum uncore frequencies. Our design incorporates several key techniques, including real-time monitoring and prediction of memory accesses, intelligent handling of frequent phase transitions, and leveraging vendor-provided power management features. We evaluate MAGUS with various GPU benchmarks and applications on multiple heterogeneous systems with different CPU and GPU architectures. Experimental results demonstrate that MAGUS achieves up to 27% energy savings compared to the default settings, while maintaining a performance loss of less than 5% and an overhead of under 1%.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/Shi0S0X0W25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Moment: Co-optimizing Physical Communication Topology and Data Placement for Multi-GPU Out-of-core GNN Training",
+  "abstract": "Graph Neural Networks (GNNs) are widely employed in applications like recommendation systems, social network analysis, and fraud detection, but training large-scale GNNs is challenging due to its memory limitations. Existing systems face a trade-off between throughput and monetary cost: Distributed systems require expensive memory scaling, while single-machine out-of-core systems are limited by GPU/PCIe throughput. To this end, we propose Moment, a physical communication topology and data placement co-optimizer to enable high-throughput and low-cost GNN training in a single multi-GPU machine. Moment addresses communication contention and GPU load imbalance issues by modeling the physical topology as capacity-constrained directed graphs and formulating communication scheduling as a max-flow problem. It also introduces a data-distribution-aware knapsack algorithm for optimized data placement. Experimental results show that Moment outperforms out-of-core systems by up to 6.51 × and distributed systems by up to 3.02 ×, with only 50% monetary cost.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/sc/RazakhLLPPKMJKK25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Multiscale Light-Matter Dynamics in Quantum Materials: From Electrons to Topological Superlattices",
+  "abstract": "Light-matter dynamics in topological quantum materials enables ultralow-power, ultrafast devices. A challenge is simulating multiple field and particle equations for light, electrons, and atoms over vast spatiotemporal scales on Exaflop/s computers with increased heterogeneity and low-precision focus. We present a paradigm shift that solves the multiscale/multiphysics/heterogeneity challenge harnessing hardware heterogeneity and low-precision arithmetic. Divide-conquer-recombine algorithms divide the problem into not only spatial but also physical subproblems of small dynamic ranges and minimal mutual information, which are mapped onto best-characteristics-matching hardware units, while metamodel-space algebra minimizes communication and precision requirements. Using 60,000 GPUs of Aurora, DC-MESH (divide-and-conquer Maxwell-Ehrenfest-surface hopping) and XS-NNQMD (excited-state neural-network quantum molecular dynamics) modules of MLMD (multiscale light-matter dynamics) software were 152- and 3,780-times faster than the state-of-the-art for 15.4 million-electron and 1.23 trillion-atom PbTiO3 material, achieving 1.87 EFLOP/s for the former. This enabled the first study of light-induced switching of topological superlattices for future ferroelectric ‘topotronics’.",
+  "hint_categories": [
+   "nbody_md",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/sc/KanZXZZS25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "NNQS-SCI: Tackling Trillion-Dimensional Hilbert Space with Adaptive Neural Network Quantum States",
+  "abstract": "Neural Network Quantum States (NNQS) offer a powerful variational Monte Carlo (VMC) approach for quantum many-body problems, balancing polynomial scaling with high expressive power. However, scaling NNQS to large chemical systems faces challenges in preserving accuracy with exact energy and managing vast configurations efficiently. In this work, we introduce NNQS-SCI, a high-performance Selected Configuration Interaction (SCI) based NNQS method designed to overcome these limitations. NNQS-SCI employs highly parallelized Slater-Condon rules for fast local energy evaluations, avoiding accuracy loss, while its adaptive SCI engine dynamically manages billions of configurations without space explosion or arbitrary cutoffs that plague other NNQS-CI approaches. Optimized for extreme scalability via multi-level parallelism and memory compression, NNQS-SCI successfully simulates systems up to 152 spin orbitals, tackling Hilbert space dimensions exceeding 1014 and demonstrating significant advances in scale and efficiency. NNQS-SCI thus provides a robust and scalable path towards high-accuracy quantum chemistry on high-performance computing platforms.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/HunholdQW25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Numerical Performance of the Implicitly Restarted Arnoldi Method in OFP8, Bfloat16, Posit, and Takum Arithmetics",
+  "abstract": "The computation of select eigenvalues and eigenvectors of large, sparse matrices is fundamental to a wide range of applications. Accordingly, evaluating the numerical performance of emerging alternatives to the IEEE 754 floating-point standard, such as OFP8 (E4M3 and E5M2), bfloat16, and the tapered-precision posit and takum formats, is of significant interest. Among the most widely used methods for this task is the implicitly restarted Arnoldi method, as implemented in ARPACK.",
+  "hint_categories": [
+   "sparse_la"
+  ]
+ },
+ {
+  "key": "conf/sc/UsmanBIP25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "ODOS-MPI: HPC-Friendly SmartNIC Offloading of Computation/Communication Kernels",
+  "abstract": "The increasing complexity and scale of high-performance computing (HPC) workloads demand innovative approaches to optimize both computation and communication. While OpenMP has been widely adopted for intra-node parallelism and MPI for inter-node communication, emerging SmartNICs introduce new opportunities for offloading communication-intensive tasks. In this work, we extend OpenMP to support MPI kernel offloading to SmartNICs. Our implementation integrates Open MPI communication offloading into the LLVM compiler while utilizing DOCA SDK for efficient interaction with Nvidia BlueField DPUs. Leveraging OpenMP eliminates the need for direct low-level programming, lowering the entry barrier for domain scientists. We demonstrate our framework’s versatility by implementing a SmartNIC-enabled version of the MPI OSU micro-benchmarks and improving the execution time of an atmospheric weather simulation by over 18%, thanks to concurrent computation and communication.",
+  "hint_categories": [
+   "stencil_pde"
+  ]
+ },
+ {
+  "key": "conf/sc/0004CKLYXPFNTAH25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "ORBIT-2: Scaling Exascale Vision Foundation Models for Weather and Climate Downscaling",
+  "abstract": "Sparse observations and coarse-resolution climate models limit effective regional decision-making, underscoring the need for robust downscaling. However, existing AI methods struggle with generalization across variables and geographies and are constrained by the quadratic complexity of Vision Transformer (ViT) self-attention. We introduce ORBIT-2, a scalable foundation model for global, hyper-resolution climate downscaling. ORBIT-2 incorporates two key innovations: (1) Residual Slim ViT (Reslim), a lightweight architecture with residual learning and Bayesian regularization for efficient, robust prediction; and (2) TILES, a tile-wise sequence scaling algorithm that reduces self-attention complexity from quadratic to linear, enabling long-sequence processing and massive parallelism. ORBIT-2 scales to 10 billion parameters across 65,536 GPUs, achieving up to 4.1 ExaFLOPS sustained throughput and 74–98% strong scaling efficiency. It supports downscaling to 0.9 km global resolution and processes sequences up to 4.2 billion tokens. On 7 km resolution benchmarks, ORBIT-2 achieves high accuracy with R2 scores in range of 0.98–0.99 against observation data.",
+  "hint_categories": [
+   "stencil_pde",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/sc/LiXWSL025",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Optimizing Data Acquisitions in Multi-Robot Systems",
+  "abstract": "We present ROSfs, a novel user-level file system designed to address critical data query inefficiencies in multi-robot systems (MRS). ROSfs introduces an innovative file organization model where robot data is structured as labeled sub-files, coupled with a time-indexed architecture that enables efficient querying of actively modified data. This design enables real-time cross-robot data acquisition and collaboration capabilities previously unattainable in MRS deployments. Our implementation integrates seamlessly with the Robot Operating System (ROS) and has been extensively evaluated using both physical UAV/UGV platforms and data servers. Experimental results demonstrate that ROSfs achieves a 7x reduction in online data query latency under wireless network conditions compared to conventional ROS storage methods, while simultaneously improving data freshness (Age of Information) by up to 271x. These advancements position ROSfs as a transformative solution for high-performance robotic data management in distributed systems.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/sc/OckermanGMHPRV25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "PGT-I: Scaling Spatiotemporal GNNs with Memory-Efficient Distributed Training",
+  "abstract": "Spatiotemporal graph neural networks (ST-GNNs) are powerful tools for modeling spatial and temporal data dependencies. However, their applications have been limited primarily to small-scale datasets because of memory constraints. While distributed training offers a solution, current frameworks lack support for spatiotemporal models and overlook the properties of spatiotemporal data. Informed by a scaling study on a large-scale workload, we present PyTorch Geometric Temporal Index (PGT-I), an extension to PyTorch Geometric Temporal that integrates distributed data parallel training and two novel strategies: index-batching and distributed-index-batching. Our index techniques exploit spatiotemporal structure to construct snapshots dynamically at runtime, significantly reducing memory overhead, while distributed-index-batching extends this approach by enabling scalable processing across multiple GPUs. Our techniques enable the first-ever training of an ST-GNN on the entire PeMS dataset without graph partitioning, reducing peak memory usage by up to 89% and achieving up to a 11.78x speedup over standard DDP with 128 GPUs.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/sc/PinheiroDB25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Parallel Rank-Adaptive Higher Order Orthogonal Iteration",
+  "abstract": "Higher Order Orthogonal Iteration (HOOI) is an iterative algorithm that computes a Tucker decomposition of fixed ranks of an input tensor. In this work we modify HOOI to determine ranks adaptively subject to a fixed approximation error, apply optimizations to reduce the cost of each HOOI iteration, and parallelize the method in order to scale to large dense datasets. We show that HOOI is competitive with the Sequentially Truncated Higher Order Singular Value Decomposition (STHOSVD) algorithm, particularly in cases of high compression ratios. Our proposed rank-adaptive HOOI can achieve comparable approximation error to STHOSVD in less time, sometimes achieving a better compression ratio. We demonstrate that our parallelization scales well over thousands of cores and show using three scientific simulation datasets that HOOI outperforms STHOSVD in high-compression regimes. For example, for a 3D fluid-flow simulation dataset, HOOI computed a Tucker decomposition 82x faster and achieved a compression ratio 50% better than STHOSVD’s.",
+  "hint_categories": [
+   "dense_la",
+   "tensor"
+  ]
+ },
+ {
+  "key": "conf/sc/IvanovSGCBSBH25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "PerfDojo: Automated ML Library Generation for Heterogeneous Architectures",
+  "abstract": "The increasing complexity of machine learning models and the proliferation of diverse hardware architectures (CPUs, GPUs, accelerators) make achieving optimal performance a significant challenge. Heterogeneity in instruction sets, specialized kernel requirements for different data types and model features (e.g., sparsity, quantization), and architecture-specific optimizations complicate performance tuning. Manual optimization is resource-intensive, while existing automatic approaches often rely on complex hardware-specific heuristics and uninterpretable intermediate representations, hindering performance portability. We introduce PerfLLM, a novel automatic optimization methodology leveraging Large Language Models (LLMs) and Reinforcement Learning (RL). Central to this is PerfDojo, an environment framing optimization as an RL game using a human-readable, mathematically-inspired code representation that guarantees semantic validity through transformations. This allows effective optimization without prior hardware knowledge, facilitating both human analysis and RL agent training. We demonstrate PerfLLM’s ability to achieve significant performance gains across diverse CPU (x86, Arm, RISC-V) and GPU architectures.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/YanQLHCSYCS0025",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Phoenix: A Refactored I/O Stack for GPU Direct Storage without Phony Buffers",
+  "abstract": "GPU Direct Storage (GDS) plays a vital role in GPU-based training and inference systems, leveraging Peer-to-Peer Direct Memory Access (P2P-DMA) to establish a direct data transfer path between the GPU and the storage device. The direct I/O path reduces GPU storage access latency and CPU overhead, thus improving the efficiency of data transfer. Currently, however, GDS employs a phony buffer in the host memory to interact with the Linux kernel, which results in suboptimal I/O performance, extra resource consumption, and high deployment complexity.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/RanjanSWB25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Plexus: Taming Billion-edge Graphs with 3D Parallel Full-graph GNN Training",
+  "abstract": "Graph neural networks (GNNs) leverage the connectivity and structure of real-world graphs to learn intricate properties and relationships between nodes. Many real-world graphs exceed the memory capacity of a GPU due to their sheer size, and training GNNs on such graphs requires techniques such as mini-batch sampling to scale. The alternative approach of distributed full-graph training suffers from high communication overheads and load imbalance due to the irregular structure of graphs. We propose a three-dimensional (3D) parallel approach for full-graph training that tackles these issues and scales to billion-edge graphs. In addition, we introduce optimizations such as a double permutation scheme for load balancing, and a performance model to predict the optimal 3D configuration of our parallel implementation – Plexus. We evaluate Plexus on six different graph datasets and show scaling results on up to 2048 GPUs of Perlmutter, and 1024 GPUs of Frontier. Plexus achieves unprecedented speedups of 2.3 − 12.5 × over prior state of the art, and a reduction in time-to-solution by 5.2 − 8.7 × on Perlmutter and 7.0 − 54.2 × on Frontier.",
+  "hint_categories": [
+   "primitives",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/sc/HoeroldIDMDWD25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "RAPTOR: Practical Numerical Profiling of Scientific Applications",
+  "abstract": "The proliferation of low-precision units in modern high-performance architectures increasingly burdens domain scientists. Historically, the choice in HPC was easy: can we get away with 32 bit floating-point operations and lower bandwidth requirements, or is FP64 necessary? Driven by Artificial Intelligence, vendors introduce novel low-precision units for vector and tensor operations, and FP64 capabilities stagnate or are reduced. This forces scientists to re-evaluate their codes, but a trivial search-and-replace approach to go from FP64 to FP16 will not suffice.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/sc/HennekingVDCKFG25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Real-Time Bayesian Inference at Extreme Scale: A Digital Twin for Tsunami Early Warning Applied to the Cascadia Subduction Zone",
+  "abstract": "We present a Bayesian inversion-based digital twin that employs acoustic pressure data from seafloor sensors, along with 3D coupled acoustic–gravity wave equations, to infer earthquake-induced spatiotemporal seafloor motion in real time and forecast tsunami propagation toward coastlines for early warning with quantified uncertainties. Our target is the Cascadia subduction zone, with one billion parameters. Computing the posterior mean alone would require 50 years on a 512 GPU machine. Instead, exploiting the shift invariance of the parameter-to-observable map and devising novel parallel algorithms, we induce a fast offline–online decomposition. The offline component requires just one adjoint wave propagation per sensor; using MFEM, we scale this part of the computation to the full El Capitan system (43,520 GPUs) with 92% weak parallel efficiency. Moreover, given real-time data, the online component exactly solves the Bayesian inverse and forecasting problems in 0.2 seconds on a modest GPU system, a ten-billion-fold speedup.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/ZhaoHLJL025",
+  "venue": "SC",
+  "year": 2025,
+  "title": "RedSan: A Redundant Memory Instruction Sanitizer for GPU Programs",
+  "abstract": "CUDA is the de facto programming model for GPUs, which is widely used in the domains of HPC and AI. To obtain bare-metal performance, vendors and academia develop various profiling tools to guide optimization. However, most existing tools focus on hotspot analysis with limited capabilities in identifying actionable opportunities. To complement existing tools, we present RedSan, a novel profiling tool that leverages binary instrumentation to identify redundant instructions in fully optimized CUDA programs. Guided by RedSan, we are able to optimize programs such as PolybenchGPU, Rodinia, PASTA, DARKNET, and LULESH, yielding up to a 6.27 × speedup and 3.00 × reduction in memory instructions.",
+  "hint_categories": [
+   "primitives"
+  ]
+ }
+]

@@ -1,0 +1,85 @@
+diff --git a/conjugateGradient/cg_driver.cu b/conjugateGradient/cg_driver.cu
+index af85d9f..45e7129 100644
+--- a/conjugateGradient/cg_driver.cu
++++ b/conjugateGradient/cg_driver.cu
+@@ -19,7 +19,7 @@
+ #define THRUST_IGNORE_CUB_VERSION_CHECK
+ // #include <map>
+ 
+-
++#include <cstdlib>  // getenv, for the HPC-KernelBench adapter's env-var hooks below
+ 
+ #include "cg.h"
+ #include "util/timer.cuh"
+@@ -208,6 +208,23 @@ void myTest(
+     // x[i] = 1;
+     x[i] = 0.0;
+   }
++  // --- HPC-KernelBench adapter hook (optional, additive) ---------------
++  // Spec conformance: cg-krylov's fixed-iter variant wants b ~ U(-1,1),
++  // seed=42, not this artifact's own rhs=ones(N). When the adapter writes
++  // a binary dump of such a vector and points PERKS_RHS_FILE at it, load
++  // it here (overriding rhs/r above); otherwise behavior is byte-for-byte
++  // unchanged from upstream (rhs=ones(N)).
++  {
++    const char* rhs_path = getenv("PERKS_RHS_FILE");
++    if (rhs_path) {
++      FILE* f = fopen(rhs_path, "rb");
++      if (f) {
++        size_t nread = fread(rhs, sizeof(ValueT), N, f);
++        fclose(f);
++        for (int i = 0; i < (int)nread; i++) r[i] = rhs[i];
++      }
++    }
++  }
+ 
+ 
+ 
+@@ -308,6 +325,21 @@ void myTest(
+   checkCudaErrors(cudaEventRecord(stop, 0));
+   checkCudaErrors(cudaDeviceSynchronize());
+ 
++  // --- HPC-KernelBench adapter hook (required) --------------------------
++  // x is cudaMallocManaged and this thread has just synchronized past the
++  // solve, so it is safe to read/dump directly here (no separate D2H copy
++  // needed). Written only when the adapter sets PERKS_X_OUT_FILE; no-op
++  // (and no behavior change) otherwise. sizeof(ValueT) is 4 or 8 depending
++  // on which templated instantiation this translation unit is (fp32/fp64),
++  // so the Python side must read back with the matching dtype.
++  {
++    const char* x_out = getenv("PERKS_X_OUT_FILE");
++    if (x_out) {
++      FILE* f = fopen(x_out, "wb");
++      if (f) { fwrite(x, sizeof(ValueT), N, f); fclose(f); }
++    }
++  }
++
+   float time;
+   checkCudaErrors(cudaEventElapsedTime(&time, start, stop));
+   // printf("----");
+@@ -354,6 +386,12 @@ void myTest(
+   fprintf(stderr,"%f\t%f\t%f\t",(double)smParamsT.sm_size_coor/1024, (double)smParamsT.sm_blk_size_r/1024, (double)smParamsT.sm_size_unit_matrix*smParamsT.sm_num_matrixperblk/1024);
+   fprintf(stderr,"%f\t",(double)smParamsT.sMemSize/1024);
+   fprintf(stderr,"%d\t%f\t",total_iter,time);
++  // HPC-KernelBench adapter hook (optional): one unambiguous, easy-to-parse
++  // line, purely additive -- no computation changed, just an extra
++  // diagnostic print so the Python side doesn't have to scrape the
++  // multi-purpose tab-separated debug line above.
++  fprintf(stderr, "\nPERKS_ADAPTER_RESULT iters=%u time_ms=%f residual=%.17e\n",
++          total_iter, time, sqrt((double)r1));
+   // size_t spmvaccess= nz*sizeof(ValueT)*2+(nz+N+1)*sizeof(OffsetT);
+   // size_t totalaccess=spmvaccess+7*N*sizeof(ValueT)+max_iter*(spmvaccess+9*N*sizeof(ValueT));
+   //MINIAN mem access: 1 spmv load + 3 vector update(1 update = 1 load + 1 store)
+diff --git a/conjugateGradient/cub/iterator/tex_ref_input_iterator.cuh b/conjugateGradient/cub/iterator/tex_ref_input_iterator.cuh
+index f02dc43..acc644e 100644
+--- a/conjugateGradient/cub/iterator/tex_ref_input_iterator.cuh
++++ b/conjugateGradient/cub/iterator/tex_ref_input_iterator.cuh
+@@ -42,7 +42,7 @@
+ #include "../util_debug.cuh"
+ #include "../config.cuh"
+ 
+-#if (CUDART_VERSION >= 5050) || defined(DOXYGEN_ACTIVE)  // This iterator is compatible with CUDA 5.5 and newer
++#if ((CUDART_VERSION >= 5050) && (CUDART_VERSION < 12000)) || defined(DOXYGEN_ACTIVE)  // This iterator is compatible with CUDA 5.5 through 11.x; the legacy texture-reference API it depends on (texture<>, cudaBindTexture/cudaUnbindTexture) was removed entirely in CUDA 12 (build-system CUDA-version guard, see STATUS.md -- this class is never instantiated anywhere in this artifact's own code, only pulled in transitively via cub/cub.cuh)
+ 
+ #if (THRUST_VERSION >= 100700)    // This iterator is compatible with Thrust API 1.7 and newer
+     #include <thrust/iterator/iterator_facade.h>

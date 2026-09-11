@@ -1,0 +1,981 @@
+[
+ {
+  "key": "conf/ppopp/LiuZYLQ24",
+  "title": "Tetris: Accelerating Sparse Convolution by Exploiting Memory Reuse on GPU",
+  "venue": "PPoPP",
+  "year": 2024,
+  "authors": [
+   "Xiaoyan Liu",
+   "Xuegui Zheng",
+   "Hailong Yang 0002",
+   "Zhongzhi Luan",
+   "Depei Qian 0002"
+  ],
+  "abstract": "Convolutional neural networks (CNNs) have achieved remarkable success in various application fields. Although model compression techniques mitigate the ever-increasing resource demands of large CNN models, the compressed models usually exhibit irregular memory access and unstructured sparsity, which are difficult for dominant operators such as sparse convolution to achieve expected performance speedup on popular inference platforms such as GPU. In this paper, we propose Tetris, an efficient sparse convolution approach optimized for GPU. Tetris first fully exploits the input reuse opportunity of sparse convolution to reduce the memory accesses to global memory. It then adopts a stride packed ",
+  "candidates": [
+   {
+    "url": "https://github.com/XG-zheng/Tetris-artifact-evalution",
+    "desc": "",
+    "stars": 6,
+    "readme_head": "This is a repository for an artifact evaluation of \"Tetris: Accelerating Sparse Convolution by Exploiting Memory Reuse on GPU\".\n\n## ENV\n- V100-PCIE-32GB\n\n## Build baseline\n\nThe evalution depend on `Unified-Convolution-Framework` and `sputnik`. To get all source code, run the following code:\n```\ngit clone --recursive [this-repo-url]\n```\n\n\n### Sputnik\n```\ncd /Tetris-artifact-evalution/sputnik\nmkdir build && cd build\ncmake .. -DCMAKE_BUILD_TYPE=Release -DCUDA_ARCHS=\"70;75\"\nmake -j12\nexport LD_LIBRARY_PATH=$(pwd)/sputnik/:$LD_LIBRARY_PATH\n```\n\n### TACO-UCF\n\n- build TACO-UCF\n```\ncd /Tetris-artifact-evalution/Unified-Convolution-Framework\nmkdir build && cd build\ncmake -DCMAKE_BUILD_TYPE=Release -DCUDA=ON ..\nmake -j12\nexport LD_LIBRARY_PATH=$(pwd)/lib/:$LD_LIBRARY_PATH\n```\n\n- build sparse conv\n```\ncd /Tetris-artifact-evalution/Unified-Convolution-Framework/benchmark/filter_sparse_convolution/gpu/\nmake\n```\n\n### Install python dependency\n```\ncd /Tetris-artifact-evalution/evalution\npython3 -m pip install -r requirement.txt \n```\n\n## Test\nFirst, copy the test dataset to TACO-UCF repo\n```\ncp -r /Tetris-artifact-evalution/UCF-Dataset  /Tetris-artifact-evalution/Unified-Convolution-Framework/benchmark/filter_sparse_convolution/gpu/\n```\n\nRun the following command to enter specific dir. \n```\ncd /Tetris-artifact-evalution/evalution\nmkdir ../Tetris/build\nmkdir ./figure\n```\nTo test specific config, run the following command:\n\n`./fig6.sh BATCH_SIZE MODEL_NAME` \n\nBATCH\\_SIZE in [1, 4, 8, 16]\n\nMODE"
+   },
+   {
+    "url": "https://github.com/anony3333/ppopp24-artifact",
+    "desc": "",
+    "stars": 1,
+    "readme_head": "This is a repository for an artifact evaluation of \"Tetris: Accelerating Sparse Convolution by Exploiting Memory Reuse on GPU\".\n\n## ENV\n- V100-PCIE-32GB\n\n## Build baseline\n\nThe evalution depend on `Unified-Convolution-Framework` and `sputnik`. To get all source code, run the following code:\n```\ngit clone --recursive [this-repo-url]\n```\n\n\n### Sputnik\n```\ncd /Tetris-artifact-evalution/sputnik\nmkdir build && cd build\ncmake .. -DCMAKE_BUILD_TYPE=Release -DCUDA_ARCHS=\"70;75\"\nmake -j12\nexport LD_LIBRARY_PATH=$(pwd)/sputnik/:$LD_LIBRARY_PATH\n```\n\n### TACO-UCF\n\n- build TACO-UCF\n```\ncd /Tetris-artifact-evalution/Unified-Convolution-Framework\nmkdir build && cd build\ncmake -DCMAKE_BUILD_TYPE=Release -DCUDA=ON ..\nmake -j12\nexport LD_LIBRARY_PATH=$(pwd)/lib/:$LD_LIBRARY_PATH\n```\n\n- build sparse conv\n```\ncd /Tetris-artifact-evalution/Unified-Convolution-Framework/benchmark/filter_sparse_convolution/gpu/\nmake\n```\n\n### Install python dependency\n```\ncd /Tetris-artifact-evalution/evalution\npython3 -m pip install -r requirement.txt \n```\n\n## Test\nFirst, copy the test dataset to TACO-UCF repo\n```\ncp -r /Tetris-artifact-evalution/UCF-Dataset  /Tetris-artifact-evalution/Unified-Convolution-Framework/benchmark/filter_sparse_convolution/gpu/\n```\n\nRun the following command to enter specific dir. \n```\ncd /Tetris-artifact-evalution/evalution\nmkdir ../Tetris/build\nmkdir ./figure\n```\nTo test specific config, run the following command:\n\n`./fig6.sh BATCH_SIZE MODEL_NAME` \n\nBATCH\\_SIZE in [1, 4, 8, 16]\n\nMODE"
+   }
+  ]
+ },
+ {
+  "key": "conf/ppopp/WangDZWZLJZ25",
+  "title": "Improving Tridiagonalization Performance on GPU Architectures",
+  "venue": "PPoPP",
+  "year": 2025,
+  "authors": [
+   "Hansheng Wang",
+   "Zhekai Duan",
+   "Zitian Zhao",
+   "Siqi Wu",
+   "Saiqi Zheng"
+  ],
+  "abstract": "Tridiagonalization, which is a key step in symmetric eigenvalue decomposition (EVD), aims to convert a symmetric matrix to a tridiagonal form. In Nvidia's cuSOLVER library, the FP64 precision tridiagonalization process only reach 2.1 TFLOPs out of 67 TFLOPs on H100 GPU, and it consumes a significant portion of the elapsed time in the entire EVD process, accounting for over 97%. Thus, improving the tridiagonalization performance is crucial on accelerating EVD. In this paper, we analyze the reasons behind the suboptimal performance of tridiagonalization on GPU architectures, and we propose a new double blocking band reduction algorithm along with an implementation of GPU-based bulge chasing to",
+  "candidates": [
+   {
+    "url": "https://github.com/ynkrue/cuEV",
+    "desc": "Optimize Eigensolver kernels for Nvidia GPUs",
+    "stars": 1,
+    "readme_head": "# cuEV — CUDA Eigensolver\n\nReal symmetric dense eigensolver on NVIDIA GPUs, built to scale to a 2D BLACS\nblock-cyclic matrix distributed over MPI + NCCL.\n\n```cpp\ncuev::symm_eig_solve<T>(T *A, int n, T *eval, T *evec, cudaStream_t stream);\n```\n\n- `A` — n×n real symmetric, column-major, device pointer, overwritten on return.\n- `eval` — eigenvalues ascending, length n.\n- `evec` — eigenvectors as columns (column j = j-th eigenvector), n×n column-major.\n\n## Algorithm\n\n2-stage tridiagonalization EVD:\n\n### 1. Double Blocking Band Reduction (DBBR): Symm → Banded\n* **Mechanism**: Accumulate Householder reflections in compact $WY$ panels to increase arithmetic intensity.\n* **Strategy**: Update the next panel (1st column blocking) and defer the full trailing matrix update until the working index reaches block $k$ (2nd panel blocking).\n\n### 2. Data Repacking\n* **Mechanism**: Extract the reduced band from the hollowed-out dense matrix.\n* **Strategy**: Move the band into a packed $N \\times b$ contiguous array. This eliminates non-contiguous memory accesses, ensuring the entire band fits into the L2 cache for subsequent stages.\n\n### 3. Wavefront Bulge Chasing: Banded → Tridiagonal\n* **Mechanism**: Launch a persistent CUDA kernel where thread blocks are statically assigned to horizontal band tiles.\n* **Strategy**: Implement a wavefront pipeline where bulges are chased across tiles and passed across thread blocks. Synchronize thread block handoffs with point-to-point atomics (`cuda::atomic_th"
+   }
+  ]
+ },
+ {
+  "key": "conf/ppopp/Xu0BXX00000C26",
+  "title": "FlashAttention-T: Towards Fully Tensorized Attention by Exploiting Tensor-Vector Parallelism",
+  "venue": "PPoPP",
+  "year": 2026,
+  "authors": [
+   "Jianxing Xu",
+   "Yuanbo Wen 0001",
+   "Jun Bi",
+   "Ruibai Xu",
+   "Guanglin Xu"
+  ],
+  "abstract": "The attention mechanism is central to modern deep learning, particularly in large language models (LLMs), but suffers from quadratic computational complexity. To accelerate attention computation on GPUs, fused attention techniques (e.g., FlashAttention) consolidate the matrix multiplication (GEMM) and softmax computations into a single kernel. However, these operations remain computationally decoupled: the GEMM leverages high-performance tensor units (Tensor Cores), while the softmax executes on slower vector units (CUDA cores). This imbalance induces severe vector intervals—periods where tensor units sit idle awaiting vector unit completion—significantly underutilizing tensor units. Further",
+  "candidates": [
+   {
+    "url": "https://github.com/guoqiao7/FlashAttention-T",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "\n# 1. Introduction\n\nWelcome to the artifact package for our PPoPP '26 paper, \"FlashAttention-T: Towards Fully Tensorized Attention by Exploiting Tensor-Vector Parallelism\". Given the limited timeframe for artifact preparation and the fact that most reviewer concerns centered on the numerical stability and precision of FlashAttention-T, this artifact package contains code and instructions for fully reproducing the three main results reported in the FlashAttention-T paper:\n\n1. **Main results**: performance comparisons between FlashAttention-T and baselines FlashAttention-2/3, Triton, and FlashInfer on A100 and H100 GPUs (Figure 8 in the paper).\n\n2. **Synthetic attention precision evaluation**: numerical precision comparisons between FlashAttention-T, an ablation variant of FlashAttention-T with only the 16-row maximum surrogate enabled, and FlashAttention-2 on A100 GPU using random attention inputs sampled from specific distributions. (Figure 11 in the paper).\n\n3. **End-to-end generative benchmark accuracy evaluation**: MMLU benchmark score comparisons between FlashAttention-T and FlashAttention-2 on A100 GPU (Table 2 in the paper).\n\nWe believe these three results cover the most important aspects of our proposed FlashAttention-T attention kernel, including its performance benefits, numerical stability/precision preservation, and end-to-end accuracy impact on generative workloads. They directly support the main claims made during the review process and in the paper:\n\n1. **Implem"
+   },
+   {
+    "url": "https://github.com/byungsoo-oh/ml-systems-papers",
+    "desc": "Curated collection of papers in machine learning systems",
+    "stars": 632,
+    "readme_head": "# Paper List for Machine Learning Systems\n\n![Awesome](https://awesome.re/badge.svg)\n[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/byungsoo-oh/ml-systems-papers/pulls)\n\nPaper list for broad topics in machine learning systems \n> NOTE: Survey papers are annotated with [Survey 🔍] prefix.\n\n## Table of Contents\n<!-- TOC -->\n\n- [Paper List for Machine Learning Systems](#paper-list-for-machine-learning-systems)\n  - [Table of Contents](#table-of-contents)\n  - [Data Processing](#data-processing)\n    - [Data pipeline optimization](#data-pipeline-optimization)\n    - [Caching and distributed storage for ML training](#caching-and-distributed-storage-for-ml-training)\n    - [LLM data plane](#llm-data-plane)\n    - [Others](#others)\n  - [Training System](#training-system)\n    - [ML job analysis on GPU clusters](#ml-job-analysis-on-gpu-clusters)\n    - [Resource scheduling](#resource-scheduling)\n    - [Distributed training](#distributed-training)\n    - [AutoML](#automl)\n    - [GNN training system](#gnn-training-system)\n  - [Inference System](#inference-system)\n  - [Attention Optimization](#attention-optimization)\n  - [Mixture of Experts (MoE)](#mixture-of-experts-moe)\n  - [Communication Optimization \\& Network Infrastructure for Distributed ML](#communication-optimization--network-infrastructure-for-distributed-ml)\n  - [Fault tolerance \\& Straggler mitigation](#fault-tolerance--straggler-mitigation)\n  - [GPU Memory Management \\& Optimization](#gpu-"
+   },
+   {
+    "url": "https://github.com/chenhongyu2048/LLM-inference-optimization-paper",
+    "desc": "Summary of some awesome work for optimizing  LLM inference",
+    "stars": 261,
+    "readme_head": "# LLM-inference-optimization-paper\n\nSummary of some awesome works for optimizing  LLM inference\n\nThis summary will including three parts:\n\n1. some **repositories** that you can follow\n2. some representative **person** or **labs** that you can follow\n3. some important **works** in the different research interests\n\n## Repositories\n\nFor example, [LLMSys-PaperList](https://github.com/AmberLJC/LLMSys-PaperList) contains many excellent articles, and is keeping updating (which I believe is the most important for a paperlist). [Awesome-LLM-Inference](https://github.com/DefTruth/Awesome-LLM-Inference) and [Awesome_LLM_Accelerate-PaperList](https://github.com/galeselee/Awesome_LLM_Accelerate-PaperList/) are also worth reading.\n\nBesides, [awesome-AI-system](https://github.com/lambda7xx/awesome-AI-system) works also very well. And you can find other repositories in its content.  \n\nThe log [\"Large Transformer Model Inference Optimization\"](https://lilianweng.github.io/posts/2023-01-10-inference-optimization/) helps me a lot at the beginning.  \n\nThis log [OpenAI Keynote on Building Scalable AI Infrastructure](https://www.servethehome.com/openai-keynote-on-building-scalable-ai-infrastructure/) seems to be a laeding guidance.  \n\n## Person/Lab\n\n**Follow others' research, and find yourself's idea.**  \n\nIt is not my intention to judge the work of these pioneers, and I understand that the shortness of my knowledge will lead me to leave out many important people.\nIf you have a different opinion, "
+   }
+  ]
+ },
+ {
+  "key": "conf/ppopp/ChenZY26",
+  "title": "High-Throughput Non-uniformly Quantized 3-bit LLM Inference",
+  "venue": "PPoPP",
+  "year": 2026,
+  "authors": [
+   "YuAng Chen",
+   "Wenqi Zeng",
+   "Jeffrey Xu Yu"
+  ],
+  "abstract": "While Large Language Models (LLMs) are widely adopted, their massive parameter size constrains practical deployment. A common solution is clustering-based non-uniform quantization, which effectively compresses models to as low as 3 bits per weight while preserving high accuracy. However, instead of accelerating memory-bound LLM inference, the memory reduction paradoxically often causes a significant slowdown due to dequantization overhead and GPU underutilization. To address the issue, we propose Quantix, a framework designed to convert memory savings into inference speedups. Quantix applies two key optimizations: (1) a hardware-aligned bit shuffling scheme for efficient data access, and (2)",
+  "candidates": [
+   {
+    "url": "https://github.com/yuang-chen/Quantix-PPoPP26",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "# Quantix: High-Throughput 3-bit LLM Inference\n\nArtifact code for the paper **\"High-Throughput Non-uniformly Quantized 3-bit LLM Inference\"**.\n\nHigh-performance CUDA kernels for non-uniform 3-bit quantized inference with Tensor Core acceleration. PyTorch and C++ APIs.\n\n\n"
+   },
+   {
+    "url": "https://github.com/byungsoo-oh/ml-systems-papers",
+    "desc": "Curated collection of papers in machine learning systems",
+    "stars": 632,
+    "readme_head": "# Paper List for Machine Learning Systems\n\n![Awesome](https://awesome.re/badge.svg)\n[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/byungsoo-oh/ml-systems-papers/pulls)\n\nPaper list for broad topics in machine learning systems \n> NOTE: Survey papers are annotated with [Survey 🔍] prefix.\n\n## Table of Contents\n<!-- TOC -->\n\n- [Paper List for Machine Learning Systems](#paper-list-for-machine-learning-systems)\n  - [Table of Contents](#table-of-contents)\n  - [Data Processing](#data-processing)\n    - [Data pipeline optimization](#data-pipeline-optimization)\n    - [Caching and distributed storage for ML training](#caching-and-distributed-storage-for-ml-training)\n    - [LLM data plane](#llm-data-plane)\n    - [Others](#others)\n  - [Training System](#training-system)\n    - [ML job analysis on GPU clusters](#ml-job-analysis-on-gpu-clusters)\n    - [Resource scheduling](#resource-scheduling)\n    - [Distributed training](#distributed-training)\n    - [AutoML](#automl)\n    - [GNN training system](#gnn-training-system)\n  - [Inference System](#inference-system)\n  - [Attention Optimization](#attention-optimization)\n  - [Mixture of Experts (MoE)](#mixture-of-experts-moe)\n  - [Communication Optimization \\& Network Infrastructure for Distributed ML](#communication-optimization--network-infrastructure-for-distributed-ml)\n  - [Fault tolerance \\& Straggler mitigation](#fault-tolerance--straggler-mitigation)\n  - [GPU Memory Management \\& Optimization](#gpu-"
+   },
+   {
+    "url": "https://github.com/chenhongyu2048/LLM-inference-optimization-paper",
+    "desc": "Summary of some awesome work for optimizing  LLM inference",
+    "stars": 261,
+    "readme_head": "# LLM-inference-optimization-paper\n\nSummary of some awesome works for optimizing  LLM inference\n\nThis summary will including three parts:\n\n1. some **repositories** that you can follow\n2. some representative **person** or **labs** that you can follow\n3. some important **works** in the different research interests\n\n## Repositories\n\nFor example, [LLMSys-PaperList](https://github.com/AmberLJC/LLMSys-PaperList) contains many excellent articles, and is keeping updating (which I believe is the most important for a paperlist). [Awesome-LLM-Inference](https://github.com/DefTruth/Awesome-LLM-Inference) and [Awesome_LLM_Accelerate-PaperList](https://github.com/galeselee/Awesome_LLM_Accelerate-PaperList/) are also worth reading.\n\nBesides, [awesome-AI-system](https://github.com/lambda7xx/awesome-AI-system) works also very well. And you can find other repositories in its content.  \n\nThe log [\"Large Transformer Model Inference Optimization\"](https://lilianweng.github.io/posts/2023-01-10-inference-optimization/) helps me a lot at the beginning.  \n\nThis log [OpenAI Keynote on Building Scalable AI Infrastructure](https://www.servethehome.com/openai-keynote-on-building-scalable-ai-infrastructure/) seems to be a laeding guidance.  \n\n## Person/Lab\n\n**Follow others' research, and find yourself's idea.**  \n\nIt is not my intention to judge the work of these pioneers, and I understand that the shortness of my knowledge will lead me to leave out many important people.\nIf you have a different opinion, "
+   }
+  ]
+ },
+ {
+  "key": "conf/ppopp/PanQZ26",
+  "title": "Root-Down Exposure for Maximal Clique Enumeration on GPUs",
+  "venue": "PPoPP",
+  "year": 2026,
+  "authors": [
+   "Zhe Pan 0001",
+   "Peng Qu 0001",
+   "Youhui Zhang"
+  ],
+  "abstract": "Maximal clique enumeration (MCE) in large-scale graphs is critical across various application domains, including social network analysis, bioinformatics, and computer vision. However, existing GPU-based MCE solutions suffer from inefficient load-balancing mechanisms. These mechanisms force busy workers to pause and hand over workloads to idle workers, which introduces significant synchronization overhead and increases memory usage. To address these limitations, we introduce a root-down exposure mechanism where busy workers dynamically expose their current root, enabling idle workers to pull workloads from the exposed node directly without synchronization. We then propose a bitmap-centric MCE",
+  "candidates": [
+   {
+    "url": "https://github.com/Pz1996/RDMCE",
+    "desc": "",
+    "stars": 2,
+    "readme_head": "# Root-Down Exposure for Maximal Clique Enumeration on GPUs\n\nThis repository contains the source code for the paper \"Root-Down Exposure for Maximal Clique Enumeration on GPUs\" accepted to PPoPP 2026. The artifact implements **RDMCE**, which efficiently enumerates all maximal cliques in large-scale graphs using a root-down exposure mechanism, a bitmap-centric MCE scheme, and aggressive node generation.\n\n\n```bash\n# Clone the repository\ngit clone https://github.com/Pz1996/RDMCE.git\ncd RDMCE\n\n# Initialize and update all submodules\ngit submodule update --init --recursive\n```\n\n\n\n## Project Structure\n\nThe project is organized as follows:\n\n- **RDMCE/**: Contains the source code for our proposed Root-Down Maximal Clique Enumeration algorithm\n  - **include/**: Header files defining data structures and interfaces\n  - **src/**: Implementation files including CUDA kernels\n  - **src/kernels/**: GPU kernel implementations, including BkPivotBitBalance and Multi-GPU variants\n\n- **baselines/**: Contains implementations of comparison methods\n  - **g2-aimd/**: G²-AIMD algorithm implementation (Git submodule)\n  - **mce-gpu/**: MCE-GPU algorithm implementation (Git submodule)\n\n- **scripts/**: Utility scripts for compilation and evaluation\n\n- **datasets/**: Directory for storing test datasets\n\n- **logs/**: Contains log files with execution time results\n\n- **exp/**: Contains data and code for generating the figures presented in the paper\n\n## RDMCE Quick Start\n\n### Requirements\n\n- **GPU Architecture*"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/0003HLQGW0LG020",
+  "title": "Accelerating sparse DNN models without hardware-support via tile-wise sparsity",
+  "venue": "SC",
+  "year": 2020,
+  "authors": [
+   "Cong Guo 0003",
+   "Bo Yang Hsueh",
+   "Jingwen Leng",
+   "Yuxian Qiu",
+   "Yue Guan 0003"
+  ],
+  "abstract": "Network pruning can reduce the high computation cost of deep neural network (DNN) models. However, to maintain their accuracies, sparse models often carry randomly-distributed weights, leading to irregular computations. Consequently, sparse models cannot achieve meaningful speedup on commodity hardware (e.g., GPU) built for dense matrix computations. As such, prior works usually modify or design completely new sparsity-optimized architectures for exploiting sparsity. We propose an algorithm-software co-designed pruning method that achieves latency speedups on existing dense architectures. Our work builds upon the insight that the matrix multiplication generally breaks the large matrix into m",
+  "candidates": [
+   {
+    "url": "https://github.com/clevercool/TileSparsity",
+    "desc": "",
+    "stars": 102,
+    "readme_head": "\n# Accelerating Sparse DNN Models without Hardware-Support via Tile-Wise Sparsity [[arXiv]](https://arxiv.org/abs/2008.13006)\n\n[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3900188.svg)](https://doi.org/10.5281/zenodo.3900188)\n  \n```\n@inproceedings{guo2020accelerating,\n  title={Accelerating sparse DNN models without hardware-support via tile-wise sparsity},\n  author={Guo, Cong and Hsueh, Bo Yang and Leng, Jingwen and Qiu, Yuxian and Guan, Yue and Wang, Zehuan and Jia, Xiaoying and Li, Xipeng and Guo, Minyi and Zhu, Yuhao},\n  booktitle={Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis},\n  pages={1--15},\n  year={2020}\n}\n```\n# Tile Sparsity\n\nThis repository provides artifacts to reproduce the results of the paper, which introduces a pruning method: Tile Sparsity. The artifacts have two major parts: Pruning and Stream Masked GEMM. The file structure shows below:\n```\n/Pruning: Implemented the EW, VW, BW, and TW pruning pattern.\n   |--/VGG:  Pruning VGG16.\n   |--/BERT: Pruning BERT.\n   |--/NMT:  Pruning NMT.\n/StreamMaskedGEMM: The open-source CUDA implementation for Tile Sparsity based on CUTLASS 1.3.\n```\nEvery subfolder has README to explain how to run it.\n\n## Environment \n\nWe prune the networks, VGG, NMT, and BERT on several Linux servers with different GPU versions (GTX 1080, GTX 1080 Ti, RTX 2080 Ti, and Quadro GP100 GPU) without impact on the accuracy of models. The Stream Masked GEMM only runs on the Tesla V100"
+   },
+   {
+    "url": "https://github.com/e-dupuis/awesome-approximate-dnn",
+    "desc": "Curated content for DNN approximation, acceleration ... with a focus on hardware accelerator and deployment",
+    "stars": 29,
+    "readme_head": "# Approximate Computing in Deep Neural Networks\n\nHoping to give a clear view on the subject with curated contents organized\n\nFrom algorithm to hardware execution\n\n- [Approximate Computing in Deep Neural Networks](#approximate-computing-in-deep-neural-networks)\n  * [Lexical](#lexical)\n  * [Best Surveys](#best-surveys)\n  * [Tools](#tools)\n    + [Approximations Frameworks](#approximations-frameworks)\n    + [Dedicated Library](#dedicated-library)\n    + [Graph Compiler](#graph-compiler)\n    + [Commercial Dedicated HW accelerator (ASIC)](#commercial-dedicated-hw-accelerator--asic-)\n    + [FPGA based accelerator / HLS for CNNs](#fpga-based-accelerator---hls-for-cnns)\n    + [Evaluation Frameworks](#evaluation-frameworks)\n    + [Simulation Frameworks](#simulation-frameworks)\n  * [Approximation Methods](#approximation-methods)\n    + [Pruning](#pruning)\n      - [Structured - Hardware Friendly Structure](#structured---hardware-friendly-structure)\n      - [Weight Saliency Determination](#weight-saliency-determination)\n      - [Data-free methods](#data-free-methods)\n    + [Quantization](#quantization)\n    + [Approximate operators](#approximate-operators)\n  * [Others](#others)\n    + [Contests](#contests)\n    + [Model ZOO](#model-zoo)\n    + [Generic DSE Framework](#generic-dse-framework)\n    + [DNN conversion framework](#dnn-conversion-framework)\n    + [Visualization Framework](#visualization-framework)\n    + [HLS Framework](#hls-framework)\n\n<small><i><a href='http://ecotrust-canada.github.i"
+   },
+   {
+    "url": "https://github.com/jiaweile/discussion-hpc-ai",
+    "desc": "",
+    "stars": 3,
+    "readme_head": "# HPC-AI Discussion\n\n### 🌟 Virtual HPC+AI seminar, 2021 Spring to Fall\n\n- **When:** 🕒 Monday  10:30 am -- 12:30 am\n- **Where:** 💻 Wechat meeting.\n  Please send me an email (jiaweile@ict.ac.cn) to ask for the meeting id.\n- **Moderator**: Siyu Hu\n\n---------\n\n<div align=\"center\">\n  <h3>Let's start!</h3>\n  <h1> Week 29 </h1>\n  <h1> AlphaFold2 </h1>\n  <strong> Siyu Hu </strong>\n  <h6> November 29, 10:30 am -- 12:30 pm</h6>\n</div>\n\n\n\n-----\n## 📌 Schedule (2021)\n\n\n🆕✨🔨: **reserve the time** * please contact husiyu@ncic.ac.cn to book time slot for your talk for the year 2021\n\n| Week | Date | Topic                                                                                     | Speaker               |\n| ---- | ---- | :---------------------------------------------------------------------------------------: | --------------------- |\n| 1    | 3/24 | DFT overview <br> [selected inversion](#1) <br> the DeepMD-kit on the DFT algorithm. | Yujin Yan<br>Siyu HU<br>Weile Jia |            \n| 2    | 3/31 | [deep learning for symbolic mathematics & Seq2Seq](#14)   | Junqing Gong |            \n| 3    | 4/7  | Application of Quantum Computing in Quantum Chemistry     | Zhendong Li  |            \n| 4    | 4/21 | [Accelerating Sparse DNN Models without Hardware-Support via Tile-Wise Sparsity](#15) | Zhuoqiang Guo|            \n| 5    | 4/28 | [SchNet: A continuous-filter convolutional neural network for modeling quantum interactions](#11) | Tao LIU        |            \n| 6    | 5/12 | [DP-GEN](#3)  "
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/HenriksenHSO20",
+  "title": "Compiling generalized histograms for GPU",
+  "venue": "SC",
+  "year": 2020,
+  "authors": [
+   "Troels Henriksen",
+   "Sune Hellfritzsch",
+   "Ponnuswamy Sadayappan",
+   "Cosmin E. Oancea"
+  ],
+  "abstract": "We present and evaluate an implementation technique for histogram-like computations on GPUs that ensures both work-efficient asymptotic cost, support for arbitrary associative and commutative operators, and efficient use of hardware-supported atomic operations when applicable. Based on a systematic empirical examination of the design space, we develop a technique that balances conflict rates and memory footprint. We demonstrate our technique both as a library implementation in CUDA, as well as by extending the parallel array language Futhark with a new construct for expressing generalized histograms, and by supporting this construct with several compiler optimizations. We show that our histo",
+  "candidates": [
+   {
+    "url": "https://github.com/diku-dk/futhark-sc20",
+    "desc": "Artifact for the SC20 paper.",
+    "stars": 6,
+    "readme_head": "# Artifact for *Compiling Generalized Histograms for GPU*\n\n[![DOI](https://zenodo.org/badge/178193880.svg)](https://zenodo.org/badge/latestdoi/178193880)\n\nThe experiments in the paper comprise various GPU programs that\ngenerally perform their own internal timing. In principle,\nreproduction should be as easy as compiling and running them. Most of\nthe GPU code is written in ordinary CUDA, but some is written in\nFuthark, the data-parallel language that is also partially the subject\nof the paper. An appropriate version of the Futhark compiler is also\nneeded. The paper results have been produced with Futhark 0.15.8.\n\nEach directory of this artifact contains a `README.md` explaining the\nuse of its contents (or a link to further information).\n\nThe artifact is divided into three main parts:\n\n* The [library](library/) directory contains a CUDA library\n  implementation of our generalized histograms, that can be used by\n  other CUDA programs.  It also contains documentation and an example\n  program.  It will not be discussed further.\n\n* The [prototype](prototype) directory contains the CUDA prototoype\n  that was used for the design space exploration of Section II and its\n  validation in section IV.A, including reproducing Figure 7.\n\n* The [benchmarks](benchmarks/) directory contains the benchmark\n  programs used for Section IV in the paper.\n\nThe artifact is designed as a bunch of Makefiles calling other\nscripts.  Generally, these Makefiles will produce data files with\nruntime results, a"
+   },
+   {
+    "url": "https://github.com/coancea/locref-exercises-uio",
+    "desc": "",
+    "stars": 3,
+    "readme_head": "# Demonstrating Locality of Reference on Multi-Cores and GPU\n\nThis repository consists of several code examples that are intended to demonstrate the importance of optimizing the locality of reference, specialized in the context of GPU hardware, but also multi-core CPUs.\n\nFour Cuda exercises are provided that require you to fill-in-the-blanks some key (missing) parts of implementation, without which the code either does not validate or has su-optimal performance. Please find details about exercises in the `README.md` of each of their corresponding folders.\n\n## histo-L3-thrashing\n\nIllustrates a multi-step technique for eliminating threshing of the last-level cache (LLC) for histogram-like computations [1] at the expense of redundant computation. The idea is to partition the histogram (such that a partition fits in LLC), and, in each sequential step, to process in parallel only the indices that fall inside the current partition. For GPU this results in significant speedup (e.g., 3x), while for multi-core CPU the speedup seems to be modest.\n\n[1] Troels Henriksen, Sune Hellfritzsch, Ponnuswamy Sadayappan, Cosmin Oancea, \"Compiling Generalized Histograms for GPU\", SC'20, [link](https://futhark-lang.org/publications/sc20.pdf)\n\n## gpu-coalescing\n\nIllustrates a rather general technique for improving spatial locality in the context of the GPU hardware --- i.e., ensuring coalesced access to global memory --- by means of transposing the input array(s) and computing the result array in tr"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/LiSYK20",
+  "title": "Density matrix quantum circuit simulation via the BSP machine on modern GPU clusters",
+  "venue": "SC",
+  "year": 2020,
+  "authors": [
+   "Ang Li 0006",
+   "Omer Subasi",
+   "Xiu Yang",
+   "Sriram Krishnamoorthy"
+  ],
+  "abstract": "As quantum computers evolve, simulations of quantum programs on classical computers will be essential in validating quantum algorithms, understanding the effect of system noise, and designing applications for future quantum computers. In this paper, we first propose a new multi-GPU programming methodology called MG-BSP which constructs a virtual BSP machine on top of modern multi-GPU platforms, and apply this methodology to build a multi-GPU density matrix quantum simulator called DM-Sim. We propose a new formulation that can significantly reduce communication overhead, and show that this formula transformation can conserve the semantics despite noise being introduced. We build the tool-chai",
+  "candidates": [
+   {
+    "url": "https://github.com/pnnl/NWQ-Sim",
+    "desc": "",
+    "stars": 35,
+    "readme_head": "# NWQSim: Northwest Quantum Circuit Simulation Environment\n## Please check the user manual here: [User Manual](doc/user_manual.md), [VQE](https://github.com/pnnl/NWQ-Sim/tree/vqe_memory/vqe)\nA Quantum System Simulation Environment on classical multi-node, multi-CPU/GPU heterogeneous HPC systems. It currently includes a state-vector simulator SV-Sim ([SC'21](doc/svsim_sc21)) for high-performance ideal simulation, and a density matrix simulator DM-Sim ([SC'20](doc/dmsim_sc20)) for noise-aware simulation. It supports C++, Python, Q#/QIR, Qiskit, QASM, XACC as the front-ends, and X86/PPC CPU, NVIDIA/AMD GPU as the backends, see below:\n\n![alt text](img/nwqsim.png)\n\n\n### Current version 2.0\n\nNWQSim is under active development. Please raise any bugs and suggest features. \n\n\n## About SV-Sim\n\nSV-Sim is implemented in C++/CUDA/HIP for general full-state quantum circuit simulation. It assumes qubits are all-to-all connected unless the input circuits are with respect to circuit topology. We use internal gate representations for advanced optimization and profiling.\n\n![alt text](img/svsim_pip.png)\n\nSV-Sim supports the following quantum gates as the interface based on [OpenQASM-2](https://arxiv.org/pdf/1707.03429.pdf), [OpenQASM-3](https://arxiv.org/pdf/2104.14722.pdf), [QIR](https://github.com/microsoft/qsharp-runtime/blob/) and [Qiskit](https://qiskit.org/documentation/apidoc/circuit_library.html):\n\n\n|  Gate  | Format | Meaning |\n|:-----: | ------ | ------- |\n| X | X(q) | Pauli-X gate on "
+   },
+   {
+    "url": "https://github.com/pnnl/DM-Sim",
+    "desc": "DM-Sim: Quantum Simulator on GPU Cluster using Density Matrix ",
+    "stars": 54,
+    "readme_head": "# DM-Sim: Density Matrix Quantum Circuit Simulation Environment (Merged in [NWQSim](https://github.com/pnnl/nwq-sim))\n\nA Density Matrix Quantum Simulation Environment for Single-GPU/CPU, Single-Node-Multi-GPUs/CPUs and Multi-Nodes GPU/CPU Cluster. It supports Intel/AMD/IBM CPUs, NVIDIA/AMD GPUs. \n\n![alt text](img/example.png)\n\n## Current version\n\nLatest version: **2.5**\n\n#### Version-2.5 Updates:\n - Add AMD HIP GPU backend.\n - Slightly restructure the code.\n\n#### Version-2.4 Updates:\n - Add CMake for easy build-up.\n - Add qasmbench for evaluation.\n\n#### Version-2.3 Updates:\n - Add AVX512 acceleration support for the CPU-backend. Specify *USE_AVX512* in config.hpp. Require AVX512F support of the CPU.\n\n#### Version-2.2 Updates:\n - Add CPU backend for both OpenMP and MPI so that DM-Sim can support system without GPUs. \n - Reform the source code file structure.\n\n#### Version-2.1 Updates:\n - Support Q# code through [QIR](https://devblogs.microsoft.com/qsharp/introducing-quantum-intermediate-representation-qir/) and Bridge developed by Microsoft quantum team. The DM-Sim project is also listed as one of the [public projects](https://github.com/microsoft/qsharp-language/blob/main/Specifications/QIR/List.md) using QIR to support Q#/QDK. \n - Enable the dump of current quantum circuit into a file stream.\n\n### Version-2.0 Updates:\n - Provide python APIs, see the adder_n10_omp.py example in src.\n - Provide C++/CUDA APIs, see the adder_n10_omp.cu example in src.\n - Support single-GPU fast "
+   },
+   {
+    "url": "https://github.com/qir-alliance/nwqsim",
+    "desc": "High-performance simulator for executing QIR on GPU and CPU backends",
+    "stars": 23,
+    "readme_head": "# NWQSim: Northwest Quantum Circuit Simulation Environment \n\nA Quantum System Simulation Environment on classical multi-node, multi-CPU/GPU heterogeneous HPC systems. It currently includes a state-vector simulator SV-Sim ([SC'21](doc/svsim_sc21)) for high-performance ideal simulation, and a density matrix simulator DM-Sim ([SC'20](doc/dmsim_sc20)) for noise-aware simulation. It supports C++, Python, Q#/QIR, Qiskit, QASM, XACC as the front-ends, and X86/PPC CPU, NVIDIA/AMD GPU as the backends, see below:\n\n![alt text](img/nwqsim.png)\n\n\n### Current version 2.0\n\nNWQSim is under active development. Please raise any bugs and suggest features. \n\n## About SV-Sim\n\nSV-Sim is implemented in C++/CUDA/HIP for general full-state quantum circuit simulation. It assumes qubits are all-to-all connected unless the input circuits are with respect to circuit topology. We use internal gate representations for advanced optimization and profiling.\n\n![alt text](img/svsim_pip.png)\n\nSV-Sim supports the following quantum gates as the interface based on [OpenQASM-2](https://arxiv.org/pdf/1707.03429.pdf), [OpenQASM-3](https://arxiv.org/pdf/2104.14722.pdf), [QIR](https://github.com/microsoft/qsharp-runtime/blob/) and [Qiskit](https://qiskit.org/documentation/apidoc/circuit_library.html):\n\n\n|  Gate  | Format | Meaning |\n|:-----: | ------ | ------- |\n| X | X(q) | Pauli-X gate on qubit q |\n| Y | Y(q) | Pauli-Y gate on qubit q |\n| Z | Z(q) | Pauli-Z gate on qubit q |\n| H | H(q) | Clifford Hadamard gate on qubi"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/ShiZXZ20",
+  "title": "GraphPi: high performance graph pattern matching through effective redundancy elimination",
+  "venue": "SC",
+  "year": 2020,
+  "authors": [
+   "Tianhui Shi",
+   "Mingshu Zhai",
+   "Yi Xu",
+   "Jidong Zhai"
+  ],
+  "abstract": "Graph pattern matching, which aims to discover structural patterns in graphs, is considered one of the most fundamental graph mining problems in many real applications. Despite previous efforts, existing systems face two main challenges. First, inherent symmetry existing in patterns can introduce a large amount of redundant computation. Second, different matching orders for a pattern have significant performance differences and are quite hard to predict. When these factors are mixed, this problem becomes extremely complicated. High efficient pattern matching remains an open problem currently. To address these challenges, we propose GraphPi, a high performance distributed pattern matching sys",
+  "candidates": [
+   {
+    "url": "https://github.com/chenxuhao/GraphMiner",
+    "desc": "Graph Pattern Mining",
+    "stars": 96,
+    "readme_head": "# GraphMinerBench #\n\nGraphMinerBench is a C++ implemented Benchmark Suite for Graph Pattern Mining (GPM), based on the implementations of state-of-the-art GPM Frameworks including Pangolin [1], Sandslash [2], FlexMiner [3] and G<sup>2</sup>Miner [4]. GraphMinerBench supports both multicore CPU and GPU, and is parallelized using OpenMP and CUDA respectively. \n\nUnlike those GPM frameworks, GraphMinerBench is inherently designed for benchmarking hardware architecture design.\nIt includes various GPM workloads (e.g., TC, k-CL, SgL, k-MC, FSM) as well as representative graph datasets (Mico, Patents, Youtube, LiveJournal, Orkut, Twitter, Friendster). \n\n[Datasets](https://docs.google.com/spreadsheets/d/1p84wY4Fxs8MA7_ZAQMx5QhNkeR33x3ICminWfDeD4xc/edit?usp=sharing) are available [here](https://www.dropbox.com/sh/i1jq1uwtkcd2qo0/AADJck_u3kx7FeSR5BvdrkqYa?dl=0).\nPlease contact [the author](http://people.csail.mit.edu/xchen/) for more datasets.\n\n[1] Xuhao Chen, Roshan Dathathri, Gurbinder Gill, Keshav Pingali.\n[Pangolin: An Efficient and Flexible Graph Pattern Mining System on CPU and GPU](http://www.vldb.org/pvldb/vol13/p1190-chen.pdf). VLDB 2020\n\n[2] Xuhao Chen, Roshan Dathathri, Gurbinder Gill, Loc Hoang, Keshav Pingali.\n[Sandslash: A Two-Level Framework for Efficient Graph Pattern Mining](http://people.csail.mit.edu/xchen/docs/ics-2021.pdf), ICS 2021\n\n[3] Xuhao Chen, Tianhao Huang, Shuotao Xu, Thomas Bourgeat, Chanwoo Chung, Arvind.\n[FlexMiner: A Pattern-Aware Accelerator for Graph P"
+   },
+   {
+    "url": "https://github.com/chenxuhao/gardenia",
+    "desc": "GARDENIA: Graph Analytics Repository for Designing Efficient Next-generation Accelerators",
+    "stars": 34,
+    "readme_head": "GARDENIA Benchmark Suite [![Build Status](https://travis-ci.org/chenxuhao/gardenia.svg)](https://travis-ci.org/chenxuhao/gardenia)\n===================\n\nCopyright 2020 Xuhao Chen, Massachusetts Institute of Technology\n\nGARDENIA: Graph Analytics Repository for Designing Efficient Next-generation Accelerators\n\nLink: https://github.com/chenxuhao/gardenia\n\nThis is the reference implementation for the [GARDENIA](https://chenxuhao.github.io/) [Benchmark Suite](https://chenxuhao.github.io/). It is designed to be a portable high-performance baseline for desgining next-generation accelerators. It uses CUDA, OpenCL and OpenMP for parallelism. The details of the benchmark can be found in the [specification](https://arxiv.org/pdf/1708.04567.pdf).\n\nThe GARDENIA Benchmark Suite is an extented version of the [GAP](https://gap.cs.berkeley.edu/) [Benchmark Suite](https://gap.cs.berkeley.edu/benchmark.html) which is intended to help graph processing research by standardizing evaluations. The benchmark provides a baseline implementation which incorporates state-of-the-art optimization techniques proposed for modern accelerators, such as GPUs and MICs. These baseline implementations are representative of state-of-the-art performance, and thus new contributions should outperform them to demonstrate an improvement. The code infrastructure is ported from GAPBS and Lonstargpu by the [ISS group](http://iss.ices.utexas.edu/?p=projects/galois/lonestargpu) at the University of Texas. \nTo run the benchmar"
+   },
+   {
+    "url": "https://github.com/chenxuhao/GraphAIBench",
+    "desc": "A benchmark suite for Graph Machine Learning",
+    "stars": 19,
+    "readme_head": "# GraphAIBench\n\nGraphAIBench is a C++ implemented Benchmark Suite for [Graph AI](https://chenxuhao.github.io/graphAI.html). \nIt includes the following benchmarks:\n\n+ Graph Neural Networks (GNN): GCN, GraphSAGE, GAT.\n+ Centrality: Betweenness Centrality (BC).\n+ Community: Community detection using Louvain algorithm.\n+ Components: Connected Components (CC), Srtongly Connected Components (SCC).\n+ Corness: k-core decomposition.\n+ Flitering: Minimum Spanning Tree (MST), Triangulated Maximally Filtered Graph (TMFG), Planar Maximally Filtered Graph (PMFG).\n+ Linear Assignment: Hungarian algorithm.\n+ Link Analysis: PageRank (PR).\n+ Link Prediction: Node2vec.\n+ Mining [1]: triangle counting, clique finding, motif counting, frequent subgraph mining (FSM).\n+ Sampling: Random walk.\n+ Structure: Graph coarsening.\n+ Traversal: Breadth-First Search (BFS) and Single-Source Shortest Paths (SSSP).\n\nGraphAIBench is parallelized using OpenMP and CUDA, same as [DGL](https://github.com/dmlc/dgl/), but runs much faster than DGL. \nPlease see [2] for evaluation details.\n\nTherefore, compared to DGL and [PyG](https://github.com/pyg-team/pytorch_geometric), GraphAIBench is better suited for evaluating specialized hardware design or low-level library (e.g. SpMM) implementations for GNNs.\n\nDatasets for pattern mining (e.g. triangle counting) are available [here](https://www.dropbox.com/sh/i1jq1uwtkcd2qo0/AADJck_u3kx7FeSR5BvdrkqYa?dl=0).\nDatasets for collaborative filtering (i.e. bipartite graphs) are avai"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/JiaWCL0CEZ20",
+  "title": "Pushing the limit of molecular dynamics with ab initio accuracy to 100 million atoms with machine learning",
+  "venue": "SC",
+  "year": 2020,
+  "authors": [
+   "Weile Jia",
+   "Han Wang 0006",
+   "Mohan Chen 0002",
+   "Denghui Lu",
+   "Lin Lin 0001"
+  ],
+  "abstract": "For 35 years, ab initio molecular dynamics (AIMD) has been the method of choice for modeling complex atomistic phenomena from first principles. However, most AIMD applications are limited by computational cost to systems with thousands of atoms at most. We report that a machine learning based simulation protocol (Deep Potential Molecular Dynamics), while retaining ab initio accuracy, can simulate more than 1 nanosecond-long trajectory of over 100 million atoms per day, using a highly optimized code (GPU DeePMD-kit) on the Summit supercomputer. Our code can efficiently scale up to the entire Summit supercomputer, attaining 91 PFLOPS in double precision (45.5% of the peak) and 162/275 PFLOPS i",
+  "candidates": [
+   {
+    "url": "https://github.com/jiaweile/discussion-hpc-ai",
+    "desc": "",
+    "stars": 3,
+    "readme_head": "# HPC-AI Discussion\n\n### 🌟 Virtual HPC+AI seminar, 2021 Spring to Fall\n\n- **When:** 🕒 Monday  10:30 am -- 12:30 am\n- **Where:** 💻 Wechat meeting.\n  Please send me an email (jiaweile@ict.ac.cn) to ask for the meeting id.\n- **Moderator**: Siyu Hu\n\n---------\n\n<div align=\"center\">\n  <h3>Let's start!</h3>\n  <h1> Week 29 </h1>\n  <h1> AlphaFold2 </h1>\n  <strong> Siyu Hu </strong>\n  <h6> November 29, 10:30 am -- 12:30 pm</h6>\n</div>\n\n\n\n-----\n## 📌 Schedule (2021)\n\n\n🆕✨🔨: **reserve the time** * please contact husiyu@ncic.ac.cn to book time slot for your talk for the year 2021\n\n| Week | Date | Topic                                                                                     | Speaker               |\n| ---- | ---- | :---------------------------------------------------------------------------------------: | --------------------- |\n| 1    | 3/24 | DFT overview <br> [selected inversion](#1) <br> the DeepMD-kit on the DFT algorithm. | Yujin Yan<br>Siyu HU<br>Weile Jia |            \n| 2    | 3/31 | [deep learning for symbolic mathematics & Seq2Seq](#14)   | Junqing Gong |            \n| 3    | 4/7  | Application of Quantum Computing in Quantum Chemistry     | Zhendong Li  |            \n| 4    | 4/21 | [Accelerating Sparse DNN Models without Hardware-Support via Tile-Wise Sparsity](#15) | Zhuoqiang Guo|            \n| 5    | 4/28 | [SchNet: A continuous-filter convolutional neural network for modeling quantum interactions](#11) | Tao LIU        |            \n| 6    | 5/12 | [DP-GEN](#3)  "
+   },
+   {
+    "url": "https://github.com/ChengTang/NN_physics",
+    "desc": "NN for learning physics simulations",
+    "stars": 0,
+    "readme_head": "# NN_physics\nNN for learning physics simulations\n\n# Physics\n### Pendulum\n\n### Nbody Simulation\nGravitational N-body\nSpring System\n\n# Baselines\n## Naive Application of Neural Net Models\nmodels.py file has baseline models:\n\n1. MLP: with 4 hidden layers, each with 512 neurouns. softplus activation function.\n\n2. RNNs:\nElman Network(1 layer)\nLSTM(1 layer)\n\nAll networks have approximately 1 million parameters.\n\nMLP approximates the function f: f(x_0, t) -> f(x_t)\n\nRNNs approximate f: f(x_n) -> f(x_{n+1})\n## Numerical Methods\n### First-order methods:\nExplicit, Implicit, Symplectic Euler\n### Higher-order non-symplectic methods:\nRK4\n### Symplectic methods:\nSymplectic Euler\nLeapfrog, Verlet, \nand other higher-order symplectic integrator\n\n## Datasets\n10,000 trajectories; each with 10 sample points. 10% for validation 90% for training.\nMLPs are fed with data with irregular time stamps since t is an input to the network\nRNNs are fed with data with constant dt\n\nInitial conditions of the simulated trajectories for a physics system are sampled randomly in the phase space and within a predifiend range in energy (E1, E2); \nso that hopefully the network learns how to simulate a Hamiltonian system, NOT just work on some initial condition(a trained ML model should know how to work on all situation the model is intended for. See https://arxiv.org/pdf/2006.02619.pdf for more discussion)\n\n\n### Simple datasets:\n1) Spring System with rest-length = 0\n\n2) Gravitational N-body with circular motions.\n\n## "
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/AwanHEDBDOY21",
+  "title": "Accelerating large scale de novo metagenome assembly using GPUs",
+  "venue": "SC",
+  "year": 2021,
+  "authors": [
+   "Muaaz Gul Awan",
+   "Steven A. Hofmeyr",
+   "Rob Egan",
+   "Nan Ding 0006",
+   "Aydin Buluç"
+  ],
+  "abstract": "Metagenomic workflows involve studying uncultured microorganisms directly from the environment. These environmental samples when processed by modern sequencing machines yield large and complex datasets that exceed the capabilities of metagenomic software. The increasing sizes and complexities of datasets make a strong case for exascale-capable metagenome assemblers. However, the underlying algorithmic motifs are not well suited for GPUs. This poses a challenge since the majority of next-generation supercomputers will rely primarily on GPUs for computation. In this paper we present the first of its kind GPU-accelerated implementation of the local assembly approach that is an integral part of ",
+  "candidates": [
+   {
+    "url": "https://github.com/leannmlindsey/mhm2",
+    "desc": "mhm2 clone plus gpu-traceback",
+    "stars": 0,
+    "readme_head": "# MetaHipMer2 - MHM2 #\n\n[MetaHipMer (*MHM*)](https://sites.google.com/lbl.gov/exabiome/downloads?authuser=0) is a *de novo* metagenome short-read assembler. This is version 2 (MHM2), which is written entirely in\n[UPC++](https://upcxx.lbl.gov) and runs efficiently on both single servers and on multinode supercomputers, where it can scale up to\ncoassemble terabase-sized metagenomes. More information about MetaHipMer can be found under the [ExaBiome Project](https://sites.google.com/lbl.gov/exabiome) \nof the [Exascale Computing Project](https://www.exascaleproject.org) and in several publications:\n\n- [E. Georganas et al., \"Extreme Scale De Novo Metagenome Assembly,\" SC18: International Conference for High Performance Computing, Networking, Storage and Analysis, Dallas, TX, USA, 2018, pp. 122-13.](https://ieeexplore.ieee.org/document/8665813)\n- [Hofmeyr, S., Egan, R., Georganas, E. et al. Terabase-scale metagenome coassembly with MetaHipMer. Sci Rep 10, 10689 (2020).](https://www.nature.com/articles/s41598-020-67416-5#citeas)\n- [Awan, M.G., Deslippe, J., Buluc, A. et al. ADEPT: a domain independent sequence alignment strategy for gpu architectures. BMC Bioinformatics 21, 406 (2020).](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-020-03720-1#citeas)\n- [Muaaz Awan, Steven Hofmeyr, Rob Egan et al. \"Accelerating large scale de novo metagenome assembly using GPUs.\", SC 2021](https://dl.acm.org/doi/pdf/10.1145/3458817.3476212)\n\nInformation about building, installi"
+   },
+   {
+    "url": "https://github.com/liyewen521/awesome-genome-analysis",
+    "desc": "A collection of papers on awesome genome acceleration, e.g., architectures, systems, and algorithms.",
+    "stars": 9,
+    "readme_head": "# Awesome Genome Analysis\nA collection of papers on awesome genome analysis, e.g., architectures, chips, systems, and software.\n\n## Architecture\nGenome analysis architecture at top-tier conferences (e.g., HPCA, ASPLOS, ISCA, MICRO, PACT, etc).\n\n| Year | Conf.      | Paper                                                                                                                                                        | Keywords | Affiliation | \n| :--: | :--------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------: | :--: | :--: |\n| 2014 | ISCA       | Race Logic: A Hardware Acceleration for Dynamic Programming Algorithms                                                                                       | Dynamic Programming | UCSB |\n||||<br>\n| 2018 | HPCA       | Searching for Potential gRNA Off-Target Sites for CRISPR/Cas9 Using Automata Processing Across Different Platforms                                           | gRNA Search, Automata | UVA  |\n| 2018 | ASPLOS     | Darwin: A Genomics Co-processor Provides up to 15000X Acceleration on Long Read Assembly                                                                     | Long-Read Alignment | Stanford University |\n| 2018 | ISCA       | GenAx: A Genome Sequencing Accelerator                                                                                                                       | Short-Read Align"
+   },
+   {
+    "url": "https://github.com/LoganWilliams1/mhm2_kmer_analysis_v2",
+    "desc": "",
+    "stars": 1,
+    "readme_head": "# MetaHipMer2 Proxy Apps\n\nPerformance-portable proxy applications derived from [MetaHipMer2 (de novo metagenome assembler)](https://bitbucket.org/berkeleylab/mhm2/src/master/)\n\n## [mhm2-kmer-analysis](github project here)\n\n```\ngit clone  tbd\n\n```\n## Build\n\n```\nenv tbd\n\n```\n\n\n```\nTBD\n```\n\n# Required Third-Party Library \n\n## [UPC++:  a PGAS library for C++](https://bitbucket.org/berkeleylab/upcxx/src/master/)\n\n  - [UPC++ basic build recipe](https://bitbucket.org/berkeleylab/upcxx/src/master/INSTALL.md)\n  - [UPC++ Developers Guide](https://bytebucket.org/berkeleylab/upcxx/wiki/docs/guide.pdf?rev=767d43b34dd00f6b2765a49d6ebf55bee91f4579)\n  - [UPC++ Specification](https://bytebucket.org/berkeleylab/upcxx/wiki/docs/spec.pdf?rev=767d43b34dd00f6b2765a49d6ebf55bee91f4579)\n\n**Nota bene:  [UPC++ uses GASNet for PGAS communication primitives](https://bitbucket.org/berkeleylab/gasnet/src/stable/)**\n\n\n### UPC++ for Supercomputers\n\n#### Architectures\n\n  - [Power9/NVIDIA V100](https://hpc.llnl.gov/hardware/compute-platforms/lassen)\n\n```\n../configure \\\n--with-cxx=`which mpicxx` \\\n--with-cc=`which mpicc` \\\n--enable-udp \\\n--enable-mpi \\\n--enable-cuda \\\n--enable-ibv \\\n--with-cxxflags=-std=c++17 \\\n--prefix=${INSTALL_DIR}\n\n\n``\n\n  -  [MI300A](https://hpc.llnl.gov/hardware/compute-platforms/rzadams)\n\n```\n# for rocm / cray env \nexport LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}\n\n```\n\n\n```\n../configure \\\n--with-cxx=mpicxx \\\n--with-cc=mpicc \\\n--with-pmi-rpath \\\n--with-ofi-spawner=pmi \\\n-"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/AlabandiTRB21",
+  "title": "Discovering and balancing fundamental cycles in large signed graphs",
+  "venue": "SC",
+  "year": 2021,
+  "authors": [
+   "Ghadeer Alabandi",
+   "Jelena Tesic",
+   "Lucas Rusnak",
+   "Martin Burtscher"
+  ],
+  "abstract": "Computing consensus states via global sign balancing is a key step in social network analysis. This paper presents graphB+, a fast algorithm for balancing signed graphs based on a new vertex and edge labeling technique, and a parallel implementation thereof for rapidly detecting and balancing all fundamental cycles. The main benefits of graphB+ are that the labels can be computed with linear time complexity, only require a linear amount of memory, and that the running time for balancing a cycle is linear in the length of the cycle times the vertex degrees but independent of the size of the graph. We parallelized graphB+ using OpenMP and CUDA. It takes 0.85 seconds on a Titan V GPU to balance",
+  "candidates": [
+   {
+    "url": "https://github.com/burtscher/graphBplus",
+    "desc": "graphB+ is a balancing algorithm for signed social network graphs.",
+    "stars": 0,
+    "readme_head": "# graphB+\ngraphB+ is a balancing algorithm for signed social network graphs. It operates on graphs stored in CSV format. A sample input graph is available in graph.csv.\n\ngraphBplus_02.cu contains the CUDA code and graphBplus_02.cpp contains the OpenMP C++ code (with g++ intrinsics).\n\nThe CUDA code can be compiled as follows:\n\n`  nvcc -O3 -arch=sm_70 graphBplus_02.cu -o graphBplus`\n\nThe OpenMP C++ code can be compiled as follows:\n\n`  g++ -O3 -march=native -fopenmp graphBplus_02.cpp -o graphBplus`\n\nTo run the code on the input file graph.csv with 100 samples and save the results of the balanced solutions in out.csv, enter:\n\n`  ./graphBplus graph.csv 100 out.csv`\n\nTo obtain the inputs used in the publication listed below and convert them to our format, download the file input_script.sh from this repository and run it. Note that this script takes about an hour to run and requires a large amount of disk space.\n\nThis work has been supported in part by the National Science Foundation under Award Number 1955367, by the Department of Energy, National Nuclear Security Administration under Award Number DE-NA0003969, and by a hardware donation from NVIDIA Corporation.\n\nPublication\nG. Alabandi, J. Tesic, L. Rusnak, and M. Burtscher. \"Discovering and Balancing Fundamental Cycles in Large Signed Graphs.\" Proceedings of the 2021 ACM/IEEE International Conference for High-Performance Computing, Networking, Storage and Analysis. November 2021.\n"
+   },
+   {
+    "url": "https://github.com/Wcx140407/graphBPlus_parallel_opt",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "# graphB+\ngraphB+ is a balancing algorithm for signed social network graphs. It operates on graphs stored in CSV format. A sample input graph is available in graph.csv.\n\ngraphBplus_02.cu contains the CUDA code and graphBplus_02.cpp contains the OpenMP C++ code (with g++ intrinsics).\n\nThe CUDA code can be compiled as follows:\n\n`  nvcc -O3 -arch=sm_70 graphBplus_02.cu -o graphBplus`\n\nThe OpenMP C++ code can be compiled as follows:\n\n`  g++ -O3 -march=native -fopenmp graphBplus_02.cpp -o graphBplus`\n\nThe Serial C++ code can be compiled as follows:\n\n`  g++ -O3 graphBplus_02_serial.cpp -o Serial_graphBplus`\n\nTo run the code on the input file graph.csv with 100 samples and save the results of the balanced solutions in out.csv, enter:\n\n`  ./graphBplus graph.csv 100 out.csv`\n\nTo obtain the inputs used in the publication listed below and convert them to our format, download the file input_script.sh from this repository and run it. Note that this script takes about an hour to run and requires a large amount of disk space.\n\nThis work has been supported in part by the National Science Foundation under Award Number 1955367, by the Department of Energy, National Nuclear Security Administration under Award Number DE-NA0003969, and by a hardware donation from NVIDIA Corporation.\n\nPublication\nG. Alabandi, J. Tesic, L. Rusnak, and M. Burtscher. \"Discovering and Balancing Fundamental Cycles in Large Signed Graphs.\" Proceedings of the 2021 ACM/IEEE International Conference for High-Performance Co"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/GaihreZWLSDLL21",
+  "title": "Dr. Top-k: delegate-centric Top-k on GPUs",
+  "venue": "SC",
+  "year": 2021,
+  "authors": [
+   "Anil Gaihre",
+   "Da Zheng 0004",
+   "Scott Weitze",
+   "Lingda Li",
+   "Shuaiwen Leon Song"
+  ],
+  "abstract": "Recent top-k computation efforts explore the possibility of revising various sorting algorithms to answer top-k queries on GPUs. These endeavors, unfortunately, perform significantly more work than needed. This paper introduces Dr. Top-k, a Delegate-centric top-k system on GPUs that can reduce the top-k workloads significantly. Particularly, it contains three major contributions: First, we introduce a comprehensive design of the delegate-centric concept, including maximum delegate, delegate-based filtering, and $\\beta$ delegate mechanisms to help reduce the workload for top-k up to more than 99%. Second, due to the difficulty and importance of deriving a proper subrange size, we perform a ri",
+  "candidates": [
+   {
+    "url": "https://github.com/asherliu/tensortao",
+    "desc": "Fastest software for special tensor operations",
+    "stars": 21,
+    "readme_head": "# TensorTao: The Tao of Customized Tensors for High-Performance Data Analytics\n\nWelcome to Rutgers HPDA group's GitHub repository, where we're pushing the boundaries of data analytics with our advanced tensor operation customizations. Our work, encapsulated in numerous research papers, has led to the development of groundbreaking methodologies that significantly outperform established libraries like cuBLAS, CUTLASS, DGL, Gunrock and SuperLU. At the heart of our innovations is **optimizing special tensor operations** for accelerated data processing, ensuring faster, more efficient computations. Whether you're a researcher, data scientist, or enthusiast in the field of high-performance computing, our repository offers a treasure trove of resources and tools that stand at the forefront of computational efficiency. Dive in to explore our contributions and join us in shaping the future of data analytics.\n\nWe are still updating this repository, stay tuned!\n\n----\nMajor Contributors\n----\nAnil Gaihre\n\nSantosh Pandey\n\nShiyang Chen\n\nLang Zhu\n\nHaoshen Yang\n\nPinhuan Wang\n\nJiankun Jiang\n\n----\nPublications\n----\n\n[SC  '15] Enterprise: Breadth-First Graph Traversal on GPUs [[PDF](http://personal.stevens.edu/~hliu77/docs/sc15.pdf)]\n\n[FAST'17] Graphene: Fine-Grained IO Management for Graph Computing [[PDF](http://personal.stevens.edu/~hliu77/docs/fast17.pdf)]\n\n[HPDC'19] XBFS: eXploring Runtime Optimizations for Breadth-First Search on GPUs [[PDF](http://personal.stevens.edu/~hliu77/docs/hpdc19."
+   },
+   {
+    "url": "https://github.com/cuda-pro/topk",
+    "desc": "",
+    "stars": 2,
+    "readme_head": "# task\nGiven 8.5 million big data files, each data is an integer id vector of up to 128 dimensions (called doc), and the id value range is 0-50000. \nGiven a integer id vector of up to 128 dimensions (called query), the data set can be spread for optimization\n\n```shell\n# Generate test data, has been sorted in ascending order, the default docs file counts one document per line,10 documents; 10 query files\nmake gen\n```\nFind the average score topk (k=100) of the number of data intersections in query and doc; Here we define the intersection fraction of item as:\nquery[i] == doc[j] (0<=i<query_size, 0<=j<doc_size) calculates an intersection, the average number of query and doc intersections /max(query_size,doc_size)\n\n``` shell\n./bin/query_doc_scoring <doc_file_name> <query_file_name> <output_filename>\n```\n\n# optimize (need know some cpu/gpu computer arch; just do it, don't YY, freestyle)\nnote: just optimize stand-alone, for dist m/r(fan-out/in) arch to schedule those instances.\n\n0. gpu device RR balance by user request\n1. concurrency(cpu thread pool) + parallel(cpu/gpu openMP + gpu warp threads): cpu(baseline) -> cpu thread concurrency -> cpu + gpu -> cpu thread concurrency/parallel + gpu stream concurrency/warp thread parallel => dist\n2. find or filter: use hashmap/bitmap(bloom) on cpu/gpu global memory or gpu shared memory\n3. topk sort: heap sort (partial_sort) on cpu -> bitonic/radix sort on gpu parallel topk,then reduce topk to cpu\n4. search: need build index (list(IVF,skip),tre"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/KwasniewskiKBZS21",
+  "title": "On the parallel I/O optimality of linear algebra kernels: near-optimal matrix factorizations",
+  "venue": "SC",
+  "year": 2021,
+  "authors": [
+   "Grzegorz Kwasniewski",
+   "Marko Kabic",
+   "Tal Ben-Nun",
+   "Alexandros Nikolaos Ziogas",
+   "Jens Eirik Saethre"
+  ],
+  "abstract": "Matrix factorizations are among the most important building blocks of scientific computing. However, state-of-the-art libraries are not communication-optimal, underutilizing current parallel architectures. We present novel algorithms for Cholesky and LU factorizations that utilize an asymptotically communication-optimal 2.5D decomposition. We first establish a theoretical framework for deriving parallel I/O lower bounds for linear algebra kernels, and then utilize its insights to derive Cholesky and LU schedules, both communicating $N^{3}/(P\\sqrt{M})$ elements per processor, where M is the local memory size. The empirical results match our theoretical analysis: our implementations communicat",
+  "candidates": [
+   {
+    "url": "https://github.com/anonymousSC21/SC21",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "----------------------------------\n***An anonymized submission containing the code to the submission titled: \"On the Parallel I/O Optimality of Linear Algebra Kernels: Near-Optimal Matrix Factorizations\".***\n----------------------------------\nTHIS REPOSITORY CONTAINS:\n\n- The code containing LU and Cholesky factorizations used in the paper, together with the launch scripts.\n\n- AuthorsKit's script output (AuthorsKitOutput.txt)\n\n- The appendix containing proofs of Lemmas 2-7 included in the paper (proof_appendix.pdf).\n\n\n## CODE \n\nInside the \"code\" folder, there is a README.md file containing detailed instructions on the setup. The experiments were run on Piz Daint supercomputer.\n\n## Estimated time needed for the measurements\nIn general, it is difficult to give a time estimate since the node allocation mechanisms of Piz Daint are intransparent. However, the experiment that will run the longest (excluding queueing time) is `launch_weak_conflux_256` which we estimate to take roughly 3.5 hours.\n\nWe ran the experiments on the CPU partition of Piz Daint supercomputer, which hosts two Intel E5-2695 processors v4 per node, yielding 2.4 GLOPs/s per node.\n\n**A rough estimate of a single-run time for a given matrix size N and number of nodes P, assuming the achieved performance of 50% of hardware peak:**   \n1. FLOPs per node required: LU - N^3/(3 * P), Cholesky - N^3/(6 * P).\n2. Node performace: B = 2.4 * 10^9 FLOPs/s * 50% (efficiency)\n3. time: T_LU = FLOPs/B = N^3 / (3.6 P) us,  T_Chol ="
+   },
+   {
+    "url": "https://github.com/meetalgo/bigdata_ppt",
+    "desc": "分享国内外大数据、数据分析、数据存储、人工智能等相关顶会的文献，如果你需要，欢迎Star",
+    "stars": 2,
+    "readme_head": "# bigdata_ppt\n# bigdata_ppt\n本项目是分享：\n1.数据挖掘、人工智能、数据分析等相关会议的文献，给广大学生、科研工作者提供一个便携获取资料的地方。\n目前包括的会议有：\nTCAD、MICRO、SC、PPoPP、JMLR\nUSENIX、ATC、TOCS、FAST、ASPLOS\nHPCA、IJCV、TOS、VLDB\nAI、SIGKDD、AAAI\nDAC、SIGMOD、SIGIR、ISCA\n\n如果这里没有你要的或者有任何问题，都可以联系作者，[个人微信](https://www.cxyxz.com.cn/wp-content/uploads/2022/03/WechatIMG244.jpeg) 或者，关注我 [一枚小人物](https://www.cxyxz.com.cn/wp-content/uploads/2021/09/%E5%85%AC%E4%BC%97%E5%8F%B7.png)\n\n\n2.同步国内各个互联网大厂分享的PPT（大数据行业、人工智能行业、数据分析行业等等）\n\n如果这里没有你要的或者有任何问题，都可以联系作者，[个人微信](https://www.cxyxz.com.cn/wp-content/uploads/2022/03/WechatIMG244.jpeg) 或者，关注我 [一枚小人物](https://www.cxyxz.com.cn/wp-content/uploads/2021/09/%E5%85%AC%E4%BC%97%E5%8F%B7.png)\n\n\n欢迎大家Star\n\n目前已经更新的文献包括\n\nMICRO\nA scalable NoC topology targeting network performance..pdf\n-----------------------------------\nLoopback strategy for in-vehicle network processing in automotive gateway network on chip.pdf\n-----------------------------------\nDead flit attack on NoC by hardware trojan and its impact analysis.pdf\n-----------------------------------\nPerformance analysis of application-specific instruction-set routers in networks-on-chip.pdf\n-----------------------------------\nMachine learning for design and optimization challenges in multi:many-core network-on-chip.pdf\n-----------------------------------\nAnalysis and Hardware Optimization of Lattice Post-Quantum Cryptography Workloads.pdf\n-----------------------------------\nPosition Paper- Consider Hardware-enhanced Defenses for Rootkit Attacks.pdf\n--------------------"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/XiangKSHS21",
+  "title": "cuTS: scaling subgraph isomorphism on distributed multi-GPU systems using trie based data structure",
+  "venue": "SC",
+  "year": 2021,
+  "authors": [
+   "Lizhi Xiang",
+   "Arif Khan 0005",
+   "Edoardo Serra",
+   "Mahantesh Halappanavar",
+   "Aravind Sukumaran-Rajam"
+  ],
+  "abstract": "Subgraph isomorphism is a pattern-matching algorithm widely used in many domains such as chem-informatics, bioinformatics, databases, and social network analysis. It is computationally expensive and is a proven NP-hard problem. The massive parallelism in GPUs is well suited for solving subgraph isomorphism. However, current GPU implementations are far from the achievable performance. Moreover, the enormous memory requirement of current approaches limits the problem size that can be handled. This work analyzes the fundamental challenges associated with processing subgraph isomorphism on GPUs and develops an efficient GPU implementation. We also develop a GPU-friendly trie-based data structure",
+  "candidates": [
+   {
+    "url": "https://github.com/appl-lab/CuTS",
+    "desc": "",
+    "stars": 13,
+    "readme_head": "# AE cuTS: Scaling Subgraph Isomorphism on Distributed Multi-GPU Systems Using Trie Based Data Structure\n\nThis repository contains the code for the \"cuTS: Scaling Subgraph Isomorphism on Distributed Multi-GPU Systems Using Trie Based Data Structure\" framework. The cuTS framework is an efficient subgraph isomorphism solver for GPUs. \n\n## Obtaining latest version of the software\n\nVisit https://github.com/appl-lab/CuTS for obtaining latest of this software. \n\n## Package requirements:\n* cmake(>=3.10)\n* OpenMP\n* CUDA(>=10.0)\n* MPI (openmpi/3.0.1)\n\nWe used `cmake 3.17.2`, `openmpi/3.0.1` and `CUDA 11.0`\n\n## Build instructions:\n\nWe provide automated scripts to build the framework. Running `build.sh` will build the entire framework. (Before build, user should set the cuda arch properly based on his/her platform. In our experiments, we used Nvidia V100 and A100 GPU cards. To build entire cuts project on V100 machine, usr should enable target_compile_options(cuts/cuts_mpi PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-gencode arch=compute_70,code=sm_70>) in the CMakeLists.txt file. For A100 machine, user should set target_compile_options(cuts/cuts_mpi PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:-gencode arch=compute_80,code=sm_80>) in the CMakeLists.txt file and comment out target_compile_options for V100.) To set the CUDA binary and library path, edit `build.sh`. The compilation will produce the following executable `cuts` `cuts_mpi` in the build directory,`cuts` is the subgraph isomorphisms solver for sin"
+   },
+   {
+    "url": "https://github.com/w20chen/paper-reading-list",
+    "desc": "Reading list for papers related to graph query",
+    "stars": 6,
+    "readme_head": "| Title                                                                                                                       | Conference/Journal                   | Year | Tag(s)     |\n|-----------------------------------------------------------------------------------------------------------------------------|--------------------------------------|------|------------|\n| cuMatch: A GPU-based Memory-Efficient Worst-case Optimal Join Processing Method for Subgraph Queries with Complex Patterns  | SIGMOD                               | 2025 | SM         |\n| BSX: Subgraph Matching with Batch Backtracking Search                                                                       | SIGMOD                               | 2025 | SM         |\n| Large Subgraph Matching: A Comprehensive and Efficient Approach for Heterogeneous Graphs                                    | ICDE                                 | 2024 | SM         |\n| IVE: Accelerating Enumeration-Based Subgraph Matching via Exploring Isolated Vertices                                       | ICDE                                 | 2024 | SM         |\n| NewSP: A New Search Process for Continuous Subgraph Matching over Dynamic Graphs                                            | ICDE                                 | 2024 | CSM        |\n| Time-Constrained Continuous Subgraph Matching Using Temporal Information for Filtering and Backtracking                     | ICDE                                 | 2024 | CSM        |\n| GC"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/FernandoNHZSGB22",
+  "title": "A GPU-Accelerated AMR Solver for Gravitational Wave Propagation",
+  "venue": "SC",
+  "year": 2022,
+  "authors": [
+   "Milinda Fernando",
+   "David Neilsen",
+   "Eric W. Hirschmann",
+   "Yosef Zlochower",
+   "Hari Sundar"
+  ],
+  "abstract": "Simulations to calculate a single gravitational waveform (GW) can take several weeks. Yet, thousands of such simulations are needed for the detection and interpretation of gravitational waves. Future detectors will require even more accurate waveforms than those currently used. We present here the first large scale, adaptive mesh, multi-GPU numerical relativity (NR) code together with performance analysis and benchmarking. While comparisons are difficult to make, our GPU extension of the Dendro-grNr code achieves a 6x speedup over existing state-of-the-art codes. We achieve 800 GFlops/s on a single NVIDIA A100 GPU with an overall 2.5x speedup over a two-socket, 128-core AMD EPYC 7763 CPU nod",
+  "candidates": [
+   {
+    "url": "https://github.com/paralab/Dendro-GR",
+    "desc": "Numerical relativity with octree based wavelet adaptive mesh refinement. ",
+    "stars": 44,
+    "readme_head": "<img src=\"https://github.com/paralab/Dendro-GR/blob/master/fig/dendro.png\" alt=\"Dendro\" width=\"100\"/><span style=\"font-family:Papyrus; font-size:4em;\">-GR</span>\n\n## What is Dendro-GR ?\n\nDendro-GR is a highly-scalable framework that targets problems of interest to the numerical relativity and broader astrophysics communities. This framework combines a parallel octree-refined adaptive mesh (i.e., Dendro libarary) with a wavelet adaptive multiresolution and a physics module to solve the Einstein equations of general relativity. The goal of this work is to perform advanced, massively parallel numerical simulations of binary black holes with mass ratios on the order of 100:1. These studies will be used to generate waveforms as used in LIGO data analysis and to calibrate semi-analytical approximate methods. Our framework consists of a distributed memory octree-based adaptive meshing framework in conjunction\nwith a node-local code generator. Dendro-GR framework achieve excellent performance and scalability on modern leadership architectures. Dendro-GR also has tested strong scalability up to 8 A100s and weak scaling up to [229,376](https://www.tacc.utexas.edu/-/texascale-days-pushing-scientific-software-to-new-heights) x86 cores on the Texas Advanced Computing Center’s Frontera system. To the best of our knowledge, Dendro-GR work is the first highly scalable, adaptive, multi-GPU numerical relativity code performing binary black hole mergers.\n\n\n***\n## Get Dendro-GR\nDendro framework "
+   },
+   {
+    "url": "https://github.com/huntermBerkeley/denro_taskflow",
+    "desc": "denro taskflow optimizations for Hari Sundar's parallelism course.",
+    "stars": 0,
+    "readme_head": "<img src=\"https://github.com/paralab/Dendro-GR/blob/master/fig/dendro.png\" alt=\"Dendro\" width=\"100\"/><span style=\"font-family:Papyrus; font-size:4em;\">-GR</span>\n\n## What is Dendro-GR ?\n\nDendro-GR is a highly-scalable framework that targets problems of interest to the numerical relativity and broader astrophysics communities. This framework combines a parallel octree-refined adaptive mesh (i.e., Dendro libarary) with a wavelet adaptive multiresolution and a physics module to solve the Einstein equations of general relativity. The goal of this work is to perform advanced, massively parallel numerical simulations of binary black holes with mass ratios on the order of 100:1. These studies will be used to generate waveforms as used in LIGO data analysis and to calibrate semi-analytical approximate methods. Our framework consists of a distributed memory octree-based adaptive meshing framework in conjunction\nwith a node-local code generator. Dendro-GR framework achieve excellent performance and scalability on modern leadership architectures. Dendro-GR also has tested strong scalability up to 8 A100s and weak scaling up to [229,376](https://www.tacc.utexas.edu/-/texascale-days-pushing-scientific-software-to-new-heights) x86 cores on the Texas Advanced Computing Center’s Frontera system. To the best of our knowledge, Dendro-GR work is the first highly scalable, adaptive, multi-GPU numerical relativity code performing binary black hole mergers.\n\n\n***\n## Get Dendro-GR\nDendro framework "
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/LuMOEJW22",
+  "title": "Climbing the Summit and Pushing the Frontier of Mixed Precision Benchmarks at Extreme Scale",
+  "venue": "SC",
+  "year": 2022,
+  "authors": [
+   "Hao Lu 0001",
+   "Michael A. Matheson",
+   "Vladyslav Oles",
+   "J. Austin Ellis",
+   "Wayne Joubert"
+  ],
+  "abstract": "The rise of machine learning (ML) applications and their use of mixed precision to perform interesting science are driving forces behind AI for science on HPC. The convergence of ML and HPC with mixed precision offers the possibility of transformational changes in computational science. The HPL-AI benchmark is designed to measure the performance of mixed precision arithmetic as opposed to the HPL benchmark which measures double precision performance. Pushing the limits of systems at extreme scale is nontrivial -little public literature explores optimization of mixed precision computations at this scale. In this work, we demonstrate how to scale up the HPL-AI benchmark on the pre-exascale Sum",
+  "candidates": [
+   {
+    "url": "https://github.com/at-aaims/OpenMxP",
+    "desc": "This is the open source version of HPL-MXP. The code performance has been verified on Frontier",
+    "stars": 18,
+    "readme_head": "# OpenMxP: Open-Source Mixed Precision Computing\n- [OpenMxP: Open-Source Mixed Precision Computing](#openmxp-open-source-mixed-precision-computing)\n  - [Build instructions ( Frontier/Crusher )](#build-instructions--frontiercrusher-)\n  - [Running instructions ( Frontier/Crusher )](#running-instructions--frontiercrusher-)\n    - [Comments](#comments)\n  - [Build instruction (Summit)](#build-instruction-summit)\n  - [Tuning Parameters](#tuning-parameters)\n  - [Citation](#citation)\n    - [Code Repo](#code-repo)\n    - [SC22 Paper](#sc22-paper)\n  - [Developers](#developers)\n  - [Contributors](#contributors)\n\n\n\n\n## Build instructions ( Frontier/Crusher )\n\n```sh\ncd OpenMxP\nmkdir build\ncd build\ncp ../doc/build_OpenMxP_frontier.sh .\n```\nThat script runs `../doc/load_modules_frontier.sh` which may need to be modified for different rocm versions.\n\n```sh\n./build_OpenMxP_frontier.sh\n```\nYou should now have a OpenMxP.x86_64 binary.\n\n\n## Running instructions ( Frontier/Crusher )\n\n```sh\nmkdir jobs\ncd jobs\ncp ../doc/OpenMxP.slurm\n```\nChange this script to meet your needs.\n\n```sh\nsbatch OpenMxP.slurm\n```\nThe output from crusher is in `doc/crusher_example_32x32.out`.\n\nConstraints are PxQ=#GPUs, PxLN=QxLN, B need to be divisiable by TILE size.\nMust have at least 3 omp threads.\n\n### Comments\n\nOpenMxP is designed to run at scale.   When it is run at a few number of nodes,\nthe performance will suffer due to the Iterative Refinement (IR).\nAt larger scales, this time becomes insignificant in the run.\n\nTh"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/LiuDZLCC22",
+  "title": "Dynamic Quality Metric Oriented Error Bounded Lossy Compression for Scientific Datasets",
+  "venue": "SC",
+  "year": 2022,
+  "authors": [
+   "Jinyang Liu 0003",
+   "Sheng Di",
+   "Kai Zhao 0008",
+   "Xin Liang 0001",
+   "Zizhong Chen"
+  ],
+  "abstract": "With ever-increasing execution scale of the high performance computing (HPC) applications, vast amount of data are being produced by scientific research every day. Error-bounded lossy compression has been considered a very promising solution to address the big-data issue for scientific applications, because it can significantly reduce the data volume with low time cost meanwhile allowing users to control the compression errors with a specified error bound. The existing error-bounded lossy compressors, however, are all developed based on inflexible designs or compression pipelines, which cannot adapt to diverse compression quality requirements/metrics favored by different application users. I",
+  "candidates": [
+   {
+    "url": "https://github.com/szcompressor/QoZ",
+    "desc": "",
+    "stars": 8,
+    "readme_head": "# QoZ 2.0 (HPEZ)\n\n## Introduction\n\nThe second major version of QoZ: QoZ 2.0 (HPEZ), is based on both QoZ 1.1 and the paper: \"High-performance Effective Scientific Error-bounded Lossy Compression with Auto-tuned Multi-component Interpolation\". [ACM Paper Link](https://dl.acm.org/doi/abs/10.1145/3639259) [arXiv Paper Link](https://arxiv.org/abs/2311.12133) \n\n## Dependencies\n\nPlease install the following dependencies before compiling QoZ 2.0:\n\n* cmake>=3.13\n* gcc>=6.0\n\n## 3rd party libraries/tools\n\n* Zstd >= 1.3.5 (https://facebook.github.io/zstd/). It is not mandatory to manually install as Zstandard v1.4.5 is included and will be used if libzstd can not be found by pkg-config.\n\n## Installation\n\n* mkdir build && cd build\n* cmake -DCMAKE_INSTALL_PREFIX:PATH=[INSTALL_DIR] ..\n* make\n* make install\n\nThen, you'll find all the executables in [INSTALL_DIR]/bin and the header files in [INSTALL_DIR]/include. A Cmake version >= 3.13.0 is needed. \nBefore you proceed to the following evaluations, please add the installation path of HPEZ to your system path so that you can directly run the qoz command in your machine for further evaluations.\n\n## Command line compression/decompression \n\nYou can use the executable **qoz** command to compress/decompress (the input data should be float or double binary files). Just run the **qoz** command without any argument to check the instructions for its arguments.\nFor the convenience of tests, the qoz executable includes the SZ3.1 compression, QoZ 1.1 com"
+   },
+   {
+    "url": "https://github.com/JLiu-1/HPEZ-QoZ2.0",
+    "desc": "HPEZ (QoZ 2.0): High-performance Effective Scientific Error-bounded Lossy Compression with Auto-tuned Multi-component Interpolation",
+    "stars": 3,
+    "readme_head": "# HPEZ (QoZ 2.0)\n\n## Introduction\n\nHPEZ, aka the second major version of QoZ: QoZ 2.0, is based on both QoZ 1.1 and the paper: \"High-performance Effective Scientific Error-bounded Lossy Compression with Auto-tuned Multi-component Interpolation\". [ACM Paper Link](https://dl.acm.org/doi/abs/10.1145/3639259) [arXiv Paper Link](https://arxiv.org/abs/2311.12133) \n\n## Dependencies\n\nPlease install the following dependencies before compiling HPEZ:\n\n* cmake>=3.13\n* gcc>=6.0\n\n## 3rd party libraries/tools\n\n* Zstd >= 1.3.5 (https://facebook.github.io/zstd/). It is not mandatory to manually install as Zstandard v1.4.5 is included and will be used if libzstd can not be found by pkg-config.\n\n## Installation\n\n* mkdir build && cd build\n* cmake -DCMAKE_INSTALL_PREFIX:PATH=[INSTALL_DIR] ..\n* make\n* make install\n\nThen, you'll find all the executables in [INSTALL_DIR]/bin and the header files in [INSTALL_DIR]/include. A Cmake version >= 3.13.0 is needed. \nBefore you proceed to the following evaluations, you may add the installation path of HPEZ to your system path so that you can directly run the **hpez** command in your machine for further evaluations.\n\n## Command line compression/decompression \n\nYou can use the executable **hpez** command to compress/decompress (the input data should be float or double binary files). Just run the **hpez** command without any argument to check the instructions for its arguments.\nFor the convenience of tests, the qoz executable includes the SZ3.1 compression, QoZ"
+   },
+   {
+    "url": "https://github.com/robertu94/QoZ",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "# QoZ: Dynamic Quality Metric Oriented Error Bounded Lossy Compression for Scientific Datasets\n\n## Introduction\n\nThis is the source code of the QoZ data compression introduced in the paper: QoZ: Dynamic Quality Metric Oriented Error Bounded Lossy Compression for Scientific Datasets ([paper link](https://www.computer.org/csdl/proceedings-article/sc/2022/544400a892/1I0bT6kfcas)). QoZ can be regarded as an extension of SZ3 ([SZ3 Code](https://github.com/szcompressor/SZ3)) which has multiple quality optimization targets and achieves better rate-distortion than SZ3 in most cases.\n\n## Dependencies\n\nPlease Install the following dependencies before running the artiact evaluation experiments:\n\n* cmake>=3.13\n* gcc>=6.0\n\n## 3rd party libraries/tools\n\n* Zstd >= 1.3.5 (https://facebook.github.io/zstd/). Not mandatory to be mannually installed as Zstandard v1.4.5 is included and will be used if libzstd can not be found by pkg-config.\n\n## Installation\n\n* mkdir build && cd build\n* cmake -DCMAKE_INSTALL_PREFIX:PATH=[INSTALL_DIR] ..\n* make\n* make install\n\nThen, you'll find all the executables in [INSTALL_DIR]/bin and header files in [INSTALL_DIR]/include. A Cmake version >= 3.13.0 is needed. \nBefore you proceed to the following evaluations, please add the installation path of QoZ to your system path so that you can directly run qoz command in your machine for further evaluations.\n\n## Single compression/decompression testing Examples\n\nYou can use the executable 'qoz' command to do the compressi"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/WangWFMMD22",
+  "title": "EL-Rec: Efficient Large-Scale Recommendation Model Training via Tensor-Train Embedding Table",
+  "venue": "SC",
+  "year": 2022,
+  "authors": [
+   "Zheng Wang 0075",
+   "Yuke Wang",
+   "Boyuan Feng",
+   "Dheevatsa Mudigere",
+   "Bharath Muthiah"
+  ],
+  "abstract": "Deep learning Recommendation Models (DLRMs) plays an important role in various application domains. However, existing DLRM training systems require a large number of GPUs due to the memory-intensive embedding tables. To this end, we propose EL-Rec, an efficient computing framework harnessing the Tensor-train (TT) technique to democratize the training of large-scale DLRMs with limited GPU resources. Specifically, EL-Rec optimizes TT decomposition based on key computation primitives of embedding tables and implements a high-performance compressed embedding table which is a drop-in replacement of Pytorch API. EL-Rec introduces an index reordering technique to harvest the performance gains from ",
+  "candidates": [
+   {
+    "url": "https://github.com/Ash-Zheng/SC_artifacts_eval",
+    "desc": "SC'22 Artifacts Evaluation",
+    "stars": 9,
+    "readme_head": "# EL-Rec: Efficient Large-scale Recommendation Model Training via Tensor-train Embedding Table\n\nThis repo is for the SC 2022 artifacts evaluation. [![DOI](https://zenodo.org/badge/498582840.svg)](https://zenodo.org/badge/latestdoi/498582840)\n\n\n## Environment Setup and Preprocessing\n\n* If you are using the server that we provided, you don't need to setup the environment and prepross the dataset, please use the docker container `SC_artifacts`  and `SC_ae_hugectr` (only for running hugectr) to run the scripts.\n* If you want to run the codes on your own server, please refer to the  [Docker Image](# Docker-Image) , [Data Process](# Data-Process) and [Generate Index Bijection](# Generate-Index-Bijection) sections.\n\n\n\n## Running Expriment\n\nWe provoded some script to run the expriment and get the result in our paper, includes:\n\n* Figure 11: \n  * We provide codes for running DLRM (CPU-GPU), TT-Rec and EL-Rec.\n  * Please also refer to the `Figure11/README.md`.\n* Figure 12:\n  * We provide codes for running DLRM (1 GPU), DLRM (4 GPU), EL-Rec (1 GPU) and EL-Rec (4 GPU).\n  * Please also refer to the `Figure12/README.md`.\n* Figure 13:\n  * We provide codes for running EL-Rec (1/2/4 GPU), TorchRec(2/4 GPU) and HugeCTR (2/4 GPU).\n  * To run the EL-Rec, please use the docker container `SC_artifacts`.\n  * To run the HugeCTR, please use the docker container `SC_ae_hugectr`.\n  * To run the HugeCTR, please use the conda environment `new_torchrec`.\n  * Please also refer to the `Figure13/README.md`.\n"
+   },
+   {
+    "url": "https://github.com/henryjsneed/Reproducing-EL-Rec",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "# Reproducing EL-Rec: Efficient Large-scale Recommendation Model Training via Tensor-train Embedding Table\n\nI cloned this repository from the artifact evaluation repository for the recommendation model proposed in [EL-Rec: Efficient Large-scale Recommendation Model Training via Tensor-train Embedding Table](https://ieeexplore.ieee.org/document/10046052). It includes updates I made to the scripts to allow them to run successfully in addition to some preliminary work to train the model on a new dataset. To reproduce the results, I used 4 V100 16GB NVLink GPUs running Ubuntu 20.04, containing 8 vCPUs, 24 GB RAM, and a shared SSD of 700GB. My results and methodology are explained in detail in the paper [Reproducing-El-Rec](https://github.com/henryjsneed/reproducing-el-rec/blob/master/Reproducing-EL-Rec.pdf).\n\nNote: A few of the code changes use hardcoding or are otherwise just quick fixes that were necessary to get the scripts working by the end of the semester (hence the lack of a PR to the original repository). They do not represent the intent to propose a modification to the original work.\n"
+   },
+   {
+    "url": "https://github.com/CanoVerst/DLRM",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "# EL-Rec: Efficient Large-scale Recommendation Model Training via Tensor-train Embedding Table\n\nThis repo is for the SC 2022 artifacts evaluation. [![DOI](https://zenodo.org/badge/498582840.svg)](https://zenodo.org/badge/latestdoi/498582840)\n\n\n## Environment Setup and Preprocessing\n\n* If you are using the server that we provided, you don't need to setup the environment and prepross the dataset, please use the docker container `SC_artifacts`  and `SC_ae_hugectr` (only for running hugectr) to run the scripts.\n* If you want to run the codes on your own server, please refer to the  [Docker Image](# Docker-Image) , [Data Process](# Data-Process) and [Generate Index Bijection](# Generate-Index-Bijection) sections.\n\n\n\n## Running Expriment\n\nWe provoded some script to run the expriment and get the result in our paper, includes:\n\n* Figure 11: \n  * We provide codes for running DLRM (CPU-GPU), TT-Rec and EL-Rec.\n  * Please also refer to the `Figure11/README.md`.\n* Figure 12:\n  * We provide codes for running DLRM (1 GPU), DLRM (4 GPU), EL-Rec (1 GPU) and EL-Rec (4 GPU).\n  * Please also refer to the `Figure12/README.md`.\n* Figure 13:\n  * We provide codes for running EL-Rec (1/2/4 GPU), TorchRec(2/4 GPU) and HugeCTR (2/4 GPU).\n  * To run the EL-Rec, please use the docker container `SC_artifacts`.\n  * To run the HugeCTR, please use the docker container `SC_ae_hugectr`.\n  * To run the HugeCTR, please use the conda environment `new_torchrec`.\n  * Please also refer to the `Figure13/README.md`.\n"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/LiOH22",
+  "title": "Efficient Quantized Sparse Matrix Operations on Tensor Cores",
+  "venue": "SC",
+  "year": 2022,
+  "authors": [
+   "Shigang Li 0002",
+   "Kazuki Osawa",
+   "Torsten Hoefler"
+  ],
+  "abstract": "The exponentially growing model size drives the continued success of deep learning, but it brings prohibitive computation and memory cost. From the algorithm perspective, model sparsification and quantization have been studied to alleviate the problem. From the architecture perspective, hardware vendors provide Tensor cores for acceleration. However, it is very challenging to gain practical speedups from sparse, low-precision matrix operations on Tensor cores, because of the strict requirements for data layout and lack of support for efficiently manipulating the low-precision integers. We propose Magicube, a high-performance sparse-matrix library for low-precision integers on Tensor cores. M",
+  "candidates": [
+   {
+    "url": "https://github.com/ParCIS/Magicube",
+    "desc": "Magicube is a high-performance library for quantized sparse matrix operations (SpMM and SDDMM) of deep learning on Tensor Cores.",
+    "stars": 92,
+    "readme_head": "## Magicube: Efficient Quantized Sparse Matrix Operations on Tensor Cores\n\n![Magicube Logo](magicubeLogo.svg)\n\nMagicube is a high-performance library for quantized sparse matrix operations (SpMM and SDDMM) of deep learning on Tensor Cores. Magicube is published in [SC 2022](https://sc22.supercomputing.org/), Best Paper Finalist. We conduct all the experiments on NVIDIA A100-SXM4-40GB GPU. The software requirements to reproduce the artfifact are: `GCC 8.4.1`, `CUDA Toolkit 11.4.0`, `Python 3.8.5`, `PyTorch 1.9.0` with `cuDNN version 8005`.\n\n**We provide two ways to reproduce the results.** The first way is to reproduce the artifact with **docker container**, in which the software environment is already configured and the input dataset is also included. Note that nvidia-docker must be installed to run the container on GPU. Using docker container enables an easy reproducibility process. The second way is to reproduce the artifact with **source code**, in which users have to setup the software environment and download the input dataset by themselves following the provided instructions.\n\n## Reproduction with container\n\nWe run all the experiments on NVIDIA A100-SXM4-40GB GPU. Please double-check the model of GPU by `nvidia-smi -L`. Note that nvidia-docker must be installed to run the container on GPU. Use the following three steps to reproduce the artifact with docker container.\n\n**Step 1:** Download and run the container.\n\nDownload magicube_container.tar.gz from the DOI by:\n\n```ba"
+   },
+   {
+    "url": "https://github.com/lambda7xx/awesome-AI-system",
+    "desc": "paper and its code for AI System",
+    "stars": 374,
+    "readme_head": "# Awesome AI System\n\nThis repo is motivated by [awesome tensor compilers](https://github.com/merrymercy/awesome-tensor-compilers.git).\n## Contents\n\n- [Paper-Code](#paper-code)\n  - [Researcher](#researcher)\n  - [LLM Serving Framework](#llm-serving-framework)\n  - [LLM Evaluation Platform](#llm-evaluation-platform)\n  - [LLM Robustness and Debugging](#llm-robustness-and-debugging)\n  - [LLM Inference System Side)](#llm-inference-system-side)\n  - [Compiler](#compiler)\n  - [Attention](#attention)\n  - [RAG And ANNS](#rag-and-anns)\n  - [RLHF](#rlhf)\n  - [Video](#video)\n  - [LLM Inference AI Side)](#llm-inference-ai-side)\n  - [LLM MoE](#llm-moe)\n  - [LoRA](#lora)\n  - [Framework](#framework)\n  - [Parallellism Training](#parallellism-training)\n  - [Training](#training)\n  - [Communication](#communication)\n  - [Serving-Inference](#Serving-Inference)\n  - [MoE](#MoE)\n  - [GPU Cluster Management](#gpu-cluster-management)\n  - [Schedule and Resource Management](#schedule)\n  - [Optimization](#optimzation)\n  - [GNN](#GNN)\n  - [Fine-Tune](#Fine-Tune)\n  - [Energy](#energy)\n  - [Misc](#Misc)\n- [Contribute](#contribute)\n\n\n## Paper-Code\n\n### Researcher \n\n\n\n| Name | University | Homepage | \n|:-----:|:-----:|:-----:|\n| Ion Stoica | UC Berkeley | [![Website](https://img.shields.io/badge/Website-9cf)](https://people.eecs.berkeley.edu/~istoica/) |\n| Joseph E. Gonzalez | UC Berkeley | [![Website](https://img.shields.io/badge/Website-9cf)](https://people.eecs.berkeley.edu/~jegonzal/) |\n| Matei Zaharia | UC B"
+   },
+   {
+    "url": "https://github.com/chih-chun-chang/spmm",
+    "desc": "Sparse Matrix-Matrix Multiplication",
+    "stars": 0,
+    "readme_head": "# spmm\nSparse Matrix-Matrix Multiplication\n\n# Paper\n1. Computers and Electrical Engineering 2020 [Accelerating Sparse Matrix-Matrix Multiplication with GPU Tensor Cores](https://arxiv.org/pdf/2009.14600) [code](https://github.com/oresths/tSparse?tab=readme-ov-file)\n2. ICPP'24 [Bitmap-Based Sparse Matrix-Vector Multiplication with Tensor\nCores](https://dl.acm.org/doi/pdf/10.1145/3673038.3673055)\n3. [cuSPARSE Block-SpMM](https://developer.nvidia.com/blog/accelerating-matrix-multiplication-with-block-sparse-format-and-nvidia-tensor-cores/)\n4. [High Performance Unstructured SpMM Computation Using Tensor Cores](https://arxiv.org/abs/2408.11551) [code](https://github.com/spcl/smat?tab=readme-ov-file)\n5. SC22' [Efficient Quantized Sparse Matrix Operations on\nTensor Cores](https://arxiv.org/pdf/2209.06979)\n6. ASPOLO24' [DTC-SpMM: Bridging the Gap in Accelerating General\nSparse Matrix Multiplication with Tensor Cores](https://cse.hkust.edu.hk/~weiwa/papers/dtc-spmm-asplos24.pdf)\n"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/WangWXHQDWL22",
+  "title": "LightSeq2: Accelerated Training for Transformer-Based Models on GPUs",
+  "venue": "SC",
+  "year": 2022,
+  "authors": [
+   "Xiaohui Wang",
+   "Yang Wei",
+   "Ying Xiong",
+   "Guyue Huang",
+   "Xian Qian"
+  ],
+  "abstract": "Transformer-based neural models are used in many AI applications. Training these models is expensive, as it takes huge GPU resources and long duration. It is challenging because typical data like sentences have variable lengths, and Transformer's computation patterns are more complex than convolutional neural networks. Existing systems either only focus on model inference or optimization for only BERT-like encoder models. In this paper, we present LightSeq2, a system to accelerate training for a general family of Transformer models on GPUs. We propose a series of GPU optimization techniques tailored to the specific computation flow and memory access patterns of Transformer models. LightSeq2 ",
+  "candidates": [
+   {
+    "url": "https://github.com/bytedance/lightseq",
+    "desc": "LightSeq: A High Performance Library for Sequence Processing and Generation",
+    "stars": 3296,
+    "readme_head": "# LightSeq: A High Performance Library for Sequence Processing and Generation\n\n![logo](./docs/images/logo.png)\n\n---\n\n## Table Of Contents\n- [Release Notes](#release-notes)\n- [Introduction](#introduction)\n    - [Support Matrix](#support-matrix)\n- [Performance](#performance)\n    - [Speedup of Transformer Training](#speedup-of-transformer-training)\n    - [Speedup of BERT Training](#speedup-of-bert-training)\n    - [Speedup of Transformer Inference](#speedup-of-transformer-inference)\n    - [Speedup of BERT Inference](#speedup-of-bert-inference)\n- [Installation](#installation)\n    - [Install from PyPI](#install-from-pypi)\n    - [Build from Source](#build-from-source)\n- [Getting Started](#getting-started)\n    - [LightSeq Training from Scratch](#lightseq-training-from-scratch)\n    - [LightSeq Training from Fairseq](#lightseq-training-from-fairseq)\n    - [LightSeq Training from Hugging Face BERT](#lightseq-training-from-hugging-face-bert)\n    - [LightSeq Inference from Fairseq](#lightseq-inference-from-fairseq)\n    - [LightSeq Inference from Hugging Face BERT](#lightseq-inference-from-hugging-face-bert)\n    - [LightSeq Deployment Using Inference Server](#lightseq-deployment-using-inference-server)\n- [Cite Us](#cite-us)\n- [We are Hiring!](#we-are-hiring)\n\n## Release Notes\n**[2022.10.25]** Release v3.0.0 version, which supports int8 mixed-precision training and inference. [[中文介绍](https://bytedance.feishu.cn/docx/doxcnZloQZmLgAVU7z1QFlcRPuO)]\n\n**[2021.06.18]** Release v2.0.0 version, whi"
+   },
+   {
+    "url": "https://github.com/kachris/survey_HA_LLM",
+    "desc": "A survey on Hardware Accelerated LLMs",
+    "stars": 67,
+    "readme_head": "# A Syrvey on Hardware Accelerators for Large Language Models\n\nYou can read the relevant paper here: [A Survey on Hardware Accelerators for Large Language Models](https://arxiv.org/abs/2401.09890)\n\nAn overview of the speedup and Energy efficiency of Hardware accelerators for LLMs\n(If there is no energy efficiency measurements the paper is plotted in the x-axis as if the energy efficiency was 1) \n\n![Survey on Hardware accelerators for LLMs](survey.png)\n\nThe following table shows the research papers focused on the acceleration of LLMs (mostly transformers) categorized on the computing platform (FPGA, GPU, ASIC, In-memory).\n\n\n| Year | Type | Title   | Speedup | Energy efficiency |\n| ---- | ---- | ------- | ------- | ----------------- |\n| 2019 | FPGA | [MnnFast: A Fast and Scalable System Architecture for Memory-Augmented Neural Networks](https://ieeexplore.ieee.org/document/8980322) | 5.4x | 4.5x |\n| 2020 | FPGA | [FTRANS:  Energy-Efficient Acceleration of Transformers Using FPGA](https://arxiv.org/pdf/2007.08563) | 27-81x | 8.8x |\n| 2020 | FPGA | [Hardware Accelerator for Multi-Head Attention and Position-Wise Feed-Forward in the Transformer](https://arxiv.org/abs/2009.08605)   | 14x | |\n| 2021 | FPGA | [An FPGA-Based Overlay Processor for Natural Language Processing](https://arxiv.org/abs/2104.06535)   | 35x | 4x-6x |\n| 2021 | FPGA | [Accelerating Transformer-based Deep Learning Models on FPGAs using Column Balanced Block Pruning](https://ieeexplore.ieee.org/document/9424344) "
+   },
+   {
+    "url": "https://github.com/AmadeusChan/Awesome-LLM-System-Papers",
+    "desc": "",
+    "stars": 646,
+    "readme_head": "# Awesome-LLM-System-Papers\n\nThis is a list of (non-comprehensive) LLM system papers maintained by [ALCHEM Lab](https://alchem.cs.purdue.edu/index.html). Welcome to create a pull requst or an issue if we have missed any interesting papers!\n\n## Algorithm-System Co-Design\n\n- Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity (JMLR'21) [link to paper](https://www.jmlr.org/papers/volume23/21-0998/21-0998.pdf)\n- Scalable and Efficient MoE Training for Multitask Multilingual Models (arXiv'21) [link to paper](https://arxiv.org/pdf/2109.10465.pdf)\n- DeepSpeed-MOE: Advancing Mixture of Experts Inference and Training to Power Next-Generation AI Scale (ICML'22) [link to paper](https://proceedings.mlr.press/v162/rajbhandari22a/rajbhandari22a.pdf)\n\n## LLM Inference (Serving) Systems\n\n- Orca: A Distributed Serving System for Transformer-Based Generative Models (OSDI'22) [link to paper](https://www.usenix.org/conference/osdi22/presentation/yu)\n- TurboTransformers: An Efficient GPU Serving System For Transformer Models (PPoPP'21) [link to paper](https://dl.acm.org/doi/pdf/10.1145/3437801.3441578)\n- PetS: A Unified Framework for Parameter-Efficient Transformers Serving (ATC'22) [link to paper](https://www.usenix.org/system/files/atc22-zhou-zhe.pdf)\n- DeepSpeed-inference: enabling efficient inference of transformer models at unprecedented scale (SC'22) [link to paper](https://dl.acm.org/doi/abs/10.5555/3571885.3571946)\n- EnergeonAI: An Inference System"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/MunksgaardHSO22",
+  "title": "Memory Optimizations in an Array Language",
+  "venue": "SC",
+  "year": 2022,
+  "authors": [
+   "Philip Munksgaard",
+   "Troels Henriksen",
+   "Ponnuswamy Sadayappan",
+   "Cosmin E. Oancea"
+  ],
+  "abstract": "We present a technique for introducing and op-timizing the use of memory in a functional array language, aimed at GPU execution, that supports correct-by-construction parallelism. Using linear memory access descriptors as building blocks, we define a notion of memory in the compiler IR that enables cost-free change-of-layout transformations (e.g., slicing, transposition), whose results can even be carried across control flow such as ifs/loops without manifestation in memory. The memory notion allows a graceful transition to an unsafe IR that is automatically optimized (1) to mix reads and writes to the same array inside a parallel construct, and (2) to map semantically different arrays to th",
+  "candidates": [
+   {
+    "url": "https://github.com/diku-dk/futhark-mem-sc22",
+    "desc": "Artifact for the Futhark memory-optimization submission for SC22",
+    "stars": 2,
+    "readme_head": "# futhark-mem-sc22\n\n[![CI](https://github.com/diku-dk/futhark-mem-sc22/workflows/CI/badge.svg)](https://github.com/diku-dk/futhark-mem-sc22/actions/workflows/release.yml)[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6452039.svg)](https://doi.org/10.5281/zenodo.6452039)\n\nWelcome to `futhark-mem-sc22`. The purpose of this repository is to help\nreproduce the results of the \"Memory Optimizations in an Array Language\" paper\nsubmitted to SC22. This artifact reproduces tables I, II, III, IV, V, VI and\nVII.\n\n## Initial setup\n\nImmediately after cloning this repository, you should initialize and update the\nsubmodules:\n\n```\ngit clone https://github.com/diku-dk/futhark-mem-sc22\ncd futhark-mem-sc22\ngit submodule init\ngit submodule update\n```\n\n## Instructions for running experiments\n\nWe support two different methods of running the experiments from the paper:\nDirectly on your host-machine or inside one of the provided containers. We\nrecommend using one of the provided containers.\n\n### Running benchmarks on your host-machine\n\nIf you have installed and configured an OpenCL capable GPU (we use NVIDIAs A100\nand AMDs MI100 in our article), you should be able to run the experiments using:\n\n```\nmake all\n```\n\nThis will compile and run both reference- and Futhark-implementations of all\nbenchmarks using the Futhark binary in `bin` and show the resulting performance\ntables in ASCII. To use another version of Futhark, use `make FUTHARK=my-futhark\nall`.\n\nAlternatively, you can reproduce the experi"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/CaoAAPNBDGKLS22",
+  "title": "Reshaping Geostatistical Modeling and Prediction for Extreme-Scale Environmental Applications",
+  "venue": "SC",
+  "year": 2022,
+  "authors": [
+   "Qinglei Cao",
+   "Sameh Abdulah",
+   "Rabab Alomairy",
+   "Yu Pei",
+   "Pratik Nag"
+  ],
+  "abstract": "We extend the capability of space-time geostatistical modeling using algebraic approximations, illustrating application-expected accuracy worthy of double precision from majority low-precision computations and low-rank matrix approximations. We exploit the mathematical structure of the dense covariance matrix whose inverse action and determinant are repeatedly required in Gaussian log-likelihood optimization. Geostatistics augments first-principles modeling approaches for the prediction of environmental phenomena given the availability of measurements at a large number of locations; however, traditional Cholesky-based approaches grow cubically in complexity, gating practical extension to con",
+  "candidates": [
+   {
+    "url": "https://github.com/ecrc/exageostat",
+    "desc": "A High Performance Unified Framework for Geostatistics on Manycore Systems.",
+    "stars": 39,
+    "readme_head": "### ⚠️ Project Notice\n\n> **Important:** Active development has moved to a new repository:  \n👉 [**ExaGeoStatCPP**](https://github.com/ecrc/ExaGeoStatCPP)  \nThe codebase has been migrated from **C to C++** as part of this transition.  \nThe new version also includes support for **R package installation**.  \nThis repository is now archived and no longer maintained.\n\nWhat is ExaGeoStat?\n================\n\nThe **Exascale GeoStatistics** project (ExaGeoStat) is a parallel high performance unified framework for computational geostatistics on many-core systems. The project aims at optimizing the likelihood function for a given spatial data to provide an efficient way to predict missing observations in the context of climate/weather forecasting applications. This machine learning framework proposes a unified simulation code structure to target various hardware architectures, from commodity x86 to GPU accelerator-based shared and distributed-memory systems. ExaGeoStat enables statisticians to tackle computationally challenging scientific problems at large-scale, while abstracting the hardware complexity through state-of-the-art high performance linear algebra software libraries.\n\n\n\nVision of ExaGeoStat\n=================\n\nExaGeoStat is a collaboration between the KAUST Spatial Statistics group and the Extreme Computing Research\nCenter (ECRC). Its contribution lies not in a new algorithm nor in a new data set,\nbut in demonstrating the routine use of the larger data sets becoming available "
+   },
+   {
+    "url": "https://github.com/ecrc/ExaGeoStatCPP",
+    "desc": "",
+    "stars": 15,
+    "readme_head": "# ExaGeoStat\n\nThe **Exascale GeoStatistics** project (ExaGeoStat) is a parallel high-performance unified framework for computational\ngeostatistics on many-core systems. The project aims to optimize the likelihood function for a given spatial data to\nefficiently predict missing observations in the context of climate/weather forecasting applications.\nThis machine learning framework proposes a unified simulation code structure to target various hardware architectures,\nfrom commodity x86 to GPU accelerator-based shared and distributed-memory systems. ExaGeoStat enables statisticians to\ntackle computationally challenging scientific problems at large-scale while abstracting the hardware complexity through\nstate-of-the-art high-performance linear algebra software libraries.\n\n### ExaGeoStatCPP\nExaGeoStatCPP is a C++ API for ExaGeoStat that aims to offer a user-friendly and efficient API for C++ developers, essentially\nmaintaining traditional practices and embracing contemporary C++ elements like namespaces, templates, and exceptions to enhance functionality.\n\n### ExaGeoStatR : R Interface of ExaGeoStat\nR is a powerful and versatile tool for scientific computing, offering a wide range of statistical and graphical\ntechniques, strong community support, and the flexibility to integrate with other programming languages.\nIts open-source nature and extensive package ecosystem make it an invaluable resource for researchers and data scientists.\nTherefore, we decided to create ExaGeoStatR: An "
+   },
+   {
+    "url": "https://github.com/ecrc/hicma-x",
+    "desc": "",
+    "stars": 10,
+    "readme_head": "# HiCMA-PaRSEC\n\n## Table of Contents\n- [Overview](#overview)\n- [Features](#features)\n- [Building](#building)\n- [Testing](#testing)\n- [Literature](#literature)\n\n## Overview\n\nHiCMA-PaRSEC, i.e., Hierarchical Computations on Manycore Architectures (HiCMA) powered by Parallel Runtime Scheduler and Execution Controller (PaRSEC), combines the linear algebraic contributions of mixed-precision and low-rank computations. The framework features adaptive memory management and precision selection capabilities to optimize performance and accuracy for extreme-scale scientific computing applications.\n\n<p align=\"center\">\n  <a href=\"docs/HiCMA-PaRSEC_flyer_SC25.pdf\">\n    <img src=\"docs/HiCMA-PaRSEC_flyer_SC25.png\" alt=\"HiCMA-PaRSEC poster\" width=\"860\">\n  </a><br>\n</p>\n\n## Features\n\n### Core Computational Capabilities\n- **Matrix Operations**: Matrix multiplication, Cholesky factorization, rank-k updates, etc.\n- **Tile Low-Rank (TLR) Computations**: Hierarchical matrix representations for sparse problems\n- **Mixed Precision Support**: Double, single, half, and FP8 precision arithmetic\n- **Adaptive Memory Management**: Dynamic memory allocation and precision selection\n- **GPU Acceleration**: CUDA and HIP support for heterogeneous computing\n\n### Runtime and Parallelism\n- **PaRSEC Dynamic Runtime**: Task-based parallel execution with automatic load balancing\n- **Multi-Platform Support**: Shared and distributed-memory environments\n- **Multi-GPU Systems**: Scalable GPU acceleration across multiple d"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/WangCMYC22",
+  "title": "Scaling Graph 500 SSSP to 140 Trillion Edges with over 40 Million Cores",
+  "venue": "SC",
+  "year": 2022,
+  "authors": [
+   "Yuanwei Wang",
+   "Huanqi Cao",
+   "Zixuan Ma",
+   "Wanwang Yin",
+   "Wenguang Chen"
+  ],
+  "abstract": "The SSSP kernel was first introduced into the Graph 500 benchmark in 2017. However, there has been no result from a full-scale world-top supercomputer. The primary reason is the poor work-inefficiency of existing algorithms at large scales. In this paper, we propose an SSSP implementation for The Newest Generation Sunway Supercomputer,including an SSSP algorithm to achieve work-efficiency, along with an adaptive dense/sparse-mode selection approach to achieve communication-efficiency. Our implementation reaches 7638 GTEPS, with 103158 processors (over 40 million cores), and achieves 3.7× in performance and 512× in graph size compared with the current top one on the Graph 500 SSSP list. Based",
+  "candidates": [
+   {
+    "url": "https://github.com/Alanhsu1/Parallel-Programming-NYCU-Final-Project",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "# Parallelization of Single-Source Shortest Path Problem\n\nThis project compares the performance of **baseline Δ-stepping SSSP** against a novel **graph partition + Δ-stepping** approach for large-scale, real-world graphs. The work demonstrates improved scalability robustness and reduced resource contention when thread counts scale to hardware limits.\n\n**Key Finding**: The proposed partition-based method demonstrates better scalability robustness under full-utilization computation, while baseline Δ-stepping encounters performance collapse at high thread counts.\n\n---\n\n## Table of Contents\n- [Motivation](#motivation)\n- [Problem Statement](#problem-statement)\n- [Methodology](#methodology)\n  - [Δ-Stepping Algorithm (Baseline)](#δ-stepping-algorithm-baseline)\n  - [Graph Partition + Δ-Stepping (Proposed)](#graph-partition--δ-stepping-proposed)\n- [Implementation](#implementation)\n- [Evaluation](#evaluation)\n- [Results Summary](#results-summary)\n- [Challenges](#challenges)\n- [References](#references)\n\n---\n\n## Motivation\n\nThe **Single-Source Shortest Path (SSSP)** problem is a cornerstone in graph analytics with critical applications in:\n- Transportation routing\n- Social network analysis\n- Network optimization\n\nHowever, classical sequential algorithms such as **Dijkstra's algorithm** face severe scalability bottlenecks when processing large-scale, real-world graphs. This project explores a more stable and efficient parallel solution for large-scale graph processing.\n\n---\n\n## Problem St"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/BeaumontDELV22",
+  "title": "Symmetric Block-Cyclic Distribution: Fewer Communications Leads to Faster Dense Cholesky Factorization",
+  "venue": "SC",
+  "year": 2022,
+  "authors": [
+   "Olivier Beaumont",
+   "Philippe Duchon",
+   "Lionel Eyraud-Dubois",
+   "Julien Langou",
+   "Mathieu Vérité"
+  ],
+  "abstract": "We consider the distributed Cholesky factorization on homogeneous nodes. Inspired by recent progress on asymptotic lower bounds on the total communication volume required to perform Cholesky factorization, we present an original data distribution, Symmetric Block Cyclic (SBC), designed to take advantage of the symmetry of the matrix. We prove that SBC reduces the overall communication volume between nodes by a factor of square root of 2 compared to the standard 2D block-cyclic distribution. SBC can easily be implemented within the paradigm of task-based runtime systems. Experiments using the Chameleon library over the StarPU runtime system demonstrate that the SBC distribution reduces the co",
+  "candidates": [
+   {
+    "url": "https://github.com/ama10047/Reproducbility-Challenge-SCC23",
+    "desc": "Reproducbility-Challenge-SCC23",
+    "stars": 0,
+    "readme_head": "# Reproducbility-Challenge-SCC23\nThe Reproducibility Challenge is based on SC22 paper \"Symmetric Block-Cyclic Distribution: Fewer Communications Leads to Faster Dense Cholesky Factorization\". In this paper, the authors are interested in the Cholesky factorization of large dense matrices performed in parallel in a distributed manner. Inspired by recent progress on asymptotic lower bounds on the total number of communications required to perform this operation, they present an original data distribution, Symmetric Block Cyclic (SBC), as an alternative to the standard 2D Block Cyclic (2DBC) distribution implemented in ScaLAPACK. It is designed to take advantage of the symmetry of the matrix to reduce inter-process communications. SBC is implemented within the paradigm of task-based runtime systems using the dense linear algebra library Chameleon associated with the StarPU runtime system. Experiments were carried out on the experimental platform PlaFRIM using homogeneous CPU-only nodes. The factorization of several synthetic test case matrices demonstrate that using the SBC distribution actually reduces the total volume of inter-process communication by a factor of √2, compared to the standard 2DBC distribution, as predicted by the theoretical analysis. The results clearly show that using SBC allows better performance and scalability than with 2DBC distribution in all tested configurations. \n\nNow, inorder to run the codes and check for the results and plot graphs following steps "
+   },
+   {
+    "url": "https://github.com/DubbleA/hpc-reproducability-challenge-scc23",
+    "desc": "https://sites.google.com/nyu.edu/reproducibilitychallenge-scc23/home",
+    "stars": 0,
+    "readme_head": "# Reproducbility-Challenge-SCC23\nThe Reproducibility Challenge is based on SC22 paper \"Symmetric Block-Cyclic Distribution: Fewer Communications Leads to Faster Dense Cholesky Factorization\". In this paper, the authors are interested in the Cholesky factorization of large dense matrices performed in parallel in a distributed manner. Inspired by recent progress on asymptotic lower bounds on the total number of communications required to perform this operation, they present an original data distribution, Symmetric Block Cyclic (SBC), as an alternative to the standard 2D Block Cyclic (2DBC) distribution implemented in ScaLAPACK. It is designed to take advantage of the symmetry of the matrix to reduce inter-process communications. SBC is implemented within the paradigm of task-based runtime systems using the dense linear algebra library Chameleon associated with the StarPU runtime system. Experiments were carried out on the experimental platform PlaFRIM using homogeneous CPU-only nodes. The factorization of several synthetic test case matrices demonstrate that using the SBC distribution actually reduces the total volume of inter-process communication by a factor of √2, compared to the standard 2DBC distribution, as predicted by the theoretical analysis. The results clearly show that using SBC allows better performance and scalability than with 2DBC distribution in all tested configurations. \n\nNow, inorder to run the codes and check for the results and plot graphs following steps "
+   },
+   {
+    "url": "https://github.com/Nagael/scc23-repro",
+    "desc": "Additional fils and information for the Reproducibility Challenge of SCC23",
+    "stars": 0,
+    "readme_head": "# scc23-repro\nAdditional fils and information for the Reproducibility Challenge of SCC23\n\nThis repository contains\n* An `sbc.py` script that produces a file describing an SBC distribution \n  with the file format expected by the `--custom` argument of Chameleon\n  \n* the webinar slides that were presented on September 13th, 2023.\n\n* there is a six-page limit for the report\n\n## Instructions for the Reproducibility Challenge\n\nThe Reproducibility Challenge is based on the SC22 paper [Symmetric Block-Cyclic Distribution: Fewer\nCommunications Leads to Faster Dense Cholesky\nFactorization](https://inria.hal.science/hal-03768910/file/final_version_no_copyright.pdf).\n\nThe goal of the challenge is to reproduce results from this paper. The challenge will be evaluated\nbased on a written report, limited to **6 pages**, that should be handed to the SCC committee at the end\nof the competition, on **Wednesday November 15th at 5:00pm**. Here are the requirements for this report:\n\n* Provide a description of your hardware.\n\n* Provide a description of the software stack used to perform the experiments.\n\n* From the paper, reproduce **Figure 8** (total communication volume as a function of matrix size,\n  for a fixed number of processes), as well as the top plots of **Figures 10 and 12** (performance\n  per process and total running time as a function of matrix size, for a fixed number of processes).\n\n  Since your hardware probably does not have P=15 nodes available, you are expected to use a number\n "
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/CheshmiCD22",
+  "title": "Vectorizing Sparse Matrix Computations with Partially-Strided Codelets",
+  "venue": "SC",
+  "year": 2022,
+  "authors": [
+   "Kazem Cheshmi",
+   "Zachary Cetinic",
+   "Maryam Mehri Dehnavi"
+  ],
+  "abstract": "The compact data structures and irregular computation patterns in sparse matrix computations introduce challenges to vectorizing these codes. Available approaches primarily vec-torize strided computation regions of a sparse code. In this work, we propose a locality-based codelet mining (LCM) algorithm that efficiently searches for strided and partially strided regions in sparse matrix computations for vectorization. We also present a classification of partially strided codelets and a differentiation-based approach to generate codelets from memory accesses in the sparse computation. LCM is implemented as an inspector-executor framework called LCM I/E that generates vectorized code for the spa",
+  "candidates": [
+   {
+    "url": "https://github.com/sparse-specialize/partially-strided-codelet",
+    "desc": "",
+    "stars": 2,
+    "readme_head": "# Codelet Mining\nThis repository is a research artifact for \n\"[Vectorizing Sparse Matrix Computations with Partially-Strided Codelets](https://www.cs.toronto.edu/~mmehride/papers/PSC.pdf),\nKazem Cheshmi*, Zachary Cetinic*, Maryam Mehri Dehnavi\n, SC22\". \n\n\n## Build\nYou will need a C++ compiler (tested for GCC) and CMake to build this repository. MKL library is also needed for comparing the performance.  \n\nTo build the repository from source:\n```\ngit clone --recursive https://github.com/sparse-specialize/partially-strided-codelet.git\ncd partially-strided-codelet\nmkdir build\ncd build\ncmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=\"/opt/intel/oneapi/mkl/2021.2.0/lib/intel64/;/opt/intel/oneapi/mkl/2021.2.0/include/\" ..\nmake \n```\n\n\n## Run a demo\nThere a set of demos to test different kerneks. You will need a matrix file stored as matrix market format (matrix.mtx). Then for example you test one of demos with\n```\n./demo/spmv_demo -m matrix.mtx -n SPMV -s CSR -t 8 \n\n```\nwhich runs different implementations of SpMV CSR for the given matrix.\n\n\n"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/AlabandiSBB23",
+  "title": "A GPU Algorithm for Detecting Strongly Connected Components",
+  "venue": "SC",
+  "year": 2023,
+  "authors": [
+   "Ghadeer Alabandi",
+   "William Sands",
+   "George Biros",
+   "Martin Burtscher"
+  ],
+  "abstract": "Detecting strongly connected components (SCCs) is an important step in various graph computations. The fastest GPU and CPU implementations from the literature work well on graphs where most of the vertices belong to a single SCC and the vertex degrees follow a power-law distribution. However, these algorithms can be slow on the mesh graphs used in certain radiative transfer simulations, which have a nearly constant vertex degree and can have significant variability in the number and size of SCCs. We introduce ECL-SCC, an SCC detection algorithm that addresses these shortcomings. Our approach is GPU friendly and employs innovative techniques such as maximum ID propagation and edge removal. On",
+  "candidates": [
+   {
+    "url": "https://github.com/burtscher/ECL-SCC",
+    "desc": "Strongly Connected Components",
+    "stars": 3,
+    "readme_head": "# ECL-SCC v1.0\n\nECL-SCC is a new parallel algorithm for detecting strongly connected components in directed graphs. The CUDA implementation is quite fast, especially on mesh graphs. It operates on graphs stored in binary CSR format. Converters to this format can be found at https://cs.txstate.edu/~burtscher/research/ECLgraph/.\n\nThe CUDA code consists of the source files ECL-SCC_10.cu and ECLgraph.h. The paper referenced below explains the ECL-SCC algorithm. Note that ECL-SCC is protected by the 3-clause BSD license.\n\nThe code can be compiled as follows:\n\n    nvcc -O3 -arch=sm_70 ECL-SCC_10.cu -o ecl-scc\n\nTo compute the SCC of the file mesh.egr, enter:\n\n    ./ecl-scc mesh.egr\n\nThe repository includes three sample inputs:\n- toroid-wedge.mesh.egr (196608 vertices, 487798 edges, 4 MB)\n- star.mesh.egr (327680 vertices, 654080 edges, 6 MB)\n- cold-flow.mesh.egr (2112512 vertices, 6295941 edges, 57 MB)\n\n\n### Publication\n\nGhadeer Alabandi, William Sands, George Biros, and Martin Burtscher. \"A GPU Algorithm for Detecting Strongly Connected Components.\" Proceedings of the 2023 ACM/IEEE International Conference for High Performance Computing, Networking, Storage, and Analysis. Article 17, pp. 1-13. November 2023. DOI: https://dl.acm.org/doi/10.1145/3581784.3607071\n\nSlides: https://cs.txstate.edu/~burtscher/research/ECL-SCC/ECL-SCC.pptx\n\nTalk: https://sc23.conference-program.com/presentation/?id=pap326&sess=sess155\n\n\n**Summary**: ECL-SCC is an efficient data-driven, edge-centric parallel "
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/ZhangNLW23",
+  "title": "Parallel Top-K Algorithms on GPU: A Comprehensive Study and New Methods",
+  "venue": "SC",
+  "year": 2023,
+  "authors": [
+   "Jingrong Zhang",
+   "Akira Naruse",
+   "Xipeng Li",
+   "Yong Wang"
+  ],
+  "abstract": "The top-K problem is an essential part of many important applications in scientific computing, information retrieval, etc. As data volume grows rapidly, high-performance parallel top-K algorithms become critical. We propose two parallel top-K algorithms, AIR Top-K (Adaptive and Iteration-fused Radix Top-K) and GridSelect, for GPU. AIR Top-K employs an iteration-fused design to minimize CPU-GPU communication and device data access. Its adaptive strategy eliminates unnecessary device memory traffic automatically under various data distributions. GridSelect can process data on-the-fly. It adopts a shared queue and parallel two-step insertion to decrease the frequency of costly operations. We co",
+  "candidates": [
+   {
+    "url": "https://github.com/ZhangJingrong/gpu_topK_benchmark",
+    "desc": "GPU TopK Benchmark",
+    "stars": 18,
+    "readme_head": "# Top-K benchmark on GPU\n\n## Tested Environment\n* Ubuntu 22.04\n* CUDA 12.0\n* NVIDIA A100 GPU\n\n\n## Build\n\n### Dependencies\n* RAFT (https://github.com/rapidsai/raft)\n* Faiss (https://github.com/facebookresearch/faiss)\n* gpu_selection (https://github.com/upsj/gpu_selection)\n* DrTopK (https://github.com/Anil-Gaihre/DrTopKSC)\n\nA script is provided to get them:\n```bash\ncd third_party && ./download.sh\n```\n\n### build Faiss\n```bash\ncd third_party/faiss && make\n```\n\n### build gpu_selection\n1) The default index type in gpu_selection is `uint32_t`, however, this benchmark uses `int`. The index type defined in gpu_selection/include/cuda_definitions.cuh should be modified. Change the first three `using` lines to\n```\nusing index = int;\nusing poracle = int;\nusing oracle = int;\n```\n2) Add a line `#include <limits>` in gpu_selection/lib/verification.cpp.\n\n3) Consider changing gpu_selection/CMakeLists.txt. Delete the last line and change the fourth line to\n```\nlist(APPEND CMAKE_CUDA_FLAGS \"-arch=sm_80 -rdc=true --maxrregcount 64\")\noption(BUILD_SHARED_LIBS \"\" ON)\n```\n\nCmake is required to buid gpu_selection:\n```bash\ncd third_party/gpu_selection\nmkdir build\ncd build\ncmake ..\nmake\nmv lib/libgpu_selection.so ..\n```\n\n### build benchmark\n\nAfter building the dependencies, run `cd benchmark && make` to build the benchmark.\n\n\n## Benchmark Usage\nRun `./benchmark` without any argument to see the usage and available algorithms.\n\nUse `-c` to check correctness. Use `-n` with a large number (e.g. `-n 100`) to"
+   },
+   {
+    "url": "https://github.com/yiakwy-xpu-ml-framework-team/flash-float-jit-kernels",
+    "desc": "",
+    "stars": 23,
+    "readme_head": "<div align=\"center\">\n  <p align=\"center\">\n\n  <picture>\n    <img alt=\"Flash Float JIT KERNEL\" src=\"https://raw.githubusercontent.com/yiakwy-xpu-ml-framework-team/flash-float-jit-kernels/main/assets/img/FlashFloat.png\" width=\"50%\">\n\n  </p>\n  <h3>Flash Float Ultra Low Latency Hardware Aware Decoding JIT Kernel Library</h3>\n  <a href=\"#cite-us\">📝 Papers</a> | <a href=\"#QuickStart\">🚀 Quick Start</a> | <a href=\"#support-dits\">🎯 Supported Flash-Float-JIT-Kernel</a> | <a href=\"#dev-guide\">📚 Dev Guide </a> | <a href=\"https://github.com/yiakwy-xpu-ml-framework-team/flash-float-jit-kernels/discussions\">📈  Discussion </a> | <a href=\"#Highlight\">📝 Highlight </a></strong>\n  <p></p>\n\n\n</div>\n\nThis repository is complemntary of \"FlashFloat\" with JIT Kernels\n\n<h2 id=\"highlight\"> Highlight </h2>\n\n- April 27 2026, [🔥 ultra low latency topk , reduced maximum 50% 🚀 batch=1 latency for 1-M context 🎯!](#Ultra-Low-Latency-TopK-Indexer)\n\n\n<h2 id=\"Ultra-Low-Latency-TopK-Indexer\">🔥 Ultra Low Latency TopK Indexer</h2>\n\nThe introduction of the NSA (Native Sparse Attention) mechanism in DeepSeek V3.2 has become pivotal for mitigating inference latency in long-context language modeling. While the NSA top-k indexer playing a critical role in reducing computational overhead for DeepSeek V32 long context sequence modeling task [1], DeepSeek V4 [2] [3], recently, further pushes the context window limit to 1 million tokens where selecting top-2048 dimensions in hybrid sparse attention along from upto 1-M contex"
+   },
+   {
+    "url": "https://github.com/cuda-pro/topk",
+    "desc": "",
+    "stars": 2,
+    "readme_head": "# task\nGiven 8.5 million big data files, each data is an integer id vector of up to 128 dimensions (called doc), and the id value range is 0-50000. \nGiven a integer id vector of up to 128 dimensions (called query), the data set can be spread for optimization\n\n```shell\n# Generate test data, has been sorted in ascending order, the default docs file counts one document per line,10 documents; 10 query files\nmake gen\n```\nFind the average score topk (k=100) of the number of data intersections in query and doc; Here we define the intersection fraction of item as:\nquery[i] == doc[j] (0<=i<query_size, 0<=j<doc_size) calculates an intersection, the average number of query and doc intersections /max(query_size,doc_size)\n\n``` shell\n./bin/query_doc_scoring <doc_file_name> <query_file_name> <output_filename>\n```\n\n# optimize (need know some cpu/gpu computer arch; just do it, don't YY, freestyle)\nnote: just optimize stand-alone, for dist m/r(fan-out/in) arch to schedule those instances.\n\n0. gpu device RR balance by user request\n1. concurrency(cpu thread pool) + parallel(cpu/gpu openMP + gpu warp threads): cpu(baseline) -> cpu thread concurrency -> cpu + gpu -> cpu thread concurrency/parallel + gpu stream concurrency/warp thread parallel => dist\n2. find or filter: use hashmap/bitmap(bloom) on cpu/gpu global memory or gpu shared memory\n3. topk sort: heap sort (partial_sort) on cpu -> bitonic/radix sort on gpu parallel topk,then reduce topk to cpu\n4. search: need build index (list(IVF,skip),tre"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/CheshmiSD23",
+  "title": "Runtime Composition of Iterations for Fusing Loop-carried Sparse Dependence",
+  "venue": "SC",
+  "year": 2023,
+  "authors": [
+   "Kazem Cheshmi",
+   "Michelle Strout",
+   "Maryam Mehri Dehnavi"
+  ],
+  "abstract": "Dependence between iterations in sparse computations causes inefficient use of memory and computation resources. This paper proposes sparse fusion, a technique that generates efficient parallel code for the combination of two sparse matrix kernels, where at least one of the kernels has loop-carried dependencies. Existing implementations optimize individual sparse kernels separately. However, this approach leads to synchronization overheads and load imbalance due to the irregular dependence patterns of sparse kernels, as well as inefficient cache usage due to their irregular memory access patterns. Sparse fusion uses a novel inspection strategy and code transformation to generate parallel fus",
+  "candidates": [
+   {
+    "url": "https://github.com/AllanKM/css-library",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "# CSS-Library\n\n> A curated, organized library of **1,958 technically-oriented papers, books, and references** spanning the breadth of computer science.\n\n![files](https://img.shields.io/badge/files-1958-blue) ![categories](https://img.shields.io/badge/categories-20-green) ![PDFs](https://img.shields.io/badge/PDFs-1819-red)\n\nOriginally a flat dump of PDFs, now sorted into 20 thematic categories so you can actually find what you're looking for. Topics range from CPU manuals and OS kernels to deep-learning papers, compilers, databases, GPU programming, and reverse engineering.\n\nAll content copyright the respective author(s). I make a concerted effort to not publish anything here if the copyright does not permit it. If you spot something that shouldn't be here, please open an issue or PR.\n\n---\n\n## Table of Contents\n\n| # | Category | Count | Topics |\n|---|---|---:|---|\n| 1 | [Algorithms and Data Structures](#algorithms-and-data-structures) | 254 | Sorting, hashing (perfect/minimal/cuckoo/locality-sensitive), tries and suffix structures, graphs, succinct/probabilistic data structures, search, and complexity-theoretic foundations. |\n| 2 | [Compilers and Programming Languages](#compilers-and-programming-languages) | 151 | Compiler construction, JITs, parsers, type systems, formal verification, SAT/SMT, language references (C, C++, Python, R, Rust, Haskell, Go, ...), and PL theory. |\n| 3 | [Computer Architecture](#computer-architecture) | 172 | Intel/AMD/ARM/SPARC manuals, microarchite"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/LtaiefHWJRK23",
+  "title": "Scaling the \"Memory Wall\" for Multi-Dimensional Seismic Processing with Algebraic Compression on Cerebras CS-2 Systems",
+  "venue": "SC",
+  "year": 2023,
+  "authors": [
+   "Hatem Ltaief",
+   "Yuxi Hong 0001",
+   "Leighton Wilson",
+   "Mathias Jacquelin",
+   "Matteo Ravasi"
+  ],
+  "abstract": "We exploit the high memory bandwidth of AI-customized Cerebras CS-2 systems for seismic processing. By leveraging low-rank matrix approximation, we fit memory-hungry seismic applications onto memory-austere SRAM wafer-scale hardware, thus addressing a challenge arising in many wave-equation-based algorithms that rely on Multi-Dimensional Convolution (MDC) operators. Exploiting sparsity inherent in seismic data in the frequency domain, we implement embarrassingly parallel tile low-rank matrix-vector multiplications (TLR-MVM), which account for most of the elapsed time in MDC operations, to successfully solve the Multi-Dimensional Deconvolution (MDD) inverse problem. By reducing memory footpri",
+  "candidates": [
+   {
+    "url": "https://github.com/ecrc/tlrmvm",
+    "desc": "",
+    "stars": 7,
+    "readme_head": "# Tile Low-Rank Matrix Vector Multiplication\n\n## 1. Introduction\n\nMatrix-Vector Multiplication (MVM) is a fundamental memory-bound Level-2 BLAS operation. \nThe kernel drives the performance of various scientific applications, \nincluding 1) seismic imaging to reveal the subsurface layers for better monitoring the \npermafrost degradation or mitigating exploration and drilling risks for oil \nand gas industries, and 2) ground-based computational astronomy for supporting real-time \nsimulations necessary to outsmart the atmospheric turbulence and help \nidentifying exoplanets. We further leverage the inherent data sparsity structure of the \nresulting covariance matrices using Tile Low-Rank (TLR) matrix \napproximations. Our TLR-MVM outperforms its dense counterpart on many vendor \narchitectures with high productivity in mind and maintains the numerical robustness of \nthe applications.  \n\n\n\n## 2. Dependencies and Create build directory\n\n### A. x86_64 systems\nWe strongly recommend using [spack](https://spack.readthedocs.io/en/latest/index.html)\nto install TLR-MVM dependencies for x86_64 systems.\n\nThis includes `Intel CPU`, `AMD EPYC CPU`, `NVIDIA GPU`, `AMD GPU` in the following\ninstallation sections.\n\nWe use `cmake@3.21.0`, `MKL` or `BLIS` or `OpenBLAS` or `cuBLAS` or `rocBLAS`, \n`openmpi@4.1.2` to \nbuild the library.\n\n- `MKL` or `oneAPI MKL` can be used to install `INTEL CPU`\n- `BLIS` is used to install 'AMD EPYC CPU'\n- `cuBLAS` is used to install 'NVIDIA GPU'\n- `rocBLAS` us used to "
+   },
+   {
+    "url": "https://github.com/Sameeranjoshi/awesome-ai-accelerators",
+    "desc": "Literature regarding AI Hardwares from systems standpoint",
+    "stars": 7,
+    "readme_head": "# awesome-ai-accelerators\nA list of the awesome compilers, programming, performance, and porting-related papers and tutorials for AI accelerators like Sambanova, Cerebras, Graphcore, Groq, etc.\n\n\n## Contents\n- [AI accelerator Companies](#ai-accelerator-companies)\n- [Papers](#papers)\n- [Tutorials](#tutorials)\n- [Contribute](#contribute)\n\n## AI Accelerator Companies\n- [Cerebras](https://www.cerebras.net/)\n- [Sambanova](https://sambanova.ai/)\n- [Groq](https://groq.com/)\n- [Graphcore](https://www.graphcore.ai/)\n\n# To-Do Reading List\n\n### New Representation\n- [ ] [RVSDG: An Intermediate Representation for Optimizing Compilers](https://arxiv.org/pdf/1912.05036)\n  - [ ] [Program feature impact on the treewidth of the RVSDG IR](https://ntnuopen.ntnu.no/ntnu-xmlui/handle/11250/2827695)\n  - [ ] [Implementing RVSDG as a dialect of MLIR](https://ntnuopen.ntnu.no/ntnu-xmlui/bitstream/handle/11250/3088035/no.ntnu:inspera:142737689:35303838.pdf?sequence=1)\n### AMD AI Engine\n- [ ] [An End-to-End Programming Model for AI Engine Architectures](https://dl.acm.org/doi/pdf/10.1145/3665283.3665294?casa_token=n7zkyyiiWxAAAAAA:E1oXHB4BPgg_tBP9ASSqUwVkzMs7y5j8XalEEsJfT2Ir8CiTMlaLePJm-v4h5SknK8Y0DqnuDr1A)\n  - [ ] [Exploring the Versal AI Engines for Accelerating Stencil-based Atmospheric Advection Simulation] (https://dl.acm.org/doi/10.1145/3543622.3573047)\n  - [ ] [AN END-TO-END PROGRAMMING MODEL FOR AI ENGINE ARCHITECTURES, THESIS](file:///Users/u1418973/Downloads/Levental_uchicago_0330D_17419.pdf)\n"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/01790S0L23",
+  "title": "Unified Communication Optimization Strategies for Sparse Triangular Solver on CPU and GPU Clusters",
+  "venue": "SC",
+  "year": 2023,
+  "authors": [
+   "Yang Liu 0179",
+   "Nan Ding 0006",
+   "Piyush Sao",
+   "Samuel Williams 0001",
+   "Xiaoye Sherry Li"
+  ],
+  "abstract": "This paper presents a unified communication optimization framework for sparse triangular solve (SpTRSV) algorithms on CPU and GPU clusters. The framework builds upon a 3D communication-avoiding (CA) layout of Px × Py × Pz processes that divides a sparse matrix into Pz submatrices, each handled by a Px × Py 2D grid with block-cyclic distribution. We propose three communication optimization strategies: First, a new 3D SpTRSV algorithm is developed, which trades the inter-grid communication and synchronization with replicated computation. This design requires only one inter-grid synchronization, and the inter-grid communication is efficiently implemented with sparse allreduce operations. Second",
+  "candidates": [
+   {
+    "url": "https://github.com/xiaoyeli/superlu_dist",
+    "desc": "Distributed memory, MPI based SuperLU",
+    "stars": 222,
+    "readme_head": "# SuperLU_DIST (version 9.2.0)   <img align=center width=\"55\" alt=\"superlu\" src=\"https://user-images.githubusercontent.com/11741943/103982988-5a9a9d00-5139-11eb-9ac4-a55e80a79f8d.png\">\n\n[![Build Status](https://github.com/xiaoyeli/superlu_dist/actions/workflows/test.yml/badge.svg)](https://github.com/xiaoyeli/superlu_dist/actions/workflows/test.yml)\n[Nightly tests](http://my.cdash.org/index.php?project=superlu_dist)\n\nSuperLU_DIST contains a set of subroutines to solve a sparse linear system\nA*X=B. It uses Gaussian elimination with static pivoting (GESP).\nStatic pivoting is a technique that combines the numerical stability of\npartial pivoting with the scalability of Cholesky (no pivoting),\nto run accurately and efficiently on large numbers of processors.\nSuperLU_DIST is a parallel extension to the serial SuperLU library.\nIt is targeted for the distributed memory parallel machines.\nSuperLU_DIST is implemented in ANSI C, with OpenMP for on-node parallelism\nand MPI for off-node communications. Numerical LU factorization and triangular solvers can be performed on multiple GPU nodes\nfor Nvidia, AMD, and Intel GPUs.\n<!-- We are actively developing multi-GPU acceleration capabilities.\n<!-- Currently, the LU factorization and triangular solution routines, -->\n<!-- which are the most time-consuming part of the solution process,-->\n<!-- are parallelized. The other routines, such as static pivoting and -->\n<!-- column preordering for sparsity are performed sequentially. -->\n<!-- This \"al"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/AbdulahBBCCGKKL24",
+  "title": "Boosting Earth System Model Outputs And Saving PetaBytes in Their Storage Using Exascale Climate Emulators",
+  "venue": "SC",
+  "year": 2024,
+  "authors": [
+   "Sameh Abdulah",
+   "Allison H. Baker",
+   "George Bosilca",
+   "Qinglei Cao",
+   "Stefano Castruccio"
+  ],
+  "abstract": "We present the design and scalable implementation of an exascale climate emulator for addressing the escalating computational and storage requirements of high-resolution Earth System Model simulations. We utilize the spherical harmonic transform to stochastically model spatio-temporal variations in climate data. This provides tunable spatio-temporal resolution and significantly improves the fidelity and granularity of climate emulation, achieving an ultra-high spatial resolution of $0.034^{\\circ}(\\sim 3.5 \\mathbf{~ k m})$ in space. Our emulator, trained on 318 billion hourly temperature data points from a 35 -year and 31 billion daily data points from an 83-year global simulation ensemble, g",
+  "candidates": [
+   {
+    "url": "https://github.com/ecrc/hicma-x",
+    "desc": "",
+    "stars": 10,
+    "readme_head": "# HiCMA-PaRSEC\n\n## Table of Contents\n- [Overview](#overview)\n- [Features](#features)\n- [Building](#building)\n- [Testing](#testing)\n- [Literature](#literature)\n\n## Overview\n\nHiCMA-PaRSEC, i.e., Hierarchical Computations on Manycore Architectures (HiCMA) powered by Parallel Runtime Scheduler and Execution Controller (PaRSEC), combines the linear algebraic contributions of mixed-precision and low-rank computations. The framework features adaptive memory management and precision selection capabilities to optimize performance and accuracy for extreme-scale scientific computing applications.\n\n<p align=\"center\">\n  <a href=\"docs/HiCMA-PaRSEC_flyer_SC25.pdf\">\n    <img src=\"docs/HiCMA-PaRSEC_flyer_SC25.png\" alt=\"HiCMA-PaRSEC poster\" width=\"860\">\n  </a><br>\n</p>\n\n## Features\n\n### Core Computational Capabilities\n- **Matrix Operations**: Matrix multiplication, Cholesky factorization, rank-k updates, etc.\n- **Tile Low-Rank (TLR) Computations**: Hierarchical matrix representations for sparse problems\n- **Mixed Precision Support**: Double, single, half, and FP8 precision arithmetic\n- **Adaptive Memory Management**: Dynamic memory allocation and precision selection\n- **GPU Acceleration**: CUDA and HIP support for heterogeneous computing\n\n### Runtime and Parallelism\n- **PaRSEC Dynamic Runtime**: Task-based parallel execution with automatic load balancing\n- **Multi-Platform Support**: Shared and distributed-memory environments\n- **Multi-GPU Systems**: Scalable GPU acceleration across multiple d"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/AraiNITUYSF24",
+  "title": "Doubling Graph Traversal Efficiency to 198 TeraTEPS on the Supercomputer Fugaku",
+  "venue": "SC",
+  "year": 2024,
+  "authors": [
+   "Junya Arai",
+   "Masahiro Nakao",
+   "Yuto Inoue",
+   "Kanto Teranishi",
+   "Koji Ueno"
+  ],
+  "abstract": "Breadth-first search (BFS) is a fundamental building block of various high-performance computing applications beyond graph analysis and also known as a benchmark problem in the Graph 500 list. The increasing volume of global data demands efficient distributed BFS, which, however, is hindered by the high communication costs of exchanging vertex data between compute nodes. To address this challenge, this paper introduces four techniques: (i) forest pruning, which reduces the number of vertices by eliminating those unnecessary for the search; (ii) group reordering and (iii) multilevel bitmap compression, which decrease the memory footprint of graph data, thereby enabling fewer nodes to manage l",
+  "candidates": [
+   {
+    "url": "https://github.com/RIKEN-RCCS/Graph500-BFS",
+    "desc": "",
+    "stars": 2,
+    "readme_head": "# Graph500-BFS\n\nThis is a Graph500 benchmark program developed for the K computer and its successor, the supercomputer Fugaku, in Japan.\nPlease cite the following paper if you use our code:\n\n- Junya Arai, Masahiro Nakao, Yuto Inoue, Kanto Teranishi, Koji Ueno, Keiichiro Yamamura, Mitsuhisa Sato, and Katsuki Fujisawa, \"Doubling Graph Traversal Efficiency to 198 TeraTEPS on the Supercomputer Fugaku,\" SC24: International Conference for High Performance Computing, Networking, Storage and Analysis, 2024, pp. 1-14, doi: [10.1109/SC41406.2024.00107](https://doi.org/10.1109/SC41406.2024.00107).\n\nOur previous publications are listed below (from most recent to oldest):\n\n- Masahiro Nakao, Koji Ueno, Katsuki Fujisawa, Yuetsu Kodama, and Mitsuhisa Sato, \"Performance of the Supercomputer Fugaku for Breadth-First Search in Graph500 Benchmark,\" in High Performance Computing: 36th International Conference, ISC High Performance 2021, 2021, pp. 372-390, doi: [10.1007/978-3-030-78713-4\\_20](https://doi.org/10.1007/978-3-030-78713-4_20).\n- Koji Ueno, Toyotaro Suzumura, Naoya Maruyama, Katsuki Fujisawa, and Satoshi Matsuoka, \"Efficient Breadth-First Search on Massively Parallel and Distributed-Memory Machines,\" Data Science and Engineering, vol. 2, no. 1, pp. 22-35, 2017, doi: [10.1007/s41019-016-0024-y](https://doi.org/10.1007/s41019-016-0024-y).\n- Koji Ueno, Toyotaro Suzumura, Naoya Maruyama, Katsuki Fujisawa, and Satoshi Matsuoka, \"Extreme Scale Breadth-First Search on Supercomputers,\" 2016 IEE"
+   },
+   {
+    "url": "https://github.com/araij/araij.github.io",
+    "desc": "GitHub Pages user site",
+    "stars": 0,
+    "readme_head": "# 新井 淳也 (ARAI Junya)\n\nSenior Research Engineer at the Computer and Data Science Laboratories, NTT, Inc. (formerly Nippon Telegraph and Telephone Corporation).\n\nI received a Bachelor of Science and a Master of Information Science and Technology from the University of Tokyo in 2011 and 2013, respectively. After joining NTT in 2013, I received a Ph.D. in Information Science from Osaka University in 2019. My research interests include parallel distributed computing and graph algorithms. I am a member of the Association for Computing Machinery (ACM), the Database Society of Japan (DBSJ), and the Information Processing Society of Japan (IPSJ).\n\n- [Full Publications](https://github.com/araij/araij.github.io/blob/master/pubs.pdf) (updated on Dec. 14, 2025)\n- [dblp](https://dblp.org/pid/129/5665.html)\n- [GitHub](https://github.com/araij)\n- [LinkedIn](https://www.linkedin.com/in/araij/)\n- [SlideShare](https://www.slideshare.net/ssusere4a540/)\n\n## Selected Publications\n\n- Junya Arai, Masahiro Nakao, Yuto Inoue, Kanto Teranishi, Koji Ueno, Keiichiro Yamamura, Mitsuhisa Sato, and Katsuki Fujisawa. **Doubling Graph Traversal Efficiency to 198 TeraTEPS on the Supercomputer Fugaku**. The International Conference for High Performance Computing, Networking, Storage and Analysis (SC '24), 2024.\n    - Paper: [Published Version (IEEE)](https://ieeexplore.ieee.org/abstract/document/10793198), [Accepted Version (GitHub)](https://github.com/araij/araij.github.io/blob/master/materials/2411_graph500_s"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/PunniyamurthyHB24",
+  "title": "Optimizing Distributed ML Communication with Fused Computation-Collective Operations",
+  "venue": "SC",
+  "year": 2024,
+  "authors": [
+   "Kishore Punniyamurthy",
+   "Khaled Hamidouche",
+   "Bradford M. Beckmann"
+  ],
+  "abstract": "Machine learning models are distributed across multiple nodes using numerous parallelism strategies. The resulting collective communication is often on the critical path due to a lack of independent coarse-grain computation kernels available to execute. In this work, we propose fusing computation with its subsequent collective communication and leverage GPUs’ massive parallelism, along with GPU-initiated communication, to overlap communication and computation. Specifically threadblocks/workgroups (WGs) immediately communicate their results to remote GPUs after completing their computation, while other WGs within the same kernel perform computation. We developed three prototype fused operator",
+  "candidates": [
+   {
+    "url": "https://github.com/withinmiaov/A-Survey-on-Mixture-of-Experts-in-LLMs",
+    "desc": "[TKDE'25] The official GitHub page for the survey paper \"A Survey on Mixture of Experts in Large Language Models\".",
+    "stars": 505,
+    "readme_head": "<p align=\"center\" width=\"100%\">\n<img src=\"assets/moe_logo_v2.jpeg\" alt=\"HKUST MoE Survey\" style=\"width: 25%; min-width: 250px; display: block; margin: auto;\">\n</p>\n\n<div align=\"center\">\n  <h1>A Survey on Mixture of Experts in<br>Large Language Models</h1>\n  <a href=\"https://awesome.re\">\n    <img src=\"https://awesome.re/badge.svg\" alt=\"Awesome\">\n  </a>\n  <a href=\"https://img.shields.io/badge/PRs-Welcome-red\">\n    <img src=\"https://img.shields.io/badge/PRs-Welcome-red\" alt=\"PRs Welcome\">\n  </a>\n  <a href=\"https://img.shields.io/github/last-commit/withinmiaov/A-Survey-on-Mixture-of-Experts?color=green\">\n    <img src=\"https://img.shields.io/github/last-commit/withinmiaov/A-Survey-on-Mixture-of-Experts?color=green\" alt=\"Last Commit\">\n  </a>\n</div>\n\n<p align=\"center\" width=\"100%\">\n  <img src=\"assets/MoE_Timeline_20250723.jpg\" alt=\"MoE LLMs Timeline\" style=\"width: 95%; min-width: 100px; display: block; margin: auto;\">\n  <br>\n    A chronological overview of several representative Mixture-of-Experts (MoE) models in recent years. The timeline is primarily structured according to the release dates of the models. MoE models located above the arrow are open-source, while those below the arrow are proprietary and closed-source. MoE models from various domains are marked with distinct colors: Natural Language Processing (NLP) in green, Computer Vision in yellow, Multimodal in pink, and Recommender Systems (RecSys) in cyan.\n</p>\n\n<p align=\"center\" width=\"100%\">\n  <img src=\"assets/MoE_Timelin"
+   },
+   {
+    "url": "https://github.com/KnowingNothing/compiler-and-arch",
+    "desc": "A list of tutorials, paper, talks, and open-source projects for emerging compiler and architecture",
+    "stars": 531,
+    "readme_head": "## Compilers and Architectures\n![GitHub last commit](https://img.shields.io/github/last-commit/KnowingNothing/compiler-and-arch)\n[![](https://cdn.rawgit.com/sindresorhus/awesome/d7305f38d29fed78fa85652e3a63e154dd8e8829/media/badge.svg)](https://github.com/sindresorhus/awesome)\n\nA list of awesome compilers and optimization techniques (applicable to compilers) for different architectures and emerging domains.\n\n>Note: Although some projects are not about compiler design or implementation themselves, we still include them if their techniques are suitable for automation and compiler design.\n\n## Contents\n\n\n- [Compilers and Architectures](#compilers-and-architectures)\n- [Contents](#contents)\n- [List of Conferences and Journals Considered](#list-of-conferences-and-journals-considered)\n- [Compiler Toolchain](#compiler-toolchain)\n- [Compiler for Distributed](#compiler-distributed)\n- [Compilers for AI chips](#compilers-for-ai-chips)\n- [Compilers for PIM](#compilers-for-pim)\n- [Compilers for Brain-inspired Hardware](#compilers-for-brain-inspired-hardware)\n- [Compilers for SIMT GPU](#compilers-for-simt-gpu)\n- [Compilers for CPU](#compilers-for-cpu)\n- [Compilers for Mobile and Edge](#compilers-for-mobile-and-edge)\n- [Compilers for RISC-V](#compilers-for-risc-v)\n- [Compilers for Configurable Hardware](#compilers-for-configurable-hardware)\n- [Compilers for Hyperdimensional Computing](#compilers-for-hyperdimensional-computing)\n- [Design Space Construction and Exploration](#design-space-constr"
+   },
+   {
+    "url": "https://github.com/yianan261/Multi_GPU_TRAINING_OPTIMIZATION",
+    "desc": "This project optimizes multi-GPU parallelism for machine learning training by accelerating multi-GPU using fused gradient buffers, NCCL AllReduce, and CUDA C kernel-level optimizations including memory coalescing, shared memory tiling, loop unrolling, and stream-based communication overlap.",
+    "stars": 8,
+    "readme_head": "# Efficient Multi-GPU Gradient Aggregation and Optimization with CUDA Kernels and NCCL\n## Introduction\nTraining machine learning models efficiently across multiple GPUs is a fundamental challenge in high-performance computing and parallel programming. In this project, we \nimplement an optimized multi-GPU logistic regression training\nsystem in CUDA. Since the emphasis is on acceleration techniques, the model is not the focus. Logistic Regression simplifies the training code. We evaluate and compare different strategies, including single-GPU (baseline and optimized), naive\nmulti-GPU, and fused multi-GPU setups. Some optimizations\ninclude using column-major memory layouts, multi-buffer\npipelining, and fused compute-communication kernels using\nNCCL, inspired by the paper [Optimizing Distributed ML\nCommunication with Fused Computation-Collective Operations](https://arxiv.org/abs/2305.06942). Our main goal is to reduce communication-\ncomputation bottlenecks and scale performance with increas\ning GPUs and feature sizes. To achieve efficient multi-GPU training, we need to optimize both single and multi-GPU inter-device communications. Therefore this project also\ndemonstrates with low-level kernel code to show kernel-level\noptimizations. At the kernel level, we maximize per-GPU\nthroughput with memory coalescing by ensuring threads in\na warp access contiguous memory addresses. We explore\ncolumn-major memory layout by transposing our matrix so\nfeatures are contiguous, we also explore sh"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/LtaiefACRSKDBAK24",
+  "title": "Toward Capturing Genetic Epistasis From Multivariate Genome-Wide Association Studies Using Mixed-Precision Kernel Ridge Regression",
+  "venue": "SC",
+  "year": 2024,
+  "authors": [
+   "Hatem Ltaief",
+   "Rabab Alomairy",
+   "Qinglei Cao",
+   "Jie Ren",
+   "Lotfi Slim"
+  ],
+  "abstract": "We exploit the widening margin in tensor-core performance between [FP64/FP32/FP16/INT8,FP64/FP32/FP16/FP8/INT8] on NVIDIA [Ampere,Hopper] GPUs to boost the performance of output accuracy-preserving mixed-precision computation of Genome-Wide Association Studies (GWAS) of 305K patients from the UK BioBank, the largest-ever GWAS cohort studied for genetic epistasis using a multivariate approach. Tile-centric adaptive-precision linear algebraic techniques motivated by reducing data motion gain enhanced significance with low-precision GPU arithmetic. At the core of Kernel Ridge Regression (KRR) techniques for GWAS lie compute-bound cubic-complexity matrix operations that inhibit scaling to aspira",
+  "candidates": [
+   {
+    "url": "https://github.com/ecrc/hicma-x",
+    "desc": "",
+    "stars": 10,
+    "readme_head": "# HiCMA-PaRSEC\n\n## Table of Contents\n- [Overview](#overview)\n- [Features](#features)\n- [Building](#building)\n- [Testing](#testing)\n- [Literature](#literature)\n\n## Overview\n\nHiCMA-PaRSEC, i.e., Hierarchical Computations on Manycore Architectures (HiCMA) powered by Parallel Runtime Scheduler and Execution Controller (PaRSEC), combines the linear algebraic contributions of mixed-precision and low-rank computations. The framework features adaptive memory management and precision selection capabilities to optimize performance and accuracy for extreme-scale scientific computing applications.\n\n<p align=\"center\">\n  <a href=\"docs/HiCMA-PaRSEC_flyer_SC25.pdf\">\n    <img src=\"docs/HiCMA-PaRSEC_flyer_SC25.png\" alt=\"HiCMA-PaRSEC poster\" width=\"860\">\n  </a><br>\n</p>\n\n## Features\n\n### Core Computational Capabilities\n- **Matrix Operations**: Matrix multiplication, Cholesky factorization, rank-k updates, etc.\n- **Tile Low-Rank (TLR) Computations**: Hierarchical matrix representations for sparse problems\n- **Mixed Precision Support**: Double, single, half, and FP8 precision arithmetic\n- **Adaptive Memory Management**: Dynamic memory allocation and precision selection\n- **GPU Acceleration**: CUDA and HIP support for heterogeneous computing\n\n### Runtime and Parallelism\n- **PaRSEC Dynamic Runtime**: Task-based parallel execution with automatic load balancing\n- **Multi-Platform Support**: Shared and distributed-memory environments\n- **Multi-GPU Systems**: Scalable GPU acceleration across multiple d"
+   }
+  ]
+ }
+]

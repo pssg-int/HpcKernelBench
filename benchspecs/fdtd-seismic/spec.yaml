@@ -1,0 +1,233 @@
+kernel: fdtd-seismic
+summary: >
+  Throughput of explicit finite-difference-time-domain (FDTD) forward
+  wave-propagation solvers for seismic imaging — isotropic/anisotropic
+  acoustic and elastic wave equations discretized on a regular 3D grid with a
+  damped absorbing-boundary layer, evaluated single-node (order-of-accuracy
+  and temporal-blocking axes) and distributed-memory (halo-exchange-pattern
+  and weak/strong-scaling axes), plus a lower-confidence proprietary-dataflow-
+  hardware variant. Grounded in the Devito DSL/compiler lineage (2 papers,
+  shared artifact with the general `stencil` track); consistent with
+  `benchspecs/stencil/spec.yaml`'s grid-size/timing conventions where the
+  underlying workload is literally the same code, reframed around this
+  track's own primary axes (order of accuracy, absorbing-boundary cost,
+  GPoints/s).
+operation: >
+  U_out[p] = FD_stencil(U_in, coefficients, space_order) applied at every
+  interior point p of a 3D velocity-model grid for one timestep, for T
+  sequential CFL-determined timesteps; a damped absorbing-boundary-condition
+  (ABC) layer of width w surrounds the physical domain (grid dimension =
+  physical_size + 2w per axis); equation family in {isotropic acoustic,
+  anisotropic/TTI acoustic, isotropic elastic, visco-elastic} per Bisbas et
+  al.'s 4-kernel taxonomy.
+
+variants:
+  - id: fdtd-seismic-single-node-kernel
+    claim: >
+      Steady-state single-node throughput of an FD wave-propagation kernel
+      at a fixed space-discretization order, with the one-shot
+      autotuning/blocking-parameter search excluded from the timed region
+      and reported separately — the common denominator this track's two
+      code-grounded papers (BisbasLLNGK21, BisbasNLLKG25) share, and
+      directly comparable to `stencil` track's variant 3
+      (`stencil-e2e-application`) for the same underlying Devito code.
+    inputs:
+      suite: >
+        4 wave-propagator kernels confirmed from BisbasNLLKG25's own
+        evaluation (fulltext): isotropic acoustic (star stencil, 5 fields),
+        anisotropic/TTI acoustic (coupled 2-PDE, rotated Laplacian, 12
+        fields), isotropic elastic (1st-order-in-time, 9 wavefield
+        parameters, 22 grids), visco-elastic (1st-order-in-time, 15 stencil
+        updates, 36 grids) — union with BisbasLLNGK21's 3 kernels (isotropic
+        acoustic/TTI/elastic, visco-elastic not present in that paper).
+      selection: "all 4 kernels BisbasNLLKG25 evaluates; the 3 common to both Bisbas papers get cross-checked against BisbasLLNGK21's independently-run numbers where both exist."
+      recommended_subset:
+        - isotropic-acoustic
+        - anisotropic-tti-acoustic
+        - isotropic-elastic
+        - visco-elastic
+      dense_operand: >
+        velocity-model grid, fp32 (BisbasLLNGK21's stated precision;
+        BisbasNLLKG25's precision not confirmed from extracted text — flagged
+        open question, do not silently assume fp64 from geophysics
+        convention alone).
+      grid_sizes: >
+        512^3 (BisbasLLNGK21, isotropic/elastic; 20m spacing for TTI) or
+        1024^3 (BisbasNLLKG25, acoustic/elastic/TTI) / 768^3
+        (BisbasNLLKG25, visco-elastic) — report BOTH size points since the
+        two papers use different conventions and neither claims priority;
+        do not silently pick one.
+      order_of_accuracy: >
+        space discretization order (SDO) in {4, 8, 12, 16} — SWEEP ALL
+        FOUR, not just one. BisbasNLLKG25's own primary results use SDO 8
+        and 12 with SDO 4/16 as appendix/secondary points; this spec
+        requires all 4 be reported since order-of-accuracy vs. throughput
+        is this track's own paper-native tradeoff axis (survey.md
+        Divergence 1), not an incidental implementation choice to be fixed
+        at one value.
+      absorbing_boundary: >
+        damped ABC layer, width w=40 grid points per BisbasNLLKG25's own
+        confirmed convention (1024^3 physical domain -> 1120^3 total grid
+        with ABC, i.e. +48 points per axis edge / +96 per dimension total).
+        REPORT THE ABC-INCLUSIVE GRID SIZE EXPLICITLY, not just the physical
+        domain size — this is the direct fix for survey.md Divergence 2
+        (every other surveyed paper leaves ABC cost unquantified).
+    protocol:
+      iteration_count: >
+        CFL-determined, paper-native, NOT an arbitrary round number: 228
+        (BisbasLLNGK21 isotropic acoustic) / 290 (BisbasNLLKG25 isotropic
+        acoustic/TTI) steps covering 512ms simulated time; 363-436 steps
+        (elastic, both papers' values differ slightly — report the
+        computed value for the specific grid/velocity-model/CFL-number
+        combination used, don't hardcode either paper's number verbatim);
+        251 steps (visco-elastic, BisbasNLLKG25). Always derive T from the
+        CFL condition for the actual grid spacing/velocity model used, per
+        both papers' own convention — never substitute a fixed T across
+        different grid spacings.
+      warmup: >
+        1 full run discarded, if the harness cleanly separates
+        setup/autotuning from the timed sweep loop (Devito's own autotuner
+        runs BEFORE the timed operator call in the standard
+        `benchmark.py` flow, so this is achievable without inventing a
+        capability the harness lacks — unlike `stencil` track's variant 3
+        "many full-application codes can't cheaply discard a warmup"
+        caveat, which does not apply here).
+      reps: 5
+      statistic: >
+        median (report min/max). FIX: neither surveyed Bisbas paper's
+        extracted text states an explicit repetition/statistic convention
+        for the single-node number — this spec mandates one rather than
+        leaving it unspecified, matching the general `stencil` track's own
+        practice of fixing this gap.
+      timer: >
+        wall clock (`MPI_Wtime`/`time.time()`) around the Devito Operator's
+        `.apply()` call for T timesteps, one call = one interval, divided
+        by T for the per-step figure — matches Devito's own `benchmark.py`
+        structure (`--tn` sets total simulated ms, internally converted to
+        T via CFL).
+      timing_scope: >
+        kernel only. Devito's autotuner (`DEVITO_AUTOTUNING`, sweeps the
+        blocking-parameter space for the global performance maximum,
+        confirmed from BisbasLLNGK21's extracted text) runs BEFORE the
+        timed call and is excluded; ABC-layer computation is INCLUDED (per
+        `operation`'s definition above — the ABC is physically part of the
+        solve, not a communication halo to exclude, unlike distributed
+        halo exchange in variant 2).
+      preprocessing_reported: >
+        autotuning search time measured once, separately, and reported as
+        its own ms number — same discipline as `stencil` track's Tensor-Core
+        variant, applied here to Devito's blocking-parameter autotuner
+        instead of a format-conversion step.
+    metric:
+      primary: "GPoints/s = grid_points_including_ABC * T / elapsed_s / 1e9 — the literal metric both Bisbas papers report."
+      secondary:
+        - "%-of-roofline-attainable peak (BisbasLLNGK21 explicitly frames results this way, breaking through an L3-cache-bound ceiling via temporal blocking)"
+        - "speedup of temporal-blocking-on vs. spatially-blocked-only (BisbasLLNGK21's own ablation, ~1.3-1.6x at space order 4)"
+    correctness: >
+      max relative error <= 1e-5 vs. an unblocked/reference Devito-generated
+      kernel of the same equation, grid, space order, and T — analogous to
+      `stencil` track's variant-1 tolerance; NOT independently confirmed
+      from either Bisbas paper's extracted text (open question, this spec's
+      own recommendation by analogy).
+
+  - id: fdtd-seismic-distributed-e2e
+    claim: >
+      Distributed-memory (MPI-X) strong/weak-scaling throughput at fixed
+      per-node grid size, with 3 halo-exchange communication patterns
+      compared head-to-head — BisbasNLLKG25's own paper-native contribution
+      and the sole confirmed source for this variant.
+    inputs:
+      suite: "same 4-kernel taxonomy as variant 1 (isotropic acoustic / TTI / elastic / visco-elastic)."
+      selection: "isotropic acoustic recommended as the primary distributed-scaling case (lowest arithmetic intensity, most communication-bound, and BisbasNLLKG25's own primary scaling figure)."
+      recommended_subset:
+        - isotropic-acoustic
+      dense_operand: "same fp32/unconfirmed-precision convention as variant 1."
+      grid_sizes: >
+        weak scaling: 256^3 per-node base size, cyclically doubled with
+        node count (BisbasNLLKG25's own convention, confirmed from
+        fulltext); strong scaling: fixed total grid (1024^3 or 1120^3 with
+        ABC per variant 1) spread across up to 128 nodes / 16,384 cores
+        (BisbasNLLKG25's own demonstrated scale on ARCHER2).
+      communication_pattern: >
+        basic (synchronous multi-phase), diag2 (synchronous single-phase
+        with diagonal exchanges), full (asynchronous compute/communication
+        overlap) — all 3 are live `DEVITO_MPI` modes in the shared
+        `devitocodes/devito` artifact; REPORT ALL 3 AS SEPARATE POINTS, not
+        just the best-performing one, since which pattern wins depends on
+        arithmetic intensity / field count per BisbasNLLKG25's own
+        cross-kernel results.
+    protocol:
+      iteration_count: "same CFL-determined convention as variant 1."
+      warmup: "1 full run discarded (same as variant 1, if the distributed harness supports it; not independently confirmed for the MPI path specifically)."
+      reps: 3
+      statistic: "median (report min/max) — reduced rep count vs. variant 1 reflects the higher cost of a 128-node run, matching stencil track's variant-3 (application-scale) convention."
+      timer: "wall clock around the distributed Operator.apply() call, MPI-synchronized at start/stop (all ranks reach the timed region before the clock starts)."
+      timing_scope: >
+        end-to-end distributed compute time including halo exchange (halo
+        exchange is the variant's own subject, unlike `stencil` track's
+        variant 1 which explicitly excludes halo exchange as out-of-scope
+        for a single-device claim).
+      preprocessing_reported: "domain decomposition / mesh distribution setup reported once, separately, never amortized into the per-step throughput."
+    metric:
+      primary: "aggregate GPoints/s across all ranks."
+      secondary:
+        - "weak/strong scaling efficiency vs. node count (relative to the variant-1 single-node number for the same kernel/grid-per-node, when both exist)"
+        - "GPoints/s per node (for cross-checking against variant 1's single-node number)"
+    correctness: "same convention as variant 1, additionally checked for bit-for-bit or tolerance-level agreement across communication-pattern choices (basic/diag2/full must produce the same physics, only differ in speed) — not independently confirmed from the extracted text, flagged as an open question."
+
+  - id: fdtd-seismic-dataflow-accelerator
+    claim: >
+      Half/mixed-precision or dataflow-architecture-specific FDTD throughput
+      on proprietary hardware (Cerebras wafer-scale engine, Huawei Ascend
+      NPU) — the LOWEST-CONFIDENCE variant in this track's spec, included
+      for completeness because 2 of the 5 surveyed papers target this
+      hardware class, but every field below is sourced from an abstract or
+      an unverified web-search snippet, not a paper PDF or artifact.
+    inputs:
+      suite: "CGFDM (curvilinear-grid FD method, WangSWZGGWZFXY25) or unspecified high-order stencils (SaiMXA24) — no shared/named suite between the 2 papers."
+      selection: "OPEN QUESTION — neither paper's specific grid/mesh/stencil-order choices could be confirmed beyond the abstract."
+      recommended_subset: []
+      dense_operand: >
+        half-precision (FP16) storage + mixed-precision arithmetic
+        (WangSWZGGWZFXY25's explicit contribution); precision scheme for
+        SaiMXA24 not stated in the abstract.
+      grid_sizes: "OPEN QUESTION — not confirmed for either paper."
+    protocol:
+      iteration_count: "OPEN QUESTION — not confirmed."
+      warmup: "OPEN QUESTION — not confirmed; proprietary-SDK harnesses (Cerebras SDK, Ascend CANN) have their own conventions not independently verifiable here."
+      reps: 3
+      statistic: "median (report min/max) — this spec's own default, not sourced from either paper."
+      timer: "vendor-SDK-provided device timer (not independently confirmed which API)."
+      timing_scope: "kernel only, by this spec's default convention — not independently confirmed."
+      preprocessing_reported: "any wafer-scale-engine on-chip layout/routing compilation (Cerebras) reported once, separately, if applicable — SaiMXA24's own abstract explicitly frames data-communication routing as a core challenge its codegen addresses, implying nonzero compile/layout cost, but no number is given."
+    metric:
+      primary: "GPoints/s (for cross-comparability with variants 1/2, where the underlying papers' own metric convention is confirmed)."
+      secondary:
+        - "speedup vs. a same-precision CPU baseline (WangSWZGGWZFXY25's own headline framing: 4.19x vs. two AMD CPUs, from an unverified web-search snippet, NOT fulltext-confirmed)"
+    correctness: >
+      physical validation against a real seismic event (WangSWZGGWZFXY25:
+      2008 Wenchuan earthquake simulation, per abstract) rather than a
+      pointwise numerical tolerance — DELIBERATELY WEAKER than variant 1/2's
+      gate, flagged as an open question rather than equated to it, matching
+      `stencil` track's own posture toward application-level correctness
+      claims (its variant 3).
+
+notes_on_fairness:
+  - "Absorbing-boundary cost is quantified by exactly one paper in this whole track (BisbasNLLKG25: 1024^3 -> 1120^3 for a 40-point ABC) and left implicit/unquantified by every other surveyed paper. This spec makes ABC width a mandatory explicit input in variant 1 rather than letting it default to an unstated, paper-specific convention."
+  - "Order-of-accuracy is made a REQUIRED sweep (all of SDO 4/8/12/16), not a single fixed value, because it is this track's own paper-native tradeoff axis (BisbasNLLKG25 sweeps it directly) — reducing it to one number the way a generic stencil spec might would erase the exact axis this track exists to capture."
+  - "Variant 2's 3-way communication-pattern comparison (basic/diag2/full) is mandatory precisely because BisbasNLLKG25's own results show no single pattern dominates across all 4 kernels — reporting only the best-performing pattern per kernel would hide a real, paper-documented tradeoff."
+  - "Variant 3 (proprietary dataflow hardware) is included for completeness (2 of 5 papers target it) but is explicitly the lowest-confidence variant in this spec, sourced from abstracts/web-search snippets rather than fulltext or artifacts, and should not be treated as equally reliable as variants 1/2."
+  - "This track deliberately EXCLUDES 2 seismic-adjacent papers found by keyword search (LtaiefHWJRK23's TLR-MVM, HuYLGYQ20's CMP/CRS) because neither is an FD wave-equation stencil — including them would conflate a genuinely different kernel family (dense-LA compression; post-stack signal processing) with this track's actual subject (forward FDTD wave propagation), even though both are 'seismic' in the domain-application sense."
+
+open_questions:
+  - "BisbasNLLKG25's precision (fp32 vs fp64) was not confirmed from the extracted arXiv fulltext — variant 1 assumes fp32 by inheritance from BisbasLLNGK21's confirmed precision, but this is an assumption, not independently verified for the newer paper."
+  - "Neither Bisbas paper's extracted text states an explicit repetition-count/statistic convention for the single-node timing number — variant 1's 5-rep/median mandate is this spec's own standardization, matching the general `stencil` track's practice of fixing this same gap for its own papers."
+  - "WangSWZGGWZFXY25's 4.19x headline speedup number is sourced from an unverified web-search result snippet, not the paper's own fulltext or abstract (the abstract in `output/included.json` was truncated before the results sentence) — flagged as lower-confidence than every other numeric claim in this survey."
+  - "SaiMXA24's grid sizes, stencil orders, and metric convention could not be determined from its abstract alone; a Cerebras SDK artifact, if one exists, was not found by this survey's search and may require direct author contact or conference-proceedings access to confirm."
+  - "Whether SaiMXA24 or WangSWZGGWZFXY25 report a metric convertible to GPoints/s (variant 3's chosen primary, for comparability with variants 1/2) was not confirmed — this may require a metric-conversion assumption that neither paper's own text validates."
+
+evidence:
+  conf/ipps/BisbasLLNGK21: "Bisbas et al. (temporal blocking): isotropic/TTI/elastic acoustic FD, 512^3, CFL-determined 228-587 steps, fp32, GPoints/s + roofline, temporal-blocking-on/off ablation baseline. (Same evidence entry as stencil/spec.yaml's variant 3 — shared artifact.)"
+  conf/ipps/BisbasNLLKG25: "Bisbas et al. (MPI-X codegen): 4-kernel taxonomy (acoustic/TTI/elastic/visco-elastic), 1024^3/768^3 physical + 1120^3 with 40-pt ABC, SDO swept {4,8,12,16}, 251-436 CFL-determined steps, ARCHER2 up to 16384 cores, 3 MPI comm patterns (basic/diag2/full), Gpts/s metric. Artifact traced to devitocodes/devito main repo (Phase-1 pipeline missed this)."
+  conf/sc/SaiMXA24: "Sai et al.: automated stencil codegen for Cerebras wafer-scale dataflow engine, seismic/weather/CFD framing, no artifact found, abstract only."
+  journals/tpds/WangSWZGGWZFXY25: "Wang et al.: CGFDM curvilinear-grid FD seismic solver on Huawei Ascend NPU, fp16 storage + mixed-precision arithmetic, 4.19x vs 2-AMD-CPU baseline (unverified snippet), Wenchuan-earthquake physical validation, no artifact found."

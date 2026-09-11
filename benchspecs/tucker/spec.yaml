@@ -1,0 +1,305 @@
+kernel: tucker
+summary: >
+  Tucker decomposition of an N-mode sparse tensor: X ~= G x1 A^(1) x2 A^(2)
+  ... xN A^(N), where G is a small dense core tensor and A^(i) are dense
+  factor matrices, computed iteratively (HOSVD/HOOI/HOQRI). This track's two
+  papers exercise opposite ends of that iteration: SymProp optimizes the
+  per-iteration TTMc/TTMc-chain KERNEL for symmetric sparse tensors, while
+  SGD_Tucker optimizes the whole SGD-driven DECOMPOSITION LOOP (mini-batch
+  ALS-style updates) for general sparse tensors. The spec keeps these as
+  separate variants rather than forcing one iteration semantics across both
+  (see survey.md Divergences).
+operation: >
+  G[R1..RN], A^(i)[I_i,R_i] (i=1..N) such that X[I1..IN] ~=
+  sum_{r1..rN} G[r1..rN] * A^(1)[:,r1] o A^(2)[:,r2] o ... o A^(N)[:,rN]
+  (outer product), computed via alternating per-mode TTMc contractions
+  (S3TTMc / S3TTMcTC when the input is symmetric, so only one canonical
+  mode's contraction needs computing per sweep) followed by a small
+  core/factor update (HOOI power-iteration or HOQRI QR-based step, or a
+  stochastic-gradient mini-batch update as in SGD_Tucker).
+variants:
+  - id: tucker-symmetric-ttmc-kernel-fp64
+    claim: >
+      steady-state per-sweep S3TTMc/S3TTMcTC kernel throughput exploiting
+      full input symmetry (single canonical-mode contraction suffices per
+      HOOI/HOQRI sweep, not N), preprocessing (CSS format construction)
+      excluded and reported separately once. This is the variant SymProp
+      is purpose-built for; it directly reuses this project's mttkrp
+      track's mttkrp-symmetric-kernel-fp64 input suite and rank sweep,
+      since S3TTMc/S3TTMcTC are the same symmetric-contraction kernel
+      family surveyed there for the Tucker/HOOI/HOQRI use case
+      specifically (as opposed to that track's CP-ALS use case).
+    inputs:
+      suite: >
+        SymProp's own real hypergraph-derived symmetric tensors as
+        primary, synthetic Erdos-Renyi-generated symmetric tensors
+        (SySTeC-style generator, the shared-convention generator this
+        project's sibling mttkrp/cholesky tracks also use) as a
+        scalability supplement
+      selection: >
+        real: all 5 named datasets from the paper's own evaluation
+        (contact-school, trivago-clicks, walmart-trips, stackoverflow,
+        amazon-reviews) -- see survey.md's open question about a second,
+        unreconciled dataset-name extraction from the same PDF, which this
+        spec does NOT use pending direct table verification; synthetic:
+        order N in {3,4,5}, density swept to hit target UNNZ in
+        {1e4, 1e5, 1e6}
+      recommended_subset:
+        - contact-school (order 5, dim 245, unnz 12704)
+        - trivago-clicks (order 6, dim 154987, unnz 208076)
+        - walmart-trips (order 8, dim 62240, unnz 47560)
+        - synthetic-3d-nnz1e5
+        - synthetic-4d-nnz1e5
+        - synthetic-5d-nnz1e4
+      dense_operand: "target Tucker rank R in {2, 4, 8, 12, 16, 20} per
+        mode (uniform rank across modes, matching SymProp's own sweep),
+        fp64"
+    protocol:
+      format: "CSS (compressed sparse symmetric); construction excluded
+        from kernel timing, reported separately once"
+      warmup: 10 (spec default; SymProp's own two extraction passes both
+        confirm a warmup phase exists but neither states a count)
+      reps: 50 (spec default matching this project's general convention;
+        SymProp's own fulltext reports a min-of-(10000-runs-or-5s)
+        alternative statistic, kept as a REPORTED secondary statistic
+        below rather than the primary, per this spec's anti-best-of-N
+        fairness principle)
+      statistic: median (report min/max); ALSO report min-of-(10000 runs
+        or 5s) alongside, to remain directly comparable to SymProp's own
+        headline numbers
+      timer: "device-side events (GPU) / std::chrono steady clock (CPU);
+        SymProp is a CPU/OpenMP artifact per its repo (no GPU code found),
+        so CPU timing is the primary path for this variant"
+      timing_scope: >
+        one canonical-mode TTMc/TTMc-chain kernel call only (mathematically
+        sufficient under full symmetry -- NOT the mode-0-only
+        simplification flagged as unsound for GENERAL/asymmetric tensors
+        elsewhere in this project's mttkrp track); data
+        rearrangement/output replication to non-canonical positions
+        excluded, reported separately
+      preprocessing_reported: separately, once (CSS construction time)
+    metric:
+      primary: "GFLOP/s using the SYMMETRY-REDUCED flop count actually
+        performed (report the theoretical dense-equivalent/general-tensor
+        GFLOP/s alongside it, so the speedup attributable to symmetry
+        alone is visible, not hidden inside one number)"
+      secondary: "ms; speedup vs. TTMc-SPLATT (general, symmetry-unaware)
+        and vs. S3TTMc-CSS (symmetric but without SymProp's symmetry
+        propagation); flag cases where a baseline cannot run at all
+        (out-of-memory) as a distinct outcome, not silently excluded from
+        the reported average (see survey.md: this is SymProp's actual
+        headline pattern for its largest cases)"
+    correctness: >
+      max relative error of the TTMc/TTMc-chain kernel OUTPUT vs. a
+      symmetrized dense/COO reference computed in fp64 < 1e-6 (tolerance
+      value is a spec addition -- neither extraction pass of SymProp's own
+      text states a numeric tolerance; 1e-6 matches this project's
+      mttkrp-track convention for the same kernel family). This is a
+      kernel-output correctness gate, distinct from a decomposition-level
+      reconstruction-error gate (that belongs to the end-to-end variant
+      below, since a single TTMc call has no notion of "how well the
+      Tucker decomposition reconstructs X").
+
+  - id: tucker-general-decomposition-e2e
+    claim: >
+      end-to-end sparse Tucker decomposition wall-clock time to reach a
+      target relative reconstruction error (or, if the reconstruction-error
+      target is not reached, wall-clock time for a fixed, disclosed
+      iteration budget k), on general (asymmetric) real sparse tensors --
+      the variant SGD_Tucker's own evaluation style maps onto. Unlike the
+      kernel variant above, "iteration" here means one full decomposition
+      sweep (one HOOI power-iteration OR one SGD mini-batch update, whichever
+      the system under test implements), NOT a single TTMc kernel call --
+      the two are not interchangeable (see survey.md Divergences).
+    inputs:
+      suite: >
+        FROSTT (Formidable Repository of Open Sparse Tensors and Tools),
+        the general-purpose real-sparse-tensor suite this project's mttkrp
+        track already standardizes on for the general/asymmetric case;
+        used here INSTEAD OF SGD_Tucker's own MovieLens-only artifact
+        dataset, per this spec's fairness principle that the input suite
+        must not be cherry-picked from a single paper's shipped demo data
+        -- SGD_Tucker's own practice of evaluating on one dataset is
+        flagged as a divergence below, not adopted as the track suite
+      selection: >
+        same union/inclusion criterion as this project's
+        mttkrp-general-kernel-fp64 variant (order 3-4, nnz 3.1M-143.6M,
+        excludes the 3 explicitly out-of-memory FROSTT tensors); reused
+        verbatim here rather than re-derived, since both tracks need the
+        same general-sparse-tensor suite and re-deriving it would risk an
+        inconsistent selection criterion across this project's tracks
+      recommended_subset:
+        - nips (2.5K x 2.9K x 14K x 17, 3.1M nnz)
+        - uber (183 x 24 x 1.1K x 1.7K, 3.3M nnz)
+        - chicago-crime (6.2K x 24 x 77 x 32, 5.3M nnz)
+        - enron (6K x 5.7K x 244.3K x 1.2K, 54.2M nnz)
+        - nell-2 (12.1K x 9.2K x 28.8K, 76.9M nnz)
+      dense_operand: "target Tucker rank R in {10, 25, 50} per mode
+        (uniform), fp64; batch/mini-batch width, if the system under test
+        is SGD-based, is a required, disclosed secondary parameter (this
+        is SGD_Tucker's own artifact CLI practice: core rank AND
+        mini-batch width are both required, not silently fixed)"
+    protocol:
+      format: >
+        raw COO on input; one-shot format conversion (if the system under
+        test needs one, e.g. CSF) excluded from the iteration loop, timed
+        and reported separately once
+      iteration_budget: >
+        k=100 decomposition sweeps as the default fixed budget (matches
+        SGD_Tucker's own artifact, which hardcodes exactly 100 SGD
+        iterations with no early-stopping criterion); systems that
+        converge to the target reconstruction error in fewer iterations
+        report the break-even iteration count k* in addition to the
+        fixed-budget number, so slow-per-iteration/few-iteration systems
+        are not penalized relative to fast-per-iteration/many-iteration
+        ones by the fixed-budget number alone
+      warmup: none (matches SGD_Tucker's own artifact, which times
+        iteration 0 identically to every other iteration -- flagged as a
+        DEVIATION from this project's general warmup convention in
+        notes_on_fairness, not silently adopted)
+      reps: 3 full k=100 runs (spec default; neither paper in this track
+        states a repetition count for the end-to-end/convergence-curve
+        case)
+      statistic: median (report min/max) of the per-run wall-clock time
+        to reach the reconstruction-error target, or of the fixed-k=100
+        total wall-clock time if the target is not reached
+      timer: host wall-clock (matches SGD_Tucker's own `gettimeofday`-based
+        timer; SymProp's timer, per survey.md, is not confirmed to differ)
+      timing_scope: >
+        full decomposition loop (all N per-mode updates each sweep, plus
+        any core-tensor update), INCLUDING the per-iteration
+        reconstruction-error check itself if the system under test
+        computes one on every iteration (as SGD_Tucker's artifact does,
+        printing RMSE/MAE every iteration) -- this differs from the kernel
+        variant's convention of excluding correctness-check overhead from
+        timed kernel calls, because for THIS variant the per-iteration
+        quality check is part of what makes the claim ("time to reach
+        target accuracy") meaningful, not incidental overhead
+      preprocessing_reported: separately, once (format conversion +
+        parameter/factor-matrix random initialization)
+    metric:
+      primary: "wall-clock time (s) to reach the reconstruction-error
+        target (see correctness below); if not reached within k=100,
+        report the k=100 wall-clock time AND the reconstruction error
+        actually achieved, rather than treating a non-converged run as an
+        undefined/dropped data point"
+      secondary: "per-iteration mean wall-clock time (ms); break-even
+        iteration count k* if convergence occurs before k=100; NO GFLOP/s
+        number is required for this variant (SGD_Tucker's own paper never
+        reports one -- see survey.md; a system MAY additionally report
+        GFLOP/s if it is meaningful for that system's algorithm, but the
+        spec does not mandate deriving one for SGD-style mini-batch
+        updates where the flop count per iteration is data-dependent and
+        not fixed in advance)"
+    correctness: >
+      PRIMARY reconstruction-error gate: relative Frobenius reconstruction
+      error ||X - [[G; A^(1),...,A^(N)]]||_F / ||X||_F (train-set) < 1e-2
+      as the default target (a spec addition -- neither paper states a
+      numeric target; 1e-2 is a deliberately loose default appropriate for
+      real, noisy sparse recommender-style tensors like SGD_Tucker's
+      MovieLens case, NOT the tight 1e-6/1e-8 numerical-kernel tolerances
+      used elsewhere in this project's specs, because Tucker decomposition
+      of a real noisy tensor is a statistical-fit problem, not an exact
+      numerical-linear-algebra identity). SECONDARY (reported, not gating):
+      held-out test-set RMSE/MAE convergence curve across all k iterations
+      run, matching SGD_Tucker's own per-iteration train+test reporting
+      practice -- dropping this would hide the actual quantity SGD_Tucker's
+      paper's "2x faster... with equivalent accuracy" claim is built on.
+
+notes_on_fairness:
+  - >
+    The two papers' "iteration" units (one symmetric-mode TTMc kernel call
+    vs. one full SGD mini-batch decomposition sweep) are NOT interchangeable
+    and this spec never reports a single cross-paper "time per iteration"
+    number that would conflate them -- see survey.md Divergences. The
+    kernel variant's GFLOP/s and the e2e variant's wall-clock-to-accuracy
+    are deliberately different metric families for this reason, not an
+    oversight.
+  - >
+    SGD_Tucker's own artifact evaluates on exactly one real dataset
+    (MovieLens, the only one shipped in its repo). This spec's e2e variant
+    substitutes the FROSTT suite already standardized elsewhere in this
+    project rather than adopting SGD_Tucker's single-dataset practice,
+    per this spec's general anti-cherry-picking principle -- a system that
+    only reports MovieLens numbers is not given a passing benchmark result
+    on that basis alone.
+  - >
+    SGD_Tucker's own artifact excludes NO warmup iteration (iteration 0 is
+    timed identically to iterations 1-99, including any first-touch/
+    cache-cold effects). This spec's e2e variant preserves that convention
+    explicitly (rather than silently imposing this project's usual
+    single-warmup-run default) because SGD_Tucker's own headline "2x
+    faster" claim is presumably computed the same way, and imposing a
+    warmup exclusion here would make a reproduction attempt diverge from
+    the number being reproduced without a clear reason to do so.
+  - >
+    SymProp's real-tensor list could not be reconciled across two
+    independent extraction passes of the same source PDF (see survey.md).
+    This spec uses the extraction believed more reliable (a prior,
+    separate, full-fulltext pass already validated for this project's
+    mttkrp track) rather than either splitting the difference or silently
+    picking the more recent, lower-fidelity pass.
+  - >
+    Neither paper states a numeric correctness tolerance for its
+    respective variant. Both tolerances in this spec (1e-6 kernel-output
+    relative error; 1e-2 reconstruction-error target) are spec additions,
+    chosen for consistency with this project's other kernel-correctness
+    conventions (1e-6) and with the real-noisy-data character of
+    SGD_Tucker's own evaluation (1e-2), respectively -- flagged here as
+    NOT evidence-derived, consistent with this project's general practice
+    of adding a gate rather than leaving correctness unchecked.
+
+open_questions:
+  - >
+    SymProp's real-dataset list disagreement between two extraction passes
+    of the same OSTI PDF is unresolved; a direct read of the PDF's actual
+    dataset table (not a markdown-summarized extraction) is needed before
+    the recommended_subset above can be considered fully verified.
+  - >
+    SymProp's numeric correctness tolerance was not recovered from any
+    source reached.
+  - >
+    SGD_Tucker's Section 5 (dataset table, hardware, named baselines) was
+    not recovered from arXiv HTML, DeepAI, ar5iv, or two TU Delft
+    open-access PDF links that both 404'd; only the abstract and the
+    artifact's C++ source were usable. Whether the paper evaluates on
+    tensors beyond the MovieLens data shipped in its artifact is unknown --
+    this spec's substitution of the FROSTT suite for SGD_Tucker's own
+    evaluation should be revisited if the paper's own dataset table
+    surfaces and shows a materially different (e.g. much larger or
+    much higher-order) real-tensor practice than FROSTT covers.
+  - >
+    SGD_Tucker's `core_kernel` CLI parameter's precise mathematical
+    definition (read from source: it sizes the `core_dimen[i] x
+    core_kernel` shape of an internal per-mode auxiliary matrix
+    `parameter_g[i]`) was inferred from the artifact's source code, not
+    confirmed against the paper's own terminology -- needed before
+    exposing it as a named, stable harness parameter.
+  - >
+    Whether SGD_Tucker's baselines (unnamed in the abstract; "state of the
+    art") are P-Tucker, Vest, or a sparse CP-ALS-style system is an
+    unverified guess, not confirmed from any source reached.
+
+evidence:
+  conf/ipps/0001S0K25: >
+    IPDPS'25, S3TTMc/S3TTMcTC kernels for HOOI/HOQRI on symmetric sparse
+    tensors, CSS format (construction excluded from kernel timing), 5 real
+    hypergraph-derived + 4 synthetic Erdos-Renyi tensors (order 3-8), rank
+    swept 2-20, fp64, warmup confirmed (count unstated), mean/min-of-N
+    statistic (two extraction passes partially disagree), relative-error
+    kernel-output correctness gate (tolerance unstated), GFLOP/s
+    (symmetry-reduced) + speedup metric, TTMc-SPLATT/S3TTMc-CSS baselines
+    (1.44-285.49x vs CSS, up to 4.98x vs SPLATT, plus cases SPLATT cannot
+    run at all).
+  journals/tpds/LiLLRCL21: >
+    TPDS'21/arXiv:2012.03550, SGD mini-batch ALS-style sparse Tucker
+    decomposition avoiding full Khatri-Rao/Kronecker materialization;
+    MovieLens is the only dataset in the public artifact (paper's own
+    dataset table not recovered); Tucker rank per mode AND mini-batch
+    width both required CLI parameters; hardcoded k=100 SGD-sweep loop, no
+    warmup exclusion, gettimeofday wall-clock; fp64; per-iteration
+    train+test RMSE/MAE convergence curve as the correctness/quality
+    report (no single pass/fail numerical tolerance in the artifact); no
+    GFLOP/s reported anywhere in any source reached; >=2x
+    wall-clock-to-accuracy speedup vs. an unnamed "state of the art"
+    baseline claimed in the abstract.

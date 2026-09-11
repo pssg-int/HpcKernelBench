@@ -1,0 +1,410 @@
+kernel: sptrsv
+summary: >
+  Sparse triangular solve (SpTRSV), L*x=b for x with L sparse lower-
+  triangular, the core kernel behind sparse-direct-solver back-substitution
+  and ILU/IC-preconditioned Krylov iterations; measured with the
+  analysis/scheduling (level-set, DAG-partitioning, codelet-mining,
+  warp-partitioning -- whatever the technique needs to prepare a
+  parallel execution plan) split out as its OWN first-class variant rather
+  than a footnote, because for several of this track's own papers that
+  analysis step IS the contribution, plus a steady-state solve variant, a
+  repeated-solve amortized variant, and a distributed-memory strong-scaling
+  variant for the one surveyed paper (SC'23) whose claim is genuinely
+  different in kind (multi-node/multi-GPU, real LU-factor input) from the
+  other four single-device papers.
+operation: "solve L[n,n](sparse triangular) * x[n] = b[n](dense) for x"
+
+variants:
+  - id: sptrsv-solve-kernel
+    claim: >
+      steady-state solve-phase wall time on a single CPU node or single GPU,
+      single RHS (nrhs=1), analysis/scheduling done once beforehand and
+      EXCLUDED from this number (see sptrsv-analysis-phase for that cost as
+      its own first-class measurement, not silently dropped). This is the
+      one denominator all 5 surveyed papers' code actually separates out,
+      even though they disagree on how many times to repeat it and what
+      statistic to report (survey.md Divergence #2).
+    inputs:
+      suite: "SuiteSparse Matrix Collection"
+      selection: >
+        real, square, structurally nonsingular matrices (any symmetry),
+        1e4 <= nnz(A) <= 5e7 -- the scale range actually exercised by the
+        4 single-device surveyed papers (YuenyeungSpTRSV: up to ~245
+        matrices at this scale; HDagg/partially-strided-codelet: per-matrix
+        CLI runs at similar scale; Split_SpTRSV: UF-ID download, unbounded
+        but demonstrated on FullChip-class matrices in this range).
+        Matrices used ONLY by the distributed variant's 1e9-nnz-class LU
+        factors (, dielFilterV3real) are deliberately
+        excluded here even though small enough at the A-level, because this
+        variant's derivation method (below) does not apply real fill-in and
+        so does not need -- or benefit from -- SC'23-scale inputs.
+      recommended_subset:
+        [apache2, ecology2, thermal2, parabolic_fem, offshore, G3_circuit,
+         StocF-1465, Serena, Hook_1498, Geo_1438, audikw_1, boneS10,
+         af_shell8, cage14, torso3, crashbasis, Bump_2911, cant, pwtk,
+         bcsstk36, ldoor]
+      triangular_factor_derivation: >
+        CANONICAL METHOD (fixes survey.md Divergence #1 -- 4 of 5 surveyed
+        papers extract a "triangular factor" directly from an arbitrary
+        matrix A rather than solving a real LU/Cholesky output, but do it
+        three DIFFERENT ways: kept-values (YuenyeungSpTRSV), randomized
+        values discarding A entirely (Split_SpTRSV), and an
+        unconfirmed-from-code third variant for HDagg). This spec fixes ONE
+        method for reproducibility: L = strict lower-triangular part of A
+        (entries with col<row, values taken AS-IS from A, matching
+        YuenyeungSpTRSV's convention since it is one of the surveyed methods (with partially-strided-codelet)
+        that preserves the input matrix's actual numeric structure) PLUS an
+        explicit unit diagonal (L[i,i]=1 for all i), never A's own diagonal
+        entry -- unlike YuenyeungSpTRSV's code (which divides by whatever
+        nonzero happens to sit last in the row, silently relying on A never
+        having a zero/tiny diagonal, an unstated and unverified
+        assumption). Unit diagonal guarantees solvability and numerical
+        stability regardless of A's own diagonal, at zero reproducibility
+        cost. This is a STRUCTURAL PROXY for a real triangular factor, not
+        a real LU/Cholesky output -- it is used here because it is the
+        majority (4/5) practice in this track and requires no
+        factorization-library dependency, but its DAG-shape/parallelism
+        characteristics differ from a real fill-in factor (see
+        sptrsv-distributed-scaling, which uses real factors instead, and
+        notes_on_fairness below).
+      rhs_and_reference: >
+        x_ref: dense, U(0,1) with fixed seed=42, one fresh draw PER TIMED
+        SOLVE CALL (never reused across repeated calls -- fixes the risk
+        that a fixed b lets a race-prone synchronization-free kernel get
+        "lucky" on the one input it's ever tested against, per survey.md
+        YuenyeungSpTRSV correctness discussion). b = L @ x_ref, computed
+        once per draw via a reference double-precision serial SpMV (never
+        via the technique under test).
+      nrhs: 1
+    protocol:
+      format: >
+        CSR (or whatever the technique's kernel signature natively needs);
+        conversion from the reference CSR loader is a ONE-TIME cost folded
+        into the analysis phase (see sptrsv-analysis-phase), never into the
+        per-solve number.
+      analysis: >
+        performed once per (matrix, thread/GPU-config) before ANY timed
+        solve call; whatever the technique needs (level-set construction,
+        DAG partitioning, codelet mining, warp-partition table, split-point
+        selection) happens here, once, and its cost is excluded from this
+        variant entirely -- see sptrsv-analysis-phase for that number
+        reported as its own first-class measurement, not a silent drop
+        (fixes Split_SpTRSV's flaw of re-measuring and re-averaging
+        analysis cost inside its own solve-timing loop, and YuenyeungSpTRSV
+        /Sympiler-family's practice of measuring it but never surfacing it
+        as a standalone benchmark result).
+      warmup: 10
+      reps: 50
+      statistic: "median (report min/max alongside)"
+      timer: >
+        GPU = CUDA/HIP event pair per solve call (fixes YuenyeungSpTRSV's
+        gettimeofday-based host-side timer, which is unusual for a
+        GPU-kernel paper in this track and adds host jitter); CPU =
+        std::chrono::steady_clock or omp_get_wtime per solve call.
+      timing_scope: >
+        solve kernel only. Any per-call reset of algorithm-internal state
+        (e.g. synchronization-free "ready" flag arrays, atomic counters)
+        happens INSIDE the timed region only if the technique's own
+        published design requires it as part of a genuine solve call (this
+        matches YuenyeungSpTRSV's correct cudaMemset-before-timing
+        practice), but H2D of L/b (done once before the loop) and D2H of
+        the solution x (fixes YuenyeungSpTRSV's flaw of including the
+        cudaMemcpy(x, d_x, ...) inside its timed region) are EXCLUDED,
+        measured once, and reported alongside as a separate line item.
+      precision: "fp64 (primary; matches 4 of 5 surveyed papers' default). fp32 (secondary, where the technique supports it)."
+    metric:
+      primary: "ms (wall time per solve call)"
+      secondary: >
+        GFLOP/s = 2*nnz(L)/(time_ns) -- reported for comparability with the
+        one surveyed paper (YuenyeungSpTRSV) that used this metric, but
+        flagged as a WEAK metric for SpTRSV specifically: unlike GEMM/SpMM,
+        SpTRSV's realizable performance is bounded by DAG critical-path
+        length and per-level parallelism, not raw FLOP count, so two
+        matrices with identical nnz(L) can have wildly different achievable
+        GFLOP/s. Time (primary) and speedup-vs-baseline are the metrics
+        this track's papers actually rely on for comparison (survey.md
+        Divergence #6).
+    correctness: >
+      max relative error vs. the x_ref used to generate b, < 1e-9 (fp64) /
+      1e-4 (fp32), gated BEFORE timing counts, checked on EVERY one of the
+      reps=50 timed calls (not just once) -- tighter than all 5 surveyed
+      papers (Sympiler family's 1e-6, YuenyeungSpTRSV's 1% relative, and
+      SC'23's unconfirmed/never-gated berr) and explicitly checked
+      per-call rather than once, since a technique that is only "correct on
+      average" across repeated calls (a real risk for synchronization-free
+      spin-wait designs, per survey.md) should fail this gate, not pass it
+      on a lucky first try.
+
+  - id: sptrsv-analysis-phase
+    claim: >
+      cost of the one-shot analysis/scheduling step itself, reported as a
+      FIRST-CLASS benchmark result rather than folded silently into
+      "preprocessing, mentioned once" or (worse) re-measured repeatedly
+      inside a solve-timing loop the way Split_SpTRSV's own artifact does.
+      This matters because for 2 of the 5 surveyed papers (HDagg,
+      partially-strided-codelet) the analysis/scheduling ALGORITHM is the
+      paper's actual contribution, not the solve kernel itself -- comparing
+      only solve-phase numbers would erase exactly what those papers are
+      claiming to improve.
+    inputs:
+      suite: "same as sptrsv-solve-kernel"
+      selection: "same as sptrsv-solve-kernel"
+      recommended_subset: "same as sptrsv-solve-kernel"
+      triangular_factor_derivation: "same as sptrsv-solve-kernel"
+    protocol:
+      warmup: 0
+      reps: 5
+      statistic: "median (matches the Sympiler family's own num_test_=5 convention, applied here specifically to the analysis phase rather than the solve, since analysis is itself a one-shot-per-matrix cost worth its own repeated measurement for variance)"
+      timer: "same per-platform timers as sptrsv-solve-kernel"
+      timing_scope: >
+        the full analysis/scheduling step, rebuilt from scratch on every
+        one of the 5 repetitions (no caching across reps) -- level-set
+        construction, DAG partitioning, codelet mining, warp-partition
+        table construction, split-point selection, or whatever else the
+        technique's own design requires before its first solve call can
+        run. Includes any technique-specific format conversion.
+    metric:
+      primary: "ms (median analysis time)"
+      secondary: >
+        break-even count = analysis_time_ms / single_solve_time_ms (from
+        sptrsv-solve-kernel's median) -- the number of repeated solves
+        needed before the analysis cost is amortized away, which is the
+        number that actually determines whether a technique is worth using
+        in a given application (feeds directly into the k choice discussion
+        for sptrsv-e2e-amortized below).
+    correctness: >
+      structural only: verify the produced schedule/partition is a valid
+      topological decomposition of L's dependency DAG (every row's
+      predecessors are scheduled in an earlier level/codelet/partition).
+      No numeric output to gate at this phase.
+
+  - id: sptrsv-e2e-amortized
+    claim: >
+      end-to-end time = one-shot analysis + k repeated solve calls on the
+      SAME matrix L with DIFFERENT right-hand sides, amortized -- the
+      realistic ILU(0)/IC(0)-preconditioned-Krylov usage pattern (each
+      preconditioned Krylov iteration issues one L-solve and one U-solve;
+      HDagg's own paper targets exactly this via its ILU/IC evaluation) and
+      the factorize-once-solve-many pattern SuperLU_DIST's own
+      pddrive3d1.c driver exists to demonstrate ("we factorize A only
+      once... and reuse... in the subsequent call"). k=50 is chosen as a
+      conservative middle-of-the-road Krylov restart-cycle length (smaller
+      than the SpMV track's k=100, since each SpTRSV "iteration" here
+      already implies 2 kernel calls -- L-solve then U-solve -- for the
+      same nominal iteration count, so 50 keeps total kernel-call count in
+      the same order of magnitude as the SpMV variant's 100 single-matrix
+      calls).
+    inputs:
+      suite: "same as sptrsv-solve-kernel"
+      selection: "same as sptrsv-solve-kernel"
+      recommended_subset: "same as sptrsv-solve-kernel"
+      triangular_factor_derivation: "same as sptrsv-solve-kernel"
+      rhs_and_reference: "same fresh-draw-per-call convention as sptrsv-solve-kernel, k=50 independent draws"
+      nrhs: 1
+    protocol:
+      analysis: "timed once, exactly as in sptrsv-analysis-phase, folded into this variant's total"
+      warmup: 0
+      reps: "k=50 post-analysis solve calls; report BOTH the amortized number and the pure steady-state solve time from sptrsv-solve-kernel side by side"
+      statistic: median
+      timer: "same per-platform per-call timers as sptrsv-solve-kernel, plus one bracket around the one-shot analysis"
+      timing_scope: "analysis + k solve calls; H2D of L done once, D2H of x excluded from the per-call number (matches sptrsv-solve-kernel's scope) but reported once, standalone"
+      precision: "same fp64/fp32 split as sptrsv-solve-kernel"
+    metric:
+      primary: "ms (amortized per-solve: (analysis_time + k*solve_time) / k)"
+      secondary: >
+        ms (total wall time for the k-solve batch, standalone); if
+        analysis_time > 10*k*solve_time (i.e. no realistic k would amortize
+        it away -- plausible for the more elaborate analysis passes in this
+        track, e.g. codelet mining), report the amortized-at-k=50 number
+        AS-IS, honestly showing analysis dominating, plus the raw
+        uncapped analysis time -- never silently pick a larger k to make
+        the amortized number look better (same principle as the SpMV
+        track's spmv-e2e-preproc variant).
+    correctness: >
+      same tolerance as sptrsv-solve-kernel, checked on EVERY one of the k
+      solve calls; report the WORST-case (max) relative error observed
+      across all k, not just the first or the mean -- the amortized-time
+      claim is worthless if correctness silently degrades over repeated
+      calls (e.g. accumulated floating-point drift in a reused schedule, or
+      a race-prone synchronization-free design that is occasionally wrong).
+
+  - id: sptrsv-distributed-scaling
+    claim: >
+      strong-scaling wall time / speedup of a distributed-memory (MPI,
+      multi-node, optionally multi-GPU) SpTRSV across a fixed sequence of
+      process/GPU counts, on a matrix derived from a REAL numeric
+      LU factorization with genuine fill-in -- not the structural-proxy
+      triangular factor used by the other 3 variants. This is a
+      genuinely different claim, not a stricter version of the single-node
+      variants: only 1 of the 5 surveyed papers (SC'23) operates at this
+      scale, and its own baseline comparison is against other distributed
+      algorithms, not cuSPARSE/MKL.
+    inputs:
+      suite: "SuiteSparse Matrix Collection (subset used by the one surveyed distributed-SpTRSV paper)"
+      selection: >
+        the 4 SC'23 Table-1 matrices that are independently obtainable from
+        SuiteSparse: nlpkkt80 (n=1,062,400, nnz(A)~=6.5e7, optimization),
+        Ga19As19H42 (n=133,123, quantum chemistry), ldoor (n=952,203,
+        structural) (n=1,102,824, electromagnetics). The
+        paper's other 2 matrices (s1_mat_0_253872, a fusion-plasma matrix;
+        s2D9pt2048, a synthetic 2D 9-point Poisson discretization) are NOT
+        in SuiteSparse and are excluded here as non-reproducible inputs
+        (see open_questions) rather than silently substituted.
+      recommended_subset: [nlpkkt80, Ga19As19H42, ldoor, dielFilterV3real]
+      triangular_factor_derivation: >
+        REAL factorization, not the structural proxy used elsewhere in this
+        spec: run one reference distributed sparse LU factorization (e.g.
+        SuperLU_DIST) with METIS nested-dissection fill-reducing ordering
+        on each matrix, ONCE, and reuse the resulting L/U factors (with
+        their genuine fill-in) across every process-count configuration
+        tested -- matching the surveyed paper's own description ("LU
+        factors are generated by running the 3D numerical factorization
+        algorithm... with METIS ordering"). Factorization cost is measured
+        and reported once per matrix, standalone; never counted in the
+        per-configuration SpTRSV numbers below.
+      nrhs: 1
+    protocol:
+      process_grid_sweep: >
+        total process count P = Px*Py*Pz swept over a fixed named list
+        {128, 256, 512, 1024, 2048} (CPU, matching the surveyed paper's own
+        Cori-Haswell sweep) or GPU count in {1, 2, 4, 8, ..., 256} (GPU,
+        matching the surveyed paper's own Perlmutter sweep); for each P,
+        Pz swept over {1, 2, 4, 8, 16, 32} (CPU) / {1, 2, 4, ..., 64}
+        (GPU), Px approx= Py chosen to keep the 2D grid as square as
+        possible for the remaining P/Pz processes -- reproducing the
+        surveyed paper's own sweep design exactly, since it is the only
+        precedent in this track.
+      reps: >
+        >=3 independent job submissions per (matrix, P, Pz) configuration,
+        report median with min/max -- this FIXES a gap in the surveyed
+        paper itself: no confirmed in-code repeat/statistic was found for
+        its reported figures (a single run per configuration is plausible
+        given per-configuration LU-factorization cost of 10s-3000s), which
+        cannot distinguish real algorithmic improvement from run-to-run
+        network/scheduler jitter at this scale.
+      timer: "library-internal solve-phase timer (e.g. SuperLU_DIST's SuperLU_timer_()/utime[SOLVE]), isolated from the one-shot factorization time"
+      timing_scope: >
+        solve phase only (both L-solve and U-solve, single RHS);
+        factorization/ordering excluded and reported once, standalone, per
+        matrix (see triangular_factor_derivation above). Inter-grid and
+        intra-grid communication breakdown reported as a secondary
+        line-item where the technique under test exposes it (matches the
+        surveyed paper's own Fig. 5/6/9 time-breakdown convention).
+      precision: "fp64"
+    metric:
+      primary: "s (median solve-phase wall time per configuration)"
+      secondary: "strong-scaling speedup relative to the smallest tested P for the same matrix"
+    correctness: >
+      component-wise backward error (berr), computed per RHS and GATED
+      against < 1e-10 (fp64) BEFORE a configuration's timing is accepted --
+      this explicitly FIXES the surveyed paper's own driver code, which
+      computes berr and prints it but was never found to gate it against
+      any threshold before reporting timing (a direct violation of the
+      "correctness gate before timing counts" fairness principle).
+
+notes_on_fairness:
+  - >
+    The single biggest fairness issue in this track is silent: 4 of 5
+    surveyed papers benchmark SpTRSV on a "triangular factor" that is
+    simply an arbitrary SuiteSparse matrix's own triangular part
+    (optionally with randomized values), not a real LU/Cholesky output --
+    and no paper's abstract discloses this. A "Nx over cuSPARSE" claim
+    under this protocol is not testing the same DAG-shape distribution a
+    real sparse-direct-solver back-substitution would present. This spec
+    resolves it by (a) naming ONE canonical structural-proxy method for the
+    3 single-device variants, since that IS the field's majority practice
+    and requires no factorization-library dependency, and (b) requiring
+    genuine LU-factor inputs for the distributed variant, where a
+    structural proxy would understate the fill-in-driven communication
+    volume that variant exists to measure.
+  - >
+    Split_SpTRSV's own artifact re-measures and re-averages its analysis
+    phase inside a 10-iteration solve-timing loop -- undermining its own
+    paper's amortization argument in its own benchmark code. This spec's
+    sptrsv-analysis-phase / sptrsv-e2e-amortized split fixes that by
+    forcing analysis to be measured exactly once and its cost surfaced
+    explicitly, never re-paid on every timed solve.
+  - >
+    Only YuenyeungSpTRSV among the 5 surveyed papers reports a throughput
+    metric (GFLOP/s) at all; this spec keeps it as a secondary metric for
+    comparability but explicitly flags it as weak for SpTRSV (DAG
+    critical-path-bound, not FLOP-count-bound) and makes wall time primary,
+    matching what the other 4 papers actually rely on.
+  - >
+    No surveyed paper's driver code gates correctness against a threshold
+    before accepting a timing result (SC'23 computes but never checks
+    berr; the others check once, if at all, sometimes with a loose
+    tolerance). Every variant in this spec makes the gate explicit and
+    checks it on every timed call, not just once.
+
+open_questions:
+  - >
+    Split_SpTRSV's ValidateResult() tolerance was not located in the
+    fetched files (util.h's relevant section was not surfaced by search);
+    the 1e-9/1e-4 gate this spec imposes may be tighter than what the
+    original paper actually validated against -- worth confirming before
+    treating a Split_SpTRSV-family technique's correctness pass/fail as
+    directly comparable to the other 4 papers' numbers.
+  - >
+    HDagg's SpTrSv_Final.sh script references a `matrix/*.mtx` directory
+    whose contents are not checked into the repo, so the paper's actual
+    evaluated matrix LIST (as opposed to the general SuiteSparse-matrix
+    convention inferred from the README's apache2 example) could not be
+    confirmed from the artifact alone.
+  - >
+    SC'23's own reported figures could not be confirmed as single-run vs.
+    multi-run-averaged from the extracted paper text or the reproducibility
+    appendix -- the appendix states per-configuration wall time ("10s to
+    3000s") dominated by LU factorization, consistent with (but not proof
+    of) a single run per configuration; this spec's >=3-reps requirement
+    for sptrsv-distributed-scaling may therefore multiply the paper's own
+    reported experimental cost several-fold if reproduced faithfully.
+  - >
+    2 of SC'23's 6 benchmark matrices (s1_mat_0_253872, s2D9pt2048) are not
+    in SuiteSparse and were excluded from sptrsv-distributed-scaling's
+    recommended_subset; if these become available (e.g. via the paper's
+    Zenodo artifact DOI 10.5281/zenodo.8084212) they should be added back,
+    since they are 2 of the paper's 4 headline result matrices.
+  - >
+    Whether "unit diagonal" (this spec's canonical choice) vs. "A's own
+    diagonal" (YuenyeungSpTRSV's actual, unstably-assumed practice)
+    materially changes measured performance for any of the 4 surveyed
+    single-device techniques was not tested -- flagged as a design
+    decision made for reproducibility/stability, not verified as
+    performance-neutral.
+
+evidence:
+  conf/sc/01790S0L23: >
+    Genuine numeric LU factorization (METIS ND ordering) via SuperLU_DIST's
+    own 3D factorization; nrhs=1; utime[SOLVE] isolates solve time from
+    utime[FACT]; berr computed per RHS but never gated in driver code; no
+    confirmed repeat/statistic for reported figures; wall time + strong-
+    scaling speedup, no GFLOP/s; multi-node/multi-GPU only surveyed paper.
+  conf/ipps/ZarebavaniCLSD22: >
+    Sympiler-family FusionDemo harness: build_set() (analysis) timed once,
+    fused_code() (solve) repeated num_test_=5 (default, unmodified),
+    median reported; is_equal correctness check at 1e-6 abs+rel; CPU-only
+    (MKL_NUM_THREADS/OMP_NUM_THREADS=20 on 40-core nodes); matrix list not
+    checked into repo.
+  conf/sc/CheshmiCD22: >
+    Same FusionDemo harness as HDagg (num_test_=5, median, analysis timed
+    separately and printed per-competing-method in one CSV row); L taken
+    directly from input matrix A (reordered if needed), no factorization;
+    9 competing SpTRSV variants benchmarked together against one shared
+    correctness reference.
+  journals/tpds/AhmadYU21: >
+    "Dummy ILU0" that is actually structural extraction with RANDOMIZED
+    values (rand()%10+1), discarding A's own numeric values entirely;
+    ITERATIONS=10 loop RE-RUNS analysis every iteration (amortization not
+    reflected in own benchmark); std::chrono host timer + float-typed
+    (CUDA-event-consistent) H2D/D2H sub-timers reported as separate CSV
+    columns; ValidateResult() tolerance unconfirmed.
+  journals/tpds/ZhangSLHWDW21: >
+    L = A's own lower-triangular part with A's own values (kept, not
+    randomized) but unit-diagonal claim is not actually enforced in code
+    (divides by whatever nonzero sits last in the row); BENCH_REPEAT=100
+    MEAN (not median) for both preprocessing and solve, no warmup;
+    gettimeofday host timer; D2H of solution vector INCLUDED inside the
+    timed solve region; 1% relative correctness tolerance, the loosest of
+    all 5 surveyed papers; GFLOP/s + GB/s metric, the only surveyed paper
+    to report a throughput metric at all.

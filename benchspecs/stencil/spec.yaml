@@ -1,0 +1,305 @@
+kernel: stencil
+summary: >
+  Throughput of an iterative structured-grid stencil sweep — a fixed weighted
+  sum over a small neighborhood (star or box support) applied to every point of
+  a dense D-dimensional grid, repeated for T time steps with double-buffered
+  (ping-pong) storage — across three hardware/implementation classes the
+  track's papers actually target: general-purpose CPU/GPU compute (spatial and
+  temporal blocking), Tensor-Core matmul reformulations (fp16), and full
+  domain-application solvers.
+operation: >
+  U_out[p] = sum_{d in support(shape, radius r)} w_d * U_in[p + d]  for every
+  interior grid point p, applied for T sequential time steps via double
+  buffering (U_in/U_out swap each step); shape in {star, box}, dims in {1D, 2D,
+  3D}; star-r has 2*dims*r+1 support points, box-r has (2r+1)^dims support
+  points; halo of width r (periodic or fixed) surrounds the domain.
+
+variants:
+  - id: stencil-cpu-gpu-kernel-fp64
+    claim: >
+      Steady-state per-time-step throughput of an iterative structured-grid
+      stencil sweep on general-purpose CPU/GPU compute (SIMD/CUDA-core
+      vectorized kernels with spatial and/or temporal blocking), independent
+      of any Tensor-Core matmul reformulation. This is the common denominator
+      across AN5D, PERKS, K-Athena's core update kernel, Devito's generated
+      code, AOStencil, and StencilsOnFPGA.
+    inputs:
+      suite: >
+        Synthetic star/box stencils named with AN5D's radius convention
+        (star{2d,3d}{1..4}r, box{2d,3d}{1..4}r), which the 2024-2026
+        Tensor-Core lineage below reuses verbatim, plus named
+        application-derived instances every surveyed paper's family includes
+        a version of (5/7/9/25/27-point Jacobi-style kernels).
+      selection: >
+        The 6 shapes shared by AN5D and the whole Tensor-Core lineage's public
+        CLI (union, so variant 1 and variant 2 stay directly comparable on the
+        overlap): star2d1r, box2d1r, star2d3r, box2d3r, star3d1r, box3d1r.
+      recommended_subset:
+        - star2d1r        # 5-point 2D star (Jacobi-5pt equivalent)
+        - box2d1r         # 9-point 2D box
+        - star2d3r         # 2D star, radius 3
+        - box2d3r         # 2D box, radius 3 (49-point)
+        - star3d1r         # 7-point 3D star (Jacobi-7pt equivalent)
+        - box3d1r         # 27-point 3D box
+        - j3d27pt          # AN5D's named 27-point 3D kernel (division-free variant of box3d1r)
+        - rtm3d25p8th      # StencilsOnFPGA's 25-point 8th-order 3D RTM stencil, as a high-order stress test
+      dense_operand: >
+        single scalar field per grid point, fp64 (fp32 as a secondary pass at
+        the same tolerance), initialized U(0,1) random or index-fill (no
+        cherry-picked "nice" data — both AN5D and ConvStencil's harnesses use
+        random fill by default).
+      grid_sizes: >
+        2D: 16384 x 16384 (AN5D's synthetic-suite convention, matches
+        AOStencil's ARM sweep band of 8192-24576). 3D: 512^3 (AN5D's 3D
+        convention == Devito's 512^3 velocity model, == CLAIRE's 256^3-512^3
+        range). Small-class 3D: 256^3, for resource-constrained targets
+        (matches K-Athena's single-node/roofline size and gives FPGA-class
+        implementations a reachable point; StencilsOnFPGA itself only reaches
+        50^3-400^2 due to on-chip capacity and is reported separately, not
+        forced onto this grid).
+      boundary: >
+        periodic wrap or fixed halo of width r; halo fill/exchange is EXCLUDED
+        from the timed region (single-node/single-device kernel-only claim;
+        distributed halo exchange belongs to variant 3).
+    protocol:
+      iteration_count: >
+        T=1000 back-to-back sweeps (AN5D's primary-benchmark convention). If a
+        single T=1000 trial's wall time would fall under 400 ms on the target
+        device, calibrate T upward (AN5D/PERKS's own adaptive-warmup logic:
+        run once, measure, scale T so the timed trial clears the floor) and
+        report the calibrated T explicitly — never silently substitute a
+        shorter, noisier trial.
+      warmup: >
+        1 full T-iteration trial, discarded (AN5D's own convention; also
+        matches PERKS's `--warmup` calibration run).
+      reps: 5
+      statistic: >
+        median (report min and max alongside it). This deliberately departs
+        from AN5D's own "average of 5" — median is robust to the occasional
+        outlier trial that a mean silently absorbs, and none of the other
+        surveyed papers in this variant's family report a distribution at all,
+        so there is no existing convention this contradicts.
+      timer: >
+        device-side event pair (CUDA/HIP events) for GPU targets; wall clock
+        (`clock_gettime(CLOCK_MONOTONIC)` or `omp_get_wtime()`) with an
+        explicit device/thread synchronization barrier at trial start and stop
+        for CPU/ARM targets (AOStencil's own `omp_get_wtime()` convention).
+      timing_scope: >
+        kernel(s) only. Excludes H2D/D2H transfer (AN5D explicit), array
+        allocation and initialization, and any halo exchange. Each trial times
+        all T sweeps as ONE elapsed interval (every surveyed paper bulk-times
+        T iterations; none times sweeps individually — see survey.md
+        Divergence 1), then divides by T for the reported per-step figure.
+      preprocessing_reported: >
+        not applicable to this variant in general (no format conversion in
+        this compute class); if a codegen/autotuning implementation
+        (AN5D, AOStencil's GA tuner, Devito's autotuner) has a nonzero
+        kernel-search or compile time, report it once, separately, and never
+        amortize it into the per-step throughput.
+    metric:
+      primary: "GCell-updates/s = grid_points * T / elapsed_s / 1e9"
+      secondary:
+        - "GFLOP/s — the FLOPs-per-point-update convention MUST be stated per stencil (e.g. PERKS counts 17 FLOP/update for its 9-point kernel); treat as informational only, NOT comparable across papers with an undisclosed convention (survey.md Divergence 4)"
+        - "ms per T-iteration trial"
+        - "GB/s effective bandwidth (bytes moved = 2 * grid_points * sizeof(dtype) per sweep, read+write of ping-pong buffers)"
+    correctness: >
+      max relative error <= 1e-5 vs. an unblocked/unoptimized reference sweep
+      of the same stencil, same precision, run for the same T (PERKS's
+      `TOLERANCE=1e-5` and AOStencil's `1e-5` check both already use this
+      threshold). fp32 secondary pass: same 1e-5 relative-error gate against an
+      fp32 reference (not fp64 — comparing an fp32 kernel to an fp64 reference
+      conflates precision loss with implementation bugs).
+
+  - id: stencil-tcu-matmul-kernel-fp16
+    claim: >
+      Throughput of stencil-as-(sparse)-matrix-multiplication reformulations
+      executing on Tensor Cores / Sparse Tensor Cores at fp16, with the
+      one-shot layout/format-construction preprocessing excluded from the
+      timed sweep loop but measured once and reported separately (not merely
+      excluded and left unquantified, as SPIDER's own artifact does).
+    inputs:
+      suite: >
+        The shape/CLI catalog literally shared by ConvStencil, LoRAStencil,
+        FlashFFTStencil, and SPIDER (`{program} shape input_size
+        time_iteration_size [options]`): {1d1r,1d2r} (1D);
+        {star2d1r,box2d1r,star2d3r,box2d3r} (2D — identical names to variant 1,
+        so the two variants are directly comparable on the overlap);
+        {star3d1r,box3d1r} (3D). FlashFFTStencil's point-count aliases
+        (Box2D9P~box2d1r, Box2D25P~box2d3r, Star2D9P) are accepted as
+        equivalents when a paper only reports the alias name.
+      selection: >
+        Every shape all 4 baseline-cluster papers implement in common (the 7
+        listed above/below); 3D shapes are included for CLI completeness but
+        their grid size is flagged open (see open_questions — no surveyed
+        paper's own reported numbers, as opposed to CLI support, could be
+        confirmed for 3D).
+      recommended_subset:
+        - 1d1r
+        - 1d2r
+        - star2d1r
+        - box2d1r
+        - star2d3r
+        - box2d3r
+        - star3d1r
+        - box3d1r
+      dense_operand: fp16 grid values (TF32/mixed-precision accumulation as the kernel dictates), random-initialized.
+      grid_sizes: >
+        1D: 1 x 10,240,000 (SPIDER's Figure10_run.sh / ConvStencil-lineage
+        convention). 2D: 10240 x 10240 (SPIDER/ConvStencil/LoRAStencil's
+        shared primary evaluation point; also swept 512..10240 per side in
+        SPIDER's Figure11). 3D: 512^3, carried over from variant 1 for
+        cross-family comparability — NOT independently confirmed against any
+        Tensor-Core-lineage paper's own reported 3D numbers (open question).
+    protocol:
+      iteration_count: >
+        T=10,240 for 2D, T=100,000 for 1D — the literal `time_iteration_size`
+        values SPIDER's own reproduction script (Figure10_run.sh) uses to
+        drive the ConvStencil/LoRAStencil/SPIDER binaries, so this is not an
+        invented number but the value this paper family already runs its own
+        baselines at. T=1000 for 3D, carried over from variant 1 (open
+        question, same caveat as the 3D grid size above).
+      warmup: >
+        1 full T-iteration trial, discarded. THIS IS A DELIBERATE FIX: none of
+        ConvStencil, LoRAStencil, FlashFFTStencil, or SPIDER's public
+        benchmark harnesses run a discarded warmup trial before the timed
+        region (survey.md Divergence 2).
+      reps: 5
+      statistic: >
+        median (report min/max). FIX: all 4 surveyed repos as published report
+        a single, unrepeated trial.
+      timer: >
+        device-side (CUDA events, matching SPIDER's own `cudaEventRecord`
+        usage) wrapping all T kernel launches as one interval. A host
+        `std::chrono` timer (ConvStencil/LoRAStencil's own convention) is
+        acceptable only if it brackets a single `cudaDeviceSynchronize()`
+        after all T launches — SPIDER's own implementation instead
+        synchronizes after every individual launch inside the timed loop,
+        which inflates measured time with T-1 extra sync-barrier stalls; this
+        spec requires the single-sync form for both timer choices.
+      timing_scope: >
+        matmul/MMA kernel(s) only; H2D/D2H excluded. The one-shot
+        format/layout transform — parameter-matrix packing, sparse-metadata
+        compression for `mma.sp` encoding, im2col-equivalent layout
+        construction, or FFT-plan creation (FlashFFTStencil) — is excluded
+        from the T-iteration timed loop.
+      preprocessing_reported: >
+        measured once, separately, and reported as its own number (ms) and as
+        a "break-even iteration count" (preprocessing_ms / per-iteration_ms).
+        FIX: SPIDER's paper text states this cost is excluded from its
+        throughput figures and is not otherwise quantified as a number in the
+        public artifact for any of the 4 papers in this family; this variant
+        requires it be measured, not just excluded (survey.md Divergence 5).
+    metric:
+      primary: "GCell-updates/s a.k.a. GStencil/s (this family's own native metric) = grid_points * T / elapsed_s / 1e9"
+      secondary:
+        - "effective TFLOP/s on tensor cores (informational; FLOP convention must be stated — ConvStencil's own printed formula uses an unresolved per-shape multiplier, see survey.md Divergence 4 and open_questions)"
+        - "speedup vs. cuDNN im2col-convolution baseline on the same GPU (the one baseline shared by ConvStencil, LoRAStencil, and SPIDER)"
+    correctness: >
+      max relative error vs. an fp64 CPU or GPU reference sweep of the same
+      stencil/grid/T. No surveyed repo's public artifact states an explicit
+      fp16 tolerance (ConvStencil's own 1e-7 check exists in source but is
+      compiled out by default, and it is a fp64-path check, not fp16 — see
+      survey.md's ConvStencil subsection). This spec recommends <= 1e-2
+      relative error as an fp16-appropriate default; treat as an OPEN
+      QUESTION pending confirmation from a paper that actually states one.
+
+  - id: stencil-e2e-application
+    claim: >
+      End-to-end wall-clock speedup of a full domain-application solver (whole
+      program: boundary handling, multi-kernel physics, no I/O) over its own
+      unoptimized/decomposed baseline, for a domain-realistic, CFL- or
+      convergence-order-determined number of steps — reported ALONGSIDE, never
+      substituted for, a kernel-only number from variant 1/2 when both exist
+      for the same code (WindStencil's own README already separates
+      "kernel-focused gain" from "full-application gain"; this variant
+      standardizes that split for the whole track).
+    inputs:
+      suite: >
+        Domain-standard test problems rather than a synthetic grid sweep,
+        because grid shape and physics genuinely differ per code and forcing a
+        common synthetic grid onto them would misrepresent what the paper
+        measured: linear fast-magnetosonic MHD wave (K-Athena/Athena++ test
+        suite), isotropic/TTI acoustic + isotropic elastic wave propagation
+        (Devito/Bisbas seismic-imaging setups), the Williamson shallow-water
+        test suite — steady-state geostrophic flow / Rossby-Haurwitz wave /
+        perturbed jet (ozHOPE/HOPE), and compressible Navier-Stokes CFD ducts
+        (WindStencil/OpenCFD-SC).
+      selection: "one problem per paper's own primary evaluation case, at the paper's own default resolution; no cross-paper size unification (see survey.md Divergence 6)."
+      recommended_subset:
+        - "K-Athena: linear fast magnetosonic wave, 256^3, fp64"
+        - "Devito/Bisbas: isotropic acoustic, space order 4, 512^3, 228 CFL-determined time steps, fp32"
+        - "WindStencil: 480x512x64 (single-MI60 case) and the 9600x256x256 strong-scaling case, 1000 iterations, fp64"
+        - "ozHOPE: Williamson steady-state geostrophic flow, HOPE's default resolution, Ozaki fp16-emulated-fp64"
+      grid_sizes: "paper-native; see recommended_subset. Physically motivated, not drawn from a shared microbenchmark convention."
+    protocol:
+      iteration_count: >
+        paper-native: CFL/physics-determined where applicable (Devito
+        228-587 steps) or the fixed round count the paper itself used for its
+        headline number (WindStencil: 1000 for the performance number, 10,000
+        for the correctness check; K-Athena: "several runs" of full production
+        cycles).
+      warmup: >
+        1 full run discarded, if the harness supports separating setup from
+        the timed loop; otherwise report this as a deviation from variant
+        1/2's protocol rather than silently pretending it happened (many
+        full-application codes fold one-time mesh/IC setup into the single
+        measured run and cannot cheaply discard a "warmup" run of a
+        physics simulation).
+      reps: 3
+      statistic: >
+        median (report min/max). K-Athena's own convention — 80th percentile
+        of per-cycle rate across several runs — is an acceptable ALTERNATE
+        statistic specifically for weak/strong-scaling sub-variants where
+        network variance dominates; report explicitly which statistic was
+        used and never mix the two within one reported number.
+      timer: "wall clock around the whole program's compute loop; initialization/I-O excluded only if the harness cleanly separates them."
+      timing_scope: >
+        end-to-end whole-program compute time (all kernels + boundary/physics
+        glue). Report this NUMBER TOGETHER WITH, never in place of, the
+        single-dominant-kernel number from variant 1/2 for the same
+        optimization when the paper's artifact exposes both (WindStencil's own
+        table already does this split; this spec makes it mandatory rather
+        than paper-specific).
+      preprocessing_reported: "mesh/initial-condition setup and any one-time solver initialization reported once, separately, never amortized into the per-step throughput."
+    metric:
+      primary: "wall-clock speedup vs. the paper's own unoptimized/baseline implementation on the same hardware"
+      secondary:
+        - "cell-updates/s or GPoints/s for the dominant stencil kernel (comparable to variant 1's primary metric when the paper also reports a kernel-only number)"
+        - "% of hardware FP64 peak / roofline-attainable peak, when the paper reports operational intensity (K-Athena, WindStencil both do)"
+    correctness: >
+      domain-specific, and DELIBERATELY WEAKER than variant 1/2's pointwise
+      tolerance gate — flagged as an open question rather than silently
+      equated to it: either conserved-quantity relative drift over the full
+      run (WindStencil: total energy/temperature, <= 1e-4, compared between
+      optimized and unoptimized runs of the SAME code, not against an
+      independent reference) or pointwise comparison vs. an FP64 reference
+      solution for a standard test case (ozHOPE's Williamson cases).
+
+notes_on_fairness:
+  - "AN5D repeats 5x with 1 discarded warmup and reports the mean; every GPU Tensor-Core-stencil paper (ConvStencil, LoRAStencil, FlashFFTStencil, SPIDER) and both surveyed CPU papers (PERKS, AOStencil) publish a single, unrepeated, un-warmed-up trial in their public harness. Both kernel-only variants above mandate a discarded warmup + median-of->=5 (variant 1/2) regardless of what the underlying repo's default run does."
+  - "ConvStencil's own correctness check (`tolerance=1e-7`) exists in source but is compiled out (`#define CHECK_ERROR` commented) in the public artifact — the published benchmark path runs with NO correctness check by default. This spec's correctness gate is mandatory, not opt-in."
+  - "GFLOP/s is not comparable paper-to-paper in this track without a stated FLOP-per-point-update convention: PERKS hard-codes 17 FLOP/cell for one specific 9-point kernel; ConvStencil's own printed throughput formula applies an unexplained per-shape multiplier. GCell-updates/s is made primary specifically because it depends only on grid size x iteration count, not on an assumed FLOP-counting convention (survey.md Divergence 4)."
+  - "SPIDER's paper text states preprocessing/offline-transform cost is excluded from its reported throughput and is not otherwise quantified as a number for any of the 4 Tensor-Core-lineage papers surveyed. Variant 2 requires this be measured and reported once, not merely excluded and left unquantified."
+  - "SPIDER's own 2D kernel synchronizes the device after every one of the T timed launches (not once at the end), which inflates the measured time with T-1 extra barrier stalls relative to ConvStencil/LoRAStencil's single-sync-at-the-end convention. Variant 2 standardizes on the single-sync form for both families so neither is penalized by a synchronization-granularity artifact rather than a real performance difference."
+  - "StencilsOnFPGA and WindStencil/ozHOPE's application-level correctness checks (conserved quantities, roofline %) are not pointwise numerical tolerance gates the way PERKS/AOStencil's are; variant 3 keeps this weaker guarantee explicit rather than silently promoting it to the same rigor as variant 1/2."
+
+open_questions:
+  - "The Tensor-Core-matmul lineage's own 3D grid-size/T convention could not be confirmed from public sources: SPIDER's own kernel sources are 1D/2D only (no 3D implementation despite the paper comparing against 3D-capable ConvStencil/LoRAStencil baselines), and ConvStencil/LoRAStencil have no arXiv fulltext to check their own paper-reported 3D numbers against (SC/PPoPP DOI only). Variant 2's 3D row is copied from variant 1 pending confirmation from the paper PDFs directly."
+  - "fp16 correctness tolerance for variant 2 is not stated in any of the 4 surveyed repos' public artifacts. The 1e-2 relative-error default in variant 2's correctness field is this spec's own recommendation, not sourced from any paper — flagged explicitly rather than presented as if it were."
+  - "ConvStencil's own GStencil/s formula in `src/2d/gpu.cu` multiplies by a per-shape factor (1x for some shapes, 3x seen for others in the box2d3r-adjacent kernel) whose exact geometric meaning (halo replication? multi-output-per-launch?) could not be fully resolved by reading source alone. A harness implementer should cross-check against the paper's own reported numbers/table rather than trusting the printed GStencil/s literally."
+  - "AOStencil's 3D grid sizes were not confirmed — the one run.sh read only shows a single call each to 3d7pt_star.py/3d27pt_box.py (unlike the 2D scripts' explicit 8192/16384/24576 loop), and those individual files were not fetched. The 3D recommended_subset entries for variant 1 (star3d1r/box3d1r at 512^3) are AN5D/Devito-sourced, not AOStencil-sourced."
+  - "PERKS's actual paper-reported grid sizes/T were not directly extracted (no arXiv fulltext, OA link is an OSTI PDF not fetched in this pass) — its methodology facts above come entirely from its own repo source code (CLI flags, timing/calibration logic, correctness tolerance), which is reliable for protocol design but not for a specific headline grid-size number."
+
+evidence:
+  conf/cgo/MatsumuraZWEM20: "AN5D: synthetic star/box{2d,3d}{1-4}r + named kernels, 16384^2/512^3, T=1000, 5 reps + 1 discarded warmup, mean, GFLOP/s, tuned temporal-blocking degree bT."
+  journals/tpds/GreteGO21: "K-Athena: linear MHD wave test problem, 256^3 up to 3072^3, 80th-percentile-of-several-runs statistic, cell-updates/s, fp64, baselines Athena++/GAMER."
+  conf/ipps/BisbasLLNGK21: "Devito/Bisbas: isotropic/TTI acoustic + isotropic elastic 3D FD, 512^3, CFL-determined 228-587 steps, fp32, GPoints/s + roofline, baseline = spatial-blocking-only Devito code."
+  conf/ipps/KamalavasanMRF21: "StencilsOnFPGA: Poisson-5pt-2D/Jacobi-7pt-3D/RTM-25pt-8th-3D, small on-chip-capacity-limited grids, GB/s + runtime vs. V100 GPU, fp32."
+  conf/ppopp/GuW0Y26: "SPIDER: sparse-Tensor-Core stencil-as-matmul, 1D/2D only (no 3D kernel), 10240x10240 @ T=10240 primary point, fp16, single untrepeated trial with cudaEvent timing synced every launch, preprocessing excluded and unquantified."
+  conf/ppopp/ChenLWBWMYZCY24: "ConvStencil: stencil-as-matmul on Tensor Cores, star/box{2d,3d}{1,3}r + 1d{1,2}r CLI catalog (origin of the shared shape/CLI convention for this lineage), single-trial std::chrono timing, correctness check present but disabled by default."
+  conf/sc/ZhangLYCZCY24: "LoRAStencil: low-rank decomposition of stencil weights on Tensor Cores, identical CLI/shape catalog to ConvStencil, used as an SC-published baseline at the same grid/T points."
+  conf/ppopp/HanLCBZYCZCY25: "FlashFFTStencil: FFT-bridged dense stencil on Tensor Cores, point-count-named shape catalog, same time_iteration_size CLI convention, A100/H100."
+  conf/ics/ZhangWCMWEM23: "PERKS: persistent-kernel locality model for iterative memory-bound GPU kernels, adaptive warmup-calibrated iteration count to a 350ms floor, single-trial CUDA-event timing, reports GCells/s+GFLOPS/s+GB/s together, TOLERANCE=1e-5."
+  conf/ics/LiuYYLLQ25: "AOStencil: instruction-stream scheduling + GA autotuning for stencils on ARM CPUs, fixed T=100, single-trial omp_get_wtime timing, 1e-5 correctness check, 8192-24576 2D grid sweep."
+  conf/ics/ZhangZLLJZYLL26: "WindStencil: 7th-order 3D WENO CFD stencil on AMD GPUs, explicitly separates kernel-only vs. end-to-end (1000-iteration) speedup, correctness via conserved-quantity drift over 10000 steps, reports FP64-%-of-peak."
+  conf/ipps/YaoZLX26: "ozHOPE: Ozaki-scheme FP16 Tensor Core acceleration of a shallow-water dynamical core, Williamson standard test-suite benchmark cases, correctness = diagnostic-variable agreement vs. FP64 reference, avg 1.82x / up to 4.34x speedup."

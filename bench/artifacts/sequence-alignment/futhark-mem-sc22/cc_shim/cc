@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+exec /usr/bin/cc \
+  -I"${CUDA_HOME:?}/include" \
+  -L"${CUDA_HOME}/lib64" -Wl,-rpath,"${CUDA_HOME}/lib64" \
+  -L"${CUDA_HOME}/targets/x86_64-linux/lib" -Wl,-rpath,"${CUDA_HOME}/targets/x86_64-linux/lib" \
+  -L"${CUDA_HOME}/lib64/stubs" \
+  "$@"

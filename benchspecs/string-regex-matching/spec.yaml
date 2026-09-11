@@ -1,0 +1,349 @@
+kernel: string-regex-matching
+summary: >
+  Multi-pattern regular-expression / finite-automata matching over a byte
+  stream, measured as steady-state matching throughput in Gbps with
+  automaton compilation/preprocessing strictly separated (and, where the
+  literature's own contribution IS compilation, amortized over an explicit
+  k), plus a distinct single-match latency variant for architectures (e.g.
+  FPGA DSAs) that are not naturally described by a corpus-throughput number.
+operation: >
+  matches[] = MATCH(automaton A (NFA | DFA | custom ISA, compiled from a
+  ruleset of R regular expressions), input stream S (bytes)); output is the
+  set of (pattern_id, end_position) pairs where A accepts a prefix of S
+  ending at that position (standard automata-processing semantics — this
+  is NOT single-pattern substring search, it is simultaneous multi-pattern
+  matching, the shape every paper in this track actually benchmarks).
+
+variants:
+  - id: regex-kernel-throughput-precompiled
+    claim: >
+      steady-state matching throughput over a fixed input corpus with the
+      automaton supplied ALREADY COMPILED (RE-to-automaton compilation
+      excluded from the timed region but reported once, separately) —
+      the common denominator matching how ngAP, GSpecPal, and 0002PJ20 all
+      actually benchmark (automata ship pre-converted in their artifacts)
+    inputs:
+      suite: >
+        union of ANMLZoo + AutomataZoo + "Regex" (Becchi et al.,
+        regex.wustl.edu) for the NFA-family path, PLUS GSpecPal's
+        independently-sourced Snort/ClamAV/PowerEN DFA-table corpus for the
+        DFA-family path — these two corpora are NOT merged into one list
+        since they are packaged and sized differently despite overlapping
+        ruleset names (see survey.md Divergence 3)
+      selection: >
+        NFA-family: named benchmarks confirmed reused by >=2 of {ngAP,
+        0002PJ20, MFSA} in this track, i.e. those with an exact benchmark-
+        name match across their respective config files/tables;
+        DFA-family: all pattern sets GSpecPal ships (Snort, ClamAV,
+        PowerEN), at a fixed, disclosed automaton-size point per ruleset
+        (not the full 20-23-way size sweep, which is a separate axis — see
+        regex-automaton-size-scaling notes below)
+      recommended_subset:
+        - "PowerEN (ANMLZoo/Becchi, ~300 REs, 10MB input `poweren_10MB.input`) — shared by ngAP, MFSA (PEN), and 0002PJ20"
+        - "Bro217 (Becchi 'Regex' suite, 217 REs, 10MB depth-biased trace) — shared by MFSA (BRO) and 0002PJ20"
+        - "Snort (AutomataZoo, real wrccdc2012.pcap network trace) — shared by 0002PJ20 and (different packaging) GSpecPal"
+        - "ClamAV (AutomataZoo, `clamav.input`) — shared by ngAP and 0002PJ20"
+        - "Dotstar (ANMLZoo, `backdoor_10MB.input`) — used by ngAP; TCP-ext.homenet (ANMLZoo) used by MFSA as the analogous entry"
+        - "CRISPR_CasOFFinder and CRISPR_CasOT (AutomataZoo, 10MB DNA inputs) — shared by ngAP and 0002PJ20"
+        - "EntityResolution (AutomataZoo, `1m_names.input`) — shared by ngAP and 0002PJ20"
+        - "GSpecPal-Snort (DFA-table corpus, one fixed size id e.g. snort_DFA12771, 10MB input)"
+        - "GSpecPal-ClamAV (DFA-table corpus, one fixed size id e.g. clamAV_DFA1501, 10MB input)"
+        - "GSpecPal-PowerEN (DFA-table corpus, one fixed size id, 10MB AND 20MB inputs — the only pattern set with 2 input sizes in GSpecPal's own suite)"
+      automata_family_disclosure: >
+        REQUIRED, free-text not a binary DFA/NFA enum: NFA (explicit
+        table/bitset representation), DFA (explicit transition table), or
+        other (e.g. a custom non-backtracking ISA a la Cicero) — every
+        submission must state which, since throughput numbers across
+        families are not apples-to-apples without this disclosure
+      dense_operand: "N/A"
+    protocol:
+      automaton_supplied_as: >
+        pre-compiled, given (ANML/MNRL for NFA-family, binary DFA
+        transition table for DFA-family); compilation time is NOT part of
+        this variant's timed region (see regex-e2e-compilation-amortized
+        for the alternative)
+      corpus_size_sweep: "1MB, 10MB, 20MB (matches MFSA's fixed 1MB, GSpecPal/ngAP's 10MB, and GSpecPal-PowerEN's additional 20MB conventions respectively; report all three where feasible rather than picking one)"
+      warmup: >
+        >=1 full discarded pass (following GSpecPal's own two-level
+        practice: a shell-level discarded run on a fixed automaton BEFORE
+        the sweep, plus an in-kernel warmup phase timed and reported
+        separately from the main elapsed time)
+      reps: 10 (fixed floor for this spec, between MFSA's own two
+        disclosed-but-inconsistent counts of 15 and 30 for
+        execution-throughput and compilation-time respectively, and above
+        GSpecPal's 3-run shell-level warmup)
+      statistic: "median, report min/max"
+      timer: "device-side events (CUDA/HIP events) for GPU implementations; host-side wall clock (std::chrono or clock_gettime) for CPU/FPGA implementations, wrapping ONLY the matching pass"
+      timing_scope: >
+        matching only; automaton load/deserialization from disk, input-
+        stream H2D transfer, and any format conversion are excluded from
+        the timed region and reported separately, once, following
+        GSpecPal's/ngAP's/0002PJ20's own shipped-pre-compiled convention
+      preprocessing_reported: "separately: automaton load/deserialization time, H2D transfer time (if applicable), one-shot per benchmark"
+    metric:
+      primary: "Gbps = corpus_size_bits / matching_time_seconds / 1e9 — the single canonical unit this spec fixes across the whole track; ngAP's MB/s must be reported alongside its Gbps-converted value (x8), not substituted for it"
+      secondary: "ms (median matching time), plus native unit if the implementation's own convention differs (e.g. MFSA's fold-improvement-vs-M=1 must ALSO report the M=1 baseline's own absolute Gbps, never only the fold number)"
+    correctness: >
+      exact match-position-list equality (pattern_id, end_position pairs)
+      against an independent single-threaded CPU reference automaton
+      simulation over the same input stream and automaton; a run whose
+      match list differs from the reference in any position is invalidated
+      and excluded from the statistic, following ngAP's and GSpecPal's own
+      "Validation PASS!" / per-block pass-fail gating practice.
+
+  - id: regex-e2e-compilation-amortized
+    claim: >
+      end-to-end throughput including one-shot RE-to-automaton compilation
+      (parsing, FSA construction, any merging/optimization), amortized
+      over k matching passes — for tracks where compilation IS the paper's
+      contribution (MFSA's automata-merging, Cicero's MLIR compiler
+      pipeline), following MFSA's own excellent practice of reporting
+      compilation time as a detailed, separately-visible stage breakdown
+      rather than folding it silently into a blended number
+    inputs:
+      suite: "same NFA-family recommended_subset as regex-kernel-throughput-precompiled, since compilation cost is only meaningful relative to a specific ruleset+RE-count"
+      selection: >
+        rulesets with disclosed RE counts (following MFSA's Table I
+        convention: name, RE count, source suite), so compilation cost can
+        be reported as a function of ruleset size — REQUIRED, since
+        without RE-count disclosure a compilation-time number cannot be
+        interpreted or compared
+      recommended_subset:
+        - "Bro217 (217 REs)"
+        - "PowerEN (300 REs)"
+        - "Protomata (300 REs)"
+        - "Ranges1 (299 REs)"
+        - "TCP-ext.homenet (300 REs)"
+        - "Dotstar09 (299 REs)"
+      dense_operand: "N/A"
+      merging_or_optimization_factor: >
+        if the compiler under test supports a tunable
+        merging/optimization aggressiveness (MFSA's merging factor M is
+        the precedent), sweep it explicitly: {1 (no merging/optimization),
+        2, 5, 10, 20, 50, 100, all}; report which value each headline
+        number uses
+    protocol:
+      compilation_stage_breakdown_required: >
+        REQUIRED: report front-end (lex/parse), automaton-construction
+        (RE-to-FSA), single-automaton optimization, and any
+        cross-automaton merging/optimization as INDEPENDENT numbers, not
+        one blended "compile time" — following MFSA's own 4-stage
+        breakdown (front-end 1.29ms, AST-to-FSA 1.33ms, single-FSA-opt
+        2.03ms, merging up to 6.65s at M=all, all averaged over 30 runs)
+      warmup: 1 (full compile+match pipeline pass, discarded)
+      reps_compilation: 30 (matches MFSA's own disclosed compilation-time repetition count exactly, the only literature precedent in this track)
+      reps_matching: 15 (matches MFSA's own disclosed execution-time repetition count exactly — kept DELIBERATELY DIFFERENT from reps_compilation, following the paper's own practice of using different counts for compilation vs matching, rather than forcing false consistency)
+      statistic: "mean of the above rep counts (matches MFSA's own choice); report min/max alongside, which MFSA itself does not"
+      timer: "host-side wall clock around each compilation stage independently; same timer as regex-kernel-throughput-precompiled around the matching pass"
+      timing_scope: >
+        compilation time and matching time are ALWAYS reported as two
+        separate numbers, even though this variant's headline metric
+        amortizes them together — never report only the blended number
+      preprocessing_reported: "compilation IS this variant's subject; reported both as the standalone per-stage breakdown AND folded into the amortized headline metric below"
+      amortization_count_required: true
+    metric:
+      primary: >
+        amortized_Gbps = corpus_size_bits * k / (compilation_time_seconds +
+        k * matching_time_seconds) / 1e9, where k is the number of matching
+        passes the compiled automaton is reused for before being
+        discarded/recompiled; k MUST be explicitly reported (not left
+        implicit) — report at k=1 (worst case, compile-once-use-once) and
+        at k=1000 (amortized-heavy-reuse case) as two bracketing points
+      secondary: >
+        compilation_time_ms broken down by stage (standalone, per the
+        required breakdown above), kernel-only_median_Gbps
+        (cross-reference to regex-kernel-throughput-precompiled on the
+        same benchmark, to make the amortization argument checkable),
+        compression_ratio (states_before / states_after, if the compiler
+        performs automaton merging/optimization — matches MFSA's own
+        71.95%-states / 38.88%-transitions reduction figures)
+    correctness: >
+      same match-position-list equality gate as
+      regex-kernel-throughput-precompiled, applied after compilation;
+      additionally, for any automaton-merging/optimization technique, a
+      formal-or-empirical check that the compiled automaton accepts EXACTLY
+      the union of the source REs' languages (no false-positive
+      cross-pattern matches introduced by merging) is REQUIRED before
+      throughput counts — following MFSA's own activation-function
+      correctness discipline.
+
+  - id: regex-single-match-latency
+    claim: >
+      per-match latency and energy for a single regular expression against
+      a bounded input, for architectures (FPGA DSAs, or any design not
+      naturally described by a streaming-corpus-throughput number) whose
+      own claimed contribution is latency/energy per operation rather than
+      aggregate bytes/second — follows Cicero's own metric framing rather
+      than forcing an artificial Gbps conversion onto a design that was
+      never built for streaming-corpus throughput
+    inputs:
+      suite: "AutomataZoo (matching Cicero's own disclosed dataset choice); individual REs drawn from the same recommended_subset rulesets as the other two variants, for cross-variant traceability"
+      selection: "single REs (not full rulesets) exercised one at a time, each against a bounded input window sized to the implementation's natural operating point (e.g. Cicero's sliding-window architecture) rather than a multi-megabyte streaming corpus"
+      recommended_subset: "same named rulesets as regex-kernel-throughput-precompiled, but evaluated RE-by-RE rather than as a merged ruleset"
+      dense_operand: "N/A"
+    protocol:
+      compilation_reported: "separately, once per RE, following the same compilation_stage_breakdown_required convention as regex-e2e-compilation-amortized where the implementation has distinguishable compile stages"
+      warmup: 1 (discarded)
+      reps: 30 (matches this spec's regex-e2e-compilation-amortized reps_compilation count, since single-match latency measurements are typically as fast and as noise-prone as a compilation-stage measurement, not a multi-second corpus pass)
+      statistic: "median, report min/max"
+      timer: "highest-resolution timer available on the platform (e.g. on-chip cycle counter for FPGA/ASIC designs, device-side events for GPU, std::chrono for CPU), wrapping only the single-match operation"
+      timing_scope: "single match operation only; any per-RE reconfiguration/bitstream-reload time reported separately, once"
+    metric:
+      primary: "median match latency, microseconds"
+      secondary: "energy per match (uJ or W*us, matching Cicero's own W*microsecond unit), reported ONLY if the platform exposes power measurement; min/max latency alongside the median"
+    correctness: >
+      the single match's accept/reject result and (for accepting matches)
+      end-position must match an independent CPU reference automaton
+      simulation for the same RE and input; any mismatch invalidates that
+      repetition.
+
+notes_on_fairness:
+  - >
+    Automata family (DFA vs NFA vs non-classical custom ISA) is a
+    first-class, REQUIRED disclosure field in every variant, not an
+    afterthought — GSpecPal (DFA) is the only paper in this track using a
+    classical DFA table, ngAP/0002PJ20/MFSA are all NFA-lineage (with
+    confirmed shared code ancestry: 0002PJ20 defines GPU-NFA, ngAP reuses
+    it verbatim as a baseline, MFSA extends the same iNFAnt algorithm
+    0002PJ20 also reimplements), and Cicero is neither. A benchmark that
+    silently pooled DFA and NFA throughput numbers together would compare
+    fundamentally different memory-access and parallelism profiles as if
+    they were the same kernel.
+  - >
+    Throughput UNIT is fixed to Gbps across the whole track specifically
+    because the 5 source papers use 4 different, non-interchangeable unit
+    families (ngAP's MB/s, MFSA's RE-count-weighted relative fold-
+    improvement, GSpecPal's raw unreported elapsed seconds, Cicero's
+    per-match microseconds+energy). Every variant requires the Gbps
+    conversion to be computed and reported even when an implementation's
+    own natural unit differs, specifically so results from different
+    papers' artifacts become comparable for the first time.
+  - >
+    Compilation/preprocessing cost is either a first-class contribution
+    (MFSA, Cicero) or entirely shipped-pre-compiled-and-excluded (ngAP,
+    GSpecPal, 0002PJ20) — never something silently amortized without
+    disclosure in this track's own literature. The spec's split into
+    regex-kernel-throughput-precompiled (compilation given, excluded) vs
+    regex-e2e-compilation-amortized (compilation IS the subject, k
+    disclosed) mirrors this real, paper-driven split rather than forcing
+    one universal preprocessing policy.
+  - >
+    MFSA's own inconsistency — 30 repetitions for compilation-time
+    measurement but 15 for execution-time measurement, within the SAME
+    paper — is preserved deliberately in regex-e2e-compilation-amortized's
+    reps_compilation/reps_matching split rather than smoothed over, since
+    it reflects a real methodological choice (compilation is cheaper and
+    noisier per-call, hence more reps) worth keeping visible; the
+    kernel-only variant instead fixes ONE count (10) since it has no
+    compilation/matching split to preserve.
+  - >
+    GSpecPal's two-level warmup (3 discarded shell-level runs on a FIXED
+    automaton, plus an in-kernel warmup phase separately timed and
+    reported) is the most rigorous warmup practice found in this track's
+    artifacts and is adopted as the floor for regex-kernel-throughput-
+    precompiled, rather than the weaker or undisclosed practices of the
+    other 4 papers.
+  - >
+    Correctness validation (exact match-position-list equality against an
+    independent reference) is made mandatory in every variant even though
+    2 of 5 papers' reachable sources do not document one (Cicero, 0002PJ20)
+    — following the two papers that DO (ngAP's "Validation PASS!" gate,
+    GSpecPal's per-block CPU cross-check), on the principle that automata
+    processing has no continuous-error-tolerance concept: a match list is
+    either exactly right or it is a bug, the same reasoning applied to the
+    BFS track's validation-level gate.
+
+open_questions:
+  - >
+    0002PJ20's and GSpecPal's exact paper-reported throughput units could
+    not be confirmed from reachable sources (0002PJ20's "Table 3" script
+    header wasn't inspected in enough detail; GSpecPal's reachable driver
+    code prints only raw seconds, with no throughput normalization visible
+    at all — the true unit, if any, may live in unreached post-processing
+    scripts). The spec's canonical Gbps conversion should be cross-checked
+    against these papers' own published tables once fulltext becomes
+    reachable, rather than assumed correct from the artifact code alone.
+  - >
+    Cicero's full paper fulltext (ACM DL, paywalled) was not reached; it is
+    not confirmed whether the paper reports ANY aggregate corpus-throughput
+    number that would make regex-kernel-throughput-precompiled directly
+    applicable to Cicero, or whether per-match latency truly is its only
+    reported performance framing as the AE.md checklist alone suggests.
+  - >
+    ngAP's exact per-configuration repetition count and warmup protocol
+    (in `launch_exps.py` / `exec_config_*` files, not inspected) were not
+    confirmed; this spec's reps=10 floor for regex-kernel-throughput-
+    precompiled is this spec's own choice, not derived from ngAP's actual
+    practice.
+  - >
+    The relationship between GSpecPal's numeric per-ruleset DFA-size
+    identifiers (e.g. clamAV_DFA1104 through clamAV_DFA2042) and a
+    human-meaningful automaton-size quantity (state count? source-pattern
+    count?) is unconfirmed; regex-kernel-throughput-precompiled's
+    DFA-family recommended_subset picks one arbitrary size id per ruleset
+    pending this clarification, and a dedicated automaton-size-scaling
+    variant (sweeping all 20-23 sizes GSpecPal ships per ruleset) is left
+    as a natural future extension once the size semantics are confirmed.
+  - >
+    Whether MFSA's paper reports any absolute (non-fold-relative) Gbps/MB/s
+    throughput number anywhere beyond the extracted evaluation section is
+    not fully confirmed; regex-e2e-compilation-amortized's requirement to
+    report the M=1 baseline's own absolute Gbps is this spec's own
+    reconstruction from Eq. 11's definition, not a number directly quoted
+    from the paper.
+
+evidence:
+  conf/cgo/SomainiCASC25: >
+    FPGA domain-specific ISA (non-backtracking, functionally NFA-equivalent
+    but not an enumerated NFA/DFA table), MLIR-based compiler; metrics
+    strictly split into compiler-side (avg compilation time us, code size,
+    code locality, on x86) vs architecture-side (avg per-match runtime us,
+    energy per match W*us, on Ultra96-V2 FPGA) vs synthesis-side (resource
+    usage %, on-chip power W); AutomataZoo dataset (sub-benchmarks not
+    enumerated in reachable sources); no warmup/repetition/correctness
+    protocol confirmed; baselines are the paper's own OLD (CASES21) vs NEW
+    compiler only, no external regex engine benchmarked in reachable text.
+  conf/asplos/GeZ024: >
+    NFA, ANMLZoo+AutomataZoo benchmarks (Dotstar/PowerEN/Brill/ClamAV/
+    EntityResolution/FileCarving/CRISPR x2/RandomForest, 10-20MB fixed
+    inputs), throughput = MB/s (confirmed from shipped example: "throughput
+    = 2.19727 MB/s"), every run validated against a serial CPU reference
+    ("Validation PASS!") before counting, 5 selectable optimization stages
+    (blocking->NAP->+prefetch->+memoization->+privatization), baselines
+    include NFA-CG/PPoPP12, AsyncAP/SIGMETRICS23, and 0002PJ20's own
+    GPU-NFA scheme reused verbatim (`obat`), plus Hyperscan as a CPU
+    cross-check; RTX 3090 / V100, CUDA>=12.
+  conf/cgo/CicoliniCSC24: >
+    NFA (Thompson-construction, extends iNFAnt->iMFAnt), 6 named rulesets
+    from Becchi et al. "Regex" + Wadden et al. ANMLZoo (217-300 REs each,
+    exact counts disclosed in Table I), fixed 1MB input corpus, the
+    track's most detailed compilation-stage breakdown (front-end/AST-FSA/
+    single-opt/merging, each independently timed, 30-run average, merging
+    up to 6.65s at M=all), execution throughput averaged over a DIFFERENT
+    count (15 runs), custom RE-count-weighted throughput metric reported
+    mostly as relative fold-improvement vs M=1 (not absolute Gbps),
+    correctness enforced by a formal activation-function model (not a
+    runtime CPU cross-check), single CPU (i7-6700, 4c/8t), merging factor M
+    swept 1 to "all", 1-128 threads for multi-threaded scaling.
+  conf/ipps/WangWQW22: >
+    DFA (the track's only DFA-based paper), real Snort(20)/ClamAV(23)/
+    PowerEN(21) DFA-table size-sweep families, 20x 10MB inputs per ruleset
+    (+20x 20MB for PowerEN) plus a separate 20x 1MB profiling corpus,
+    2-level warmup (3 discarded shell runs + in-kernel timed warmup phase),
+    correctness gated by explicit CPU cross-check with per-block pass/fail,
+    4 speculative-recovery policies swept (merge/end/round/first), NO
+    throughput normalization visible in the reachable driver code (raw
+    elapsed seconds only), compilation entirely out-of-band (pre-shipped
+    DFA tables + a separate offline_dfa_profiler tool), GPU/CUDA hardware
+    (model undisclosed in reachable README).
+  conf/asplos/0002PJ20: >
+    NFA (defines the "GPU-NFA" scheme later reused by ngAP as a baseline),
+    AutomataZoo+"Regex" benchmarks shared with MFSA (Bro217) and ngAP
+    (ClamAV/CRISPR x2/EntityResolution), including a real Snort pcap trace
+    (wrccdc2012.pcap); the track's richest baseline set — reimplementations
+    of iNFAnt and NFA-CG(PPoPP12) plus Micron's real Automata Processor
+    hardware (AP/AP_ideal) plus 5 of the paper's own ablations (NT/NT-Mac/
+    HotStart/HotStart-Mac/HotStartTT); headline metric is "Table 3, absolute
+    throughput" (exact unit unconfirmed from reachable sources); automata
+    shipped pre-converted to ANML (one-shot, not timed); Quadro P6000/V100,
+    CUDA 9.2.

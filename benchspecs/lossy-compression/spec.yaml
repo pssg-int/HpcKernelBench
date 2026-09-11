@@ -1,0 +1,209 @@
+kernel: lossy-compression
+summary: >
+  Measure error-bounded lossy compression/decompression of scientific
+  floating-point data on SDRBench-standard fields: compression ratio and
+  throughput (GB/s) at fixed error bounds, plus a rate-distortion
+  (PSNR-vs-bitrate) curve that lets error-bound-target (SZ-family) and
+  rate-target (ZFP/SPERR-family) compressors be plotted on one axis.
+operation: >
+  compress: C = Compress(D, eb) where D is an n-dimensional fp32/fp64 array
+  and eb is an error-bound spec (mode in {abs, rel}, value in R+);
+  decompress: D' = Decompress(C); correctness requires
+  max_i |D_i - D'_i| <= eb (abs mode) or <= eb * (max(D) - min(D)) (rel mode)
+  for every element, not just on average.
+
+variants:
+  - id: lossy-comp-kernel-cpu-ebound
+    claim: >
+      steady-state CPU compress/decompress throughput and ratio at a fixed
+      error bound; I/O and any one-shot autotuning search excluded and
+      reported separately. The common denominator across the SZ-family
+      papers (PFPL, QoZ, FAZ, TAC/TAC+, and as an SZ3-baseline reference for
+      SPERR).
+    inputs:
+      suite: SDRBench (https://sdrbench.github.io)
+      selection: >
+        named fields from the 6+ SDRBench applications most cited across the
+        surveyed papers (FZ-GPU's 6-dataset table + PFPL/SPERR's explicit
+        SDRBench pointer); fixed list below, both fp32 and fp64 variants
+        where the dataset provides them.
+      recommended_subset:
+        - "HACC/xx (cosmology, 1D, 280,953,867 elements, fp32, log-transform before compression)"
+        - "HACC/vx (cosmology, 1D, 280,953,867 elements, fp32, log-transform before compression)"
+        - "CESM-ATM/CLDICE (climate, 2D 1800x3600, fp32)"
+        - "CESM-ATM/RELHUM (climate, 2D 1800x3600, fp32)"
+        - "NYX/baryon_density (cosmology, 3D 512^3, fp32/fp64)"
+        - "NYX/dark_matter_density (cosmology, 3D 512^3, fp32/fp64)"
+        - "NYX/temperature (cosmology, 3D 512^3, fp32/fp64)"
+        - "Hurricane-ISABEL/CLDICE (weather, 3D 100x500x500, fp32)"
+        - "Hurricane-ISABEL/QRAIN (weather, 3D 100x500x500, fp32)"
+        - "Hurricane-ISABEL/Uf,Vf,Wf (weather, 3D 100x500x500, fp32, velocity components)"
+        - "QMCPACK/einspline (quantum MC, 3D 69x69x115, fp32/fp64)"
+        - "Miranda/density (hydrodynamics, 3D 256x384x384, fp32)"
+        - "Miranda/viscosity (hydrodynamics, 3D 256x384x384, fp32)"
+        - "S3D/combustion field (3D 500^3, fp32)"
+        - "EXAALT (molecular dynamics, 1D 2,869,440 elements, fp64)"
+        - "SCALE-LETKF (climate DA, 3D 98x1200x1200, fp32)"
+      layout: "row-major (C order); dimensions as listed, dim_x fastest-varying per SZ/cuSZp convention"
+    protocol:
+      error_bound:
+        modes: [abs, rel]
+        primary: "rel (fraction of value range max(D)-min(D))"
+        values: [1e-2, 1e-3, 1e-4]
+        note: >
+          rel is the SZ-family/FZ-GPU/cuSZp community default; abs is also
+          swept once per dataset at eb = rel_value * (max(D)-min(D)) for
+          rel in {1e-2,1e-3,1e-4} so both axes are comparable, since TAC
+          and cuSZp report abs-mode numbers directly (TAC used raw abs
+          values 1E8/1E9/1E10 tuned to its own density field's dynamic
+          range, which is not portable across datasets, so we normalize
+          abs bounds through the dataset's own value range instead).
+      warmup: 3
+      reps: 9
+      statistic: "median (report min/max alongside)"
+      timer: "wall-clock (std::chrono / equivalent) wrapping only the compress() / decompress() call on data already resident in memory"
+      timing_scope: "kernel only; disk I/O, format parsing, and any autotuning parameter search excluded"
+      preprocessing_reported: "separately, once per dataset x error-bound point (covers AMR-style level-unification preprocessing and FAZ-style autotuning search, both observed as one-shot costs in the surveyed papers)"
+    metric:
+      primary: "compression ratio (original_bytes / compressed_bytes)"
+      secondary: "throughput GB/s, both directions (original_bytes / compress_time, original_bytes / decompress_time) -- numerator is ALWAYS original (uncompressed) byte count, confirmed community convention (cross-checked from lsCOMP's worked example)"
+    correctness: "100% of reconstructed elements satisfy |D_i - D'_i| <= eb (zero pointwise violations, not a statistical/average tolerance -- this is the compressor's core guarantee, not an approximation)"
+
+  - id: lossy-comp-gpu-dual-scope
+    claim: >
+      GPU kernel throughput reported at TWO explicit scopes so the two
+      incompatible community meanings of "end-to-end" (FZ-GPU/TAC's
+      incl.-PCIe-transfer sense vs. cuSZp's fused-single-kernel-only sense)
+      are never conflated: (a) device-resident kernel-only throughput, and
+      (b) full pipeline throughput including H2D input transfer and D2H
+      compressed/decompressed output transfer.
+    inputs:
+      suite: SDRBench (same recommended_subset as lossy-comp-kernel-cpu-ebound)
+      dense_operand: "n/a (not a GEMM-style kernel); data resident on device as flat fp32/fp64 buffer, dims passed via -d flag per cuSZp/lsCOMP CLI convention"
+    protocol:
+      error_bound:
+        modes: [abs, rel]
+        values: [1e-2, 1e-3, 1e-4]
+      warmup: 3
+      reps: 20
+      statistic: "median (report min/max)"
+      timer: "device-side events (CUDA events), matching cuSZp's TimingGPU pattern"
+      timing_scope_a: "kernel-only: timer starts/stops around the compress()/decompress() device-pointer-to-device-pointer call, H2D/D2H excluded (this is what cuSZp/cuSZp2/cuSZp3 call 'end-to-end' -- one fused kernel, no PCIe)"
+      timing_scope_b: "full-pipeline: timer starts before H2D copy of input, stops after D2H copy of decompressed output lands on host (this is what FZ-GPU's 'overall throughput' and TAC's 'total time' mean)"
+      preprocessing_reported: "n/a for regular-grid SDRBench inputs at this variant; format is a flat array, no conversion step"
+    metric:
+      primary: "compression ratio (original_bytes / compressed_bytes)"
+      secondary: "throughput GB/s at scope (a) and scope (b) reported as two separate numbers, never averaged together"
+    correctness: "100% of reconstructed elements satisfy |D_i - D'_i| <= eb, verified after D2H copy-back (not on-device only, to catch transfer corruption)"
+
+  - id: lossy-comp-rate-distortion
+    claim: >
+      rate-distortion curve (PSNR in dB vs. bits-per-value) comparing
+      rate-target compressors (ZFP, SPERR) against error-bound-target
+      compressors (SZ-family, cuSZp, FZ-GPU) on one shared axis -- resolves
+      the track's core divergence that these two compressor families expose
+      opposite control knobs (SPERR/ZFP take bpp as input and report
+      resulting PSNR; SZ-family take error bound as input and report
+      resulting bpp+PSNR).
+    inputs:
+      suite: SDRBench (same recommended_subset as lossy-comp-kernel-cpu-ebound, 3D fields only -- SPERR's compressor_3d requires volumetric input)
+      selection: "NYX/baryon_density, Hurricane-ISABEL/CLDICE, Miranda/density, S3D combustion field, QMCPACK/einspline (5 of the 16 above, chosen because all 4 surveyed families -- SZ3/QoZ, cuSZp, FZ-GPU, SPERR -- publish numbers on at least one of them)"
+    protocol:
+      sweep_axis: "for rate-target compressors (ZFP, SPERR): sweep target bitrate bpp in {0.125, 0.25, 0.5, 1, 2, 4} bits/value, taken directly from SPERR's own evaluate_compress.sh sweep list, record resulting PSNR"
+      sweep_axis_alt: "for error-bound-target compressors (SZ3, QoZ, FAZ, cuSZp, FZ-GPU): sweep rel error bound in {3e-1, 1e-1, 3e-2, 1e-2, 3e-3, 1e-3, 3e-4, 1e-4, 3e-5, 1e-5} (log-spaced to cover the same ~0.1-4 bpp range these compressors typically land in), record resulting (bpp, PSNR) pair"
+      warmup: 3
+      reps: 5
+      statistic: median
+      timer: "wall-clock CPU or device-side GPU events per the compressor's native platform"
+      timing_scope: "kernel only, same as lossy-comp-kernel-cpu-ebound; RD variant's primary deliverable is the curve, not throughput, but timing is still recorded per point for the record"
+    metric:
+      primary: "PSNR (dB) at each achieved bitrate (bits-per-value = 8 * compressed_bytes / n_elements)"
+      secondary: "compression ratio at each point, throughput at each point (for context, not the headline)"
+    correctness: "for error-bound-target compressors: 100% pointwise |D_i-D'_i| <= eb still enforced at every swept eb, exactly as in lossy-comp-kernel-cpu-ebound; for rate-target compressors (no error-bound contract at fixed bpp): PSNR itself IS the reported quality metric, no separate pass/fail gate"
+
+notes_on_fairness:
+  - >
+    "End-to-end" is a false-friend term in this literature: FZ-GPU/TAC use it
+    to mean incl. PCIe transfer, cuSZp/cuSZp2/cuSZp3 use it to mean "one
+    fused kernel, no multi-pass pipeline" (explicitly PCIe-EXCLUDED). The
+    spec never reuses the bare term; lossy-comp-gpu-dual-scope names both
+    scopes explicitly and reports them as two separate numbers so no paper's
+    claim can be silently compared against the wrong scope.
+  - >
+    TAC (HPDC'22) merges AMR-level-unification preprocessing into its
+    reported throughput; its own successor TAC+ (TPDS'24) separates it out.
+    The CPU kernel-only variant follows TAC+'s (the more rigorous, more
+    recent) convention: preprocessing reported separately, never silently
+    amortized into the per-run kernel number.
+  - >
+    FAZ's one-shot autotuning search (predictor/encoder combination search
+    per block) is architecturally the same kind of one-shot cost as format
+    conversion in other tracks' kernel-only-vs-e2e split: reported once,
+    separately, never amortized into steady-state throughput without saying
+    so.
+  - >
+    The rate-distortion variant's error-bound sweep for SZ-family
+    compressors is a spec design choice (log-spaced eb list), not something
+    directly lifted from any single paper, because no surveyed SZ-family
+    paper publishes a literal bpp-target sweep -- they all sweep error
+    bound and only incidentally report the resulting bpp. This is flagged
+    as engineered-for-fairness rather than literature-derived.
+  - >
+    Correctness is a hard 100%-pointwise gate, not a statistical tolerance
+    (unlike, e.g., an SpMM-style "<1e-4 relative error" spec) -- because the
+    entire product claim of every SZ/ZFP-family compressor in this track is
+    a guaranteed pointwise error bound, and a spec that only checked average
+    error would let a compressor that silently violates the bound on a
+    minority of elements pass.
+  - >
+    lsCOMP (uint16/uint32 light-source data, quantization-bin + pooling
+    lossy knobs instead of abs/rel error bound) and the TAC/TAC+ AMR family
+    (hierarchical multi-level grids, not flat arrays) are both genuinely
+    out of scope for the 3 variants above -- forcing them onto the abs/rel
+    SDRBench axis would misrepresent what they actually measure. See
+    open_questions.
+
+open_questions:
+  - >
+    QoZ (SC'22), FAZ (ICS'23), and VGC/cuSZp3 (SC'25) paper PDFs are
+    ACM-DL/computer.org paywalled and were not machine-readable via WebFetch
+    (redirects to dl.acm.org returned 403). Their exact named dataset lists,
+    disclosed repetition counts, and hardware are therefore NOT independently
+    confirmed here -- only README + abstract-level claims were used. If a
+    verified copy becomes available, the recommended_subset and protocol
+    numbers above should be cross-checked against it.
+  - >
+    No AMR-specific benchmark variant is defined despite 2 dedicated papers
+    (TAC, TAC+) and partial relevance in IPComp/CEAZ, because there is no
+    SDRBench-equivalent standardized AMR corpus found during this survey (TAC
+    and TAC+ each use their own private Nyx/WarpX/IAMR dumps, not a shared
+    public benchmark set). Flagged as a follow-up track extension, not
+    solved here.
+  - >
+    lsCOMP's integer quantization-bin + pooling lossy mode has no closed-form
+    error-bound equivalent to compare against the rest of the track's abs/rel
+    convention; excluded from all 3 variants rather than force-fit.
+  - >
+    Repetition/warmup counts are a synthesis (PFPL's disclosed 9 reps +
+    lsCOMP's disclosed 3 warmup iters), not a literature-wide consensus --
+    most surveyed papers disclose neither number. This is the single
+    protocol parameter in this spec with the weakest evidentiary backing.
+  - >
+    SPERR's third quality-control mode (point-wise error, PWE) is
+    functionally identical to the SZ-family's abs-error-bound mode and could
+    arguably be folded into lossy-comp-kernel-cpu-ebound rather than only
+    appearing in the RD variant; left in the RD variant only for this first
+    cut since that is where the surveyed evidence (evaluate_compress.sh) was
+    found.
+
+evidence:
+  conf/hpdc/ZhangTD0F0TC23: "arXiv 2304.12557 fulltext (ar5iv): 6 SDRBench fields, rel eb {1e-2..1e-4}, kernel-time throughput reported separately from PCIe-inclusive 'overall throughput'; baselines cuZFP/cuSZ/cuSZx/MGARD-GPU on A100/RTX A4000"
+  journals/tpds/WangPGJTZAT24: "arXiv 2301.01901 fulltext: 10 AMR datasets (Nyx/WarpX/IAMR), preprocessing (OpST/AKDTree) time reported separately from compression time, dual 28-core Xeon Gold 6238R"
+  conf/hpdc/WangPGJTAT22: "arXiv 2204.00711 fulltext: 7 Nyx AMR datasets, abs eb {1E8,1E9,1E10}, throughput = orig_size / (preproc+compress+decompress) time -- MERGED unlike its own successor TAC+"
+  conf/ipps/FallinADCB25: "github.com/burtscher/PFPL README: SDRBench inputs, abs/rel/normalized-abs (NOA) error bounds, '9 times, runtimes reported in seconds' to match the paper, Threadripper 2950X CPU / RTX 4090 GPU, guarantees CPU==GPU bit-identical output"
+  conf/sc/HuangD0LC23: "github.com/szcompressor/cuSZp README: abs/rel CLI flags, TimingGPU device-side timer wraps only compress()/decompress() call (H2D/D2H outside timed region despite being labeled 'end-to-end'), 1D/2D/3D + fixed/plain/outlier modes, A100 numbers 231-627 GB/s"
+  external:qoz: "github.com/robertu94/QoZ README + abstract: SZ3-drop-in CLI, '-q 0' ablation to plain SZ3, '6 real-world scientific applications' + '6 other SOTA compressors' (unnamed), full paper paywalled"
+  conf/ipps/LiLC23: "github.com/NCAR/SPERR README + evaluations/evaluate_compress.sh (raw script read): bpp sweep {0.125,0.25,0.5,1,2,4} is the canonical protocol, PSNR-BPP.data + gnuplot RD-curve output confirmed in evaluations/compare_zfp_sz/, three quality-control modes (BPP/PSNR/PWE)"
+  conf/ics/LiuDZ0CC23: "github.com/JLiu-1/FAZ README + abstract: CLI 'identical to sz3 command', '-F 0' ablation mirrors QoZ's '-q 0', '6 real-world scientific applications' + '6 SOTA compressors' (unnamed), full paper paywalled, approach=autotuning per track_inputs.json"
+  conf/sc/HuangDUMCLSC25: "github.com/szcompressor/lsCOMP README: uint16/uint32 light-source data (NOT fp32/fp64 -- excluded from core spec), 'GPU Warmup...3 iterations' confirmed, explicit disk/H2D/kernel/D2H timing breakdown, throughput = orig_bytes/kernel_time confirmed by arithmetic cross-check (6.78GB/0.012865s=527GB/s vs reported 490.76GB/s)"
+  external:sdrbench: "WebFetch sdrbench.github.io: 15 standard datasets (CESM-ATM, EXAALT, Hurricane-ISABEL, EXAFEL, HACC, NYX, NWChem, SCALE-LETKF, QMCPACK, Miranda, S3D, XGC, NSTX-GPI, 2x Brown synthetic) -- the field's de-facto standard suite, used directly or by named-field convention in 7/9 surveyed papers"

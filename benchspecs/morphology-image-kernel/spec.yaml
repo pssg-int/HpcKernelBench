@@ -1,0 +1,59 @@
+kernel: morphology-image-kernel
+summary: >
+  Generated-code throughput for an image-processing pipeline (Harris corner
+  detector: grayscale -> Sobel gradients -> structure-tensor sum -> corner
+  response) on mobile ARM CPUs, comparing a domain-extensible rewrite-rule
+  compiler (Rise/Shine, and Lift) against Halide (default schedule) and
+  OpenCV, with a mandatory per-pixel-error + PSNR correctness gate before any
+  timing counts.
+operation: >
+  Given an RGB image, compute the Harris corner-response map: convert to
+  grayscale, compute Sobel x/y gradients, form the local structure tensor
+  via a windowed (3x3) weighted sum of gradient products, and compute the
+  corner response R = det(M) - k*trace(M)^2 (k=0.04) per pixel.
+variants:
+  - id: morph-harris-kernel-throughput
+    claim: >
+      steady-state per-image kernel throughput across implementations and
+      target CPUs, matching the artifact's own confirmed protocol (30
+      timing iterations, median/min/max), with the timer-mechanism
+      asymmetry between implementations (wall-clock vs. OpenCL device-side
+      events) explicitly reported rather than hidden, since it is a real
+      methodological difference found in the source.
+    inputs:
+      suite: "the artifact's own two bundled images: rgb.png (Halide's demo image, 'small') and venice_wikimedia.jpg (PolyMage's demo image, 'big'); exact pixel dimensions not independently re-verified in this survey"
+      selection: "both images, matching the artifact's own fixed 2-image evaluation set (this is a domain-extensible-compiler paper, not a dataset-breadth paper; the image suite is deliberately small and this spec does not expand it, since doing so would not be reproducing the paper's own claims)"
+      targets: "4 ARM CPU targets from the artifact's own shipped configs: Cortex-A7, Cortex-A15 (Odroid XU4), Cortex-A53, Cortex-A73 (Odroid N2); an x86 Intel-i7-7700 config is also shipped as a portability example"
+      implementations: "OpenCV (cv::cornerHarris, CPU reference/baseline), Halide (default schedule), Rise/Shine (SHINE_VERSIONS OpenCL-kernel variants -- exact count not enumerated in this survey), Lift (OpenCL-kernel variant)"
+    protocol:
+      warmup: "0 (matching the artifact's own confirmed behavior: all 30 iterations are recorded, no discarded warmup iteration; median is taken over all 30, which is somewhat but not fully warmup-robust)"
+      reps: 30
+      statistic: "median (report min/max), matching the artifact's own time_stats()/ocl_time_stats() convention exactly"
+      timer: "TWO mechanisms, per implementation, matching the artifact's own confirmed asymmetry: std::chrono::high_resolution_clock wall time (Halide, OpenCV -- includes host dispatch/queueing) vs. OpenCL device-side profiling events (Rise/Shine, Lift -- CL_PROFILING_COMMAND_START/_END, excludes host-side overhead). Report BOTH the raw numbers under each implementation's own native timer AND flag that the two are not directly comparable without a host-overhead correction (see notes_on_fairness)."
+      timing_scope: "kernel-only per iteration (image already resident in memory, output write not timed); code generation (Halide/Rise/Shine AOT compilation) and image I/O are excluded from the timed loop and are one-shot setup costs, not reported per this artifact snapshot"
+    metric:
+      primary: "median wall/device time, ms, per (image, target CPU, implementation)"
+      secondary: "speedup vs OpenCV and speedup vs Halide-default, dimensionless x, matching the paper's own headline framing (up to 16x over OpenCV, up to 1.4x over Halide)"
+    correctness: >
+      MANDATORY pre-timing gate, matching the artifact's own confirmed
+      error_stats() check exactly: every non-reference implementation's
+      output is compared pixel-by-pixel against the Halide default-schedule
+      output (the artifact's own designated gold reference) on the SAME
+      image; max per-pixel absolute error, normalized by the gold image's
+      own dynamic range, must be <= 0.01, AND PSNR must be >= 100 dB. Both
+      conditions must hold (the artifact enforces both, aborting the run on
+      failure of either) before that implementation's timing numbers for
+      that image count.
+
+notes_on_fairness:
+  - "The artifact uses two different timer mechanisms for different implementations in the same benchmark run: CPU wall-clock (std::chrono, includes host-side dispatch/queueing overhead) for Halide and OpenCV, vs. OpenCL device-side profiling events (excludes host-side overhead) for Rise/Shine and Lift. This asymmetry systematically favors the OpenCL-timed implementations' reported numbers over the wall-clock-timed ones. This spec requires both numbers be reported under their native timers AND flags that a fair head-to-head speedup claim needs either a host-overhead-inclusive OpenCL wall-clock measurement or a device-side-only Halide/OpenCV measurement -- the artifact's own headline speedup claim (up to 16x over OpenCV) crosses this asymmetry and should be read with that caveat."
+  - "The Halide auto-scheduled variant's timing loop was found commented out in the exact artifact snapshot read (only its correctness check against the default schedule remains active); this spec does not include auto-scheduled-Halide as a confirmed-active timed implementation, and a re-measurement pass should confirm whether a newer artifact revision re-enables it."
+  - "The 2-image evaluation set (one small, one big) is small by the standards of most tracks in this project; this spec keeps it as-is (following the artifact's own convention) rather than inventing additional images, since expanding the suite would no longer be measuring what this specific paper's own artifact evaluates."
+
+open_questions:
+  - "Exact pixel dimensions of rgb.png and venice_wikimedia.jpg were not independently re-verified (would require fetching the binary image files from the Halide/PolyMage git submodules, out of scope for this survey pass)."
+  - "The exact number and identity of SHINE_VERSIONS (the Rise/Shine OpenCL-kernel variants swept in the timing loop) was not enumerated from the source read -- only that the loop iterates 'for (int version = 0; version < SHINE_VERSIONS; version++)'."
+  - "Whether a corrected, timer-symmetric comparison (both implementations under the same timer mechanism) is available anywhere in the paper's own text was not checked (no arXiv/OA fulltext was fetched for this paper in this survey pass, only the GitHub artifact)."
+
+evidence:
+  conf/cgo/KoehlerS21: "domain-extensible rewrite-rule compiler (Rise/Shine) generating Harris-corner-detector OpenCL kernels for ARM mobile CPUs; benchmarked against Halide (default schedule; auto-scheduled variant's timing disabled in this snapshot), Lift, and OpenCV on 2 images x 4 ARM targets; 30 timing iterations, median/min/max reported, std::chrono wall-clock for Halide/OpenCV vs OpenCL device-side profiling events for Rise/Shine/Lift; mandatory error_stats() gate (per-pixel <=0.01 normalized error AND PSNR>=100dB vs Halide-default gold) before timing counts; up to 16x over OpenCV, up to 1.4x over Halide."

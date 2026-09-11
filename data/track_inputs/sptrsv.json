@@ -1,0 +1,93 @@
+{
+ "kernel": "sptrsv",
+ "papers": [
+  {
+   "key": "conf/sc/01790S0L23",
+   "title": "Unified Communication Optimization Strategies for Sparse Triangular Solver on CPU and GPU Clusters",
+   "venue": "SC",
+   "year": 2023,
+   "doi": "10.1145/3581784.3607092",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3581784.3607092",
+   "artifact_url": "https://github.com/xiaoyeli/superlu_dist",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu",
+    "nvidia-gpu",
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "abstract": "This paper presents a unified communication optimization framework for sparse triangular solve (SpTRSV) algorithms on CPU and GPU clusters. The framework builds upon a 3D communication-avoiding (CA) layout of Px × Py × Pz processes that divides a sparse matrix into Pz submatrices, each handled by a Px × Py 2D grid with block-cyclic distribution. We propose three communication optimization strategies: First, a new 3D SpTRSV algorithm is developed, which trades the inter-grid communication and synchronization with replicated computation. This design requires only one inter-grid synchronization, and the inter-grid communication is efficiently implemented with sparse allreduce operations. Second, broadcast and reduction communication trees are used to reduce message latency of the intra-grid 2D communication on CPU clusters. Finally, we leverage GPU-initiated one-sided communication to imple",
+   "one_liner": "3D communication-avoiding SpTRSV algorithm scaling to 256 GPUs, up to 6.5x over 2D SpTRSV"
+  },
+  {
+   "key": "conf/ipps/ZarebavaniCLSD22",
+   "title": "HDagg: Hybrid Aggregation of Loop-carried Dependence Iterations in Sparse Matrix Computations",
+   "venue": "IPDPS",
+   "year": 2022,
+   "doi": "10.1109/IPDPS53621.2022.00121",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/BehroozZare/HDagg-benchmark",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "This paper proposes a novel aggregation algorithm, called Hybrid DAG Aggregation (HDagg), that groups iterations of sparse matrix computations with loop carried dependence to improve their parallel execution on multicore processors. Prior approaches to optimize sparse matrix computations fail to provide an efficient balance between locality, load balance, and synchronization and are primarily optimized for codes with a tree-structure data dependence. HDagg is optimized for sparse matrix computations that their data dependence graphs (DAGs) do not have a tree structure, such as incomplete matrix factorization algorithms. It uses a hybrid approach to aggregate vertices and wavefronts in the DAG of a sparse computation to create well-balanced parallel workloads with good locality. Across three sparse kernels, triangular solver, incomplete Cholesky, and incomplete LU, HDagg outperforms exist",
+   "one_liner": "HDagg hybrid DAG aggregation scheduling beats MKL 3.56x on triangular-solve/ILU/IC kernels"
+  },
+  {
+   "key": "conf/sc/CheshmiCD22",
+   "title": "Vectorizing Sparse Matrix Computations with Partially-Strided Codelets",
+   "venue": "SC",
+   "year": 2022,
+   "doi": "10.1109/SC41404.2022.00037",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/sparse-specialize/partially-strided-codelet",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "abstract": "The compact data structures and irregular computation patterns in sparse matrix computations introduce challenges to vectorizing these codes. Available approaches primarily vec-torize strided computation regions of a sparse code. In this work, we propose a locality-based codelet mining (LCM) algorithm that efficiently searches for strided and partially strided regions in sparse matrix computations for vectorization. We also present a classification of partially strided codelets and a differentiation-based approach to generate codelets from memory accesses in the sparse computation. LCM is implemented as an inspector-executor framework called LCM I/E that generates vectorized code for the sparse matrix-vector multiplication (SpMV), sparse matrix times dense matrix (SpMM), and sparse triangular solver (SpTRSV). LCM I/E outperforms the MKL library with an average speedup of 1.67x, 4.1x, and",
+   "one_liner": "Partially-strided codelet mining vectorizes SpMV/SpMM/SpTRSV, beats MKL by up to 4.1x"
+  },
+  {
+   "key": "journals/tpds/AhmadYU21",
+   "title": "A Split Execution Model for SpTRSV",
+   "venue": "TPDS",
+   "year": 2021,
+   "doi": "10.1109/TPDS.2021.3074501",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/ParCoreLab/Split_SpTRSV",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu",
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Sparse Triangular Solve (SpTRSV) is an important and extensively used kernel in scientific computing. Parallelism within SpTRSV depends upon matrix sparsity pattern and, in many cases, is non-uniform from one computational step to the next. In cases where the SpTRSV computational steps have contrasting parallelism characteristics- some steps are more parallel, others more sequential in nature, the performance of an SpTRSV algorithm may be limited by the contrasting parallelism characteristics. In this work, we propose a split-execution model for SpTRSV to automatically divide SpTRSV computation into two sub-SpTRSV systems and an SpMV, such that one of the sub-SpTRSVs has more parallelism than the other. Each sub-SpTRSV is then computed using different SpTRSV algorithms, which are possibly executed on different platforms (CPU or GPU). By analyzing the SpTRSV Directed Acyclic Graph (DAG) a",
+   "one_liner": "Split-execution model dividing SpTRSV into two sub-solves plus SpMV across CPU/GPU, up to 10x speedup"
+  },
+  {
+   "key": "journals/tpds/ZhangSLHWDW21",
+   "title": "YuenyeungSpTRSV: A Thread-Level and Warp-Level Fusion Synchronization-Free Sparse Triangular Solve",
+   "venue": "TPDS",
+   "year": 2021,
+   "doi": "10.1109/TPDS.2021.3066635",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/JiyaSu/YuenyeungSpTRSV",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Sparse triangular solves (SpTRSVs) are widely used in linear algebra domains, and several GPU-based SpTRSV algorithms have been developed. Synchronization-free SpTRSVs, due to their short preprocessing time and high performance, are currently the most popular SpTRSV algorithms. However, we observe that the performance of those SpTRSV algorithms on different matrices can vary greatly by 845 times. Our further studies show that when the average number of components per level is high and the average number of nonzero elements per row is low, those SpTRSVs exhibit extremely low performance. The reason is that, they use a warp on the GPU to process a row in sparse matrices, and such warp-level designs have severe underutilization of the GPU. To solve this problem, we propose YuenyeungSpTRSV, a thread-level and wrap-level fusion synchronization-free SpTRSV algorithm, which handles the rows wit",
+   "one_liner": "YuenyeungSpTRSV: thread+warp fused sync-free SpTRSV, 4.83x faster than cuSPARSE."
+  }
+ ]
+}

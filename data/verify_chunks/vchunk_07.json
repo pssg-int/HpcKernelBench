@@ -1,0 +1,1092 @@
+[
+ {
+  "key": "journals/tpds/ShiLXSH21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Planetary Normal Mode Computation: Parallel Algorithms, Performance, and Reproducibility",
+  "abstract": "This article is an extension of work entitled “Computing planetary interior normal modes with a highly parallel polynomial filtering eigensolver.” by Shi <italic xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">et al.</i> , <xref ref-type=\"bibr\" rid=\"ref1\" xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">[1]</xref> originally presented at the SC18 conference. A highly parallel polynomial filtered eigensolver was developed and exploited to calculate the planetary normal modes. The proposed method is ideally suited for computing interior eigenpairs for large-scale eigenvalue problems as it greatly enhances memory and computational efficiency. In this article, the second-order finite element method is used to further improve the accuracy as only the first-order finite element method was deployed in the previous work. The parallel algorithm, its parallel performance up to 20k processors, and the great computational accuracy are illustrated. The reproducibility of the previous work was successfully performed on the Student Cluster Competition at the SC19 conference by several participant teams using a completely different Mars-model dataset on different clusters. Both weak and strong scaling performances of the reproducibility by the participant teams were impressive and encouraging. The analysis and reflection of their results are demonstrated and future direction is discussed.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la"
+   ],
+   "kernels": [
+    "eigensolver"
+   ],
+   "platform": [
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "low",
+   "one_liner": "Polynomial-filtered parallel eigensolver for planetary normal modes; scales to 20k cores."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/NobreISS21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Retargeting Tensor Accelerators for Epistasis Detection",
+  "abstract": "The substitution of nucleotides at specific positions in the genome of a population, known as single-nucleotide polymorphisms (SNPs), has been correlated with a number of important diseases. Complex conditions such as Alzheimer's disease or Crohn's disease are significantly linked to genetics when the impact of multiple SNPs is considered. SNPs often interact in an epistatic manner, where the joint effect of multiple SNPs may not be simply mapped to a linear additive combination of individual effects. Genome-wide association studies considering epistasis are computationally challenging, especially when performing triplet searches is required. Some contemporary computer architectures support fused XOR and population count as the highest throughput operations as part of tensor operations. This article presents a new approach for efficiently repurposing this capability to accelerate 2-way (pairs) and 3-way (triplets) epistasis detection searches. Experimental evaluation targeting the Turing GPU architecture resulted in previously unattainable levels of performance, with the proposal being able to evaluate up to 108.1 and 54.5 tera unique sets of SNPs per second, scaled to the sample size, in 2-way and 3-way searches, respectively.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels",
+    "primitives"
+   ],
+   "kernels": [
+    "XOR+popcount tensor op"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Repurposes tensor-core XOR+popcount ops to accelerate 2-/3-way SNP epistasis search."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/LiLLRCL21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "SGD$\\_$_Tucker: A Novel Stochastic Optimization Strategy for Parallel Sparse Tucker Decomposition",
+  "abstract": "Sparse Tucker Decomposition (STD) algorithms learn a core tensor and a group of factor matrices to obtain an optimal low-rank representation feature for the High-Order, High-Dimension, and Sparse Tensor (HOHDST). However, existing STD algorithms face the problem of intermediate variables explosion which results from the fact that the formation of those variables, i.e., matrices Khatri-Rao product, Kronecker product, and matrix-matrix multiplication, follows the whole elements in sparse tensor. The above problems prevent deep fusion of efficient computation and big data platforms. To overcome the bottleneck, a novel stochastic optimization strategy (SGD Tucker) is proposed for STD which can automatically divide the high-dimension intermediate variables into small batches of intermediate matrices. Specifically, SGD Tucker only follows the randomly selected small samples rather than the whole elements, while maintaining the overall accuracy and convergence rate. In practice, SGD Tucker features the two distinct advancements over the state of the art. First, SGD Tucker can prune the communication overhead for the core tensor in distributed settings. Second, the low data-dependence of SGD Tucker enables fine-grained parallelization, which makes SGD Tucker obtaining lower computational overheads with the same accuracy. Experimental results show that SGD Tucker runs at least 2X faster than the state of the art.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "tensor",
+    "sparse_la"
+   ],
+   "kernels": [
+    "sparse Tucker decomposition"
+   ],
+   "platform": [
+    "distributed",
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "SGD_Tucker: stochastic mini-batching for sparse Tucker decomposition, >=2x faster, less memory."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/FormisanoGV21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Scalable Energy Games Solvers on GPUs",
+  "abstract": "Modeling the consumption of limited resources, e.g., time or energy, plays a central role on the design of reactive systems such as embedded controllers. To this aim, quantitative objectives are defined on game arenas that can be easily modeled as weighted graphs. Instances of these games, called <i>energy games</i> , can be solved in <inline-formula><tex-math notation=\"LaTeX\">${\\mathcal {O}(\\vert {E}\\vert {\\cdot }\\vert {V}\\vert {\\cdot }W)}$</tex-math></inline-formula> where <inline-formula><tex-math notation=\"LaTeX\">$W$</tex-math></inline-formula> is the maximum weight. Recent work has demonstrated that sequential implementations hardly solve practical instances due to their size and the number of interactions required to converge to a solution. Recent work has demonstrated that sequential implementations hardly solve practical instances. Furthermore, emerging approaches, that have investigated the parallelism of CPUs multi-core and GPU for solving the <i>initial credit problem</i> for energy games, still perform poorly due to the non-trivial characteristics of these graphs. In this article we first describe a revised version of the algorithm on multi-core CPU that obtains a faster convergence time on real-world graphs with up to 30x against the serial implementation by showing good scalability overall. Second, we provide a new GPU-based parallel implementation based on warp-level primitives that allows to reduce the time-to-solution on several instances with up to 3.6x of speed-up against traditional parallel vertex-based approaches. We also discuss a methodology to build synthetic energy games to validate the scalability of parallel algorithms on two totally different settings.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "energy game solver"
+   ],
+   "platform": [
+    "nvidia-gpu",
+    "cpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Warp-level-primitive GPU solver for energy games; 3.6x over vertex-based GPU baseline."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/WangHCYGH21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Towards Efficient Distributed Subgraph Enumeration Via Backtracking-Based Framework",
+  "abstract": "Finding or monitoring subgraph instances that are isomorphic to a given pattern graph in a data graph is a fundamental query operation in many graph analytic applications, such as network motif mining and fraud detection. Existing distributed methods are inefficient in communication. They have to shuffle partial matching results during the distributed multiway join. The partial matching results may be much larger than the data graph itself. To overcome the drawback, we develop the Batch-BENU framework for distributed subgraph enumeration on static data graphs. Batch-BENU executes a group of local search tasks in parallel. Each task enumerates subgraphs around a vertex in the data graph, guided by a backtracking-based execution plan. To handle large-scale data graphs that may exceed the memory capacity of a single machine, Batch-BENU stores the data graph in a distributed database. Each task queries adjacency sets of the data graph on demand, shuffling the data graph instead of partial matching results. To support incremental subgraph enumeration on dynamic data graphs, we propose the Streaming-BENU framework. Streaming-BENU turns the problem of enumerating incremental matching results into enumerating all matching results of incremental pattern graphs at each time step. We implement Batch-BENU and Streaming-BENU with the local database cache and the load balance optimization to improve their efficiency. Extensive experiments show that Batch-BENU and Streaming-BENU can scale to big graphs and complex pattern graphs. They outperform the state-of-the-art distributed methods by up to one and two orders of magnitude, respectively.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "subgraph enumeration"
+   ],
+   "platform": [
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Batch/Streaming-BENU: backtracking distributed subgraph enumeration avoiding partial-match shuffles."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/LichtBMH21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Transformations of High-Level Synthesis Codes for High-Performance Computing",
+  "abstract": "Spatial computing architectures promise a major stride in performance and energy efficiency over the traditional load/store devices currently employed in large scale computing systems. The adoption of high-level synthesis (HLS) from languages such as C++ and OpenCL has greatly increased programmer productivity when designing for such platforms. While this has enabled a wider audience to target spatial computing architectures, the optimization principles known from traditional software design are no longer sufficient to implement high-performance codes, due to fundamentally distinct aspects of hardware design, such as programming for deep pipelines, distributed memory resources, and scalable routing. To alleviate this, we present a collection of optimizing transformations for HLS, targeting scalable and efficient architectures for high-performance computing (HPC) applications. We systematically identify classes of transformations (pipelining, scalability, and memory), the characteristics of their effect on the HLS code and the resulting hardware (e.g., increasing data reuse or resource consumption), and the objectives that each transformation can target (e.g., resolve interface contention, or increase parallelism). We show how these can be used to efficiently exploit pipelining, on-chip distributed fast memory, and on-chip dataflow, allowing for massively parallel architectures. To quantify the effect of various transformations, we cover the optimization process of a sample set of HPC kernels, provided as open source reference codes. We aim to establish a common toolbox to guide both performance engineers and compiler engineers in tapping into the performance potential offered by spatial computing architectures using HLS.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la",
+    "stencil_pde"
+   ],
+   "kernels": [
+    "GEMM",
+    "stencil"
+   ],
+   "platform": [
+    "fpga"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Catalog of HLS source-to-source optimizing transformations for HPC kernels on FPGA."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/ShahrouzSH21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "gIM: GPU Accelerated RIS-Based Influence Maximization Algorithm",
+  "abstract": "Given a social network modeled as a weighted graph GG, the influence maximization problem seeks kk vertices to become initially influenced, to maximize the expected number of influenced nodes under a particular diffusion model. The influence maximization problem has been proven to be NP-hard, and most proposed solutions to the problem are approximate greedy algorithms, which can guarantee a tunable approximation ratio for their results with respect to the optimal solution. The state-of-the-art algorithms are based on Reverse Influence Sampling (RIS) technique, which can offer both computational efficiency and non-trivial (1-1/e-ε)(1-1/e-ε)-approximation ratio guarantee for any ε > 0ε>0. RIS-based algorithms, despite their lower computational cost compared to other methods, still require long running times to solve the problem in large-scale graphs with low values of ε. In this article, we present a novel and efficient parallel implementation of a RIS-based algorithm, namely IMM, on GPU. The proposed GPU-accelerated influence maximization algorithm, named gIM, can significantly reduce the running time on large-scale graphs with low values of ε. Furthermore, we show that gIM algorithm can solve other variations of the IM problem, only by applying minor modifications. Experimental results show that the proposed solution reduces the runtime by a factor up to 220 ×. The source code of gIM is publicly available online.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "influence maximization"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "gIM: GPU-parallel RIS/IMM influence maximization, up to 220x runtime reduction."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/XuSYLJ22",
+  "venue": "TPDS",
+  "year": 2022,
+  "title": "Accelerating Backward Aggregation in GCN Training With Execution Path Preparing on GPUs",
+  "abstract": "The emerging <italic xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">Graph Convolutional Network</i> (GCN) has been widely used in many domains, where it is important to improve the efficiencies of applications by accelerating GCN trainings. Due to the sparsity nature and exploding scales of input real-world graphs, state-of-the-art GCN training systems (e.g., GNNAdvisor) employ graph processing techniques to accelerate the message exchanging (i.e., aggregations) among the graph vertices. Nevertheless, these systems treat both the aggregation stages of forward and backward propagation phases as all-active graph processing procedures that indiscriminately conduct computations on all vertices of an input graph. In this article, we first point out that in a GCN training problem with a given training set on an input graph, its aggregation stages of backward propagation phases (called as <italic xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">backward aggregations</i> in this article) can be equivalently converted to partially-active graph processing procedures, which conduct computations on only partial vertices of the input graph. By leveraging such a finding, we propose an execution path preparing method that collects and coalesces the graph data used during different training layers of backward aggregations, and constructs their corresponding sub-graphs (called as <italic xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">execution paths</i> in this article) as inputs to conduct the backward training on GPUs. Further, we propose a structural-aware strategy for the execution paths to compute their optimal group sizes, so as to gain as high as possible performances on GPUs during the backward aggregations. The experiment results by conducting GCN training in typical real-world graphs show that compared with GNNAdvisor, our approach improves the performance of backward aggregations by up to 5.68x on NVIDIA P100 GPU, and up to 6.57x on NVIDIA V100S GPU",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels",
+    "graph"
+   ],
+   "kernels": [
+    "GCN backward aggregation (SpMM-like)"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Execution-path preparation turns GCN backward aggregation into partial-vertex GPU kernel, up to 6.6x"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/LinH22",
+  "venue": "TPDS",
+  "year": 2022,
+  "title": "Accelerating Large Sparse Neural Network Inference Using GPU Task Graph Parallelism",
+  "abstract": "The ever-increasing size of modern deep neural network (DNN) architectures has put increasing strain on the hardware needed to implement them. Sparsified DNNs can greatly reduce memory costs and increase throughput over standard DNNs, if the loss of accuracy can be adequately controlled. However, sparse DNNs present unique computational challenges. Efficient model or data parallelism algorithms are extremely hard to design and implement. The recent effort MIT/IEEE/Amazon HPEC Graph Challenge has drawn attention to high-performance inference methods for large sparse DNNs. In this paper, we introduce SNIG, an efficient inference engine for large sparse DNNs. SNIG develops highly optimized inference kernels and leverages the power of CUDA Graphs to enable efficient decomposition of model and data parallelisms. Our decomposition strategy is flexible and scalable to different partitions of data volumes, model sizes, and GPU numbers. We have evaluated SNIG on the official benchmarks of HPEC Sparse DNN Challenge and demonstrated its promising performance scalable from a single GPU to multiple GPUs. Compared to the champion of the 2019 HPEC Sparse DNN Challenge, SNIG can finish all inference workloads using only a single GPU. At the largest DNN, which has more than 4 billion parameters across 1920 layers each of 65536 neurons, SNIG is up to 2.3 faster than a state-of-the-art baseline under a machine of 4 GPUs. SNIG receives the Champion Award in 2020 HPEC Sparse DNN Challenge.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "sparse_la",
+    "ml_kernels"
+   ],
+   "kernels": [
+    "sparse DNN inference (SpMM-like)"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "SNIG: highly optimized sparse-DNN inference kernels with CUDA-graph decomposition, up to 2.3x"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/LiGCCLLPFY22",
+  "venue": "TPDS",
+  "year": 2022,
+  "title": "Benchmarking 50-Photon Gaussian Boson Sampling on the Sunway TaihuLight",
+  "abstract": "Boson sampling is expected to be an important milestone that will demonstrate quantum computational advantage (or quantum supremacy). This work establishes the benchmarking of Gaussian boson sampling (GBS) with threshold detection based on the Sunway TaihuLight supercomputer. To achieve the best performance and provide a competitive scenario for future quantum computing studies, the selected simulation algorithm is fully optimized based on a set of innovative approaches, including a parallel framework with almost perfect load balance and an instruction-level optimizing scheme based on a shortest-path-based instruction scheduling. In addition, data precision is carefully processed by an integer-instruction-based and multiple-precision fixed-point implementation, including 128- and 256-bit precison mode, which can be appropriately selected based on an adaptive precision optimizing scheme. Based on these methods, a highly efficient parallel quantum sampling algorithm is designed. The largest run enables us to obtain one Torontonian function of a <inline-formula><tex-math notation=\"LaTeX\">$100\\times 100$</tex-math></inline-formula> submatrix from 50-photon GBS within 20 hours in 128-bit precision and 2 days in 256-bit precision. To our knowledge, this was the largest quantum computing simulation based on Boson Sampling by using modern supercomputers.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "tensor"
+   ],
+   "kernels": [
+    "Torontonian/permanent computation"
+   ],
+   "platform": [
+    "cpu",
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Load-balanced, instruction-scheduled, adaptive-precision Gaussian boson sampling simulation on Sunway TaihuLight"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/WangLFXT22",
+  "venue": "TPDS",
+  "year": 2022,
+  "title": "DHash: Dynamic Hash Tables With Non-Blocking Regular Operations",
+  "abstract": "Once started, existing hash tables cannot change their pre-defined hash functions, even if the incoming data cannot be evenly distributed to the hash table buckets. In this paper, we present <sc xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">DHash</small> , a type of hash table for shared memory systems, that can change its hash function and rebuild the hash table on the fly, without noticeably degrading its service. The major technical novelty of <sc xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">DHash</small> stems from an efficient distributing mechanism that can atomically distribute every node when rebuilding, without locking the corresponding hash table buckets. This not only enables non-blocking lookup, insert, and delete operations, but more importantly, makes <sc xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">DHash</small> independent of the implementation of hash table buckets, such that <sc xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">DHash</small> allows programmers to select the set algorithms that meet their requirements best from a variety of existing lock-free and wait-free set algorithms. Evaluations show that <sc xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">DHash</small> can efficiently change its hash function on the fly. Moreover, when rebuilding, <sc xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">DHash</small> consistently outperforms the state-of-the-art hash tables in terms of throughput and response time of concurrent operations, at different concurrency levels, and with different operation mixes and average load factors.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "concurrent dynamic hash table"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "DHash: non-blocking on-the-fly rehashing table with lock-free lookup/insert/delete operations"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/PanZLZDD22",
+  "venue": "TPDS",
+  "year": 2022,
+  "title": "G-SLIDE: A GPU-Based Sub-Linear Deep Learning Engine via LSH Sparsification",
+  "abstract": "Deep learning has been one of the trendiest research topics. However, as data quantities rise exponentially, training large neural networks can become prohibitively expensive with billions of parameters. Fortunately, recent research has discovered that not all of the computations in traditional network training are necessary. By selectively sparsifying the majority of the neurons during training, we can still obtain acceptable accuracy. SLIDE, a C++ OpenMP-based sub-linear deep learning engine, has been developed in this situation. SLIDE uses the algorithm of locality-sensitive hashing (LSH) to query neurons with high activation in sub-linear time. It achieves a remarkable speedup in training large fully-connected networks by making use of the network sparsity as well as multi-core parallelism. However, SLIDE is limited to CPUs, ignoring the popular GPU devices with greater parallel potential and computational capability. In this paper, we propose G-SLIDE, a GPU-based sub-linear deep learning engine, which combines the benefits of SLIDEs adaptive sparsification algorithms with GPUs high performance. The main challenges in developing G-SLIDE are efficiently using LSH to sparsify networks and training the special sparse neural networks on the GPU. To address these challenges, we propose several novel solutions, such as specific data formats and appropriate workload partitioning for threads to fully utilize the GPU resources. We evaluate G-SLIDE on two extremely sparse datasets with a 2080 Ti GPU, and the results demonstrate that for the time of one training epoch, G-SLIDE can achieve more than 16.4 speedup over SLIDE on a 32-core/64-thread CPU. Furthermore, on the same platform, G-SLIDE can earn an average of 16.2 speedup over TensorFlow-GPU and 30.8 speedup over TensorFlow-CPU.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels",
+    "sparse_la"
+   ],
+   "kernels": [
+    "LSH hashing",
+    "sparse neuron selection"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "G-SLIDE: GPU LSH-sparsified DNN training kernel with custom formats, 16x over CPU SLIDE"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/WangRLS22",
+  "venue": "TPDS",
+  "year": 2022,
+  "title": "NITI: Training Integer Neural Networks Using Integer-Only Arithmetic",
+  "abstract": "Low bitwidth integer arithmetic has been widely adopted in hardware implementations of deep neural network inference applications. However, despite the promised energy-efficiency improvements demanding edge applications, the use of low bitwidth integer arithmetic for neural network training remains limited. Unlike inference, training demands high dynamic range and numerical accuracy for high quality results, making the use of low-bitwidth integer arithmetic particularly challenging. To address this challenge, we present a novel neural network training framework called NITI that exclusively utilizes low bitwidth integer arithmetic. NITI stores all parameters and accumulates intermediate values as 8-bit integers while using no more than 5 bits for gradients. To provide the necessary dynamic range during the training process, a per-layer block scaling exponentiation scheme is utilized. By deeply integrating with the rounding procedures and integer entropy loss calculation, the proposed scaling scheme incurs only minimal overhead in terms of storage and additional computation. Furthermore, a hardware-efficient pseudo-stochastic rounding scheme that eliminates the need for external random number generation is proposed to facilitate conversion from wider intermediate arithmetic results to lower precision for storage. Since NITI operates only with standard 8-bit integer arithmetic and storage, it is possible to accelerate it using existing low bitwidth operators originally developed for inference in commodity accelerators. To demonstrate this, an open-source software implementation of end-to-end training, using native 8-bit integer operations in modern GPUs is presented. In addition, experiments have been conducted on an FPGA-based training accelerator to evaluate the hardware advantage of NITI. When compared with an equivalent training setup implemented with floating point storage and arithmetic, NITI has no accuracy degradation on the MNIST and CIFAR10 datasets. On ImageNet, NITI achieves similar accuracy as state-of-the-art integer training frameworks without relying on full-precision floating-point first and last layers.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels"
+   ],
+   "kernels": [
+    "int8 quantized GEMM/conv training"
+   ],
+   "platform": [
+    "nvidia-gpu",
+    "fpga"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "NITI: integer-only (8-bit) DNN training via per-layer block-scaling quantization, GPU+FPGA impl."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/LiuDZJWCTFC22",
+  "venue": "TPDS",
+  "year": 2022,
+  "title": "Optimizing Error-Bounded Lossy Compression for Scientific Data With Diverse Constraints",
+  "abstract": "Vast volumes of data are produced by today's scientific simulations and advanced instruments. These data cannot be stored and transferred efficiently because of limited I/O bandwidth, network speed, and storage capacity. Error-bounded lossy compression can be an effective method for addressing these issues: not only can it significantly reduce data size, but it can also control the data distortion based on user-defined error bounds. In practice, many scientific applications have specific requirements or constraints for lossy compression, in order to guarantee that the reconstructed data are valid for post hoc analysis. For example, some datasets contain irrelevant data that should be isolated in particular and users often have intuition regarding value ranges, geospatial regions, and other data subsets that are crucial for subsequent analysis. Existing state-of-the-art error-bounded lossy compressors, however, do not consider these constraints during compression, resulting in inferior compression ratios with respect to user's post hoc analysis, due to the fact that the data itself provides little or no value for post hoc analysis. In this work we address this issue by proposing an optimized framework that can preserve diverse constraints during the error-bounded lossy compression, e.g., cleaning the irrelevant data, efficiently preserving different precision for multiple value intervals, and allowing users to set diverse precision over both regular and irregular regions. We perform our evaluation on a supercomputer with up to 2,100 cores. Experiments with six real-world applications show that our proposed diverse constraints based error-bounded lossy compressor can obtain a higher visual quality or data fidelity on reconstructed data with the same or even higher compression ratios compared with the traditional state-of-the-art compressor SZ. Our experiments also demonstrate very good scalability in compression performance compared with the I/O throughput of the parallel file system.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "compression"
+   ],
+   "kernels": [
+    "error-bounded lossy compression"
+   ],
+   "platform": [
+    "cpu",
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "SZ-based EBLC preserving user-defined region/precision constraints, scaled to 2100 cores"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/CopikGHBB22",
+  "venue": "TPDS",
+  "year": 2022,
+  "title": "Work-Stealing Prefix Scan: Addressing Load Imbalance in Large-Scale Image Registration",
+  "abstract": "Parallelism patterns (e.g., map or reduce) have proven to be effective tools for parallelizing high-performance applications. In this article, we study the recursive registration of a series of electron microscopy images - a time consuming and imbalanced computation necessary for nano-scale microscopy analysis. We show that by translating the image registration into a specific instance of the prefix scan, we can convert this seemingly sequential problem into a parallel computation that scales to over thousand of cores. We analyze a variety of scan algorithms that behave similarly for common low-compute operators and propose a novel work-stealing procedure for a hierarchical prefix scan. Our evaluation shows that by identifying a suitable and well-optimized prefix scan algorithm, we reduce time-to-solution on a series of 4,096 images spanning ten seconds of microscopy acquisition from over 10 hours to less than 3 minutes (using 1024 Intel Haswell cores), enabling derivation of material properties at nanoscale for long microscopy image series.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "prefix scan"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Work-stealing hierarchical prefix-scan algorithm, scaling image-registration to 1000+ cores."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/ChenC22",
+  "venue": "TPDS",
+  "year": 2022,
+  "title": "Workload Balancing via Graph Reordering on Multicore Systems",
+  "abstract": "In a shared-memory multicore system, the intrinsic irregular data structure of graphs leads to poor cache utilization, and therefore deteriorates the performance of graph analytics. To address the problem, prior works have proposed a variety of lightweight reordering methods with focus on the optimization of cache locality. However, there is a compromise between cache locality and workload balance. Little insight has been devoted into the issue of workload imbalance for the underlying multicore system, which degrades the effectiveness of parallel graph processing. In this work, a measurement approach is proposed to quantify the imbalance incurred by the concentration of vertices. Inspired by it, we present <i>Cache-aware Reorder (Corder)</i> , a lightweight reordering method exploiting the cache hierarchy of multicore systems. At the shared-memory level, Corder promotes even distribution of computation loads amongst multicores. At the private-cache level, Corder facilitates cache efficiency by applying further refinement to local vertex order. Comprehensive performance evaluation of Corder is conducted on various graph applications and datasets. Experimental results show that Corder yields speedup of up to <inline-formula><tex-math notation=\"LaTeX\">$2.59\\times$</tex-math></inline-formula> and on average <inline-formula><tex-math notation=\"LaTeX\">$1.45\\times$</tex-math></inline-formula> , which significantly outperforms existing lightweight reordering methods. To identify the root causes of performance boost delivered by Corder, multicore activities are investigated in terms of thread behavior, cache efficiency, and memory utilization. Statistical analysis demonstrates that the issue of imbalanced thread execution time dominates other factors in determining the overall graph processing time. Moreover, Corder achieves remarkable advantages in cross-platform scalability and reordering overhead.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "BFS",
+    "PageRank",
+    "graph traversal"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Corder: cache-aware graph reordering balancing multicore workload, up to 2.59x speedup."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/GaoXW22",
+  "venue": "TPDS",
+  "year": 2022,
+  "title": "cuNH: Efficient GPU Implementations of Post-Quantum KEM NewHope",
+  "abstract": "Post-quantum cryptography was proposed in the past years due to the foreseeable emergence of quantum computers that are able to break the conventional public key cryptosystems at acceptable costs. However, post-quantum schemes are usually less efficient than conventional ones, which makes them less practical in scenarios with limited resources or high concurrency. Server-side applications always feature multiple users, therefore requiring efficient execution of batch tasks. GPU is intrinsically well-suited to batch tasks owing to its SIMD/SIMT execution fashion, so it naturally helps to achieve high performance. However, a naive GPU-based implementation cannot make the best use of hardware resources of the GPU regardless of task loads. In this article, we propose SIMD parallelization paradigms for fine-grained GPU implementations and then apply them to a post-quantum key encapsulation algorithm called NewHope, where we carefully design every module, especially NTT and inverse NTT, to fit into the SIMD parallelization paradigms. In addition, we employ multi-streaming to improve performance in user's perspective. Finally, our evaluations are made on two testbeds with GPU accelerators NVIDIA GeForce MX150 and GeForce GTX 1650, respectively. The experimental results show that the fine-grained implementations save up to 98 percent latency at low task loads, and their throughputs increase by up to 86 percent at high task loads, when compared with the naive ones in kernel's perspective, and the multi-streaming implementations greatly reduce the latency overhead percentage at high task loads by up to 86 percent, when compared with the fine-grained implementation in user's perspective. Moreover, our fine-grained implementation and multi-streaming implementation are respectively 51.5 and 45.5 percent faster than Gupta et al.'s implementations when compared with it under reasonable assumptions. Furthermore, as lattice-based post-quantum schemes have similar operations, our proposal also easily applies to other lattice-based post-quantum schemes.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "fft_spectral"
+   ],
+   "kernels": [
+    "NTT",
+    "INTT"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "SIMD-parallelized NTT/INTT GPU kernels for post-quantum NewHope KEM, cutting latency up to 98%."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/ZhuSFX23",
+  "venue": "TPDS",
+  "year": 2023,
+  "title": "A Low-Memory Community Detection Algorithm With Hybrid Sparse Structure and Structural Information for Large-Scale Networks",
+  "abstract": "Community detection plays an essential role in the domains of social, bioinformatics, and e-commerce. The innovative structural information theory (SInfo, introduced by Li et al.) has achieved excellent performance for network analysis. Nevertheless, similar to traditional network algorithms, the SInfo algorithm will exhaust all system memory resources when processing large-scale networks based on adjacency data structures. Moreover, due to the irregular and sequential characteristics, the SInfo algorithm is challenging to parallelize. In this article, we propose a hybrid sparse data structure and design a low-memory community detection algorithm based on structural information theory (HSSInfo), which shrinks memory requirements and achieves high parallelism. Specifically, we first propose a general quantization method to quantify the information change in community transformation, with which community inner and outer connection complexity can be semantically interpreted. Second, we design a general hybrid sparse structure to store network data among CPU and GPU, which can reduce memory resource consumption for community detection on large-scale networks. Finally, we develop an HSSInfo algorithm based on the quantization method and hybrid sparse structure, in which parallelism intersection and community fusion algorithms are employed to improve parallel scalability. We execute the comparison experiments for HSSInfo and eleven baseline algorithms on nine real-world datasets. Empirically, HSSInfo can achieve orders of magnitude speedups and extend structural information theory to large-scale datasets of billions of edges. Meanwhile, compared with various community detection algorithms, HSSInfo can achieve higher or similar accuracy with up to 19x memory shrinkage ratio.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "community detection"
+   ],
+   "platform": [
+    "cpu",
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "HSSInfo: hybrid sparse structure for low-memory parallel community detection, up to 19x memory shrink."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/ChenC23",
+  "venue": "TPDS",
+  "year": 2023,
+  "title": "An Unequal Caching Strategy for Shared-Memory Graph Analytics",
+  "abstract": "Recent advances in computer architecture significantly enhance the computational capacity of multicore systems. It allows large-scale graphs to be processed inside a single machine. Nevertheless, the irregular processing pattern of graph-structured data constrains the hardware resources from being productively utilized. In this paper, we investigate the constraints in two aspects: workload imbalance and parallel inefficiency. When a graph analytics algorithm is multithreaded, the thread time is highly diversified, indicating an uneven work distribution. Also, the intensive thread contention lowers the computing capacity of CPU cores, thereby hindering the effective utilization of CPU resources. To address these challenges, we present a proactive graph caching strategy that unequally segments graph components into cache-able subsets of varying sizes, namely Syze. First, the computational loads of cache-sized subgraphs are estimated. Then, the demanding subgraphs are further subdivided until certain threshold is met. Moreover, during the propagation of updates, a fraction of vertex ID (i.e., several bits) are encoded to facilitate the communication between subgraphs. As a result, Syze is able to balance the workloads amongst the logical cores by shortening the longest thread execution time. Meanwhile, it alleviates thread contention and thus elevates the parallel efficiency of multicores. Compared with well-optimized Ligra, Gemini and GPOP, Syze achieves accelerations by up to <inline-formula><tex-math notation=\"LaTeX\">$17.76\\times$</tex-math></inline-formula> , <inline-formula><tex-math notation=\"LaTeX\">$11.67\\times$</tex-math></inline-formula> and <inline-formula><tex-math notation=\"LaTeX\">$2.81\\times$</tex-math></inline-formula> respectively. Additionally, the side effects of Syze are evaluated, including raised cache misses and memory accesses. They play a trivial role in deciding the overall performance, as their costs are far outweighed by the gains from the even distribution of workloads and the improved utilization of multicores. <!--?query id=\"Q2\"--> Author: Please confirm or add details for any funding or financial support for the research of this article. ?>",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "BFS",
+    "PageRank",
+    "graph traversal"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Syze: unequal cache-sized graph caching/partitioning strategy, up to 17.8x over Ligra."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/DuanSWSGLFXLY23",
+  "venue": "TPDS",
+  "year": 2023,
+  "title": "Bio-ESMD: A Data Centric Implementation for Large-Scale Biological System Simulation on Sunway TaihuLight Supercomputer",
+  "abstract": "Molecular dynamics (MD) simulations of biological systems are playing an increasingly important role in the research of pathogens and drugs. Most MD methods for biological simulations rely on the listed bonds which interact among specific groups of atoms identified by atom tags (unique atom tags regardless the storage location). However, efficient mapping of tags to atom locations is often challenging on modern many-core processors because data locality can not always be guaranteed for large-scale systems. In this paper, we present Bio-ESMD, a new MD implementation supporting listed bonds. Bio-ESMD is designed and developed based on our previously designed ESMD framework for many-core processors. In Bio-ESMD, we have introduced a data-centric approach for refactoring MD algorithms by reorganizing the cell list data structure to adopt bond lists with guaranteed data locality. Our implementation achieves speedups of over two compared to SW_GROMACS on Sunway TaihuLight. Furthermore, Bio-ESMD can simulate a system of 308.8 million atoms at 1.33 ns/day or 14.44 million atoms at 17.28 ns/day with linear weak scaling efficiency.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "nbody_md"
+   ],
+   "kernels": [
+    "MD bonded-force computation"
+   ],
+   "platform": [
+    "cpu",
+    "distributed"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Bio-ESMD: data-centric cell-list MD kernel for listed bonds on Sunway, 2x over SW_GROMACS."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/SunLJZL23",
+  "venue": "TPDS",
+  "year": 2023,
+  "title": "COFFEE: Cross-Layer Optimization for Fast and Efficient Executions of Sinkhorn-Knopp Algorithm on HPC Systems",
+  "abstract": "In this paper, we present COFFEE, cross-layer optimization for fast and efficient executions of the Sinkhorn-Knopp (SK) algorithm on HPC systems with clusters of compute nodes by exploring some architectural features of the system. By analyzing the performance of a typical implementation of the SK algorithm on such a system, a huge performance gap is observed between the row rescaling and column rescaling of the algorithm, where the latter requires much more time than the former. We also found that the costly MPI communication of the column rescaling seriously hinders the exploitation of parallelism. By observing and leveraging unique architectural characteristics across different system optimizations, such as column rescaling redesign, data blocking, micro-kernel design, enhanced intra-node and inter-node communication in MPI, etc., COFFEE is able to explore cross-layer optimization opportunities that enable fast and efficient execution of the SK algorithm. Our experimental results show that COFFEE provides up to 7.5X with an average of 2.0X performance improvement over the typical implementation on a single node, and up to 2.9X with an average of 1.6X performance improvement over the state-of-the-art MPI Allreduce algorithms on Tianhe-1 supercomputer.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "solver_components"
+   ],
+   "kernels": [
+    "Sinkhorn-Knopp matrix scaling"
+   ],
+   "platform": [
+    "cpu",
+    "distributed"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "low",
+   "one_liner": "COFFEE: cross-layer micro-kernel/data-blocking/MPI redesign of Sinkhorn-Knopp algorithm, up to 7.5x."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/WengZLTL23",
+  "venue": "TPDS",
+  "year": 2023,
+  "title": "Distributed Approaches to Butterfly Analysis on Large Dynamic Bipartite Graphs",
+  "abstract": "Tip decomposition has a pivotal role in mining cohesive subgraphs in bipartite graphs by computing the tip number of each vertex in accordance with the non-trivial motif butterfly ((2,2)-biclique). It has been a popular research topic with applications in document clustering, spam group detection, and analysis of affiliation networks. In such applications, the graphs are not only large, but they evolve quickly with new edges being continuously added/deleted. While existing centralized techniques could solve the tip decomposition problem for static bipartite graphs, they are not efficient for maintaining the tip numbers of vertices on large-scale graphs. In this paper, we study butterfly analysis problems on bipartite graphs in a distributed environment with the vertex-centric model. We first extend a centralized butterfly counting algorithm to a distributed version, called DBCA. An ingenious message aggregation strategy is designed to reduce massive redundant messaging and avoid the memory overflow problem while processing large-scale graphs. Based on the results of DBCA, we develop a distributed tip decomposition algorithm (DTDA) to get the tip number of each vertex in parallel. Finally, to maintain the tip numbers of vertices efficiently while graphs evolve over time, we explore a distributed tip maintenance algorithm (DTMA) along with a novel task-split strategy. Specifically, for an updated edge (insertion/deletion), several sub-tasks will be generated in line with the topology structure of the original bipartite graph. To our best knowledge, this is the first study to process the butterfly analysis problems in a distributed environment. In addition, comprehensive experiments have been conducted on real-world bipartite graphs. The experiment results demonstrate that our proposed algorithms are efficient and scalable.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "butterfly counting",
+    "tip decomposition"
+   ],
+   "platform": [
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Distributed vertex-centric algorithms (DBCA/DTDA/DTMA) for butterfly counting and tip decomposition on dynamic bipartite graphs."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/WangDCK23",
+  "venue": "TPDS",
+  "year": 2023,
+  "title": "Efficient GPU Implementations of Post-Quantum Signature XMSS",
+  "abstract": "The National Institute of Standards and Technology (NIST) approved XMSS as part of the post-quantum cryptography (PQC) development effort in 2018. XMSS is currently one of only two standardized PQC algorithms, but its performance limits its use. For example, the fastest record for some standardized parameters still takes more than a minute to generate a keypair. In this article, we present the first GPU implementation for XMSS and its variant XMSS <inline-formula><tex-math notation=\"LaTeX\">$^{\\mathsf {MT}}$</tex-math></inline-formula> . The high parallelism of GPUs is especially effective for reducing latency in key generation and improving throughput for signing and verifying. In order to meet various application scenarios, we provide three parallel XMSS schemes: <i>algorithmic parallelism</i> , <i>multi-keypair data parallelism</i> , and <i>single-keypair data parallelism</i> . For these schemes, we design custom parallel strategies that use more than 10,000 cores for all parameters provided by NIST. In addition, we analyze the availability of most previous serial optimizations and explore numerous techniques to fully exploit GPU performance. Our evaluations are made with the XMSSMT-SHA2_20/2_256 parameter set on a GeForce RTX 3090. The result shows the key generation latency is 3.20 ms, a speedup of 21,899× compared to the GPU ported version, which is also 54× speedup faster than the fastest work (174 ms). When 16384 tasks are executed, the throughput (task/s) for signing/verifying in the single-key and multi-key cases is 311,424/415,100 and 145,100/419,887, respectively. Compared to the throughput for signing/verifying (1695/4000) of the fastest work, we obtain a speedup of 184×/104× and 86×/105× in single-key and multi-key cases, respectively.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "SHA2 hashing",
+    "Merkle tree / WOTS+"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "low",
+   "one_liner": "First GPU implementation of post-quantum XMSS signatures, parallel hash-tree strategies giving huge speedups over CPU/GPU baselines."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/HuZXYZDWZZDM23",
+  "venue": "TPDS",
+  "year": 2023,
+  "title": "Enabling Efficient Random Access to Hierarchically Compressed Text Data on Diverse GPU Platforms",
+  "abstract": "The tremendous computing capacity of GPU offers significant potential in processing hierarchically compressed text data without decompression. However, current GPU techniques offer only traversal-based text data analytics; random access is exceedingly inefficient, limiting their utility significantly. To address this issue, we develop a novel and widely applicable solution that prompts random access to hierarchically compressed text data without decompression in GPU memory. We address three main challenges for enabling efficient random access to compressed text data on GPUs. The first challenge is designing GPU data structures that facilitate random access. The second challenge is efficiently generating data structures on GPU. The CPU is inefficient when generating data structures for random access, and this inefficiency increases considerably when PCIe transmission is incorporated. The third challenge is query processing on compressed text data in GPU memory. Random accesses, such as data updates, cause massive conflicts among countless threads. In order to address the first challenge, we develop several compressed GPU data structures, including indexing within the intricate GPU memory hierarchy. To handle the second challenge, we propose a two-phase process for producing these data structures on GPU. For the third challenge, a double-parsing design is proposed as a solution to avoid conflicts. We evaluate our solution on three platforms, two server-grade GPU platforms and one edge-grade GPU platform, using five real-world datasets. Experimental results show that random access operations on GPU achieve an average speedup of 52.98× compared to the state-of-the-art solution.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "random-access query on compressed text",
+    "succinct GPU data-structure construction"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "GPU data structures/algorithms enabling ~53x faster random access to hierarchically compressed text without decompression."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/WangLHLCWM23",
+  "venue": "TPDS",
+  "year": 2023,
+  "title": "HE-Booster: An Efficient Polynomial Arithmetic Acceleration on GPUs for Fully Homomorphic Encryption",
+  "abstract": "Fully Homomorphic Encryption (FHE) enables secure offloading of computations to untrusted cloud servers as it allows computing on encrypted data. However, existing well-known FHE schemes suffer from heavy performance overheads. Thus numerous accelerations based on FPGAs, ASICs, and GPUs have been proposed. Compared to FPGAs and ASICs, GPUs have obvious advantages in productivity and development costs. And also, GPUs have already been widely deployed in commercial cloud or supercomputing centers. Therefore, we present HE-Booster, an efficient GPU-based FHE acceleration design. For single-GPU acceleration, a thorough systematic design is exploited to map five common phases in typical FHE schemes to the GPU parallel architecture. In particular, inspired by the regular architecture of NTT/INTT, a novel inter-thread local synchronization is proposed to exploit thread-level parallelism. For multi-GPU acceleration, we propose a scalable parallelization design that exploits <italic xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">data-level parallelism</i> through fine-grained data partition under different representations. Finally, experiments on 1 NVIDIA GPU demonstrate that our work outperforms 251.7×, 78.5× and 164.9× than three mainstream CPU-based libraries HElib, SEAL, and PALISADE, and up to 170.5× speedup is obtained compared to the GPU-accelerated library cuHE. What's more, performing 8 homomorphic multiplications on 8 GPUs can deliver up to a 7.66× performance boost compared to a single-GPU implementation.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "fft_spectral"
+   ],
+   "kernels": [
+    "NTT",
+    "INTT",
+    "polynomial multiplication"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "HE-Booster: GPU NTT/INTT-centric polynomial-arithmetic acceleration for FHE, up to 251x vs CPU libraries."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/ZhangCHZ23",
+  "venue": "TPDS",
+  "year": 2023,
+  "title": "NIOT: A Novel Inference Optimization of Transformers on Modern CPUs",
+  "abstract": "In the machine learning era, model inference efficiency is one of the most important issues for machine learning systems. It is a major challenge to find the optimal configuration in a huge search space as the combinations of kernel fusion, memory tiling, and thread allocation strategies result in highly variable and unpredictable inference performance. The problem is particularly pronounced in models with large parameter matrices such as Transformers. In this article, we aim to develop a general and powerful framework for inference optimization, called NIOT, to achieve desirable efficiency for the prevailing Transformer-like models on CPUs. To take full advantage of modern CPU features such as SIMD and cache hierarchy, NIOT employs various methods to provide promising strategies tailored to the target Transformer model. Our C++ implementation of NIOT shows significant performance improvements over popular well-optimized model-serving runtimes such as PyTorch and ONNXRuntime.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels",
+    "dense_la"
+   ],
+   "kernels": [
+    "GEMM",
+    "kernel fusion for transformer ops"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "NIOT: CPU Transformer inference framework searching kernel-fusion/tiling/thread configs, beats PyTorch/ONNXRuntime."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/HuaZJH23",
+  "venue": "TPDS",
+  "year": 2023,
+  "title": "Revisiting Core Maintenance for Dynamic Hypergraphs",
+  "abstract": "Core maintenance for dynamic hypergraphs has been receiving an increasing attention. However, existing works mainly focus on the insertion/deletion of hyperedges. This article revisits the problem from the view of vertices change. We study core maintenance when the vertices are inserted/deleted into/from specific hyperedges in the hypergraph, which is a challenging task since the deletion of the vertex may increase the core numbers and the insertion of the vertex may decrease the core numbers. We discuss in detail the possible changes of core numbers in different situations. For the insertion/deletion of vertices contained by a single hyperedge, we design sequential algorithms to discover the vertices whose core numbers have changed. Compared with static recomputation (Leng et al. 2013) and LYCLC (Luo et al. 2021) algorithms, our sequential algorithms can accelerate more than 1,000× and 12× at most in the processing time, respectively. For the insertion/deletion of vertices contained by different hyperedges, we find that core numbers of all vertices change 1 at most if these hyperedges form a matching. We design parallel algorithms that divide a matching into different sets based on their core numbers and allot a thread to each set. Experiments show that our parallel algorithms have good stability, scalability, and parallelism. Compared with the parallel static algorithm (Gabert et al. 2021) and the parallel dynamic algorithm GPC (Gabert et al. 2021), our parallel algorithms with 32 threads can accelerate 33× and 22× at most in the processing time, respectively.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "core decomposition",
+    "core maintenance"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Sequential/parallel algorithms for dynamic hypergraph k-core maintenance under vertex updates, up to 33x faster"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/LinZP24",
+  "venue": "TPDS",
+  "year": 2024,
+  "title": "HitGNN: High-Throughput GNN Training Framework on CPU+Multi-FPGA Heterogeneous Platform",
+  "abstract": "As the size of real-world graphs increases, training Graph Neural Networks (GNNs) has become time-consuming and requires acceleration. While previous works have demonstrated the potential of utilizing FPGA for accelerating GNN training, few works have been carried out to accelerate GNN training with multiple FPGAs due to the necessity of hardware expertise and substantial development effort. To this end, we propose HitGNN, a framework that enables users to effortlessly map GNN training workloads onto a CPU+Multi-FPGA platform for acceleration. In particular, HitGNN takes the user-defined synchronous GNN training algorithm, GNN model, and platform metadata as input, determines the design parameters based on the platform metadata, and performs hardware mapping onto the CPU+Multi-FPGA platform, automatically. HitGNN consists of the following building blocks: (1) high-level application programming interfaces (APIs) that allow users to specify various synchronous GNN training algorithms and GNN models with only a handful of lines of code; (2) a software generator that generates a host program that performs mini-batch sampling, manages CPU-FPGA communication, and handles workload balancing among the FPGAs; (3) an accelerator generator that generates GNN kernels with optimized datapath and memory organization. We show that existing synchronous GNN training algorithms such as DistDGL and PaGraph can be easily deployed on a CPU+Multi-FPGA platform using our framework, while achieving high training throughput. Compared with the state-of-the-art frameworks that accelerate synchronous GNN training on a multi-GPU platform, HitGNN achieves up to 27.21× bandwidth efficiency, and up to 4.26× speedup using much less compute power and memory bandwidth than GPUs. In addition, HitGNN demonstrates good scalability to 16 FPGAs on a CPU+Multi-FPGA platform.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph",
+    "ml_kernels"
+   ],
+   "kernels": [
+    "GNN aggregation"
+   ],
+   "platform": [
+    "fpga"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "HitGNN auto-generates optimized GNN aggregation kernels for CPU+Multi-FPGA training, up to 4.26x vs GPU"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/GaoHGW24",
+  "venue": "TPDS",
+  "year": 2024,
+  "title": "SSA: A Uniformly Recursive Bidirection-Sequence Systolic Sorter Array",
+  "abstract": "The use of reconfigurable circuits with parallel computing capabilities has been explored to enhance sorting performance and reduce power consumption. Nonetheless, most sorting algorithms utilizing dedicated processors are designed solely based on the parallelization of the algorithm, lacking considerations of specialized hardware structures. This leads to problems, including but not limited to the consumption of excessive I/O interface resources, on-chip storage resources, and complex layout wiring. In this paper, we propose a Systolic Sorter Array, implemented by a Uniform Recurrence Equation (URE) with highly parameterised in terms of data size, bit width and type. Leveraging this uniformly recursive structure, the sorter can simultaneously sort two independent sequences. In addition, we implemented global and local control modes on the FPGA to achieve higher computational frequencies. In our experiments, we have demonstrated the speed-up ratio of SSA relative to other state of the art (SOTA) sorting algorithms using C++ <inline-formula><tex-math notation=\"LaTeX\">$std$</tex-math></inline-formula>::<inline-formula><tex-math notation=\"LaTeX\">$sort()$</tex-math></inline-formula> as benchmark. Inheriting the benefits from the Systolic Array architecture, the SSA reaches up to 810 Mhz computing frequency on the U200. The results of our study show that SSA outperforms other sorting algorithms in terms of throughput, speed-up ratio, and computation frequency.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "sort"
+   ],
+   "platform": [
+    "fpga"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "SSA: recursive bidirectional systolic sorter array on FPGA, 810MHz, beats C++ std::sort"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/LiuCLMLZFY24",
+  "venue": "TPDS",
+  "year": 2024,
+  "title": "SunwayLB: Enabling Extreme-Scale Lattice Boltzmann Method Based Computing Fluid Dynamics Simulations on Advanced Heterogeneous Supercomputers",
+  "abstract": "The Lattice Boltzmann Method (LBM) is a class of Computational Fluid Dynamics methods which models the fluid as fictive particles. In this paper, we report our work on SunwayLB, which enables LBM based solutions aiming for industrial applications using advanced heterogeneous systems such as the Sunway supercomputers. We propose several techniques to boost the simulation speed and improve the scalability of SunwayLB, including a customized multi-level domain decomposition and data sharing scheme, a carefully orchestrated strategy to fuse kernels with different performance constraints for a more balanced workload, and optimization strategies for assembly code. Based on these optimization schemes, we manage to scale SunwayLB on three advanced supercomputers: Sunway TaihuLight, the new Sunway Supercomputer and a GPU cluster. On Sunway TaihuLight, our largest simulation involves up to 5.6 trillion lattice cells, achieving 11,245 billion cell updates per second (GLUPS), 77% memory bandwidth utilization and a sustained performance of 4.7 PFlops. We further improve the memory bandwidth utilization and computational efficiency using the unique features of a new generation of Sunway supercomputer. On the new Sunway Supercomputer, the largest simulation contains over 4.2 trillion lattice cells, resulting in 6,583 GLUPS, 81% memory bandwidth utilization and a sustained performance of 2.76 PFlops. To evaluate the portability of our code, we also adapt our code to a GPU cluster with tailored optimization techniques, resulting in 191x speedup and 83.8% memory bandwidth utilization. We demonstrate a series of computational experiments for extreme-large scale fluid flow, as examples of real-world applications, to check the validity and performance of our work. The results show that our implementation is competent to be a highly scalable and efficient solution for large-scale CFD problems on heterogeneous systems.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "stencil_pde"
+   ],
+   "kernels": [
+    "lattice Boltzmann method"
+   ],
+   "platform": [
+    "distributed",
+    "other",
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "SunwayLB: kernel-fused, assembly-optimized LBM solver scaled to trillions of cells on Sunway/GPU"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/WangHZLLMH25",
+  "venue": "TPDS",
+  "year": 2025,
+  "title": "Chameleon: An Efficient FHE Scheme Switching Acceleration on GPUs",
+  "abstract": "Fully homomorphic encryption (FHE) enables direct computation on encrypted data, making it a crucial technology for privacy protection. However, FHE suffers from significant performance bottlenecks. In this context, GPU acceleration offers a promising solution to bridge the performance gap. Existing efforts primarily focus on single-class FHE schemes, which fail to meet the diverse requirements of data types and functions, prompting the development of hybrid multi-class FHE schemes. However, studies have yet to thoroughly investigate specific GPU optimizations for hybrid FHE schemes. In this paper, we present an efficient GPU-based FHE scheme switching acceleration named Chameleon. First, we propose a scalable NTT acceleration design that adapts to larger CKKS polynomials and smaller TFHE polynomials. Specifically, Chameleon tackles synchronization issues by fusing stages to reduce synchronization, employing polynomial coefficient shuffling to minimize synchronization scale, and utilizing an SM-aware combination strategy to identify the optimal switching point. Second, Chameleon is the first to comprehensively analyze and optimize critical switching operations. It introduces CMux-level parallelization to accelerate LUT evaluation and a homomorphic rotation-free matrixvector multiplication to improve repacking efficiency. Finally, Chameleon outperforms the state-of-the-art GPU implementations by 1.23× in CKKS HMUL and 1.15× in bootstrapping. It also achieves up to 4.87× and 1.51× speedups for TFHE bootstrapping compared to CPU and GPU versions, respectively, and delivers a 67.3× average speedup for scheme switching over CPU-based implementation.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "fft_spectral"
+   ],
+   "kernels": [
+    "NTT (number theoretic transform)",
+    "FHE bootstrapping"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Chameleon: GPU NTT acceleration (stage fusion, coefficient shuffling) for FHE scheme switching"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/GhalamiG25",
+  "venue": "TPDS",
+  "year": 2025,
+  "title": "Parallel Greedy Algorithms for Steiner Forest",
+  "abstract": "The Steiner Forest Problem is a fundamental combinatorial optimization problem in operations research and computer science. Given an undirected graph with non-negative weights for edges and a set of pairs of vertices called terminals, the Steiner Forest Problem is to find the minimum cost subgraph that connects each of the terminal pairs together. We design a family of parallel greedy algorithms based on a sequential heuristic greedy algorithm called Paired Greedy, which iteratively connects the terminal pairs that have the minimum distance. The family of parallel algorithms consists of a set of algorithms exhibiting various degrees of parallelism determined by the number of pairs that are connected in parallel in each iteration of the algorithms. We implement and run the algorithms on a multi-core system and perform an extensive experimental analysis. We analyzed the performance of the algorithms on a rich library of Steiner Forest instances with various underlying graph types. The results show that our proposed parallel algorithms achieve significant speedup with respect to the sequential Paired Greedy algorithm and provide solutions with costs that are very close to those of the solutions obtained by the sequential Paired Greedy algorithm. We provide recommendation on selecting the type of parallel algorithm and its parameters in order to achieve the most efficient results for each class of instances.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "Steiner Forest (parallel greedy)"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Family of parallel greedy algorithms for the Steiner Forest problem on multicore, near-sequential solution quality."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/MalenzaCSBVBA25",
+  "venue": "TPDS",
+  "year": 2025,
+  "title": "Performance Portability Assessment in Gaia",
+  "abstract": "Modern scientific experiments produce ever-increasing amounts of data, soon requiring ExaFLOPs computing capacities for analysis. Reaching such performance requires purpose-built supercomputers with <inline-formula xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"><tex-math notation=\"LaTeX\">$O(10^{3})$</tex-math></inline-formula> nodes, each hosting multicore CPUs and multiple GPUs, and applications designed to exploit this hardware optimally. Given that each supercomputer is generally a one-off project, the need for computing frameworks portable across diverse CPU and GPU architectures without performance losses is increasingly compelling. We investigate the performance portability (ȹ) of a real-world application: the solver module of the AVU–GSR pipeline for the ESA Gaia mission. This code finds the astrometric parameters of <inline-formula xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"><tex-math notation=\"LaTeX\">$\\sim$</tex-math></inline-formula><inline-formula xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"><tex-math notation=\"LaTeX\">$10^{8}$</tex-math></inline-formula> stars in the Milky Way using the LSQR iterative algorithm. LSQR is widely used to solve linear systems of equations across a wide range of high-performance computing applications, elevating the study beyond its astrophysical relevance. The code is memory-bound, with six main compute kernels implementing sparse matrix-by-vector products. We optimize the previous CUDA implementation and port the code to further six GPU-acceleration frameworks: C++ PSTL, SYCL, OpenMP, HIP, KOKKOS, and OpenACC. We evaluate each framework's performance portability across multiple GPUs (NVIDIA and AMD) and problem sizes in terms of application and architectural efficiency. Architectural efficiency is estimated through the roofline model of the six most computationally expensive GPU kernels. Our results show that C++ library-based (C++ PSTL and KOKKOS), pragma-based (OpenMP and OpenACC), and language-specific (CUDA, HIP, and SYCL) frameworks achieve increasingly better performance portability across the supported platforms with larger problem sizes providing better ȹ scores due to higher GPU occupancies.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "sparse_la"
+   ],
+   "kernels": [
+    "SpMV"
+   ],
+   "platform": [
+    "nvidia-gpu",
+    "amd-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Ports/optimizes 6 SpMV-based LSQR solver kernels (Gaia astrometry) across 7 GPU frameworks for portability."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/ZiogasSBCMLLH25",
+  "venue": "TPDS",
+  "year": 2025,
+  "title": "Productivity, Portability, Performance, and Reproducibility: Data-Centric Python",
+  "abstract": "Python has become the <italic xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">de facto</i> language for scientific computing. Programming in Python is highly productive, mainly due to its rich science-oriented software ecosystem built around the NumPy module. As a result, the demand for Python support in High-Performance Computing (HPC) has skyrocketed. However, the Python language itself does not necessarily offer high performance. This work presents a workflow that retains Python’s high productivity while achieving portable performance across different architectures. The workflow’s key features are HPC-oriented language extensions and a set of automatic optimizations powered by a data-centric intermediate representation. We show performance results and scaling across CPU, GPU, FPGA, and the Piz Daint supercomputer (up to 23,328 cores), with 2.47x and 3.75x speedups over previous-best solutions, first-ever Xilinx and Intel FPGA results of annotated Python, and up to 93.16% scaling efficiency on 512 nodes. Our benchmarks were reproduced in the Student Cluster Competition (SCC) during the Supercomputing Conference (SC) 2022. We present and discuss the student teams’ results.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la",
+    "stencil_pde"
+   ],
+   "kernels": [
+    "various numerical kernels (NPBench-style)"
+   ],
+   "platform": [
+    "cpu",
+    "nvidia-gpu",
+    "fpga",
+    "distributed"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "DaCe: data-centric Python-to-HPC compiler for portable kernel performance across CPU/GPU/FPGA (SC21 reproducibility)."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/OliveiraBFMT25",
+  "venue": "TPDS",
+  "year": 2025,
+  "title": "The Megapixel Approach for Efficient Execution of Irregular Wavefront Algorithms on GPUs",
+  "abstract": "Morphological operations are critical in high-resolution biomedical image processing. Their efficient execution relies on an irregular flood-filling strategy consolidated in the Irregular Wavefront Propagation Pattern (IWPP). IWPP was designed for GPUs and achieved significant gains compared to previous work. Here, however, we have revisited IWPP to identify the key limitations of its GPU implementation and proposed a novel more efficient strategy. In particular, the IWPP most demanding phase consists of tracking active pixels, those contributing to the output, that are the ones processed during the execution. This computational strategy leads to irregular memory access, divergent execution, and high storage (queue) management costs. To address these aspects, we have proposed the novel execution strategy called Irregular Wavefront Megapixel Propagation Pattern (IWMPP). IWMPP introduces a coarse-grained execution approach based on fixed-size square regions (instead of pixels in IWPP), referred to as megapixels (MPs). This design reduces the number of elements tracked and enables a regular processing within MPs that, in turn, improves thread divergence and memory accesses. IWMPP introduces optimizations, such as Duplicate Megapixel Removal (DMR) to avoid MPs recomputation and Tiled-Ordered (TO) execution that enforces a semistructured MPs execution sequence to improve data propagation efficiency. Experimental results using large tissue cancer images demonstrated that the IWMPP GPU attains significant gains over the state-of-the-art (IWPP). For morphological reconstruction, fill holes, and h-maxima operations, on the RTX 4090, the IWMPP GPU is up to 17.9×, 45.6×, and 14.9× faster than IWPP GPU, respectively, while at the same time reducing memory demands. IWMPP is an important step to enable quick processing of large imaging datasets.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "irregular wavefront propagation",
+    "flood fill / morphological reconstruction"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "IWMPP: coarse-grained megapixel wavefront propagation kernel, up to 45.6x faster than IWPP on GPU"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/ChiWZW26",
+  "venue": "TPDS",
+  "year": 2026,
+  "title": "Accelerating Point Cloud Sampling by Parallel Structure Deconstruction",
+  "abstract": "Point cloud processing is fundamental to applications such as autonomous driving, robotic navigation, and 3D reconstruction. Sampling is a crucial process in point cloud processing, but current sampling algorithms perform poorly when deployed on edge devices due to limited computational resources. This stems from three main reasons. First, the robustness of sampling is weak; even after denoising, residual noise remains, and existing edge sampling methods struggle to ignore noisy sampling nodes. Second, there’s a lack of structural sampling, popular algorithms like FPS tend to cover global information without considering special structures for focused sampling. Third, system efficiency is poor, traditional Farthest Point Sampling (FPS) and k-Nearest Neighbor Search (kNN) have terrible time and space complexities of <inline-formula><tex-math notation=\"LaTeX\">$O(n^{2})$</tex-math><alternatives><mml:math><mml:mrow><mml:mi>O</mml:mi><mml:mo>(</mml:mo><mml:msup><mml:mi>n</mml:mi><mml:mn>2</mml:mn></mml:msup><mml:mo>)</mml:mo></mml:mrow></mml:math><inline-graphic xlink:href=\"wang-ieq1-3622691.gif\"/></alternatives></inline-formula> with low parallelism, limiting system throughput, especially for large-scale point cloud processing. To bridge this gap, we propose a novel point cloud sampling algorithm based on parallel graph deconstruction named DPS (Deconstruction-based Point Cloud Sampling) and its multi-scale version DPS_MS with better denoising effect. First, during graph construction, we employ multi-scale graphing and add a preprocessing stage to filter out some noise nodes, reducing the noise rate. Second, in the sampling stage, we categorize important structures into edge nodes and dense nodes based on the reverse neighbor count of graph nodes, assigning them higher sampling weights to supplement structural information. Finally, we use a highly parallel locality-sensitive hashing algorithm to accelerate neighbor search and reduce memory consumption, we achieved data-level parallelization through the comprehensive parallelization of our algorithm. Through rigorous qualitative and quantitative validation on classification and segmentation tasks, we demonstrate that DPS, while maintaining accuracy, increases point cloud sampling speed by 22.08 times compared to the FPS algorithm, the implementation achieved a 75.1-fold improvement in system throughput and a maximum parallel speedup of 10.32x, and improves the Accuracy/FLOPs (M) ratio to 8.68.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "farthest point sampling",
+    "kNN / LSH neighbor search"
+   ],
+   "platform": [
+    "other"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "DPS: parallel LSH-based point-cloud sampling, 22x faster than FPS with 10.32x parallel speedup"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/AmroFMH26",
+  "venue": "TPDS",
+  "year": 2026,
+  "title": "Faster Vertex Cover Algorithms on GPUs With Component-Aware Parallel Branching",
+  "abstract": "Algorithms for finding minimum or bounded vertex covers in graphs use a branch-and-reduce strategy, which involves exploring a highly imbalanced search tree. Prior GPU solutions assign different thread blocks to different sub-trees, while using a shared worklist to balance the load. However, these prior solutions do not scale to large and complex graphs because their unawareness of when the graph splits into components causes them to solve these components redundantly. Moreover, their high memory footprint limits the number of workers that can execute concurrently. We propose a novel GPU solution for vertex cover problems that detects when a graph splits into components and branches on the components independently. Although the need to aggregate the solutions of different components introduces non-tail-recursive branches which interfere with load balancing, we overcome this challenge by delegating the post-processing to the last descendant of each branch. We also reduce the memory footprint by reducing the graph and inducing a subgraph before exploring the search tree. Our solution substantially outperforms the state-of-the-art GPU solution, finishing in seconds when the state-of-the-art solution exceeds 6 hours. To the best of our knowledge, our work is the first to parallelize non-tail-recursive branching patterns on GPUs in a load balanced manner.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "vertex cover",
+    "branch-and-bound"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "GPU vertex-cover solver with component-aware parallel branching, huge speedup"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/Gan26",
+  "venue": "TPDS",
+  "year": 2026,
+  "title": "TianheWare: Degree-Aware Sampling for Large-Scale Graph Learning",
+  "abstract": "The scalability of graph neural networks (GNNs) is critically dependent on the efficiency of their sampling and feature aggregation steps, which are often bottlenecked by memory access patterns in large-scale graphs. While sampling algorithms like GraphSAGE reduce computational costs, they rely on underlying sparse storage formats such as the Compressed Sparse Row (CSR) format, treat all non-zero vertices equally, and fail to exploit the skewed degree distribution inherent to real-world graphs. To address these challenges, we introduce TianheWare, a degree-aware sparse storage format specifically engineered to optimize sampling during large-scale graph learning. TianheWare groups the numerous low-degree vertices found in real-world graphs, storing only a starting index for each group to minimize the memory footprint. This design not only reduces memory consumption but also, crucially, enables highly efficient batched memory access during the neighbor sampling phase in frameworks like GraphSAGE. A data-driven threshold automatically computed from the graph's degree distribution, adapts this compression to any graph structure. Integrated as a plugin into GraphSAGE, TianheWare demonstrates its impact on the end-to-end learning pipeline by accelerating the underlying sampling operations, achieving up to 3.37× speedup in sampling throughput and over 85% memory reduction compared to stateof- the-art methods, while maintaining full sampling fidelity and model accuracy. Our extensive evaluation, including deployment on a production-scale supercomputer, where it exceeded the topranked Graph500 benchmark performance, confirms that TianheWare serves as a foundational optimization, enabling faster, more scalable graph learning without compromising results.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "sparse_la",
+    "graph",
+    "ml_kernels"
+   ],
+   "kernels": [
+    "graph sampling",
+    "degree-aware sparse format"
+   ],
+   "platform": [
+    "cpu",
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "TianheWare: degree-aware sparse storage format speeding up GraphSAGE neighbor sampling 3.37x"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "journals/tpds/LiWSYDZ26",
+  "venue": "TPDS",
+  "year": 2026,
+  "title": "cuFalcon: An Adaptive Parallel GPU Implementation for High-Performance Falcon Acceleration",
+  "abstract": "The rapid advancement of quantum computing has ushered in a new era of post-quantum cryptography, urgently demanding quantum-resistant digital signatures to secure modern communications and transactions. Among NIST-standardized candidates, Falcon stands out because it is a compact lattice-based signature scheme suitable for size-sensitive applications. In this paper, we present cuFalcon, a high-throughput GPU implementation of Falcon that addresses its computational bottlenecks through adaptive parallel strategies. At the operational level, we optimize Falcon key components for GPU architectures through memory-efficient FFT, adaptive parallel ffSampling, and a compact computation mode. For signature-level optimization, to improve scalability across different GPU architectures, we implement three versions of cuFalcon: the raw key version, the expanded key version, and the balanced version. Additionally, we design batch processing, streaming mechanisms, and memory pooling to handle multiple signature tasks efficiently. Ultimately, performance evaluations show significant improvements, with the raw key version achieving 172 k signatures per second and the expanded key version reaching 201 k. Compared to the raw key version, the balanced version achieves a 7% improvement in throughput, while compared to the expanded key version, it reduces memory usage by 70%. Furthermore, our raw key version implementation outperforms the reference implementation by 36.74 × and achieves a 2.71× speedup over the state-of-the-art GPU implementation.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "fft_spectral"
+   ],
+   "kernels": [
+    "FFT",
+    "ffSampling"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "cuFalcon: GPU Falcon post-quantum signing via memory-efficient FFT, 36.7x over reference"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/WangDSDLWX22",
+  "venue": "ASPLOS",
+  "year": 2022,
+  "title": "A one-for-all and o(v log(v ))-cost solution for parallel merge style operations on sorted key-value arrays",
+  "abstract": "The processing of sorted key-value arrays using a “merge style operation (MSO)” is a very basic and important problem in domains like scientific computing, deep learning, database, graph analysis, sorting, set-operation etc. MSOs dominate the execution time in some important applications like SpGEMM and graph mining. For example, sparse vector addition as an MSO takes up to 98% execution time in SpGEMM in our experiment. For this reason, accelerating MSOs on CPU, GPU, and accelerators using parallel execution has been extensively studied but the solutions in prior work have three major limitations. (1) They treat different MSOs as isolated problems using incompatible methods and an unified solution is still lacking. (2) They do not have the flexibility to support variable key/value sizes and value calculations in the runtime given a fixed hardware design. (3) They require a quadratic hardware cost (O(V2)) for given parallelism V in most cases.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "medium",
+   "one_liner": "Unified hardware merge-unit design with O(V log V) cost for sorted key-value merge ops (SpGEMM, set ops)"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/asplos/LiLCNZX023",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Spada: Accelerating Sparse Matrix Multiplication with Adaptive Dataflow",
+  "abstract": "Sparse matrix-matrix multiplication (SpGEMM) is widely used in many scientific and deep learning applications. The highly irregular structures of SpGEMM limit its performance and efficiency on conventional computation platforms, and thus motivate a large body of specialized hardware designs. Existing SpGEMM accelerators only support specific types of rigid execution dataflow such as inner/output-product or row-based schemes. Each dataflow is only optimized for certain sparse patterns and fails to generalize with robust performance to the widely diverse SpGEMM workloads across various domains. We propose Spada, a combination of three novel techniques for SpGEMM accelerators to efficiently adapt to various sparse patterns. First, we describe a window-based adaptive dataflow that can be flexibly adapted to different modes to best match the data distributions and realize different reuse benefits. Then, our hardware architecture efficiently supports this dataflow template, with flexible, fast, and low-cost reconfigurability and effective load balancing features. Finally, we use a profiling-guided approach to detect the sparse pattern and determine the optimized dataflow mode to use, based on the key observations of sparse pattern similarity in nearby matrix regions. Our evaluation results demonstrate that Spada is able to match or exceed the best among three state-of-the-art SpGEMM accelerators, and avoid the performance degradation of the others if data distribution and dataflow mismatch. It achieves an average 1.44× speedup across a wide range of sparse matrices and compressed neural network models.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "SpGEMM hardware accelerator with window-based adaptive dataflow."
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/asplos/YuPURHR24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "8-bit Transformer Inference and Fine-tuning for Edge Accelerators",
+  "abstract": "Transformer models achieve state-of-the-art accuracy on natural language processing (NLP) and vision tasks, but demand significant computation and memory resources, which makes it difficult to perform inference and training (fine-tuning) on edge accelerators. Quantization to lower precision data types is a promising way to reduce computation and memory resources. Prior work has employed 8-bit integer (int8) quantization for Transformer inference, but int8 lacks the precision and range required for training. 8-bit floating-point (FP8) quantization has been used for Transformer training, but prior work only quantizes the inputs to matrix multiplications and leaves the rest of the operations in high precision.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "low",
+   "one_liner": "FP8 quantization for Transformer inference/fine-tuning targeting edge accelerators, not standard-HW kernels"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/asplos/LuL00S24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "ACES: Accelerating Sparse Matrix Multiplication with Adaptive Execution Flow and Concurrency-Aware Cache Optimizations",
+  "abstract": "Sparse matrix-matrix multiplication (SpMM) is a critical computational kernel in numerous scientific and machine learning applications. SpMM involves massive irregular memory accesses and poses great challenges to conventional cache-based computer architectures. Recently dedicated SpMM accelerators have been proposed to enhance SpMM performance. However, current SpMM accelerators still face challenges in adapting to varied sparse patterns, fully exploiting inherent parallelism, and optimizing cache performance. To address these issues, we introduce ACES, a novel SpMM accelerator in this study. First, ACES features an adaptive execution flow that dynamically adjusts to diverse sparse patterns. The adaptive execution flow balances parallel computing efficiency and data reuse. Second, ACES incorporates locality-concurrency co-optimizations within the global cache. ACES utilizes a concurrency-aware cache management policy, which considers data locality and concurrency for optimal replacement decisions. Additionally, the integration of a non-blocking buffer with the global cache enhances concurrency and reduces computational stalls. Third, the hardware architecture of ACES is designed to integrate all innovations. The architecture ensures efficient support across the adaptive execution flow, advanced cache optimizations, and fine-grained parallel processing. Our performance evaluation demonstrates that ACES significantly outperforms existing solutions, providing a 2.1× speedup and marking a substantial advancement in SpMM acceleration.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "SpMM ASIC accelerator with adaptive execution flow and concurrency-aware cache management"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/asplos/0001M024",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Carat: Unlocking Value-Level Parallelism for Multiplier-Free GEMMs",
+  "abstract": "In recent years, hardware architectures optimized for general matrix multiplication (GEMM) have been well studied to deliver better performance and efficiency for deep neural networks. With trends towards batched, low-precision data, e.g., FP8 format in this work, we observe that there is growing untapped potential for value reuse. We propose a novel computing paradigm, value-level parallelism, whereby unique products are computed only once, and different inputs subscribe to (select) their products via temporal coding. Our architecture, Carat, employs value-level parallelism and transforms multiplication into accumulation, performing GEMMs with efficient multiplier-free hardware. Experiments show that, on average, Carat improves iso-area throughput and energy efficiency by 1.02× and 1.06× over a systolic array and 3.2× and 4.3× when scaled up to multiple nodes.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "Multiplier-free GEMM hardware architecture using value-level parallelism and temporal coding"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/asplos/LamJ0MGLLLRLRW024",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "GPU-based Private Information Retrieval for On-Device Machine Learning Inference",
+  "abstract": "On-device machine learning (ML) inference can enable the use of private user data on user devices without revealing them to remote servers. However, a pure on-device solution to private ML inference is impractical for many applications that rely on embedding tables that are too large to be stored on-device. In particular, recommendation models typically use multiple embedding tables each on the order of 1--10 GBs of data, making them impractical to store on-device. To overcome this barrier, we propose the use of private information retrieval (PIR) to efficiently and privately retrieve embeddings from servers without sharing any private information. As off-the-shelf PIR algorithms are usually too computationally intensive to directly use for latency-sensitive inference tasks, we 1) propose novel GPU-based acceleration of PIR, and 2) co-design PIR with the downstream ML application to obtain further speedup. Our GPU acceleration strategy improves system throughput by more than 20× over an optimized CPU PIR implementation, and our PIR-ML co-design provides an over 5× additional throughput improvement at fixed model quality. Together, for various on-device ML applications such as recommendation and language modeling, our system on a single V100 GPU can serve up to 100,000 queries per second---a > 100× throughput improvement over a CPU-based baseline---while maintaining model accuracy.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "other",
+   "confidence": "low",
+   "one_liner": "GPU-accelerated private information retrieval system for on-device ML embedding lookups"
+  },
+  "mode": "confirm-exclude"
+ }
+]

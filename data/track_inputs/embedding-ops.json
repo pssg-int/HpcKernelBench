@@ -1,0 +1,73 @@
+{
+ "kernel": "embedding-ops",
+ "papers": [
+  {
+   "key": "conf/ipps/HuLJ24",
+   "title": "cuKE: An Efficient Code Generator for Score Function Computation in Knowledge Graph Embedding",
+   "venue": "IPDPS",
+   "year": 2024,
+   "doi": "10.1109/IPDPS57955.2024.00085",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/parallel-group/cuke",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "abstract": "Knowledge graph embedding (KGE) plays an important role in graph mining and learning applications by converting discrete graph structures to continuous vector representations. While previous systems have focused on scaling KGE onto multiple GPUs, the score function computation on each GPU can be a performance bottleneck. Existing KGE systems implement the score functions with separate tensor operations, leading to large memory consumption and poor memory access efficiency. To overcome the issues, we propose a code generator that automatically translates Python-like definitions of KGE score functions into efficient CUDA code. Our code generator exploits the unique feature of KGE score functions and performs an aggressive fusion of tensor operations. Additionally, our generated code performs a runtime inspection to reduce redundant memory access for edges with identical indices. Experiment",
+   "one_liner": "cuKE: code generator fusing KGE score-function tensor ops into CUDA, 14.9x over TorchScript."
+  },
+  {
+   "key": "conf/sc/PanZZXWSLR0D24",
+   "title": "RecFlex: Enabling Feature Heterogeneity-Aware Optimization for Deep Recommendation Models with Flexible Schedules",
+   "venue": "SC",
+   "year": 2024,
+   "doi": "10.1109/SC41406.2024.00047",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/PanZaifeng/RecFlex",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "abstract": "Industrial recommendation models typically involve numerous feature fields. The embedding computation workloads are heterogeneous across these fields, thus requiring varied optimal code schedules. While existing solutions apply basic fusion optimization for embedding operations, they inefficiently treat all feature fields with identical schedules, leading to suboptimal performance. In this paper, we introduce RecFlex, which generates fused kernels with distinct schedules for different feature fields. RecFlex employs the interference-aware schedule tuner to tune schedules and the heterogeneous schedule fusion compiler to generate fused kernels, addressing two major challenges. To determine optimal schedules of different feature fields within the fused kernel, RecFlex proposes a two-stage interferencesimulated tuning strategy. To handle dynamic workloads that challenge tuning and fusion, R",
+   "one_liner": "RecFlex: per-field schedule tuning + fusion compiler for recsys embedding kernels, up to 20.8x"
+  },
+  {
+   "key": "conf/sc/WangWFMMD22",
+   "title": "EL-Rec: Efficient Large-Scale Recommendation Model Training via Tensor-Train Embedding Table",
+   "venue": "SC",
+   "year": 2022,
+   "doi": "10.1109/SC41404.2022.00075",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/Ash-Zheng/SC_artifacts_eval",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Deep learning Recommendation Models (DLRMs) plays an important role in various application domains. However, existing DLRM training systems require a large number of GPUs due to the memory-intensive embedding tables. To this end, we propose EL-Rec, an efficient computing framework harnessing the Tensor-train (TT) technique to democratize the training of large-scale DLRMs with limited GPU resources. Specifically, EL-Rec optimizes TT decomposition based on key computation primitives of embedding tables and implements a high-performance compressed embedding table which is a drop-in replacement of Pytorch API. EL-Rec introduces an index reordering technique to harvest the performance gains from both local and global information of training inputs. EL-Rec also highlights a pipeline training paradigm to eliminate the communication overhead between the host memory and the training worker. Compr",
+   "one_liner": "Tensor-train compressed embedding-table kernel (PyTorch drop-in) speeds DLRM training 3x on 1 GPU"
+  },
+  {
+   "key": "conf/ics/RandallA021",
+   "title": "FULL-W2V: fully exploiting data reuse for W2V on GPU-accelerated systems",
+   "venue": "ICS",
+   "year": 2021,
+   "doi": "10.1145/3447818.3460373",
+   "arxiv": "2312.07743",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3447818.3460373",
+   "artifact_url": "https://github.com/tlranda/FULL-W2V",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Word2Vec remains one of the highly-impactful innovations in the field of Natural Language Processing (NLP) that represents latent grammatical and syntactical information in human text with dense vectors in a low dimension. Word2Vec has high computational cost due to the algorithm’s inherent sequentiality, intensive memory accesses, and the large vocabularies it represents. While prior studies have investigated technologies to explore parallelism and improve memory system performance, they struggle to effectively gain throughput on powerful GPUs. We identify memory data access and latency as the primary bottleneck in prior works on GPUs, which prevents highly optimized kernels from attaining the architecture’s peak performance. We present a novel algorithm, FULL-W2V, which maximally exploits the opportunities for data reuse in the W2V algorithm and leverages GPU architecture and resources",
+   "one_liner": "FULL-W2V: GPU Word2Vec exploiting data reuse, 5.72x over prior GPU state-of-the-art"
+  }
+ ]
+}

@@ -1,0 +1,253 @@
+kernel: scan-reduction
+summary: >
+  Associative(-commutative) reduction of n input values, measured three
+  ways this track's literature actually benchmarks: a flat reduction to
+  one scalar (steady-state, memory-bound GB/s vs. achievable HBM
+  bandwidth); a segmented/keyed reduction into H << n output bins
+  (generalized histogram, H swept independently of n); and a
+  cascaded/fused reduction whose running accumulator feeds a downstream
+  consumer op inside one kernel launch (online-softmax-then-GEMM). No
+  surveyed paper implements a literal Blelloch/Hillis-Steele all-prefixes
+  scan; this gap is disclosed rather than papered over (see
+  open_questions).
+operation: >
+  flat: out = reduce(op, A[n]) -> scalar.
+  segmented: out[H] = reduce_by_key(op, A[n], key[n] in [0,H)) -> H scalars.
+  fused: running_max[n]/running_sum[n] via an online recurrence over A[n],
+  consumed by a downstream GEMM within the same kernel launch (no
+  intermediate HBM round-trip for the reduction's own output).
+
+variants:
+  - id: scan-reduction-flat-kernel
+    claim: >
+      steady-state throughput of a flat sum-reduction over a single
+      GPU-resident array to one scalar output, single isolated call —
+      Navarro's own benchmark shape, the only variant with a
+      well-defined memory-traffic lower bound (read n elements once,
+      write 1).
+    inputs:
+      suite: "synthetic, generated per call"
+      selection: >
+        array size n swept spanning cache to HBM residency: n in
+        {2^18 (~256K, ~1MB fp32, fits L2 on most GPUs), 2^20 (~1M, 4MB),
+        2^24 (~16.7M, 64MB, exceeds L2), 2^27 (~134M, 512MB,
+        HBM-resident), 2^30 (~1.07B, 4GB, large-HBM-resident, matching
+        Navarro's paper-text upper range)}. Two distributions: Normal
+        (mean=0, var=1) and Uniform(0,1) (Navarro's own two, adopted
+        verbatim).
+      recommended_subset: "all 5 n values x both distributions x fp32 = 10 configs"
+      dense_operand: "fp32 primary; fp16-input/fp32-accumulate secondary (matches Navarro's tensor-core MMA path)"
+    protocol:
+      format: "raw array, no preprocessing"
+      warmup: 20
+      reps: 100
+      statistic: "median (report min/max/stdev alongside)"
+      timer: "device-side events (CUDA events or equivalent)"
+      timing_scope: "kernel only; H2D once before the timed loop (device-resident for all reps), D2H of the single scalar output excluded from per-rep timing"
+      preprocessing_reported: "n/a — no preprocessing step for this kernel class"
+      precision: "fp32 primary (reference: fp64 CPU sum); fp16-in/fp32-accum secondary, compared against the SAME fp64 CPU reference"
+    metric:
+      primary: "GB/s = (n*sizeof(elt) + sizeof(elt)) / time (read n once, write 1; standard roofline lower bound), reported alongside fraction-of-achievable-bandwidth (measured via a memcpy microbenchmark on the same hardware)"
+      secondary: "BEPS (billion elements/sec), for direct comparability with Navarro's own reported unit"
+    correctness: >
+      relative error vs. an independently-computed fp64 CPU reference sum,
+      < 1e-5 for fp32 and < 1e-2 (1%) for the fp16-in/fp32-accum path for
+      n >= 1e7 (Navarro's own documented threshold; BELOW that n, error is
+      reported but not gated pass/fail, since the paper's own data shows
+      it is not yet stable there either). ADDITIONALLY (a fix vs. all
+      three surveyed papers, none of which reports this): run-to-run
+      bit-identity is checked by repeating the SAME algorithm on the SAME
+      input across all `reps` calls and confirming the output bit pattern
+      is IDENTICAL every time; a non-deterministic algorithm (varying
+      accumulation order across launches, e.g. from scheduling-dependent
+      atomics) must be flagged as such rather than silently passing a
+      tolerance-only check.
+
+  - id: scan-reduction-segmented-histogram
+    claim: >
+      segmented/keyed reduction into H output bins from a single input
+      pass, H swept independently of the fixed input size — Henriksen's
+      own benchmark shape (generalized histograms), and this track's only
+      representation of the "segmented variants" axis. Genuinely a
+      different kernel from scan-reduction-flat-kernel (contention profile
+      and race-resolution strategy both depend on H, not on n alone).
+    inputs:
+      suite: "synthetic, generated per call"
+      selection: >
+        input length FIXED at n=50,000,000 (Henriksen's own value, kept
+        fixed so the H sweep isolates the segment-count axis cleanly);
+        H (histogram/segment count) swept across ~4 orders of magnitude:
+        {63, 505, 4000, 32000, 250000, 1572863} (heavy-contention few-bin
+        regime through near-conflict-free many-bin regime, matching the
+        span actually present in Henriksen's own released raw data).
+      recommended_subset: "H in {63, 4000, 250000, 1572863} (4-point span of the full sweep)"
+      dense_operand: "int32 count-histogram (primary, associative/commutative in exact hardware arithmetic, matches the only surveyed paper's own released data); fp32 sum-histogram (secondary — untested by any surveyed paper, see open_questions)"
+    protocol:
+      format: "raw (key, value) pairs, no preprocessing"
+      warmup: 20
+      reps: 100
+      statistic: "median (report min/max/stdev alongside)"
+      timer: "device-side events (CUDA events or equivalent)"
+      timing_scope: "kernel only, same H2D/D2H discipline as scan-reduction-flat-kernel"
+      preprocessing_reported: "n/a"
+      precision: "int32 primary (exact by construction); fp32 secondary"
+    metric:
+      primary: "GB/s = (n*(sizeof(key)+sizeof(value)) + H*sizeof(value)) / time"
+      secondary: "ms (median), reported per (H, race-resolution-strategy) cell, matching Henriksen's own Table II layout"
+    correctness: >
+      int32 count-histogram: exact match vs. a sequential CPU reference
+      (total count must equal n, per-bin counts bit-identical — integer
+      addition is associative so this is a hard exact-match gate, unlike
+      the flat-reduction variant's tolerance). fp32 sum-histogram:
+      relative error < 1e-5 vs. an fp64 CPU reference PLUS the same
+      run-to-run bit-identity check as scan-reduction-flat-kernel —
+      REQUIRED here specifically because atomic race-resolution strategies
+      (CAS/hardware-atomic/exchange) accumulate concurrent writes to the
+      same bin in a thread-scheduling-dependent order, a genuine
+      non-determinism risk for a non-associative operator that no
+      surveyed paper's released artifact actually tests (it only tests
+      the associative integer case).
+
+  - id: scan-reduction-fused-cascaded
+    claim: >
+      a running/online reduction (running-max, running-sum recurrence
+      across sequential input tiles — the structurally scan-like part of
+      this operation) fused with a downstream consumer op (GEMM) inside
+      one kernel launch, so the reduction's own intermediate output never
+      round-trips through HBM — RedFuser's own benchmark shape (safe
+      softmax -> GEMM, the attention/MoE-routing pattern). Measured as
+      end-to-end latency/speedup vs. an unfused baseline, not raw
+      reduction GB/s, since the claim is specifically about eliminating a
+      round-trip, not about one kernel's isolated bandwidth.
+    inputs:
+      suite: "synthetic attention/MoE-routing shapes"
+      selection: >
+        flash-attention shape: q/k/v = [batch=128, heads=16, seq_len in
+        {512, 2048, 8192}, head_dim=64], fp16 with fp32 accumulation
+        (batch/heads/head_dim fixed at the repo's own codegen-example
+        default; seq_len swept since it directly sets the reduction
+        length the running-sum/running-max recurrence runs over). MoE
+        routing shape: gate logits [tokens=4096, experts in {4096, 8,
+        64}], fp16, top-k in {2, 8} (the repo's own codegen-example
+        default is experts=4096, k=8; smaller expert counts added since
+        production MoE routing typically has far fewer experts than 4096
+        and neither this paper's reachable text nor its example scripts
+        confirm the real evaluation-table shapes, appendix-gated — see
+        open_questions).
+      recommended_subset: "flash-attention seq_len=2048 + MoE-routing experts=64,k=8 (both fp16/fp32-accum)"
+      dense_operand: "fp16 compute / fp32 accumulate (code-confirmed default in both example shapes)"
+    protocol:
+      format: "raw dense tensors, no preprocessing"
+      warmup: 20
+      reps: 100
+      statistic: "median (report min/max/stdev alongside)"
+      timer: "device-side events (CUDA events or equivalent)"
+      timing_scope: >
+        kernel-only, END-TO-END across the fused op (score computation +
+        online softmax reduction + downstream GEMM in one launch) vs. the
+        SAME computation as separate unfused kernels (naive
+        PyTorch-eager-style: separate softmax kernel writing its output
+        to HBM, then a separate GEMM kernel reading it back) — both timed
+        under the identical protocol so the comparison isolates the
+        fusion's HBM round-trip savings, not a warmup/rep-count mismatch
+        (a fix vs. the source paper, whose own timing protocol could not
+        be located at all in the reachable text/code — see
+        open_questions).
+      preprocessing_reported: "n/a"
+      precision: "fp16/fp32-accum primary; fp8-quantized secondary (paper's own case study, exact tolerance not locatable — see open_questions)"
+    metric:
+      primary: "speedup = unfused_baseline_time / fused_time"
+      secondary: "ms (median, fused and unfused each reported separately, not just the ratio)"
+    correctness: >
+      relative error of the fused kernel's final output vs. the unfused
+      reference computation (same precision, same op order as far as
+      possible) < 1e-3 for fp16/fp32-accum (looser than the flat/segmented
+      variants' fp32 tolerance, matching standard flash-attention-family
+      practice for fp16 compute) — PLUS the same run-to-run bit-identity
+      check as the other two variants, since the fused kernel's
+      online/blockwise rescaling changes accumulation order relative to a
+      single-pass reference by construction, making it a prime candidate
+      for the kind of non-determinism this spec is designed to surface
+      rather than hide.
+
+notes_on_fairness:
+  - >
+    None of the three surveyed papers reports whether repeated runs of
+    their OWN technique on the SAME input produce bit-identical output.
+    Floating-point addition is non-associative, and all three techniques
+    change accumulation order relative to a naive reference (tensor-core
+    MMA reduction order, atomic race-resolution ordering, online/blockwise
+    softmax rescaling) — this spec makes a run-to-run bit-identity check a
+    REQUIRED reported field in all three variants' correctness sections,
+    not an afterthought.
+  - >
+    Navarro's own artifact documents a genuine baseline FAILURE (FP16 CUB
+    overflowing on the Uniform-distribution correctness test) rather than
+    silently omitting that data point. This spec's correctness section
+    treats such a failure as a reportable result (the baseline fails this
+    variant's gate), not as a reason to drop the config from the sweep.
+  - >
+    Henriksen's released `genhisto` microbenchmark tests only an
+    associative integer-count operator, even though the paper's own text
+    claims support for "arbitrary associative and commutative operators"
+    (which would include floating-point sums, where the associativity
+    claim is only approximately true in finite precision). This spec adds
+    an fp32 sum-histogram as an explicit secondary correctness case
+    specifically to close this untested gap, rather than assuming the
+    integer case generalizes.
+  - >
+    RedFuser's own timing protocol (warmup, repetitions, timer identity)
+    could not be located anywhere in the reachable paper text or
+    repository code — the weakest-verified paper across both tracks in
+    this delivery. Rather than guessing a protocol and attributing it to
+    the paper, this spec applies the project's standing
+    warmup=20/reps=100 convention uniformly and flags in open_questions
+    that RedFuser's own practice remains unconfirmed.
+  - >
+    No surveyed paper reports GB/s for a cascaded/fused kernel (RedFuser
+    reports only latency/speedup, despite its operation being
+    structurally memory-bound). This spec keeps speedup as the PRIMARY
+    metric for scan-reduction-fused-cascaded specifically because the
+    claim under test (round-trip elimination) is better captured by a
+    fused-vs-unfused comparison than by an isolated bandwidth number,
+    while still requiring both raw times (not just the ratio) to be
+    reported.
+
+open_questions:
+  - >
+    No paper in this 3-paper input set implements a literal
+    Blelloch/Hillis-Steele all-prefixes scan (an output array of n
+    partial sums, inclusive or exclusive). The three variants above are
+    grounded in what these three papers actually measure (flat reduction,
+    segmented reduction, fused/online reduction) rather than inventing an
+    ungrounded fourth variant. A dedicated scan-array variant is a
+    candidate future extension if a literal-scan paper is added to this
+    track's input set.
+  - >
+    RedFuser's Appendix A.5 (which the paper's own main text points to
+    for exact benchmark shapes/configs) was not reachable through either
+    arxiv.org/html or the equivalent fulltext-rendering path used for
+    this survey; `scan-reduction-fused-cascaded`'s recommended shapes are
+    therefore a mix of the repo's own codegen-example defaults
+    (flash-attention: q/k/v=[128,16,512,64]; MoE routing: A=[4096,4096],
+    k=8) and this spec's own extrapolation to smaller/more-realistic
+    expert counts, NOT independently confirmed against the paper's actual
+    evaluation table.
+  - >
+    RedFuser's timing protocol (warmup count, repetition count, timer
+    identity, correctness tolerance) could not be located in the
+    reachable paper text or repository code at all — flagged rather than
+    guessed; see notes_on_fairness.
+  - >
+    Whether a float-sum generalized histogram (as opposed to the
+    integer-count case Henriksen's own released artifact actually tests)
+    remains fast under the paper's race-resolution strategies, and
+    whether it is run-to-run deterministic, is untested by any surveyed
+    paper. `scan-reduction-segmented-histogram`'s fp32 secondary case is
+    this spec's attempt to close that gap, but has no paper-reported
+    numbers to validate against.
+
+evidence:
+  journals/tpds/NavarroCBRV21: "synthetic arrays, n from ~1e6 up to >=1e7 (paper text), Normal/Uniform dists; two-level REPEATS(CUDA-event,internal) x SAMPLES(shell,external) mean/var/stdev; fp32 input/fp16-MMA-compute/fp32-accum; %-relative-error vs fp64 CPU (documented FP16-CUB baseline overflow failure); BEPS metric; ~3.2x vs standard reduction, 2x vs CUB-fp32."
+  conf/sc/HenriksenHSO20: "genhisto microbenchmark: n=50,000,000 fixed, H swept 63..1,572,863 (4 orders of magnitude), 3 race-resolution strategies (cas/hdw/xcg); GPU_RUNS=100 fixed, CPU_RUNS=1 (correctness-only), no explicit warmup; int32 count-histogram (exact/associative operator only tested); raw ms/us runtime per (H,strategy) cell vs CUB baselines; 5 further application benchmarks (gromacs/img-reg/kmeans/parboil) at their own natural sizes, one (img-reg) explicitly disclosed as unvalidated (\"does not perform any validation\")."
+  conf/asplos/TangLWSLXZL26: "4 cascaded-reduction subgraph classes (MHA/MLA attention, flash-decoding, MoE routing softmax+top-k, FP8 quant+GEMM) on A10/H800; fp16/fp32-accum code-confirmed in repo example shapes (flash-attention q/k/v=[128,16,512,64]; MoE routing A=[4096,4096],k=8) but exact paper-evaluation-table shapes are appendix-gated and unreachable; timing protocol (warmup/reps/timer) not located in reachable text or code at all; PyTorch-Eager/Dynamo-Inductor/TVM/FlashAttention2/FlashMLA baselines; 2-5x speedup claimed, latency/speedup-only metric, no GB/s reported anywhere located."

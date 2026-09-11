@@ -1,0 +1,308 @@
+kernel: sparse-tensor-contraction
+summary: >
+  Contraction of sparse tensors/matrices under an einsum-style index-contraction
+  specification, covering three structurally distinct sub-problems found in this
+  track's literature: sparse(A)-times-dense(B) GPU kernels expressed as indirect
+  einsums over fixed-length sparse formats (Insum), true sparse-tensor x sparse-
+  tensor contraction (SpGETT) over FROSTT N-mode tensors (parTC), and fused
+  multi-kernel composite sparse-tensor-algebra expression chains built by loop-nest
+  restructuring (SparseLNR). No single input suite or reference kernel spans all
+  three, so this spec defines one variant per sub-problem rather than forcing an
+  artificial common denominator, following the same resolution used by the sibling
+  tensor-contraction track for its four shape families.
+operation: >
+  General form: given sparse tensor(s)/matrice(s) {A, B, ...} and an einsum-style
+  index-contraction expression, compute the output tensor C by contracting the
+  specified shared indices, where at least one operand is sparse (stored in a
+  compressed format that skips explicit zeros) and the output may itself be dense
+  (sparse-times-dense case) or sparse (sparse-times-sparse case, with a
+  data-dependent, not-known-a-priori output nonzero count). Format conversion
+  and/or any index-permutation required to align operand layouts is scoped
+  explicitly per variant below (never silently amortized into per-call time
+  unless stated).
+variants:
+  - id: sparse-dense-indirect-einsum-gpu-kernel-fp32-fp16
+    claim: >
+      steady-state kernel throughput of GPU sparse(-structured or -unstructured)
+      times dense einsum kernels expressed via fixed-length sparse formats
+      (GroupCOO/BlockGroupCOO) and executed as fully-fused gather-matmul-scatter
+      Triton/Tensor-Core kernels, format conversion and compile/autotune time
+      reported separately
+    inputs:
+      suite: >
+        4 named application classes from Insum's own evaluation: structured SpMM
+        (synthetic block-sparse), unstructured SpMM (TC-GNN real-world matrix
+        set), point-cloud sparse convolution (S3DIS indoor scenes), equivariant
+        tensor product (Clebsch-Gordan-coefficient contraction)
+      selection: >
+        structured SpMM: 4096x4096, 90% uniform sparsity, 32x32 dense blocks;
+        unstructured SpMM: all matrices in the TC-GNN benchmark set, output dim
+        N=128; point-cloud convolution: all 7 S3DIS Area-6 indoor scenes at 5cm
+        voxel quantization, headline single-scene comparison uses
+        `conferenceRoom`; equivariant tensor product: batch=10000, l_max swept
+      recommended_subset:
+        - "structured-spmm-4096x4096-90pct-block32x32"
+        - "tcgnn-unstructured-spmm-N128 (all named matrices in the TC-GNN set)"
+        - "s3dis-conferenceRoom-5cm-voxel-fp16-ch128"
+        - "s3dis-area6-all-7-scenes (full point-cloud set)"
+        - "equivariant-tensor-product-batch10000-lmax-sweep"
+      dense_operand: >
+        dense operand shapes as given per application (N=128 for unstructured
+        SpMM; batch=10000 for equivariant tensor product); fp32 primary, fp16
+        (Tensor-Core path) reported as a labeled secondary result, since Tensor
+        Cores are the headline optimization target of this variant's source
+        paper
+    protocol:
+      format: >
+        GroupCOO or BlockGroupCOO (fixed-length sparse formats), conversion from
+        the input's native format (e.g. COO/CSR as given) timed once and
+        reported separately, never re-timed per call -- NOT what the source
+        paper's own accessible text does: no repetition/warmup/statistic is
+        stated there at all (open question below), so this spec fixes a
+        protocol rather than reproducing an absent one
+      warmup: 10
+      reps: 50
+      statistic: median (report min/max)
+      timer: device-side events (CUDA events)
+      timing_scope: >
+        fully-fused gather-einsum-scatter Triton kernel only; format conversion
+        reported separately once; compiler compile+autotune time (source
+        paper's own reported total: 9.9s compile + 4.9s autotune = 14.8s for one
+        representative case) reported separately once and amortized only over
+        an explicitly-stated k (source paper argues this is "easily amortized"
+        for cached, reused compiled operators during inference, but gives no
+        explicit k -- this spec requires k to be stated, see open_questions)
+      preprocessing_reported: >
+        separately: format conversion (source paper's own number: 0.55ms for
+        the point-cloud case, vs. TACO's 0.47ms and SparseTIR's 13.47ms CPU-side
+        conversion for the same case) and compile+autotune time, both once
+    metric:
+      primary: >
+        GFLOP/s using the format's ACTUAL computed-element count (including any
+        GroupCOO/BlockGroupCOO padding zeros the fixed-length format forces the
+        kernel to multiply), reported alongside the "effective" GFLOP/s using
+        true nnz(A) only (2*nnz*N convention) -- padding inflates the nominal
+        flop count and must not be silently used as the sole reported number
+      secondary: "speedup vs. named hand-written baseline (TorchBSR / Sputnik /
+        e3nn / TorchSparse per application), ms"
+    correctness: "max relative error vs. a reference dense/COO fp64 evaluation of
+      the same einsum expression < 1e-4 (fp32 kernel) / < 1e-2 (fp16 Tensor-Core
+      kernel) -- no tolerance was stated in the source paper's accessible text;
+      this spec adds one rather than leaving correctness unchecked before timing"
+
+  - id: sparse-sparse-tensor-contraction-frostt-kernel-fp64
+    claim: >
+      steady-state kernel throughput of general sparse-tensor x sparse-tensor
+      contraction (SpGETT) on real N-mode sparse tensors from FROSTT,
+      preprocessing (hash-table/index construction) excluded and reported
+      separately once
+    inputs:
+      suite: "FROSTT (Formidable Repository of Open Sparse Tensors and Tools) --
+        same corpus and named subset as this project's mttkrp track, since this
+        track's one FROSTT-based paper (parTC) uses tensors from the identical
+        corpus (its own worked README example is `nips.tns`, a member of the
+        shared subset)"
+      selection: >
+        union of tensors used across the track's real-tensor evaluation,
+        matching the mttkrp track's general-kernel subset (order 3-4,
+        nnz 3.1M-143.6M); for each tensor T, the contraction is evaluated both
+        as a genuine self-contraction case (T contracted against a synthetic
+        tensor B derived from T by index-permutation with sparsification_factor
+        =1, i.e. |B|=|T|, matching parTC's own reference generator) AND, where
+        a second real FROSTT tensor of compatible mode-dimensions exists, as a
+        true independent-tensor-pair contraction (parTC's own accessible
+        material only demonstrates the self-contraction case -- the
+        independent-pair case is this spec's addition, since a benchmark that
+        only ever contracts a tensor against a shuffled copy of itself
+        understates the general problem, see notes_on_fairness)
+      recommended_subset:
+        - "nips (2.5K x 2.9K x 14K x 17, 3.1M nnz) -- parTC's own worked example"
+        - "uber (183 x 24 x 1.1K x 1.7K, 3.3M nnz)"
+        - "chicago-crime (6.2K x 24 x 77 x 32, 5.3M nnz)"
+        - "vast-2015-mc1 (165.4K x 11.4K x 2, 26M nnz)"
+        - "darpa (22.5K x 22.5K x 23.8M, 28.4M nnz)"
+        - "enron (6K x 5.7K x 244.3K x 1.2K, 54.2M nnz)"
+        - "nell-2 (12.1K x 9.2K x 28.8K, 76.9M nnz)"
+      dense_operand: "n/a -- both contraction operands are the sparse tensors
+        themselves; fp64, matching parTC's own `double` value arrays"
+    protocol:
+      format: "COO on input (given, as FROSTT ships it); hash-table/index
+        construction ('Total time for insertion' in the source paper's own
+        code) built once and NOT re-timed per call"
+      warmup: 10
+      reps: 50
+      statistic: >
+        median (report min/max) -- NOT the source paper's own protocol: the
+        reference implementation accepts a repetition-count CLI argument that
+        is parsed but never used anywhere in the code, so the shipped
+        artifact performs a bare single-shot std::chrono measurement with
+        zero warmup and no statistic; this spec fixes that gap explicitly
+      timer: >
+        std::chrono steady clock (matches the reference implementation's own
+        std::chrono::high_resolution_clock choice)
+      timing_scope: >
+        tensor-contraction kernel only ('Total time for tensor contraction' in
+        the source code), hash-table construction/insertion excluded and
+        reported separately once; output-array allocation strategy (two-pass
+        symbolic-count-then-fill vs. dynamic growth) MUST be stated explicitly
+        and its cost included in the reported kernel time or separately
+        disclosed if excluded -- the source paper's accessible material does
+        not make this determination inspectable (open question below)
+      preprocessing_reported: "separately, once: hash-table/index construction
+        time"
+    metric:
+      primary: >
+        GFLOP/s using 2 * (number of matched nonzero-coordinate pairs actually
+        found during the contraction), MEASURED at runtime and reported
+        alongside the GFLOP/s number -- NOT estimated from nnz(A)*nnz(B) or any
+        other closed-form input-size formula, since the matched-pair count is
+        intrinsically data-dependent on the sparsity-pattern overlap and cannot
+        be predicted a priori (unlike SpMM's 2*nnz*N or MTTKRP's 2*R*nnz)
+      secondary: "output tensor nonzero count (data-dependent, report
+        explicitly per the source code's own practice of printing it); ms"
+    correctness: "max relative error vs. a reference COO-based tensor
+      contraction (dense intermediate matricization + SpGEMM, or direct COO
+      triple-loop for small cases) in fp64 < 1e-6 -- the source paper's own
+      correctness-check code exists but is disabled by default (#if 0) in the
+      shipped artifact; this spec requires it enabled and passing before any
+      timing counts"
+
+  - id: composite-fused-sparse-tensor-algebra-kernel
+    claim: >
+      steady-state throughput of fused, multi-operator composite sparse-tensor-
+      algebra expressions (e.g. SDDMM->SpMM->GEMM chains) generated via
+      loop-nest restructuring, compared against separately-scheduled and
+      single-perfectly-nested-loop TACO baselines, codegen/compile time
+      reported separately
+    inputs:
+      suite: >
+        14 real sparse 2D matrices (SuiteSparse / Network Repository) + 5 real
+        sparse 3-mode tensors (FROSTT/DARPA), matching the source paper's own
+        evaluation set; the FROSTT tensors overlap this project's mttkrp-track
+        corpus
+      selection: >
+        all 14 named matrices (`cora`, `bcsstk17`, `pdb1HYS`, `circuit5M`,
+        `webbase-1M`, `rma10`, `cant`, `consph`, `cop20k_A`, `shipsec1`,
+        `scircuit`, `mac_econ_fwd500`, `amazon`, +1 unnamed in accessible
+        source) and all 5 named tensors (`flickr-3d`, `nell-2`, `nell-1`,
+        `vast-2015-mc1-3d`, `darpa1998`), evaluated across the source paper's
+        own 6 composite kernel expressions: <SDDMM,SpMM>, <SpMMH,GEMM>,
+        <SpMM,GEMM>, <SDDMM,SpMM,GEMM>, <MTTKRP,GEMM>, <SpTTM,SpTTM>
+      recommended_subset:
+        - "cora (2.7K x 2.7K, 5.4K nnz) -- smallest case"
+        - "bcsstk17 (11K x 11K, 429K nnz)"
+        - "pdb1HYS (36K x 36K, 4.34M nnz)"
+        - "webbase-1M (1M x 1M, 3.11M nnz)"
+        - "circuit5M (5.56M x 5.56M, 59.52M nnz) -- largest 2D case"
+        - "flickr-3d (320K x 2.82M x 1.60M, 112.89M nnz)"
+        - "nell-1 (2.9M x 2.14M x 25.5M, 143.6M nnz) -- largest tensor case"
+      dense_operand: "randomly generated dense operands, inner dimension k,l in
+        {32, 64, 128} (source paper's own default sweep), fp precision unstated
+        by source paper (see open_questions)"
+    protocol:
+      format: "CSR (2D matrices) / CSF (3-mode tensors), given, conversion not
+        timed (source paper does not describe conversion cost at all)"
+      warmup: 10
+      reps: 50
+      statistic: >
+        median (report min/max) -- source paper states no
+        warmup/repetition/statistic at all in its accessible text; this spec
+        fixes the gap
+      timer: "std::chrono steady clock (CPU)"
+      timing_scope: >
+        fused-expression kernel execution only; TACO/SparseLNR codegen+compile
+        time reported separately, once, never amortized into per-call time
+        (source paper does not report this cost at all; this spec requires it)
+      preprocessing_reported: "separately, once: codegen+compile time (not
+        reported by the source paper -- flagged as an open question below since
+        it could not be estimated from accessible material)"
+    metric:
+      primary: "GFLOP/s using the flop count of the UNFUSED composite
+        expression (sum of each constituent kernel's own standard flop
+        formula, e.g. 2*nnz*N for the SpMM sub-step, 2*R*nnz for the MTTKRP
+        sub-step), since fusion changes memory traffic but not the number of
+        useful arithmetic operations performed"
+      secondary: "speedup vs. TACO-Original (single perfectly-nested loop) and
+        TACO-Separate (temporaries between sub-kernels); thread-count scaling
+        (1 to 64 cores)"
+    correctness: "max relative error vs. a reference unfused, one-kernel-at-a-
+      time evaluation of the same composite expression in fp64 < 1e-6 -- not
+      stated by the source paper; this spec adds it. Note: the source paper's
+      own 'TACO-Separate' baseline uses a mild best-of-N practice ('when
+      multiple decomposition options existed, we evaluate all combinations and
+      report best execution time') -- this spec instead requires reporting the
+      #1 TACO-recommended decomposition's time, per the same anti-best-of-N
+      principle applied to WACO in the sibling mttkrp track"
+notes_on_fairness:
+  - "parTC's own reference generator only ever contracts a FROSTT tensor
+    against a shuffled/copied version of itself (same nonzero count by
+    construction, sparsification_factor=1) -- this understates the general
+    sparse-sparse contraction problem, where the two operands' sparsity
+    patterns need not overlap at all in a way that makes the contraction
+    trivially self-similar. The sparse-sparse variant above requires an
+    independent-tensor-pair case in addition to the self-contraction case for
+    exactly this reason."
+  - "None of the 3 papers in this track state an explicit warmup/repetition/
+    statistic protocol in their accessible text; parTC's own shipped code goes
+    further and silently ignores its own repetition-count CLI argument,
+    making the reference artifact a bare single-shot timer. This is the
+    weakest timing-protocol rigor found across every track surveyed so far in
+    this project; the spec fixes warmup=10/reps=50/median+min/max uniformly
+    rather than inheriting any paper's (non-existent) practice."
+  - "SparseLNR's own baseline ('TACO-Separate') uses a best-of-N practice
+    across manually-tried decomposition combinations -- the composite-kernel
+    variant above resolves this the same way the mttkrp track resolves WACO's
+    top-10-schedule best-of-N: report the #1-ranked/first-tried decomposition,
+    not the best of many tries."
+  - "parTC ships a correctness-check block disabled by default (#if 0); this
+    spec requires correctness validation enabled and passing before any
+    timing counts, per the project's standing fairness principle."
+  - "Insum's fixed-length sparse formats (GroupCOO/BlockGroupCOO) compute over
+    padded zero slots by design -- the sparse-dense variant above requires
+    reporting both nominal (padded-element-count) and effective (true-nnz)
+    GFLOP/s so that the format's own padding overhead is visible rather than
+    hidden inside a single favorable-looking throughput number."
+open_questions:
+  - "Insum's accessible text (a 6-page workshop-length paper, likely a
+    precursor of the full ASPLOS 2026 paper) states no warmup/repetition/
+    statistic protocol and no amortization count k for its 14.8s compile+
+    autotune overhead; the full ASPLOS 2026 paper (paywalled at the given DOI,
+    not independently accessible) may resolve both."
+  - "parTC's own paper text (both HAL deposit IDs tried, hal-04659658 and
+    hal-05047235, including a direct-file PDF URL) was blocked by Anubis
+    anti-bot protection for every fetch attempt; the exact FROSTT tensor list
+    used in the paper's own results table, its stated baselines' specific
+    system names, and its output-array allocation strategy (two-pass vs.
+    dynamic growth) could not be verified beyond what the repo code and
+    abstract snippet reveal."
+  - "SparseLNR's accessible fulltext does not state a numeric precision
+    (fp32/fp64) anywhere; the spec's fp64 default for the composite-kernel
+    variant's dense_operand is this spec's own choice (matching the sibling
+    mttkrp track's fp64 default), not verified against the source paper."
+  - "None of the 3 papers' accessible material describes exactly how sparse-
+    sparse contraction output storage is sized (two-pass symbolic-count-then-
+    fill, as in classic SpGEMM, vs. dynamic/incremental growth) -- this
+    affects both the fairness of the timing scope (is output-sizing cost
+    counted?) and peak memory reporting; unresolved from accessible sources."
+evidence:
+  conf/asplos/WonAAE26: "4 sparse-GPU application case studies (structured/unstructured SpMM,
+    point-cloud conv, equivariant tensor product), fp32/fp16 Tensor-Core-fused
+    Triton kernels via GroupCOO/BlockGroupCOO fixed-length formats, compile+
+    autotune (14.8s) and format-convert (0.55ms) reported separately from
+    kernel runtime, no stated warmup/reps/statistic, no stated correctness
+    tolerance, TorchBSR/Sputnik/e3nn/TorchSparse/cuSPARSE/TACO/SparseTIR
+    baselines, single RTX3090 GPU"
+  journals/tpds/SinghU25: "FROSTT real tensors (self-contraction against a shuffled copy of the
+    same tensor, sparsification_factor=1), fp64, hash-based SpGETT with
+    preprocessing (insertion) timed separately from contraction, CLI
+    repetition-count argument accepted but silently unused (single-shot
+    std::chrono timing with zero warmup in the shipped code), correctness
+    check present but disabled by default (#if 0), data-dependent sparse
+    output nnz printed at runtime, SpGEMM-based and existing-SpGETT baselines
+    (specific systems not confirmed), CPU/OpenMP"
+  conf/ics/DiasSS022: "14 real SuiteSparse matrices + 5 real FROSTT/DARPA tensors, 6
+    composite fused-kernel expressions (SDDMM/SpMM/GEMM/MTTKRP/SpTTM chains),
+    no stated warmup/reps/statistic/precision/correctness-tolerance,
+    TACO-Original and TACO-Separate (explicit best-of-N across manually-tried
+    decompositions) baselines only, 64-core AMD Threadripper 3990X single-
+    socket CPU, TACO hand-patched for multithreaded sparse-output codegen"

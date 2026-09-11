@@ -1,0 +1,99 @@
+kernel: content-defined-chunking
+summary: >
+  SIMD-vectorized content-defined chunking (CDC) for data deduplication:
+  scan a byte stream and emit content-determined chunk boundaries (so
+  identical content re-aligns to identical chunks regardless of
+  insertions/deletions elsewhere in the stream), measured as throughput
+  JOINTLY with achieved average chunk size and deduplication space
+  savings on a real dataset -- never throughput alone, since a
+  degenerate boundary rule (e.g. always chunk at a fixed offset) trivially
+  maximizes throughput while destroying dedup ratio.
+operation: >
+  Given a byte stream of length N and target average chunk size C_avg
+  (with configured min/max bounds C_min, C_max): scan the stream once,
+  left to right, and at each candidate position evaluate a
+  content-dependent boundary predicate (rolling hash threshold for
+  Rabin/Gear/FastCDC-family algorithms; local-extremum/skip-based rule
+  for AE/MAXP/RAM/SeqCDC-family algorithms) to decide whether to cut a
+  chunk boundary there. SeqCDC's specific contribution: a lightweight
+  (non-hash) boundary-detection rule plus content-defined SKIPPING
+  (jumping ahead by a content-dependent stride instead of evaluating
+  every byte position), vectorized via SSE/AVX/NEON/AltiVec to evaluate
+  multiple candidate positions per SIMD lane-width.
+variants:
+  - id: cdc-throughput-dedupratio-joint
+    claim: >
+      steady-state single-thread chunking throughput on a real
+      (non-synthetic) dataset, reported JOINTLY with achieved average
+      chunk size and resulting deduplication space savings %, across the
+      SIMD-acceleration axis (unaccelerated vs. best-available vector ISA
+      for the host CPU) and the chunk-size-target axis -- matches
+      SeqCDC's own claimed "10x over unaccelerated / 1.2-1.35x over
+      vector-accelerated alternatives" comparison set (the other 10
+      algorithms in the same DedupBench harness).
+    inputs:
+      suite: >
+        the DEB (Deduplication Evaluation Benchmark) dataset -- real VM
+        disk images spanning multiple application stacks, the paper's
+        own canonical evaluation set (shared across VectorCDC/FAST'25,
+        SeqCDC/Middleware'24, and this TPDS'26 paper); a synthetic
+        random_dataset control (0% achievable dedup by construction) is
+        required as a throughput-only sanity check, NEVER reported as a
+        dedup-ratio result.
+      selection: "all DEB images still available (per the repo's own README, some Bitnami image URLs retired since Sept 2024) -- minimum 6 of the original 11 named stacks"
+      recommended_subset:
+        - {name: tomcatstack}
+        - {name: mysql}
+        - {name: rubystack}
+        - {name: jenkins}
+        - {name: kafka}
+        - {name: elasticsearch}
+        - {name: redis}
+        - {name: random-control, note: "synthetic, 0% real dedup by construction -- throughput-only control, dedup ratio not meaningful"}
+      chunk_size_targets: "avg chunk size in {4KB, 8KB, 16KB, 64KB} -- 8KB is DedupBench's own preconfigured default; the full range is required since larger target sizes systematically trade dedup ratio for throughput and a single-point comparison can hide this tradeoff"
+      candidate_algorithms: "SeqCDC (this paper's contribution) vs. the other 10 in the same harness (AE-Max, AE-Min, CRC-32, FastCDC, Fixed-size, Gear, MAXP, Rabin, RAM, TTTD), each at its best-available SIMD tier for the test CPU (AE/MAXP/RAM/SeqCDC support SIMD per the repo's own compatibility table; CRC-32/FastCDC/Fixed-size/Gear/Rabin/TTTD are unaccelerated-only in the current release)"
+      hashing_algo: "xxHash3-128 (fastest available fingerprinting algorithm in the harness, isolates chunking-algorithm cost from hashing-algorithm cost as much as the single-pass dedup.exe design allows)"
+    protocol:
+      warmup: "1 discarded pass over the dataset (page-cache warm) -- not specified in DedupBench's own README; this spec's own choice since a cold-cache first pass over multi-GB VM images would otherwise dominate a single-measurement result"
+      reps: 5
+      statistic: "median (report min/max) -- DedupBench's own harness appears to run a single dedup.exe pass with no repeat/average built in (not stated as multi-rep in the fetched README); this spec requires 5 repeated full-dataset passes for a defensible spread"
+      timer: "wall-clock around the full dataset-directory chunking pass (DedupBench's own dedup.exe timing convention, std::chrono at the process level)"
+      timing_scope: >
+        chunking + fingerprinting/hashing fused, matching DedupBench's
+        own single-pass dedup.exe design (chunking-only isolation is not
+        exposed by the released harness -- see open_questions); report
+        the fused number as the primary metric and flag explicitly that
+        it is NOT chunking-only.
+      threading: "single-threaded (DedupBench's dedup.exe is not stated to be multi-threaded in the fetched README) -- report explicitly if a multi-threaded configuration is used, since that would not be comparable to the paper's own presumably-single-threaded numbers"
+      preprocessing_reported: "not applicable (CDC has no separable one-shot preprocessing stage distinct from the scan itself)"
+    metric:
+      primary: "throughput, MB/s (bytes of input scanned per second)"
+      secondary: "achieved average chunk size (bytes, vs. the configured target -- CDC algorithms only approximate the target due to content-dependence); deduplication space savings % (via measure-dedup.exe on the SAME chunked output, run as the required companion measurement, never omitted)"
+    correctness: >
+      MANDATORY joint gate, not a numerical tolerance (CDC boundary-
+      finding is deterministic, not approximate): (1) determinism check
+      -- re-running the SAME algorithm on the SAME input twice must
+      produce byte-identical chunk boundaries; (2) content-defined-ness
+      check -- inserting or deleting a small byte range at one point in
+      the stream must leave chunk boundaries FAR from that point
+      unchanged (the defining CDC property that distinguishes it from
+      fixed-size chunking; verified by comparing boundary sets before/
+      after a synthetic single-byte insertion at a known offset, at
+      least 90% of boundaries beyond 2x the target chunk size from the
+      insertion point must be unchanged); (3) reported dedup space
+      savings % must be computed via measure-dedup.exe on the SAME
+      chunked output used for the throughput number, never a different
+      run.
+
+notes_on_fairness:
+  - "The paper's abstract already frames its own contribution as a throughput-vs-dedup-ratio tradeoff ('10x throughput... while MINIMALLY AFFECTING deduplication space savings'), so this track's joint-reporting requirement is not an external correction but a direct formalization of the paper's own framing -- made mandatory here because DedupBench's separate measure-dedup.exe tool makes it easy to report ONLY the throughput half in a future re-measurement if not required."
+  - "DedupBench's dedup.exe appears to fuse chunking and hashing/fingerprinting cost into one throughput number (not stated as separable in the fetched README); this spec is explicit that the reported number is FUSED, not chunking-only, to prevent a future reader from assuming it isolates the paper's own specific contribution (the boundary-detection + skipping algorithm) from the (unrelated, off-the-shelf) hashing stage."
+  - "A random_dataset control is required specifically because throughput-only benchmarking on synthetic data trivially favors any algorithm that scans faster regardless of boundary quality -- pairing it with the mandatory dedup-ratio gate on REAL data (DEB) prevents a report from citing only the synthetic-data throughput number as if it characterized real-world dedup performance."
+
+open_questions:
+  - "Whether DedupBench's dedup.exe reports a chunking-only throughput number separately from the fused chunking+hashing number (via some config.txt option not surfaced in the top-level README) was not determined -- if such an option exists, isolating chunking-only cost would be a strictly better match to the paper's own stated contribution than the fused number used here."
+  - "The paper's own reported throughput/space-savings numbers are specific to the TPDS'26 journal extension (which adds ARM/IBM SIMD support on top of the FAST'25/Middleware'24 x86-only prior work); which of the DEB images and chunk-size targets were used in THIS paper's specific evaluation table (as opposed to the shared harness's general capability) was not confirmed from the fetched README alone."
+  - "No stated warmup/repeat/statistic convention was found for dedup.exe's own throughput reporting; the protocol here (1 discarded warmup, 5 reps, median) is this spec's own construction, not extracted from the artifact."
+
+evidence:
+  journals/tpds/UdayashankarMA26: "SeqCDC (TPDS'26 journal extension of Middleware'24): lightweight non-hash boundary detection + content-defined skipping, SSE/AVX/NEON/AltiVec vectorized, via the shared DedupBench harness (11 chunking algos, 6 hashing algos, DEB VM-image dataset); dedup.exe single-pass throughput+chunk-size stdout, measure-dedup.exe as a separate space-savings tool; 10x over unaccelerated, 1.2-1.35x over vector-accelerated alternatives, minimal space-savings impact per abstract; no stated warmup/repeat convention in fetched README."

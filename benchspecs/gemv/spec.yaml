@@ -1,0 +1,503 @@
+kernel: gemv
+summary: >
+  Dense and mixed/low-precision matrix-vector multiplication (including
+  the batch=1..~32 "thin-GEMM" regime that dominates LLM autoregressive
+  decode, and format-compressed variants where decompression cannot be
+  factored out of the timed kernel); a fundamentally memory-bandwidth-
+  bound operation, unlike GEMM, so GB/s and roofline fraction (not
+  GFLOP/s) are this track's primary metric.
+operation: >
+  y[M] = alpha*A[M,K]*x[K] + beta*y[M] (beta=0 unless noted); A may be
+  full-precision (fp64/fp32/fp16) or a packed low-bit format (INT4/INT3/
+  INT2, optionally nonuniform-bitwidth across columns as in QIGen) paired
+  with per-group FP16 scale/zero-point tensors, in which case "A" in the
+  byte-accounting below means the packed representation actually read,
+  not a hypothetical dequantized dense array. The harness must record
+  which of these representations was measured, since bandwidth is
+  dominated almost entirely by how A is stored, not by x or y.
+
+variants:
+  - id: gemv-dense-kernel
+    claim: >
+      steady-state kernel bandwidth on full-precision dense GEMV across a
+      shape sweep spanning tall-skinny, short-fat, and square aspect
+      ratios, with an explicit 3-state cache axis (see cache_state below)
+      instead of a naive hot/cold binary — the common-denominator variant
+      grounded directly in TLR-MVM's own dense-GEMV comparison harness
+      (`benchmark/cuda/bench_mvm_cuda_fp32.cpp`), the only paper in this
+      survey shipping a general-purpose, precision-parameterized
+      dense-GEMV micro-benchmark rather than an application-embedded one.
+    inputs:
+      suite: >
+        union of shapes actually exercised across the surveyed papers,
+        spanning three aspect-ratio classes plus a spec-added square
+        sweep (no surveyed paper isolates a square-only GEMV sweep, so
+        this class is this spec's own addition, flagged here rather than
+        silently presented as literature-derived).
+      selection: >
+        tall-skinny: M >> K, sourced from GPU-DPF's table shapes (the
+        only surveyed source with an explicit, extreme tall-skinny
+        sweep) even though GPU-DPF's own kernel is compute- not
+        memory-bound (see survey.md Divergences) — here the shapes are
+        reused as a materialized dense-GEMV stress point, not as a
+        reproduction of GPU-DPF's own (non-memory-bound) methodology.
+        short-fat: K >> M, sourced from PackKV's KV-cache context-length
+        sweep (context length = K, head_dim = M). square: M=K, a
+        spec-added synthetic power-of-2 sweep for roofline-fraction
+        baselining, mirroring how gemm-square-kernel's own sweep was
+        constructed in benchspecs/gemm/spec.yaml.
+      recommended_subset: >
+        tall-skinny (M,K): (16384,16), (65536,16), (262144,16),
+        (1048576,16) (GPU-DPF's table row-counts x entry_size, verbatim).
+        short-fat (M,K): (128,32768), (128,131072) (head_dim=128 x
+        context length 32K/128K, PackKV's own tested context lengths).
+        square (M=K): 1024, 2048, 4096, 8192, 16384 (spec-added,
+        power-of-2 roofline-fraction baseline). 11 shapes total.
+      dense_operand: >
+        precision in {fp64, fp32, fp16}; A, x initialized U(-1,1) (same
+        convention as benchspecs/gemm/spec.yaml, for cross-track
+        consistency; no surveyed GEMV paper states an initialization
+        range at all, so this is purely this spec's choice, not a
+        correction of any stated practice).
+    protocol:
+      cache_state: >
+        three explicit, separately-reported states (a deliberate
+        refinement of a naive hot/cold binary — see survey.md
+        Divergences, since none of this track's realistic shapes let the
+        O(M*K) matrix be cache-resident across independent calls the way
+        GEMM's LibShalom setup does): (1) "cold-matrix" — default state,
+        matrix A freshly read from DRAM/HBM every call because it is
+        always >> LLC/L2 at these shapes (no explicit eviction trick
+        needed at this scale, unlike CPU GEMM); this matches TLR-MVM's
+        own harness, which performs one H2D copy before the loop and
+        relies on the matrix simply being too large for GPU L2 to matter.
+        (2) "hot-vector-reuse" — x (and the y accumulator) are kept
+        resident in L1/L2/shared memory for the duration of a single
+        kernel invocation, exploiting that O(M+K) is always cache-sized;
+        report whether the measured kernel achieves this (inspect
+        vendor profiler L2 hit rate for x's address range) rather than
+        assuming it — this is the axis MARLIN's own design targets
+        (README: "activations are essentially always fetched from L2
+        cache"). (3) "sram-resident-extreme" — OPTIONAL, only reported
+        when the target hardware supports whole-operand on-chip
+        residency across many calls (e.g. Cerebras wafer-scale SRAM, or
+        a matrix small enough to genuinely fit LLC); report as a
+        separate, clearly-labeled number, never averaged with (1) or
+        (2), matching how this spec treats TLR-MVM's 92.58 PB/s
+        Cerebras headline result as a distinct data point.
+      preprocessing: >
+        one-shot device-buffer allocation and H2D residency of A, x, y;
+        excluded from the timed region and reported once, separately
+        (matches TLR-MVM's own harness structure: cudaMemcpy happens
+        once before the timed loop).
+      warmup: 20
+      reps: 200 (deliberately higher than benchspecs/gemm/spec.yaml's
+        50-200 range, since GEMV calls at these shapes are typically
+        microsecond-scale and memory-latency-dominated, hence noisier
+        per-call than compute-bound GEMM of comparable wall time — this
+        generalizes TLR-MVM's own unfixed `loopsize` CLI parameter into
+        an explicit default)
+      statistic: median (report min and max) — TLR-MVM's own harness
+        already uses median (`std::sort` + middle element); this spec
+        keeps that choice rather than switching to MARLIN's mean, for
+        consistency with benchspecs/gemm/spec.yaml's stated preference
+        for median over mean/min across this benchmark suite
+      timer: >
+        per platform class, same convention as
+        benchspecs/gemm/spec.yaml: GPU - device-side kernel time (CUDA
+        events, matching TLR-MVM's own `cudaEventRecord`/
+        `cudaEventElapsedTime` + `cudaDeviceSynchronize`/
+        `cudaEventSynchronize` bracketing, which prevents the async-queue
+        leakage risk noted for GPU-DPF in survey.md); CPU - monotonic
+        wall clock (matches QIGen's likely AMD EPYC target, though its
+        own timer API was not recoverable from the extracted text).
+      timing_scope: kernel only; H2D/D2H excluded (one-shot, see
+        preprocessing above)
+      preprocessing_reported: separately, once, before the steady-state
+        loop
+    metric:
+      primary: >
+        GB/s = bytes_moved / time, where bytes_moved = M*K*sizeof(A_dtype)
+        + K*sizeof(x_dtype) + M*sizeof(y_dtype) — TLR-MVM's own formula
+        (`bench_mvm_cuda_fp32.cpp`: `m*n*sizeof(float) + (m+n)*
+        sizeof(float)`), generalized here to arbitrary dtype widths so it
+        also covers the packed-low-bit case in gemv-quantized-weight-kernel
+      secondary: >
+        GFLOP/s (2*M*K/time); roofline_fraction = achieved GB/s / device
+        peak memory bandwidth (report whether peak is the vendor spec
+        sheet or a locally STREAM-measured number — the two can differ
+        by 10-15% per MARLIN's own README note about ECC overhead on A10)
+    correctness: >
+      max relative error vs. a same-precision-family vendor BLAS
+      reference (cuBLAS `Xgemv` on GPU, MKL/OpenBLAS `Xgemv` on CPU) at
+      fp64: < 1e-6 for fp64, < 1e-3 for fp32, < 1e-2 for fp16 (identical
+      tolerances to benchspecs/gemm/spec.yaml for cross-track
+      consistency). This is a deliberate departure from every surveyed
+      paper's own practice: MARLIN and TLR-MVM both check *mean* (not
+      max) relative error, and neither states a threshold as strict as
+      what a max-based gate implies at fp32 — flagged explicitly here,
+      not silently adopted, per the design instructions' fairness
+      principles.
+
+  - id: gemv-quantized-weight-kernel
+    claim: >
+      steady-state kernel bandwidth for the batch=1 (single-token decode,
+      the literal "vector" case) regime of mixed/low-precision LLM
+      weight-matrix x FP16-activation GEMV — in scope for this track
+      rather than split into a separate quantized-gemv track because 3 of
+      this track's 5 input papers (QIGen, MARLIN, PackKV) are exactly
+      this workload; unlike GEMM's quantized-gemm split (see
+      benchspecs/gemm/spec.yaml's summary), this track's own literature
+      is dominated by the quantized case, so keeping it here reflects
+      what the track's papers actually do rather than a policy choice
+      made in advance.
+    inputs:
+      suite: real LLM linear-layer shapes, MARLIN's `bench.py` `MODELS`
+        dict, reproduced verbatim (the only surveyed source giving
+        concrete per-layer M,K pairs, and QIGen's own LLaMA 7B/13B/30B
+        target models overlap this family)
+      selection: >
+        all 4 linear-layer shapes per model (QKV-fused proj, O-proj,
+        gate+up-fused MLP proj, down-proj) for Llama7B/13B/33B/65B, plus
+        Falcon180B's 2 fused shapes (parallel-attention+FC layer fusion)
+      recommended_subset: >
+        Llama7B: (4096,3*4096), (4096,4096), (4096,2*10752), (10752,4096).
+        Llama13B: (5120,3*5120), (5120,5120), (5120,2*13568), (13568,5120).
+        Llama33B: (6656,3*6656), (6656,6656), (6656,2*17664), (17664,6656).
+        Llama65B: (8192,3*8192), (8192,8192), (8192,2*21760), (21760,8192).
+        Falcon180B: (14848,14848*5+1024), (14848*5,14848). 18 shapes
+        total (M,K) — verbatim from MARLIN's own `bench.py`.
+      dense_operand: >
+        weight precision in {INT4, INT3, INT2} (QIGen's 2/3/4-bit +
+        MARLIN's INT4; nonuniform per-column bitwidth, QIGen's specific
+        contribution, is an OPTIONAL sub-mode — report which columns use
+        which bitwidth when exercised); activation/output FP16;
+        quantization group size in {-1 (per-column/per-row), 16, 32, 64,
+        128} (union of MARLIN's {-1,128} and QIGen's {16,32,64,128})
+    protocol:
+      batch: 1 (fixed; the multi-token/batched regime is
+        gemv-batched-decode below)
+      preprocessing: >
+        one-shot weight packing/reshuffling into the kernel's preferred
+        on-disk layout (MARLIN's `Layer.pack(...)`) and scale-tensor
+        layout; excluded from the timed region, reported once
+      warmup: 10 (MARLIN's own script uses warmup=1; this spec raises it
+        to 10 to better stabilize GPU clocks before timing, consistent
+        with every other single-device variant in this benchmark suite)
+      reps: 50 (MARLIN's own script uses 10; raised for a more stable
+        median — see statistic below)
+      statistic: median (report min and max) — a deliberate departure
+        from MARLIN's own mean-based statistic, for the same reason
+        given in gemv-dense-kernel and in benchspecs/gemm/spec.yaml
+      timer: device-side kernel time (CUDA events); MARLIN's own script
+        uses a host-side `time.time()` bracket with
+        `torch.cuda.synchronize()` calls, which is equivalent in effect
+        but CUDA events are preferred per this suite's stated convention
+      anti_throttling: >
+        MARLIN's own script inserts a 1-second `time.sleep()` between
+        successive benchmark configs specifically to avoid GPU clock
+        throttling biasing later configurations in a sweep — this spec
+        keeps that practice as an explicit protocol step (not optional),
+        since it is the only anti-throttling measure found anywhere in
+        this track's surveyed code and is cheap to keep
+      timing_scope: kernel only; weight packing excluded (see
+        preprocessing above)
+      preprocessing_reported: separately, once
+    metric:
+      primary: >
+        GB/s = (bits_per_weight/8)*M*K [packed weight] +
+        2*K [FP16 activation] + 2*M [FP16 output] +
+        2*(K/groupsize)*M [FP16 scales] bytes, divided by time — this is
+        MARLIN's own `benchmark_quant` formula (`4*B.numel()` where
+        `B.numel()=K*N/8` for INT4 packing = 0.5 byte/element),
+        generalized to arbitrary bit-width
+      secondary: TFLOP/s (2*M*K/time); speedup vs. a dense FP16 GEMV of
+        the same shape (MARLIN's own comparison baseline, `benchmark_dense`
+        in the same script)
+    correctness: >
+      mean relative error vs. a dense FP16 GEMV computed from the SAME
+      dequantized reference weights (not the pre-quantization original
+      weights, isolating kernel bugs from quantization error) < 1e-3 —
+      this is MARLIN's own tolerance and check construction
+      (`test.py`: `torch.mean(torch.abs(C-C_ref))/torch.mean(torch.abs(
+      C_ref)) < 0.001`), kept as-is here (unlike gemv-dense-kernel, which
+      switches to a max-based gate) because quantization error is not
+      i.i.d. across output elements the way floating-point rounding
+      error roughly is, making a strict max-based gate liable to reject
+      numerically-correct kernels at outlier-heavy elements — a real
+      difference from the dense case, not an inconsistency for its own
+      sake.
+
+  - id: gemv-batched-decode
+    claim: >
+      throughput across the batch-size sweep that crosses GEMV's
+      memory-bound/compute-bound roofline knee — MARLIN's own central
+      empirical claim (near-ideal 4x quantization speedup sustained up to
+      batch ~16-32, degrading above that as the operation becomes
+      compute-bound) is itself a benchmark-methodology finding, not just
+      a result, so this variant makes the batch axis a first-class,
+      always-swept dimension rather than a single fixed point.
+    inputs:
+      suite: same LLM linear-layer shape list as gemv-quantized-weight-kernel
+      selection: same 18 (M,K) shapes, INT4/groupsize=128 fixed (MARLIN's
+        own default sweep configuration) as the representative precision
+        for this variant, since batch behavior is the axis under test
+      recommended_subset: same 18 shapes as gemv-quantized-weight-kernel;
+        batch in {1,2,4,8,16,32,64,128,256,512,1024,2048} (MARLIN's own
+        "ALL=True" full sweep, verbatim)
+      dense_operand: INT4 weight (groupsize=128), FP16 activation/output
+        (fixed; this is the one precision point MARLIN's own batch sweep
+        was run at)
+    protocol:
+      preprocessing: same as gemv-quantized-weight-kernel
+      warmup: 10
+      reps: 50
+      statistic: median (report min and max)
+      timer: device-side kernel time (CUDA events)
+      anti_throttling: same 1-second inter-config sleep as
+        gemv-quantized-weight-kernel
+      timing_scope: kernel only
+      preprocessing_reported: separately, once
+      required_output: >
+        a roofline-fraction-vs-batch curve (achieved GB/s / peak bandwidth,
+        and achieved TFLOP/s / peak compute, both vs. batch size) is a
+        REQUIRED reported artifact for this variant, not optional — the
+        batch at which the curve crosses from bandwidth-bound to
+        compute-bound IS the finding this variant is designed to surface,
+        matching MARLIN's own headline plot
+    metric:
+      primary: TFLOP/s (2*batch*M*K/time) — primary here (unlike the
+        other three GEMV variants, which use GB/s) because at the large
+        end of this variant's batch sweep the kernel is compute- not
+        memory-bound, so GB/s alone would understate what changes across
+        the sweep
+      secondary: GB/s (same formula as gemv-quantized-weight-kernel, with
+        activation/output terms scaled by batch); speedup vs. dense FP16
+        GEMM of the same (batch,M,K) shape
+    correctness: same as gemv-quantized-weight-kernel, checked at every
+      swept batch size (not just batch=1)
+
+  - id: gemv-e2e-compressed-format
+    claim: >
+      end-to-end throughput for GEMV embedded in a compressed/structured
+      storage format where decompression is NOT separable from the
+      per-call kernel by the algorithm's own design (unlike this
+      benchmark suite's usual "preprocessing excluded, reported
+      separately" rule) — covers TLR-MVM's tile-low-rank compressed MVM
+      and PackKV's fused decompression+GEMV, the two surveyed papers
+      whose own methodology times decompression/decoding together with
+      the arithmetic because there is no natural "already decoded"
+      state to start a kernel-only clock from.
+    inputs:
+      suite: >
+        TLR-MVM's seismic-redatuming and MAVIS adaptive-optics datasets
+        (Zenodo-hosted, linked from the repo README; exact matrix
+        dimensions not recoverable from available sources — open
+        question) and PackKV's 6-model x 6-benchmark KV-cache sweep
+      selection: >
+        whichever datasets/models are actually available to the harness
+        (both source datasets require registration/download per their
+        Zenodo pages); no independent inclusion criterion beyond "use
+        the artifact's own shipped datasets/models", since this variant
+        exists to reproduce two specific papers' own end-to-end numbers
+        under a common protocol, not to define a new standard suite
+      recommended_subset: >
+        TLR-MVM: whichever TLR rank/tile-size configuration the artifact
+        ships as its default test config (not specified in the README
+        text extracted in this pass — open question). PackKV: the 6
+        models x {32K, 128K}-token context length points already listed
+        in survey.md
+      dense_operand: >
+        TLR-MVM: precision per its own build target (fp32/complex-fp32
+        shown in the benchmark dir; the paper's Cerebras run uses
+        whatever precision the CS-2 SDK exposes, not confirmed here).
+        PackKV: FP16/BF16.
+    protocol:
+      preprocessing: >
+        TLR-MVM: one-shot tile-rank decomposition (SVD-based
+        low-rank factorization of the dense matrix into tiles) — this
+        IS excludable and reported separately, since it happens once and
+        the compressed representation is then reused across many GEMV
+        calls (unlike PackKV below). PackKV: NONE excludable —
+        decompression is fused into the per-call kernel by construction
+        (see claim above); the entire fused kernel call is the timed
+        unit.
+      warmup: 10
+      reps: 50
+      statistic: median (report min and max), except where the artifact
+        only exposes an aggregate number (flag explicitly if so, per the
+        same caveat CA3DMM required in benchspecs/gemm/spec.yaml's
+        gemm-distributed-e2e variant)
+      timer: device-side kernel time (CUDA events) for the GPU-only
+        (PackKV) case; for TLR-MVM's own Cerebras run, whatever the CS-2
+        SDK's native timing mechanism is (not confirmed — open question)
+      timing_scope: >
+        two numbers, both reported: "compressed/fused kernel" (the
+        variant's headline number: TLR-MVM's compressed-format read +
+        multiply, or PackKV's fused decompression+GEMV) and "dense
+        baseline" (TLR-MVM's own dense cuBLAS/MKL comparison per
+        gemv-dense-kernel's protocol; PackKV's own cuBLAS-on-uncompressed
+        comparison) at the SAME shape, so the compression benefit is
+        always reported as a ratio of two numbers measured under this
+        spec's own protocol, not lifted from the papers' own (differently
+        protocoled) baseline numbers
+      preprocessing_reported: >
+        TLR-MVM's tile-rank decomposition reported separately, once, as
+        described above; PackKV has no separable preprocessing to report
+    metric:
+      primary: GB/s (compressed/fused kernel) and GB/s (dense baseline),
+        both reported, plus their ratio as "bandwidth amplification factor"
+      secondary: >
+        for TLR-MVM's Cerebras-scale run specifically (not reproducible
+        on commodity hardware): report the paper's own aggregate PB/s
+        number as a separate, clearly-labeled reference point, not
+        averaged into this variant's commodity-hardware numbers
+    correctness: >
+      TLR-MVM: mean relative error vs. dense reference (matches the
+      artifact's own `checkcorrectness` function; no fixed threshold
+      enforced in the shipped benchmark binary itself — this spec
+      requires < 1e-2 be enforced as a pass/fail gate, since TLR
+      compression is inherently lossy and 1e-2 matches this suite's own
+      fp16-class tolerance). PackKV: accuracy-drop check against the
+      paper's own stated "same and minimum accuracy drop as SOTA
+      quantization" criterion (application-level, not a numeric
+      per-kernel tolerance — an acknowledged gap, see open_questions).
+
+notes_on_fairness:
+  - >
+    GEMV's cache-state axis does not transfer cleanly from GEMM: this
+    spec replaces GEMM's LibShalom-derived hot/cold-whole-matrix binary
+    with a 3-state axis (cold-matrix / hot-vector-reuse /
+    sram-resident-extreme) in gemv-dense-kernel, because at every shape
+    this track's own papers actually use, the O(M*K) matrix operand is
+    far larger than any commodity cache level, making a literal
+    "matrix-in-cache" hot state either unreachable or physically
+    meaningless — while the O(M+K) vector operand is always
+    cache-sized, and whether a kernel exploits that (MARLIN does,
+    explicitly, by design) is the real cache-related axis this track's
+    literature actually varies on.
+  - >
+    Every surveyed paper's own correctness check uses either a *mean*
+    relative-error statistic (MARLIN, TLR-MVM) or an application-level
+    accuracy-drop check (QIGen, PackKV) rather than a *max* per-element
+    tolerance; GPU-DPF is the sole exception with an exact-match check
+    (meaningful only because its outputs are exact integers). This spec's
+    gemv-dense-kernel variant uses max relative error anyway, for
+    consistency with benchspecs/gemm/spec.yaml and because a mean-based
+    gate can hide a single catastrophically wrong output element behind
+    many correct ones — the gemv-quantized-weight-kernel variant is the
+    one deliberate exception (kept as mean-based, matching MARLIN's own
+    practice), because quantization error's non-i.i.d. distribution
+    across elements makes a strict max-based gate liable to reject a
+    numerically-fine kernel over a small number of naturally
+    higher-error outlier elements — see that variant's correctness field
+    for the full reasoning.
+  - >
+    MARLIN's own benchmark script inserts a 1-second sleep between
+    configs specifically to prevent GPU clock throttling from biasing
+    later runs in a sweep — the only anti-throttling protocol step found
+    anywhere in this track's 5 surveyed papers/artifacts. This spec
+    promotes it from an implementation detail of one paper's script to
+    an explicit, required protocol field
+    (`anti_throttling`) in both variants that inherit MARLIN's shape
+    list, since a benchmark harness that silently drops it would produce
+    numbers biased by whichever config happened to run first in a sweep.
+  - >
+    GPU-DPF is included in this survey (it is in the track's own input
+    list, `data/track_inputs/gemv.json`) but its own protocol is
+    deliberately NOT used as a template for any variant above, because
+    its kernel is compute- (PRF-evaluation-) bound rather than
+    memory-bandwidth-bound, unlike every other paper in this track and
+    unlike this spec's own primary-metric choice (GB/s / roofline
+    fraction). Its table shapes ARE reused as a tall-skinny stress point
+    in gemv-dense-kernel's inputs, but as a materialized dense-matrix
+    stress test, not as a reproduction of GPU-DPF's own (non-memory-bound)
+    methodology — this distinction is stated explicitly in that variant's
+    `selection` field so it is not mistaken for endorsing GPU-DPF's own
+    benchmark as directly comparable to the others.
+  - >
+    Matrix/vector initialization range (U(-1,1)) is this spec's own
+    choice, matching benchspecs/gemm/spec.yaml for cross-track
+    consistency; no surveyed GEMV paper states an initialization range
+    at all (not even QIGen's `rand()`-based CPU generator, which is
+    visible in TLR-MVM's benchmark source but not tied to a distribution
+    statement in any paper text read in this pass).
+
+open_questions:
+  - >
+    QIGen's and PackKV's exact timing protocol (warmup/repetition counts,
+    timer API) could not be recovered from the extracted arXiv fulltext
+    in this pass; QIGen's `generate.py` (55KB) and PackKV's
+    `evaluation/evaluation.py` (53KB) were listed but not read
+    line-by-line — either would likely resolve this.
+  - >
+    TLR-MVM's SC'23 paper PDF text could not be extracted via WebFetch
+    (both the ACM DL link and the eScholarship OA mirror returned
+    undecodable binary/stream content to the fetch tool, and no local
+    PDF-to-text utility — `pdftotext`/`pdftoppm` — was available in this
+    environment). The paper's own stated protocol for the Cerebras-scale
+    TLR-compressed run (as opposed to the dense cuBLAS comparison
+    harness read directly from source) is therefore not confirmed from
+    primary text, including the exact tile-rank/tile-size configuration
+    and the seismic/MAVIS matrix dimensions — needed to fully specify
+    gemv-e2e-compressed-format's `recommended_subset` for TLR-MVM.
+  - >
+    Whether TLR-MVM's Cerebras CS-2 run uses a timing mechanism
+    comparable to CUDA events (a native SDK profiling counter, a
+    wall-clock wrapper, or something else) is unknown — needed before
+    gemv-e2e-compressed-format's Cerebras-scale secondary metric can be
+    treated as protocol-comparable to this spec's other numbers rather
+    than a purely reference/context figure.
+  - >
+    GPU-DPF's `dpf_cpp.BATCH_SIZE` compiled constant (the implicit batch
+    size in its own `test_gpu_dpf_perf` default) is not visible from the
+    Python source alone; would need to build the C++ extension or read
+    its source to confirm — relevant only if a future revision of this
+    spec decides to include a GPU-DPF-templated variant after all.
+  - >
+    No surveyed paper gives a numeric max-relative-error tolerance for
+    dense (non-quantized) GEMV; the 1e-6/1e-3/1e-2 values in
+    gemv-dense-kernel are carried over from benchspecs/gemm/spec.yaml for
+    cross-track consistency, not derived from any GEMV-specific source,
+    and should be revisited against real reproduction runs.
+
+evidence:
+  conf/cgo/PegolottiAP26: >
+    LLaMA 7B/13B/30B decode, custom nonuniform 4/3/2-bit-quantized
+    matrix-vector kernels via QIGen codegen, AMD EPYC 7742 (AVX2),
+    tokens/s end-to-end (not kernel-isolated), perplexity-based
+    correctness vs FP32/llama.cpp, up to 2.6x speedup vs llama.cpp on
+    13B. arXiv 2307.03738 fulltext + repo README/generate.py.
+  conf/ppopp/FrantarCCHA25: >
+    INT4-weight x FP16-activation GEMV/thin-GEMM, LLM linear-layer shapes
+    (Llama7B-65B, Falcon180B) + batch sweep 1-2048, warmup=1/iter=10/mean
+    statistic with 1s anti-throttling sleep, host-wall-clock-with-sync
+    timer, mean relative error <0.1% vs dense-FP16-with-same-dequantized-
+    weights reference, TFLOP/s + GB/s + speedup-vs-dense-FP16 metrics,
+    near-ideal 4x speedup sustained to batch ~16-32. arXiv 2408.11743
+    fulltext + repo bench.py/test.py/README.md (all read in full).
+  conf/ipps/JiangYLHDJ26: >
+    KV-cache-compressed fused decompression+GEMV vs cuBLAS GEMV on
+    uncompressed KV cache, 6 models x context length up to 128K tokens,
+    A100/RTX-Pro-6000, GB/s + throughput-%-improvement metrics
+    (75.7%/171.7% for K/V), accuracy-drop correctness (application-
+    level), decompression fused into the kernel by construction (not
+    separable). arXiv 2512.24449 fulltext + repo scripts listing.
+  conf/asplos/LamJ0MGLLLRLRW024: >
+    DPF evaluation (structurally one-hot-vector x table, but PRF-computed
+    without ever reading a materialized table from memory - compute-
+    bound, not memory-bound); table N in {16384..1048576} x entry_size
+    16; reps=10 wall-clock loop, no warmup, no explicit sync shown;
+    exact-match correctness; dpfs/sec metric; >200x vs 1-thread CPU,
+    >15x vs 32-thread CPU on V100. Repo README.md/benchmark.py/dpf.py
+    fulltext (arXiv PDF itself exceeded WebFetch's size limit).
+  conf/sc/LtaiefHWJRK23: >
+    Tile-low-rank compressed MVM for seismic MDD on 48 Cerebras CS-2
+    systems (92.58 PB/s aggregate, Gordon Bell finalist); artifact's own
+    dense-GEMV comparison harness (cublasSgemv, CUDA events,
+    cudaDeviceSynchronize/cudaEventSynchronize bracketing, median-of-
+    loopsize statistic, mean-relative-error-vs-naive-CPU correctness,
+    GB/s = (M*N+M+N)*sizeof(dtype)/time) read directly from repo source
+    since the SC'23 PDF text could not be extracted by any available
+    tool in this pass. Repo README.md + benchmark/cuda/
+    bench_mvm_cuda_fp32.cpp fulltext.

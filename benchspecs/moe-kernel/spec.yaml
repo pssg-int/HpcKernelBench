@@ -1,0 +1,116 @@
+kernel: moe-kernel
+summary: >
+  Fused mixed-precision Mixture-of-Experts (MoE) FFN kernel for LLM
+  inference: token-to-expert routing/permutation + per-expert grouped GEMM
+  with a quantized weight operand + gate-weighted un-permute/combine,
+  measured at steady state with routing/permutation cost reported
+  separately, swept across expert-count/top-k configurations and both
+  uniform and realistically-skewed token-to-expert load.
+operation: >
+  For a token batch X[T,H] and router logits producing top-k expert
+  assignment per token: Y[T,H] = sum_{e in topk(t)} gate[t,e] *
+  (X[t,:] @ W1_e[H,I] -> activation -> @ W2_e[I,H]), where W1_e/W2_e are
+  per-expert weight matrices stored in a low-precision format (e.g.
+  INT4/AWQ or FP8, "mixed-type" in Hexcute's own terminology) and X is
+  bf16/fp16. Routing requires building a per-expert token permutation
+  (gather tokens assigned to each expert into contiguous grouped-GEMM
+  operand blocks) and an inverse permutation + gate-weighted combine on
+  the output.
+variants:
+  - id: moe-grouped-gemm-kernel
+    claim: >
+      steady-state fused/grouped-GEMM MoE-FFN kernel throughput at fixed
+      GPU clock, matching Hexcute's own "mixed-type MoE operator" claim
+      (6.46x vs Triton) — token routing/permutation excluded from the
+      timed kernel region and reported separately, since the paper itself
+      keeps this kernel-level number distinct from its end-to-end vLLM
+      serving numbers.
+    inputs:
+      suite: >
+        real MoE model configs spanning the expert-count/top-k range
+        actually deployed (chosen because the artifact's own MoE shape
+        script, hidet/examples/cute/test_moe.py, could not be recovered
+        from the repo's top-level listing — see survey Divergences); the
+        largest config (DeepSeek-R1) matches the paper's own named
+        end-to-end target model.
+      selection: "one MoE-FFN layer shape per named model below, at T (tokens per forward pass) in {1, 8, 32, 128, 512, 2048} to sweep memory-bound decode through compute-bound batched/prefill regimes"
+      recommended_subset:
+        - {model: Mixtral-8x7B,      H: 4096, I: 14336, n_experts: 8,   top_k: 2}
+        - {model: DeepSeek-V2-Lite,  H: 2048, I: 1408,  n_experts: 64,  top_k: 6, n_shared_experts: 2}
+        - {model: DeepSeek-V3/R1,    H: 7168, I: 2048,  n_experts: 256, top_k: 8, n_shared_experts: 1}
+        - {model: Qwen2-57B-A14B,    H: 3584, I: 2560,  n_experts: 64,  top_k: 8}
+      weight_format: "quantized (INT4/AWQ group=128, or FP8-E4M3), matching Hexcute's own 'mixed-type' and DeepSeek-R1-AWQ target; activation bf16"
+      token_distribution: >
+        REQUIRED sub-case pair per shape: (a) uniform routing (tokens split
+        evenly across experts, the easy/idealized case) and (b) skewed
+        routing drawn from a power-law/Zipf-like expert-popularity
+        distribution (alpha in {1.0, 1.5}) approximating real trained-
+        router imbalance — a kernel that only reports (a) hides load-
+        imbalance-induced tail latency in per-expert grouped GEMM, which
+        no source surveyed for this single-paper track discloses
+        separately (see notes_on_fairness).
+    protocol:
+      warmup: 20
+      reps: 100
+      statistic: median (report min/max alongside)
+      timer: device-side CUDA events
+      gpu_clock_locking: "mandatory: nvidia-smi -lgc 2000 before, -rgc after -- Hexcute's own run_a100.sh/run_h100.sh/run_moe.sh convention, adopted verbatim since it is the one protocol detail directly confirmed from the artifact"
+      timing_scope: "kernel only: per-expert grouped GEMM + activation; token gather/scatter permutation and gate-weight combine excluded"
+      preprocessing_reported: "separately, once per (model, token_distribution): routing (top-k selection + argsort/permutation-index construction) and gather/scatter wall time, since in real serving this is on the hot path and must not be silently folded into grouped-GEMM time"
+    metric:
+      primary: "speedup vs. Triton MoE kernel (dimensionless x) -- Hexcute's own comparison metric"
+      secondary: "TFLOP/s (2 * sum_t 2 * H * I * top_k(t) flops / time); achieved tokens/s"
+    correctness: >
+      max rel err vs. a reference MoE forward pass computed with the same
+      quantized weights dequantized to fp32 on the host, exact top-k
+      routing decisions and gate weights reused (isolates kernel numerics
+      from router-algorithm differences): mean(|Y-Y_ref|)/mean(|Y_ref|)
+      < 1e-3, following the same tolerance convention as
+      `benchspecs/quantized-gemm`'s qgemm-w4a16 gate (this track shares
+      the asymmetric-precision GEMM core with that track).
+
+  - id: moe-e2e-serving
+    claim: >
+      end-to-end LLM-serving throughput with the MoE kernel embedded in a
+      real inference stack (vLLM), including router/dispatch, KV-cache,
+      and non-MoE layers -- matches Hexcute's own reported 2.60x speedup
+      on DeepSeek-R1-AWQ and 2.04x on a Mamba-based model. NOT
+      kernel-isolated; kept as a separate variant precisely so it is never
+      compared directly against moe-grouped-gemm-kernel's kernel-only
+      number (the same fairness fix `benchspecs/quantized-gemm` applies to
+      MixQ's end-to-end decode-loop number vs MARLIN/Tilus's kernel-only
+      numbers).
+    inputs:
+      suite: "DeepSeek-R1-AWQ (MoE) and one Mamba-based model, both cited by name in the paper's own end-to-end evaluation"
+      selection: "vLLM's standard serving benchmark harness (e.g. throughput/latency over a fixed request trace); exact trace/concurrency not recoverable from the fetched README"
+      dense_operand: "prompts drawn from a standard serving trace (e.g. ShareGPT-style), batch/concurrency swept"
+    protocol:
+      warmup: "one full server warm-up pass (JIT/cache warm) before timed requests -- standard vLLM benchmarking practice"
+      reps: "3 independent timed runs per (model, concurrency) point"
+      statistic: median (report min/max alongside)
+      timer: "wall-clock around the request batch, vLLM's own throughput-benchmark timer"
+      timing_scope: "full serving stack: tokenization, prefill, decode, KV-cache, MoE routing all included"
+      preprocessing_reported: "model load + AWQ dequant-table construction, once, excluded from steady-state throughput"
+    metric:
+      primary: "speedup vs. vLLM-Triton-MoE baseline (dimensionless x)"
+      secondary: "tokens/s (aggregate decode throughput), time-to-first-token (ms)"
+    correctness: >
+      generated-token match (greedy decoding, temperature=0) against the
+      unmodified vLLM+Triton baseline on a fixed prompt set: exact token
+      match required for a non-quantized control run; for the AWQ-
+      quantized run, perplexity delta on a held-out set < 0.5 points
+      (reusing `benchspecs/quantized-gemm`'s qgemm-model-accuracy
+      threshold, since AWQ is the same weight-only-quantization family).
+
+notes_on_fairness:
+  - "This track's sole source (Hexcute/CGO'26) reports only an average kernel speedup (6.46x) and two end-to-end points, with no visible breakdown across expert-count/top-k configurations or token-distribution skew. moe-grouped-gemm-kernel's uniform-vs-skewed token_distribution sub-case is this spec's own addition (not lifted from the paper) to prevent a kernel from being credited only under the easy uniform-load case, which real trained routers rarely produce."
+  - "The paper conflates a kernel-only claim (Triton comparison) and a real-serving claim (vLLM DeepSeek-R1-AWQ) under the same headline MoE result; this spec's two-variant split (kernel vs e2e) makes that distinction explicit and prevents readers from citing the 2.60x e2e number as if it were the kernel's own speedup."
+  - "GPU-clock locking (nvidia-smi -lgc) is the one timing-protocol detail directly confirmed in the artifact and is carried over verbatim into moe-grouped-gemm-kernel; most other kernel tracks in this project only recommend clock locking, this one can mandate it with direct evidence."
+
+open_questions:
+  - "The artifact's actual MoE benchmark shapes live in hidet/examples/cute/test_moe.py (referenced by scripts/run_moe.sh) which was not fetched in this survey -- recommended_subset above is this spec's own construction from public MoE model configs, not confirmed against the artifact's literal test shapes. A follow-up pass should fetch that file directly."
+  - "No stated warmup/repeat count or correctness tolerance was found for the MoE-specific benchmark path (run_moe.sh) in the fetched README; the warmup=20/reps=100/1e-3 values in this spec are carried over from this project's quantized-gemm precedent, not confirmed against Hexcute's own MoE test harness."
+  - "Whether Hexcute's MoE kernel handles the shared-expert component of DeepSeek-V2/V3-style architectures (n_shared_experts in recommended_subset) as part of the same fused kernel or as a separate dense-GEMM call is unknown from the fetched sources."
+
+evidence:
+  conf/cgo/ZhangDSHSP26: "Hexcute: constraint-programming layout-synthesis compiler; mixed-type MoE kernel 6.46x avg over Triton (kernel-level); vLLM e2e 2.60x on DeepSeek-R1-AWQ, 2.04x on Mamba-based model; A100/H100 with nvidia-smi -lgc clock locking in released scripts; concrete MoE shapes not recoverable from top-level repo listing (see open_questions)."

@@ -1,0 +1,139 @@
+kernel: nbody
+summary: >
+  Fixed-radius pairwise-proximity/collision detection for dense
+  spherical-particle systems on GPU ray-tracing hardware (BVH build +
+  RT-core broad/narrow-phase query + integration), measured as
+  interactions/s jointly with an exactness gate, since this track's sole
+  available paper has no tunable accuracy/approximation knob and no
+  energy-conservation notion the way a classical Barnes-Hut/FMM tree-code
+  would (see survey.md Divergences #1-2 for why those two axes from the
+  parent task template do not apply here and are recorded as N/A rather
+  than fabricated).
+operation: >
+  collisions[t] = DCD(particles[N] (position, velocity, radius_i),
+  domain (unit cube), substep dt); per substep: rebuild RT
+  bounding-volume hierarchy (BVH) over current particle positions, launch
+  an RT ray-generation kernel that queries the BVH for candidate
+  sphere-sphere pairs (broad phase) and resolves true intersections
+  (narrow phase) in one hardware pass, then integrate
+  position/velocity from resolved collision responses. Exact/exhaustive
+  within the query radius -- not an approximation controlled by a
+  tunable order/resolution parameter.
+
+variants:
+  - id: dcd-kernel-particle-scaling
+    claim: >
+      steady-state per-substep throughput of RT-hardware-accelerated
+      fixed-radius collision detection across a particle-count sweep,
+      with BVH-build / detect / integrate reported as three separate
+      phases (matching the paper's own decomposition) rather than
+      blended into one number
+    inputs:
+      suite: "uniformly-packed random spherical-particle systems in a unit cube domain (BOX_WIDTH=1.0), same generator/format as the paper's own datasets/*.txt"
+      selection: >
+        n in {10,000; 100,000; 1,000,000}; 100,000 is the paper's own
+        default and the only instance directly confirmed from the repo
+        (datasets/100k_particles.txt); 10,000 and 1,000,000 are this
+        spec's own additions for a scalability curve the paper itself
+        does not report, disclosed as such rather than presented as
+        paper-verified
+      recommended_subset:
+        - "10k_particles (uniform radius, generated at the same packing density as the paper's 100k set)"
+        - "100k_particles.txt (paper's shipped default dataset, confirmed from repo)"
+        - "1M_particles (uniform radius, generated, same packing density)"
+      dense_operand: "N/A (no dense operand; particle position/velocity/radius arrays only)"
+      accuracy_parameter: >
+        NOT APPLICABLE. The parent task template requires an accuracy
+        parameter as an explicit spec axis since it normally trades
+        against speed (multipole order, mesh resolution, etc.). Mochi's
+        RT-BVH traversal is exact/exhaustive -- every true sphere-sphere
+        intersection within the query radius is found on every substep;
+        there is no order/resolution knob to sweep. This is recorded
+        here as an explicit N/A per survey.md Divergences #1, not
+        silently dropped or faked with an invented parameter. The one
+        paper in this corpus that DOES have a genuine multipole-order
+        accuracy parameter (RT-BarnesHut, PPoPP 2025) has no public
+        artifact and could not anchor this spec (survey.md,
+        Related-but-excluded).
+      non_uniform_radii: "supported by the paper (heterogeneous particle sizes); the recommended_subset above is uniform-radius for a controlled particle-count baseline, non-uniform-radius instances are an optional reportable extension"
+    protocol:
+      substep_definition: "one substep = BVH rebuild + one RT broad/narrow-phase collision query-and-resolve pass + one position/velocity integration step (paper's own 3-phase decomposition, confirmed from hostCode.cu)"
+      frames: 200
+      iterations_per_frame: 400
+      total_substeps: "80,000 (200 x 400), matching the paper's own default run configuration"
+      warmup: "first 1 frame (400 substeps) discarded -- a benchmark-spec addition; the paper's own public harness runs single-trial with no discarded warmup and no repetition, flagged in notes_on_fairness"
+      reps: "remaining 199 frames (79,600 substeps) measured as the reportable window"
+      statistic: "median per-substep phase time across the measured window, report min/max -- deviates from the paper's own single-run sum-and-print-once convention, see notes_on_fairness"
+      timer: "std::chrono::steady_clock (paper's own choice), one accumulator per phase (build/detect/update), summed and also reported per-phase"
+      timing_scope: "3 phases only: BVH build, RT collision query+narrow-phase resolve, integration; optional PNG rendering path explicitly excluded (the paper's own harness already separates render I/O from the 3 timed phases, confirmed from hostCode.cu -- this spec inherits that separation rather than introducing it)"
+      preprocessing_reported: "no separate one-shot preprocessing phase exists for this algorithm -- the BVH is rebuilt every substep by construction (unlike a static-scene RT application), so 'build' is already a per-substep cost, not an amortizable one-time cost; flagged as a structural property of the algorithm, not a spec choice"
+    metric:
+      primary: >
+        interactions/s = (candidate pairs tested during broad-phase BVH
+        traversal, summed over all substeps in the measured window) /
+        detect_phase_time_seconds -- a DERIVED metric, since the paper's
+        own artifact reports only per-phase ms and a raw collision count,
+        not a normalized throughput figure (survey.md Divergences #3)
+      secondary: "substep_time_ms (build+detect+update, median/min/max), each phase's ms standalone, resolved-collisions/s (via the COUNT_COLLISIONS build flag)"
+    correctness: >
+      SUBSTITUTE for the parent task's energy-conservation gate: DCD has
+      no potential-energy term to conserve, and no conservation-law check
+      exists in the paper's public artifact (survey.md Divergences #2).
+      In its place: enable -DCOUNT_COLLISIONS=1 and, on a reduced
+      instance (n<=2,000, single substep), independently compute the
+      exact O(n^2) brute-force sphere-sphere intersection set; the
+      RT-BVH path's resolved collision set MUST match the brute-force
+      set exactly -- this is a correctness bug check, not a
+      quality/speed tradeoff, since the algorithm claims exactness. At
+      full scale (n>=100k), where an exhaustive per-substep check is too
+      costly to run every submission, only the aggregate collision COUNT
+      (via COUNT_COLLISIONS) is checked against the small-scale-verified
+      implementation's count on a matched-density subsample, for
+      gross-error detection only.
+
+notes_on_fairness:
+  - >
+    The paper's own public harness runs a single trial with no discarded
+    warmup and no repetition (survey.md, Timing protocol) -- this spec
+    adds a 1-frame warmup discard and reports median/min/max over the
+    remaining 199 frames instead of the paper's own single
+    sum-and-print-once total, since a single untimed trial cannot
+    distinguish steady-state throughput from one-time GPU/driver warmup
+    effects (BVH allocator warmup, JIT of the OptiX pipeline, etc.).
+  - >
+    The particle-count sweep (10k/100k/1M) is this spec's own addition,
+    not a reproduction of a paper table -- the paper evaluates only
+    n=100,000. This is disclosed explicitly rather than presented as
+    paper-verified so a submitter knows which numbers are anchored to
+    the source and which are this spec's extrapolation.
+  - >
+    No accuracy-parameter axis is included, in deliberate contrast to
+    the parent task's default template, because inventing one for an
+    exact algorithm would misrepresent the paper's actual design; see
+    accuracy_parameter field above and survey.md Divergences #1.
+
+open_questions:
+  - >
+    Whether Mochi's throughput or phase-time breakdown changes
+    qualitatively at n=1,000,000 (e.g. BVH rebuild cost superlinear in
+    n, RT-core occupancy saturation) is unconfirmed -- the paper itself
+    only reports n=100,000, so this spec's high end of the particle-count
+    sweep is unvalidated extrapolation, not a reproduced result.
+  - >
+    The Taichi CPU/GPU baseline shipped in the repo's taichi/ directory
+    was noted (survey.md) but not read in detail; whether it implements
+    the identical DCD algorithm (making it a fair same-algorithm
+    ablation, analogous to graphB+'s CUDA-vs-OpenMP split in the
+    signed-graph-balancing track) or a structurally different method was
+    not confirmed, so it is not included as a required baseline in this
+    compact spec.
+  - >
+    No genuinely classical (multipole/tree-code, energy-conservation-
+    checked) N-body paper with a public artifact exists in this corpus
+    (RT-BarnesHut has none); if one becomes available, it should get its
+    own variant with the accuracy_parameter and energy-conservation axes
+    the parent task template originally asked for, rather than retrofitting
+    them onto Mochi.
+
+evidence:
+  conf/ics/MandarapuFPBK26: "GPU ray-tracing-hardware (OptiX/OWL) discrete collision detection for spherical particles, non-uniform radii supported; n=100,000 default (datasets/100k_particles.txt), 200 frames x 400 substeps/frame = 80,000 substeps; std::chrono::steady_clock, 3 accumulated phase timers (build/detect/update), single trial, no warmup/repetition in the public artifact; correctness check is a raw collision-count print behind a disabled-by-default COUNT_COLLISIONS flag, no energy/momentum conservation check found; Taichi CPU/GPU baseline shipped in repo but not detailed-read; exact/exhaustive within query radius, no accuracy-order parameter"

@@ -1,0 +1,134 @@
+kernel: lca-bridge-finding
+summary: >
+  GPU adaptation of the Euler-tour technique for two exact tree/graph
+  problems, benchmarked separately: lowest common ancestor (LCA) batch
+  queries on trees, and bridge-finding on undirected graphs; measured as
+  wall time across a size/shape parameter sweep, with theoretically
+  optimal Euler-tour methods compared against simpler heuristics on both
+  adversarial (deep/bushy) and typical (shallow) synthetic instances.
+operation: >
+  (LCA) answer[q] = LCA(T=(V,E) tree, query batch Q subset of V x V);
+  (bridges) isBridge[E] = Bridges(G=(V,E) undirected graph); both are
+  unweighted, exact combinatorial problems (no approximation ratio
+  applies to either).
+
+variants:
+  - id: lca-kernel-synthetic-sweep
+    claim: >
+      steady-state batch-LCA-query wall time on synthetic trees, swept
+      across size, tree-shape ("grasp"), and query-batch-size parameters,
+      separately from ground-truth generation which is one-shot and
+      excluded from timing
+    inputs:
+      suite: "synthetic trees from the paper's own generators (generateSimple.cpp: uniform-random attachment; generateScaleFree.cpp: scale-free attachment)"
+      selection: "sizes and grasp values matching the paper's own E1-E5 experiment definitions in test/lca/testVariables.sh, generator=simple (E1-E5's own default)"
+      recommended_subset:
+        - "E1 (size vs. algorithm): sizes {1M, 2M, 4M, 8M, 16M, 32M} nodes, grasp in {-1 (shallow/wide), 1000 (deep/bushy)}, 5 seeds each"
+        - "E2 (batch size vs. cuda-inlabel/cpu-inlabel/multicore-cpu-inlabel): fixed size 8M nodes, 10M queries, batch size swept over {1, 10, 100, 1e3, 1e4, 1e5, 1e6, 1e7}, 5 seeds"
+        - "E3 (grasp/tree-depth vs. cuda-inlabel/cuda-naive/multicore-cpu-inlabel): fixed size 8M nodes, grasp swept over {1, 3, 10, 33, 100, 333, 1e3, 3333, 1e4, 33333, 1e5, 333333, 1e6, 1e7}, 5 seeds"
+      dense_operand: "N/A"
+      algorithms_under_test: ["cuda-inlabel", "cuda-naive", "cpu-inlabel", "multicore-cpu-inlabel"]
+    protocol:
+      format: "tree generated once per (size, grasp, seed) combination; ground-truth answers pre-generated ONCE via the cpu-rmq reference algorithm BEFORE any timed run — never inside the timed loop"
+      warmup: "0 explicit discarded warmup (the paper's own script times the actual answer-computation run directly; this spec keeps that convention since ground-truth generation, the closest thing to a 'first touch' cost, is already isolated outside the timed region)"
+      reps: "5 (paper's own E1-E5DifferentSeeds=5 — distinct RANDOM INSTANCES, not repeated timing of the same instance; this spec additionally requires 3 REPEATED timed runs per generated instance to separate instance-to-instance variance from run-to-run measurement noise, since the paper's own script does not appear to re-time a fixed instance multiple times)"
+      statistic: "median across the 3 repeated timed runs per instance, THEN median across the 5 seed-instances (two-level median); report min/max at both levels"
+      timer: "singleRunTimeout=120s cap; internal wall-clock timer wrapping only the query-answering call (test generation and ground-truth generation excluded by the script's own control flow)"
+      timing_scope: "query-answering (LCA computation) only; tree generation and ground-truth (cpu-rmq) computation are one-shot per instance and excluded"
+      preprocessing_reported: "separately, once per instance: tree-generation time and ground-truth (cpu-rmq) generation time"
+    metric:
+      primary: "wall time in seconds/ms as a function of the swept parameter (size for E1, batch size for E2, grasp for E3) — matches the paper's own parameter-sweep framing rather than a single throughput number"
+      secondary: "speedup of cuda-inlabel over cuda-naive and over multicore-cpu-inlabel, per swept-parameter point"
+    correctness: >
+      exact problem: every implementation's per-query LCA answer MUST
+      exactly match the cpu-rmq-generated ground truth for the same
+      (tree, query-batch) instance. This is a hard, binary gate (no
+      partial credit) — CheckAnswers=true is REQUIRED for every timed
+      configuration in this variant, matching the paper's own default for
+      all 5 of its experiments.
+
+  - id: bridges-kernel-repeated-mean
+    claim: >
+      steady-state bridge-finding wall time on undirected graphs,
+      averaged over a user-set repeat count — kept as its OWN variant
+      (rather than merged with the LCA variant above) because the paper's
+      own bridges harness uses mean-of-repeats rather than LCA's
+      median-of-seeded-instances convention, and its correctness-check
+      wiring is documented in the paper's own script as incomplete
+      ("TODO do we want to have some tests to check correctness?")
+    inputs:
+      suite: "same synthetic generators as lca-kernel-synthetic-sweep, applied to the bridges test harness's own generation pipeline (test/bridges/prepare.py)"
+      selection: "sizes matching the bridges harness's own test/bridges test generation (not independently confirmed beyond the LCA sizes — see open_questions); this spec recommends reusing the LCA E1 size ladder (1M-32M nodes) for cross-comparability between the two sub-benchmarks of the same paper"
+      recommended_subset: "1M, 2M, 4M, 8M, 16M, 32M node graphs, generator=simple, matching lca-kernel-synthetic-sweep's E1 sizes"
+      dense_operand: "N/A"
+      algorithms_under_test: "whatever bridges_runner.cu exposes via its -a flag; disclose the exact algorithm identifiers tested (analogous to cuda-inlabel/cuda-naive for LCA, but the exact bridges-specific identifier set was not independently confirmed — see open_questions)"
+    protocol:
+      format: "graph generated once per instance via test/bridges/prepare.py"
+      warmup: "1 full run, discarded (this spec's addition — the paper's own -r flag controls only the AVERAGED run count, with no separate discarded warmup, matching the LCA variant's stricter convention)"
+      reps: "REQUIRED minimum 5 (paper's own default is repeats=1 via the -r flag if unset, which this spec treats as insufficient for a reportable benchmark number, matching the fairness principle of never reporting an unrepeated single measurement)"
+      statistic: "the paper's own harness computes the ARITHMETIC MEAN of the repeats (per bridges_test.sh's own help text: 'Repeat tests <times> times and get average results'); this spec keeps mean as the headline for continuity with the paper's own reporting, but additionally REQUIRES min/max/median to be reported alongside, since mean-of-N is more sensitive to a single slow outlier run than the median-based convention used elsewhere in this survey batch"
+      timer: "run_experiments.sh's internal wall-clock timer around the bridge-finding call"
+      timing_scope: "bridge-finding computation only; graph generation excluded"
+      preprocessing_reported: "separately, once per instance: graph-generation time"
+    metric:
+      primary: "wall time in seconds/ms, mean of >=5 repeats (paper's own statistic, strengthened repeat-count floor)"
+      secondary: "median, min, max across the same repeats; speedup of the Euler-tour method over any naive/heuristic competitor tested"
+    correctness: >
+      exact problem (a bridge is a bridge or it isn't — no ambiguity), but
+      THE PAPER'S OWN HARNESS DOES NOT GUARANTEE an automated
+      ground-truth check is wired in by default (its own script marks this
+      a TODO). This spec REQUIRES an independent bridge-finding reference
+      (e.g. a straightforward O(V+E) DFS-based bridge algorithm, run once
+      per instance, untimed) to validate every timed configuration's
+      output before it counts — closing the gap the paper's own artifact
+      leaves open, per this project's principle that a correctness gate
+      must exist before timing counts, full stop.
+
+notes_on_fairness:
+  - >
+    LCA and bridges use materially different repeat/statistic conventions
+    within the SAME paper's own artifact (median-of-5-seeded-instances
+    with pre-excluded ground-truth generation for LCA; user-controlled
+    mean-of-repeats, default 1, for bridges). Rather than forcing one
+    convention onto both, this spec keeps them as separate variants and
+    is explicit about which statistic each inherits from the paper's own
+    scripts, so a reader is never misled into thinking "median" and
+    "mean-of-1-by-default" are the same rigor level.
+  - >
+    The bridges harness's own help text admits its correctness checking
+    is an unfinished TODO. This spec does not treat "the paper's artifact
+    lacks a check" as license to skip one — an independent untimed
+    reference bridge-finder is REQUIRED before any bridges timing counts,
+    consistent with this project's "correctness gate before timing counts"
+    principle even where the source artifact itself falls short of it.
+  - >
+    Both LCA and bridges are exact problems (Euler-tour techniques carry
+    theoretical correctness guarantees per the paper's own framing) — no
+    approximation-ratio or quality axis applies to either variant, unlike
+    several other tracks in this survey batch (MIS, spectral
+    sparsification).
+
+open_questions:
+  - >
+    Hardware (GPU model, compute capability) used for the paper's reported
+    numbers was not found in the inspected scripts (NVCCSM is a
+    user-supplied Makefile variable) or in the arXiv abstract page (PDF/HTML
+    fulltext fetch attempts for arXiv:2103.15217 both failed to yield
+    readable text via available tools) — needs direct PDF text extraction
+    before this spec's hardware baseline can be pinned down.
+  - >
+    The exact bridges-specific algorithm identifiers passed to `-a` in
+    bridges_runner.cu (analogous to LCA's cuda-inlabel/cuda-naive) were not
+    independently confirmed — test/bridges/prepare.py and
+    run_experiments.sh were not read in this pass; needed to fill in
+    bridges-kernel-repeated-mean's algorithms_under_test precisely.
+  - >
+    Whether the bridges harness's own test/bridges generation pipeline
+    uses the same size ladder as LCA's E1 experiment, or an independently
+    chosen set of sizes, was not confirmed — this spec's
+    recommended_subset for bridges-kernel-repeated-mean borrows the LCA
+    ladder for cross-comparability rather than reproducing a confirmed
+    paper choice.
+
+evidence:
+  conf/ipps/0001SS21: "arXiv:2103.15217; LCA sub-benchmark uses 5-seeded synthetic-tree instances (sizes 1M-32M nodes, grasp -1/1000), ground truth pre-generated once via cpu-rmq BEFORE timing (CheckAnswers=true default for all experiments), 4 timed algorithms (cuda-inlabel, cuda-naive, cpu-inlabel, multicore-cpu-inlabel); bridges sub-benchmark uses a simpler -r-repeats/mean-of-N harness (default repeats=1) whose own help text marks correctness-checking as an unfinished TODO; both are exact problems, wall-time-only metric (no throughput framing), hardware not confirmed from available sources"

@@ -1,0 +1,148 @@
+kernel: bipartite-matching
+summary: >
+  Exact maximum-cardinality matching in bipartite graphs on GPU via a
+  deterministic initial-matching phase followed by parallel bidirectional
+  augmenting-path search, measured as steady-state edges/s throughput with
+  the two algorithmic phases (initial matching, augmenting-path search)
+  timed and reported separately since the code itself already separates
+  them rather than blending into one number.
+operation: >
+  match[V] = MaxBipartiteMatching(A[L,R] biadjacency (sparse, CSR,
+  unweighted), L,R the two vertex partitions); output is a partial
+  bijection between L and R such that every matched pair is an edge in A
+  and no vertex is matched more than once; the algorithm returns a
+  MAXIMUM-cardinality such matching (exact, not approximate).
+
+variants:
+  - id: bipartite-matching-kernel-suitesparse
+    claim: >
+      steady-state augmenting-path-search-phase throughput on the paper's
+      own 21-graph SuiteSparse suite, treated as bipartite (rows vs.
+      columns, or the graph's natural bipartite structure where
+      applicable); Matrix-Market-to-CSR conversion excluded but reported
+      separately (one-shot, not amortized)
+    inputs:
+      suite: "the exact 21-instance list disclosed in the paper's own README (union already broad: web, road, citation, social, synthetic RMAT/geometric, and delaunay graphs) — adopted verbatim as this track's full recommended_subset since a singleton track has no other paper to union against"
+      selection: "all 21 named instances from SuiteSparse/sparse.tamu.edu that the paper's own artifact lists as its evaluation set"
+      recommended_subset:
+        - "amazon0312"
+        - "r4-2e23"
+        - "uk-2002"
+        - "as-Skitter"
+        - "hugebubbles-00000"
+        - "rgg_n_2_24_s0"
+        - "uk-2005"
+        - "cit-Patents"
+        - "hugetrace-00020"
+        - "rmat22"
+        - "wb-edu"
+        - "coPapersDBLP"
+        - "in-2004"
+        - "roadNet-CA"
+        - "web-Google"
+        - "delaunay_n24"
+        - "kkt_power"
+        - "road_usa"
+        - "wikipedia-20070206"
+        - "europe_osm"
+        - "kron_g500-logn21"
+        - "soc-LiveJournal1"
+      dense_operand: "N/A"
+      bipartite_construction: "REQUIRED disclosure: for graphs not natively bipartite (most of the 21 are general/social/road graphs), state the exact construction used to derive a bipartite instance (e.g. row/column split of the sparse matrix's own structure, or a doubled/bipartite-double-cover construction) since this materially changes matching difficulty and is not spelled out in the README beyond 'input files in matrix market format'"
+    protocol:
+      format: "Matrix Market (.mtx), converted once via the paper's own mm2eclbp.cpp to binary CSR bipartite format (.egr); conversion NOT counted in per-run time"
+      warmup: "1 full run on the same instance, discarded"
+      reps: 10
+      statistic: "median of 10, report min/max"
+      timer: "device-side events or the code's own GPUTimer/CPUTimer, matching the paper's own initRuntime/apSearchTime/totalRunTime split"
+      timing_scope: "phase-1 (initial matching) and phase-2 (bidirectional augmenting-path search) timed and reported SEPARATELY, never silently summed into a single number without both components also being independently visible, per this track's fairness requirement and matching the paper's own code structure (initRuntime, apSearchTime, totalRunTime all printed)"
+      preprocessing_reported: "separately, once per graph: Matrix-Market-to-CSR conversion time (mm2eclbp)"
+    metric:
+      primary: "apSearchPhase_throughput = matched_edges_added_in_phase2 / apSearchTime, in edges/s (median of 10) — this is the paper's own headline throughput definition"
+      secondary: "overall_throughput = total_matched_edges / totalRunTime (edges/s); initRuntime and apSearchTime reported individually in ms (median, min, max)"
+    correctness: >
+      exact maximum matching: (1) validity — every matched pair is an edge
+      of A, no vertex matched twice; (2) maximality — no augmenting path
+      exists from any unmatched vertex (checked via one full unweighted
+      BFS-based augmenting-path search over the FINAL matching as an
+      independent post-hoc verifier, separate from the algorithm's own
+      internal search); (3) on instances small enough for an independent
+      reference (e.g. a CPU Hopcroft-Karp or a max-flow formulation),
+      cardinality must exactly match the reference. Any violation
+      invalidates that run — this is an exact problem, no approximation
+      ratio applies.
+
+  - id: bipartite-matching-vs-baselines
+    claim: >
+      head-to-head comparison against the fastest prior CPU and fastest
+      prior GPU maximum-bipartite-matching codes on the SAME 21-instance
+      suite, elevated to its own variant since it requires matched
+      baseline builds rather than being a standalone ECL-MM number, and is
+      the paper's own headline claim (4.5x vs. fastest prior CPU code,
+      speedup factor vs. fastest prior GPU code — exact GPU factor not
+      confirmed from available sources, see open_questions)
+    inputs:
+      suite: "same 21-instance suite as bipartite-matching-kernel-suitesparse"
+      selection: "same recommended_subset; all three implementations (ECL-MM, prior CPU code, prior GPU code) MUST be run on identical converted inputs"
+      recommended_subset: "same as bipartite-matching-kernel-suitesparse"
+      dense_operand: "N/A"
+    protocol:
+      format: "same as bipartite-matching-kernel-suitesparse"
+      warmup: 1
+      reps: 10
+      statistic: "median of 10 for all three implementations"
+      timer: "each implementation's own native timer, disclosed explicitly per implementation"
+      timing_scope: "total matching time (phase split not required for the baselines if their own code does not separate phases; ECL-MM side still reports the phase split)"
+      preprocessing_reported: "same as bipartite-matching-kernel-suitesparse, per implementation"
+      baseline_identity_required: true
+    metric:
+      primary: "speedup = time(baseline) / time(ECL-MM), reported separately for the CPU baseline and the GPU baseline, geometric mean across the recommended_subset"
+      secondary: "per-instance speedup table (not just the geomean)"
+    correctness: "same exact-maximum-matching gate as bipartite-matching-kernel-suitesparse, applied to all three implementations independently"
+
+notes_on_fairness:
+  - >
+    The paper's own code already separates phase-1 (initial matching) and
+    phase-2 (augmenting-path search) timing rather than blending them —
+    this spec's timing_scope directly mirrors that existing separation
+    rather than imposing an external convention, and makes reporting BOTH
+    phases mandatory (not just the flashier apSearchPhase_throughput
+    number).
+  - >
+    Because 21 of the 21 evaluation graphs are general SuiteSparse
+    instances (web/road/citation/social/synthetic), NOT natively
+    bipartite, this spec makes the bipartite-construction method a
+    REQUIRED disclosure field. Silently choosing an easy row/column split
+    vs. a harder bipartite-double-cover construction could make the
+    "same-named" benchmark instance mean very different matching
+    difficulty across two submissions without this being visible.
+  - >
+    Maximum bipartite matching is exact — there is no approximation-ratio
+    axis for this track, unlike several of this batch's other singleton
+    tracks (MIS, spectral sparsification). The correctness gate is
+    correspondingly a hard, binary maximality check (no augmenting path
+    remains), not a quality score to be reported jointly with time.
+
+open_questions:
+  - >
+    The exact numeric speedup factor vs. "fastest prior GPU code" was lost
+    to inline MathML markup in the abstract text as extracted
+    (`<tex...>$...$</tex>` placeholder with no resolvable value in the
+    available `included.json` abstract field); the README's one_liner
+    ("1.63x over fastest prior GPU code") was used as the parent
+    benchmark_groups.json summary but was not independently re-derived
+    from the paper's own fulltext (ACM DL paywalled, no arXiv found) —
+    flagged for confirmation before treating 1.63x as authoritative.
+  - >
+    The identity of "fastest prior GPU code" (which specific
+    implementation/paper) was not confirmed from available sources; likely
+    a predecessor GPU bipartite-matching kernel, possibly from the same
+    lab given the ECL- naming convention, but not verified.
+  - >
+    Whether the paper's own per-graph bipartite construction (row/column
+    split vs. other) is uniform across all 21 instances or chosen
+    per-instance based on the graph's natural structure was not resolved
+    from the README's brief "input files in matrix market format" note.
+
+evidence:
+  conf/ipps/AkathoottB25: "RTX-4090 GPU, 21-instance SuiteSparse suite (web/road/citation/social/synthetic RMAT/delaunay), code's own initRuntime/apSearchTime/totalRunTime split with overall_throughput and apSearchPhase_throughput both in edges/s, exact maximum matching (no approximation ratio applies), headline claims 4.5x vs fastest prior multicore CPU code and an unresolved-exact-factor speedup vs fastest prior GPU code"

@@ -1,0 +1,106 @@
+kernel: graph-layout
+summary: >
+  GPU-accelerated 2D force-directed / Path-Guided Stochastic Gradient
+  Descent (PG-SGD) layout of pangenome variation graphs, measured as
+  wall-clock time to complete a fixed SGD iteration schedule, with layout
+  quality (Sampled Path Stress) reported jointly with time since this is
+  a non-convex optimization with no single correct output.
+operation: >
+  coords[V,2] = PG_SGD(graph G=(V,E,paths), iteration_schedule,
+  step_size_schedule); minimizes sum over sampled (path, node_i, node_j)
+  triples of (||coords_i - coords_j|| - path_distance(i,j))^2 /
+  path_distance(i,j)^2; output is a 2D embedding of every node.
+
+variants:
+  - id: layout-kernel-hprc-chromosomes
+    claim: >
+      steady-state layout wall time on the complete HPRC Year-1
+      whole-chromosome pangenome suite; graph loading (.og deserialization)
+      excluded but reported separately (one-shot, not amortized)
+    inputs:
+      suite: "Human Pangenome Reference Consortium (HPRC) Year-1 pangenome graphs, odgi .og format"
+      selection: "complete set: chr1-chr22, chrX, chrY (24 graphs, no cherry-picking possible since it's the full chromosome set)"
+      recommended_subset:
+        - "chrY or chr21 (smallest, ~3.2x10^5 nodes) — small/dev instance"
+        - "chr1 (largest, ~1.1x10^7 nodes, ~1.1x10^9 nucleotides) — large/scale instance"
+        - "3+ additional mid-size chromosomes for coverage (e.g. chr6, chr12, chr17)"
+      dense_operand: "N/A (graph structure + path set is the sole input)"
+    protocol:
+      format: "graph loaded once from .og; loading NOT counted in layout time"
+      warmup: "1 full layout run, discarded (stochastic algorithm — first run may pay one-time GPU context/JIT costs)"
+      reps: "15 independent runs per chromosome (matches the paper's own repeatability-check convention), different RNG seed each run"
+      statistic: "median wall time, report min/max; median SPS, report the 95% CI half-width from the SPS estimator itself"
+      timer: "host-side wall clock around the full PG-SGD iteration loop; device-side CUDA events optionally for per-iteration breakdown"
+      timing_scope: "PG-SGD iteration schedule only; .og loading and any node-order/path-index preprocessing excluded"
+      preprocessing_reported: "separately, once per chromosome: .og load time"
+      iteration_schedule_disclosure: "REQUIRED: number of SGD iterations, step-size schedule (min/max step, decay), and node/path sampling scheme (data-reuse factor, step-reduction factor if the warp-data-reuse GPU variant is used) must be disclosed and held fixed across implementations under test — these directly trade quality for time"
+    metric:
+      primary: "layout_time (median seconds, min/max across 15 runs)"
+      secondary: "SPS (Sampled Path Stress, median + 95% CI), speedup vs. CPU baseline (odgi layout, 32-core)"
+    correctness: >
+      no exact-value correctness (non-convex layout optimization); quality
+      gate is SPS_GPU / SPS_CPU_baseline <= 1.15 (allows the paper's own
+      observed 1.08x ratio plus margin) computed with sample size and CI
+      disclosed; a run whose SPS ratio exceeds this threshold does not
+      count as a valid submission regardless of speed, since a layout that
+      is fast but visibly worse is not a legitimate win on this task.
+
+  - id: layout-e2e-with-loading
+    claim: >
+      end-to-end time including one-shot graph loading, for the case where
+      loading cost is non-negligible relative to layout time on smaller
+      chromosomes (loading is NOT amortized across multiple layout calls
+      in real pangenome-analysis usage — each chromosome is laid out once)
+    inputs:
+      suite: "same recommended_subset as layout-kernel-hprc-chromosomes"
+      selection: "same"
+      recommended_subset: "same"
+      dense_operand: "N/A"
+    protocol:
+      format: ".og file on disk to final coords/.lay file"
+      warmup: 1
+      reps: "15, same seeds as layout-kernel-hprc-chromosomes for direct cross-reference"
+      statistic: "median total_time (load + layout), report min/max"
+      timer: "host-side wall clock around the full pipeline"
+      timing_scope: "load + PG-SGD, no amortization (k=1, single layout per load, matching real usage)"
+      preprocessing_reported: "load_time reported standalone alongside total_time, never silently folded in without also being independently visible"
+    metric:
+      primary: "total_time_s (median, min/max)"
+      secondary: "load_time_s standalone, layout_time cross-reference to layout-kernel-hprc-chromosomes"
+    correctness: "same SPS-ratio gate as layout-kernel-hprc-chromosomes"
+
+notes_on_fairness:
+  - >
+    Because PG-SGD is stochastic and non-convex, reporting only the
+    fastest run (best-of-N) without a paired quality check would let an
+    implementation "cheat" by cutting iterations short. Both variants
+    require SPS to be reported jointly with time, and layout-kernel-
+    hprc-chromosomes gates on an SPS ratio threshold rather than treating
+    speed as free-standing.
+  - >
+    The 24-chromosome HPRC suite is the complete natural population for
+    this task (one graph per human chromosome) — unlike most kernel
+    tracks there is no risk of an unrepresentative hand-picked subset,
+    but recommended_subset still fixes named instances for reproducible
+    reporting under a compute budget rather than requiring all 24 for
+    every submission.
+  - >
+    The paper's warp-level-data-reuse GPU variant is explicitly algorithm-
+    changing (produces a different layout than the CPU baseline, per the
+    repo README), unlike the "no algorithm changes" GPU variant. The
+    iteration_schedule_disclosure field is REQUIRED specifically so this
+    distinction is visible rather than silently blended into one number.
+
+open_questions:
+  - >
+    The exact SGD iteration count / step-size schedule used for the
+    paper's headline 57.3x number (vs. e.g. a reduced-iteration variant
+    used only for the ablation study) was not confirmed from the fetched
+    HTML fulltext excerpt.
+  - >
+    Whether the reported 15-run repeatability check is also the N used to
+    compute the headline speedup/SPS numbers, or a separate smaller-N
+    measurement, was not fully disentangled from the available text.
+
+evidence:
+  conf/sc/LiSDHGGPGZ24: "HPRC 24 whole-chromosome pangenomes (nodes 3.2e5-1.1e7), odgi .og format, PG-SGD layout; 15 runs/chromosome for repeatability; quality via paper's own Sampled-Path-Stress (SPS) metric with 95% CI, GPU/CPU SPS ratio 1.08x ('no quality loss'); baseline = odgi layout on 32-core Xeon Gold 6246R; GPU = RTX A6000 (CUDA 11.7) / A100 (CUDA 12.2); 57.3x speedup headline is wall-clock time based, not throughput-based"

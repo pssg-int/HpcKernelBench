@@ -1,0 +1,596 @@
+[
+ {
+  "key": "conf/sc/ZhangLYCZCY24",
+  "title": "LoRAStencil: Low-Rank Adaptation of Stencil Computation on Tensor Cores",
+  "venue": "SC",
+  "year": 2024,
+  "authors": [
+   "Yiwei Zhang 0009",
+   "Kun Li 0016",
+   "Liang Yuan",
+   "Jiawen Cheng",
+   "Yunquan Zhang"
+  ],
+  "abstract": "Stencil computations play a pivotal role in numerous scientific and industrial applications, yet their efficient execution on specialized hardware accelerators like Tensor Core Units (TCUs) remains a challenge. This paper introduces LoRAStencil<sup xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">1</sup>, a novel stencil computing system designed to mitigate memory access redundancies on TCUs through low-rank adaptation. We first identify a nuanced form of this redundancy, dimension residue, specific to TCUs. Then LoRAStencil leverages orchestrated mathematical transformations to decompose stencil weight matrices into smaller rank-1 matrices, facilita",
+  "candidates": [
+   {
+    "url": "https://github.com/HPHEX/LoRAStencil",
+    "desc": "",
+    "stars": 9,
+    "readme_head": "# LoRAStencil\n\n> LoRAStencil: Low-Rank Adaptation of Stencil Computation on Tensor Cores\n\n## Abstract\n\nThis artifact contains the source code of LoRAStencil, a novel stencil computing system designed to mitigate memory access redundancies on TCUs through low-rank adaptation.\n\n## Prerequisites\n\n- Hardware\n  - x86-64 CPU\n  - NVIDIA A100 GPU\n- Software\n  - CUDA - 12.2 (Tested). Lower versions down to CUDA 11.0 are also supported, but it may affect the performance.\n  - GCC - above 9.4.0. You may also try to use icx or clang.\n\n## Getting Code\n\nThe code can be downloaded using git:\n```\ngit clone https://github.com/HPHEX/LoRAStencil.git\n```\n\n## Compile\n\nUse the following commands:\n```\nmkdir -p build\ncd build\ncmake ..\nmake all -j24\n```\n\n## Usage\n\nYou can run `lorastencil` in the following input format.\n\n```\nlorastencil_{x}d shape input_size time_size\n```\n- `lorastencil_{x}d` can be chosen from `lorastencil_1d`, `lorastencil_2d`, and `lorastencil_3d` for different dimensions.\n- `shape` can be chosen by the different dimension:\n  - `1d1r` and `1d2r` for 1D\n  - `star2d1r`, `box2d1r`, `star2d3r` and `box2d3r` for 2D\n  - `star3d1r` and `box3d1r` for 3D\n- `input_size` depends on the number of dimensions, with the number of inputs equals the value of `x` in `lorastencil_{x}d`.\n- `time_size` is the iteration time number.\n\n## Contact\nIf you have any questions, please email to the corresponding author at [kunli@microsoft.com](kunli@microsoft.com).\n\n## Reference\n\nYiwei Zhang, Kun Li, Liang Yuan"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/YangZNJS0T024",
+  "title": "Mille-feuille: A Tile-Grained Mixed Precision Single-Kernel Conjugate Gradient Solver on GPUs",
+  "venue": "SC",
+  "year": 2024,
+  "authors": [
+   "Dechuang Yang",
+   "Yuxuan Zhao",
+   "Yiduo Niu",
+   "Weile Jia",
+   "En Shao"
+  ],
+  "abstract": "Conjugate gradient (CG) and biconjugate gradient stabilized (BiCGSTAB) are effective methods used for solving sparse linear systems. We in this paper propose Mille-feuille, a new solver for accelerating CG and BiCGSTAB on GPUs. We first analyze the two methods and list three findings related to the use of mixed precision, the reduction of kernel synchronization costs, and the awareness of partial convergence during the iteration steps. Then, (1) to enable tile-grained mixed precision, we develop a tiled sparse format; (2) to reduce synchronization costs, we leverage atomic operations that make the whole solving procedure work within a single GPU kernel; (3) to support a partial convergence-a",
+  "candidates": [
+   {
+    "url": "https://github.com/SuperScientificSoftwareLaboratory/Mille-feuille",
+    "desc": "Source code of our paper published at SC '24: Dechuang Yang, Yuxuan Zhao, Yiduo Niu, Weile Jia, En Shao, Weifeng Liu, Guangming Tan and Zhou Jin. Mille-feuille: A Tile-Grained Mixed Precision Single-Kernel Conjugate Gradient Solver on GPUs. ",
+    "stars": 8,
+    "readme_head": "# Mille-feuille\nA Tile-Grained Mixed Precision Single-Kernel Conjugate Gradient Solver on GPUs\n## Paper\nThis is the code of our paper published at SC '24:\nDechuang Yang, Yuxuan Zhao, Yiduo Niu, Weile Jia, En Shao, Weifeng Liu, Guangming Tan and Zhou Jin. Mille-feuille: A Tile-Grained Mixed Precision Single-Kernel Conjugate Gradient Solver on GPUs. In Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis (SC '24). https://www.ssslab.cn/assets/papers/2024-yang-Millefeuille.pdf\n## Introduction\nConjugate gradient (CG) and biconjugate gradient stabilized (BiCGSTAB) are effective methods used for solving sparse linear systems. We in this paper propose Mille-feuille, a\nnew solver for accelerating CG and BiCGSTAB on GPUs. We first analyze the two methods and list three findings related to the use of mixed precision, the reduction of kernel synchronization costs, and the awareness of partial convergence during the iteration steps. Then, (1) to enable tile-grained mixed precision, we develop a tiled sparse format; (2) to reduce synchronization costs, we leverage atomic operations that make the whole solving procedure work within a single GPU kernel; (3) to support a partial convergence-aware mixed precision strategy, we enable tile-wise on-chip dynamic precision conversion within the single kernel at runtime.\n## Installation\nMille-feuille evaluation requires an NVIDIA GPU with compute capability 8.0 and the CUDA GPU driver and the "
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/00030DZZLZ24",
+  "title": "MixQ: Taming Dynamic Outliers in Mixed-Precision Quantization by Online Prediction",
+  "venue": "SC",
+  "year": 2024,
+  "authors": [
+   "Yidong Chen 0003",
+   "Chen Zhang 0001",
+   "Rongchao Dong",
+   "Haoyuan Zhang",
+   "Yonghua Zhang"
+  ],
+  "abstract": "Mixed-precision quantization has shown to be a promising method for enhancing the efficiency of LLMs. This technique boosts computational efficiency by processing most values with low-precision, high-throughput compute units and maintains accuracy by processing outliers in high-precision. However, due to the dynamic, irregular, and sparse nature of outliers, this approach is far from using hardware efficiently. In this work, we propose MixQ, an efficient mixed-precision quantization system. Through our in-depth analysis of outlier distribution, we introduce a locality-based outlier prediction algorithm that can predict all outliers of 95.8% of tokens. Based on this accurate prediction, we pr",
+  "candidates": [
+   {
+    "url": "https://github.com/Qcompiler/MIXQ",
+    "desc": " MIXQ: Taming Dynamic Outliers in Mixed-Precision Quantization by Online Prediction",
+    "stars": 94,
+    "readme_head": "# MixQ\n\n\n\nMixQ: Taming Dynamic Outliers in Mixed-Precision Quantization by Online Prediction\n\nWe use  mixed-precision GEMM for enhancing throughput.\n\nPlease refer to https://github.com/Qcompiler/vllm-mixed-precision for end-to-end text generation.\n\n## Comparision with AWQ\n\nAssuming we have a task that is to compute the PPL(perplexity) of Wikitext2. \nThe dataset wikitext contains 333088 validation data.\n\nFor ```batch size  = 32```, the task is devided into 10409 parts.\n\nAWQ finished the task in 10 minutes with  16.71 it/s.\n\n<img src=\"figures/awq32.gif\">\n\nMixQ (W8A8O16)   finished the task in 4.50 minutes with 35.02 it/s.\n\n<img src=\"figures/mixq32.gif\">\n\nFor ```batch size  = 512```, the task is devided into 655 parts.\n\nAWQ finished the task in 127 seconds with  5.2 it/s.\n\n<img src=\"figures/awq512.gif\">\n\nMixQ (W8A8O16) finished the task in 30 seconds with 21.34 it/s.\n\n<img src=\"figures/mixq512.gif\">\n\n\n## Setup\n\nPlease download the mixlib kernel from https://github.com/Qcompiler/QComplier:\n\n```\ngit clone git@github.com:Qcompiler/QComplier.git\ncd EETQ \npython setup.py install\n```\n```\ncd quantkernel\npython setup.py install \n```\n\n## Benchmarking the throughput\n\n\n\nIt is very easy to quantize a LLM and run by MIXQ 4bit or 8bit kernel\n\nRunning the following CMD to quantize the LLM with W8A8O16 kernel: \n\n```\npython examples/basic_quant_mix.py --model_path /mnt/data/checkpoint/Llama-2-7b --quant_file /home/dataset/quant/quant8/Llama-2-7b --w_bit 8\n```\n\nBenchmark the throughput of MIXQ by"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/PanZZXWSLR0D24",
+  "title": "RecFlex: Enabling Feature Heterogeneity-Aware Optimization for Deep Recommendation Models with Flexible Schedules",
+  "venue": "SC",
+  "year": 2024,
+  "authors": [
+   "Zaifeng Pan",
+   "Zhen Zheng",
+   "Feng Zhang 0007",
+   "Bing Xie",
+   "Ruofan Wu"
+  ],
+  "abstract": "Industrial recommendation models typically involve numerous feature fields. The embedding computation workloads are heterogeneous across these fields, thus requiring varied optimal code schedules. While existing solutions apply basic fusion optimization for embedding operations, they inefficiently treat all feature fields with identical schedules, leading to suboptimal performance. In this paper, we introduce RecFlex, which generates fused kernels with distinct schedules for different feature fields. RecFlex employs the interference-aware schedule tuner to tune schedules and the heterogeneous schedule fusion compiler to generate fused kernels, addressing two major challenges. To determine op",
+  "candidates": [
+   {
+    "url": "https://github.com/PanZaifeng/RecFlex",
+    "desc": "A recommendation model kernel optimizing system",
+    "stars": 12,
+    "readme_head": "# RecFlex\n\nRecFlex is a recommendation model optimization system that optimizes the GPU kernel of fused embedding operations, allowing using distinct schedules for different feature fields in the fused kernel.\n\nRecFlex utilizes an *inter-feature interference-aware tuning framework* to tune the generally optimal schedules based on recent input data.\nIt first tunes the per-feature schedule with explicitly controlled occupancy and simulated inter-feature interference in the local stage, and then tunes the optimal occupancy value in the global stage.\nRecFlex also incorporates a *feature-specific schedule fusion compiler* to generate fused GPU kernels.\nThe thread binding of the fused kernels is determined at runtime to reduce workload imbalance and resource waste.\n\n<p align=\"center\">\n  <img src=\"./docs/assets/overview.png\" style=\"width:50%\">\n  <p align=\"center\"><b>\n  RecFlex Overview.\n  </b></p>\n</p>\n\nExperimental results show that RecFlex achieves average speedups of 1.95×, 11.57×, and 7.92× over [TorchRec](https://github.com/pytorch/torchrec), [HugeCTR](https://github.com/NVIDIA-Merlin/HugeCTR), and [RECom](https://github.com/AlibabaResearch/recom), which are the state-of-the-art recommendation model libraries or compilers.\n\n## Get Started\n\n### Set up Development Environment\n\nTo try RecFlex, you can directly run the docker container with image `nvcr.io/nvidia/pytorch:23.04-py3`.\n\n```bash\ndocker run -d --gpus all --net=host --name recflex -it nvidia/cuda:11.8.0-cudnn8-devel-ubunt"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/HuangDLC24",
+  "title": "cuSZp2: A GPU Lossy Compressor with Extreme Throughput and Optimized Compression Ratio",
+  "venue": "SC",
+  "year": 2024,
+  "authors": [
+   "Yafan Huang",
+   "Sheng Di",
+   "Guanpeng Li",
+   "Franck Cappello"
+  ],
+  "abstract": "Existing GPU lossy compressors suffer from expensive data movement overheads, inefficient memory access patterns, and high synchronization latency, resulting in limited throughput. This work proposes cuSZP2, a generic single-kernel error-bounded lossy compressor purely on GPUs designed for applications that require high speed, such as large-scale GPU simulation and large language model training. In particular, CUSZP2 proposes a novel lossless encoding method, optimizes memory access patterns, and hides synchronization latency, achieving extreme end-to-end throughput and optimized compression ratio. Experiments on NVIDIA A100 GPU with 9 real-world HPC datasets demonstrate that, even with high",
+  "candidates": [
+   {
+    "url": "https://github.com/thunze/cuszp2",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "# SC24-cuSZp2\n\n> [!NOTE]\n> Not my work, but a fork of the [AD/AE codebase](https://zenodo.org/records/13315526) of [cuSZp2](https://dl.acm.org/doi/10.1109/SC41406.2024.00021).\n\n## 0. Introduction\ncuSZp2 (a.k.a. name as GSZ in paper submission) is a lossy error-bounded compression library specifically for NVIDIA GPUs for compression of floating-point data. This repository is used for AD-AE process for SC'24 conference. The official and final version of cuSZp2 will be updated into cuSZp repository [\\[LINK\\]](https://github.com/szcompressor/cuSZp) in the future. **For simplicity, we will still use the name GSZ in this repository, to align what is reported in the submission version.**\n\nBefore we start the AD/AE process, here are some regular QAs:\n- **Information about lossy compressor and HPC?**\n  - HPC simulation, such as quantum simulation or climate simulation, turns to produce very large dataset. While lossless compression has limited compression ratio, lossy compression can achieve very high compression ratio with user tolerable errors.\n- **How does lossy compressor work?**\n  - There are two phases of a lossy compressor: **Compression** and **Decompression**. Compression takes an HPC dataset (e.g. vx.f32 from HACC dataset) as input to compress and generates the compressed HPC dataset as output. Meanwhile, decompression takes an compressed dataset as input and decomressed it to reconstructed (we can also call it decompressed) dataset as output.\n- **What is GPU lossy compresso"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/ChenH0LYDY000025",
+  "title": "DRIM-ANN: An Approximate Nearest Neighbor Search Engine based on Commercial DRAM-PIMs",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Mingkai Chen",
+   "Tianhua Han",
+   "Cheng Liu 0008",
+   "Shengwen Liang",
+   "Kuai Yu"
+  ],
+  "abstract": "Approximate nearest neighbor search (ANNS) is essential for applications like recommendation systems and retrieval-augmented generation (RAG) but is highly I/O-intensive and memory-demanding. CPUs face I/O bottlenecks, while GPUs are constrained by limited memory. DRAM-based Processing-in-Memory (DRAM-PIM) offers a promising alternative by providing high bandwidth, large memory capacity, and near-data computation. This work introduces DRIM-ANN, the first optimized ANNS engine leveraging UPMEM’s DRAM-PIM. While UPMEM scales memory bandwidth and capacity, it suffers from low computing power because of the limited processor embedded in each DRAM bank. To address this, we systematically optimize",
+  "candidates": [
+   {
+    "url": "https://github.com/KMC20/DRIM-ANN",
+    "desc": "",
+    "stars": 1,
+    "readme_head": "# DRIM-ANN\nAn Approximate Nearest Neighbor Search Engine based on Commercial DRAM-PIMs.\n## Framework\nPlease refer to the `DRIM-ANN` directory. A README.md is attached to it for testing. Please install [UPMEM SDK](https://sdk.upmem.com) before testing. The SDK provides a simulator for functional verification on CPU in case that users have no access to real UPMEM server.\n## Fine-grained performance model\nPlease refer to the `Perf-Model` directory. A README.md is attached to it for testing.\n## Reference\nIf you feel this repo is useful for you, don't hesitate to star this!😀 And it is really kind of you to cite this repo in your paper or project.\n\nIf you feel DRIM-ANN is interesting, please cite:\n\n```\n@inproceedings{10.1145/3712285.3759801,\n      author = {Chen, Mingkai and Han, Tianhua and Liu, Cheng and Liang, Shengwen and Yu, Kuai and Dai, Lei and Yuan, Ziming and Wang, Ying and Zhang, Lei and Li, Huawei and Li, Xiaowei},\n      title = {DRIM-ANN: An Approximate Nearest Neighbor Search Engine based on Commercial DRAM-PIMs},\n      year = {2025},\n      isbn = {9798400714665},\n      publisher = {Association for Computing Machinery},\n      address = {New York, NY, USA},\n      url = {https://doi.org/10.1145/3712285.3759801},\n      doi = {10.1145/3712285.3759801},\n      abstract = {Approximate nearest neighbor search (ANNS) is essential for applications like recommendation systems and retrieval-augmented generation (RAG) but is highly I/O-intensive and memory-demanding. CPUs face I/O "
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/BradleyAB25",
+  "title": "Fringe-SGC: Counting Subgraphs with Fringe Vertices",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Cameron Bradley",
+   "Ghadeer Ahmed H. Alabandi",
+   "Martin Burtscher"
+  ],
+  "abstract": "Subgraph Counting (SGC) is a fundamental component of many important applications, including cybersecurity, drug discovery, social network analysis, and natural language processing. However, current SGC approaches can only handle very small patterns (aka subgraphs) because the computational load increases exponentially with the size of the pattern. To overcome this limitation for certain patterns, we introduce a new technique and algorithm called Fringe-SGC for counting the exact number of times a subgraph occurs in a larger graph. Our approach conventionally searches only for the “core” of the subgraph and then uses set-based methods to compute the number of occurrences that the “fringes” a",
+  "candidates": [
+   {
+    "url": "https://github.com/burtscher/Fringe-SGC",
+    "desc": "",
+    "stars": 1,
+    "readme_head": "## Fringe-SGC\r\n\r\n## Description\r\nFringe-SGC is a CUDA code for counting the number of occurrences of a subgraph in a larger graph. It decomposes the user-defined subgraph into core and fringe vertices, searches the graph for the core vertices, and then utilizes a formula to rapidly count the number of occurrences.<br>\r\n\r\n## Installation\r\n1. To begin, ensure that you have a machine with a CUDA-capable GPU with compute capability of at least 8.0 and CUDA toolkit 11.1.<br>\r\n2. Make sure gnuplot is installed to plot the results in bar graphs (we used version 6.0).<br>\r\n\r\n3. Follow these instructions to reproduce the results of the paper:<br>\r\n     a) Clone the code using \"git clone https://github.com/burtscher/Fringe-SGC.git\"<br>\r\n     b) Navigate to the Fringe-SGC directory by executing \"cd Fringe-SGC\"<br>\r\n     c) Adjust the -arch flag in the Makefile for your GPU architecture<br>\r\n     d) Execute \"make\"<br>\r\n     e) Run \"python3 figures_Fringe.py\"<br>\r\n     f) View the resulting 7 PNG files<br> \r\n\r\n4. If you want to create your own subgraphs, follow the above steps with this next step:<br>\r\n     a) ./src/fringePreprocess {number of nodes} {edge1_source} {edge1_destination} ...<br>\r\n     b) ./src/fringeCount {graph input} motif.mo<br>\r\n\r\n## Publication\r\n\r\nIf you use Fringe-SGC in your work, please cite the following publication:\r\n\r\nCameron Bradley, Ghadeer Alabandi, and Martin Burtscher. Fringe-SGC: Counting Subgraphs with Fringe Vertices. Proceedings of the 2025 ACM/IEEE Inter"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/HuangYYLGLJWFHT25",
+  "title": "MANS: Efficient and Portable ANS Encoding for Multi-Byte Integer Data on CPUs and GPUs",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Wenjing Huang 0002",
+   "Jinwu Yang",
+   "Shengquan Yin",
+   "Haoxu Li",
+   "Yida Gu"
+  ],
+  "abstract": "Lossless compression is a classic technique for reducing data storage and transmission requirements. Asymmetric Numeral Systems (ANS) is a high-throughput, high-ratio lossless compression algorithm, but it lacks effective support for multi-byte data and cross-platform compatibility. To address this issue, we propose an Adaptive Data Mapping (ADM) scheme, which maps multi-byte integer data into single-byte space based on the data’s characteristics, improving the compression ratio of ANS while maintaining low encoding redundancy. We also optimize the ADM algorithm and the ANS encoder for GPU and CPU architectures, respectively, and combine them to create an efficient and portable ANS encoding ",
+  "candidates": [
+   {
+    "url": "https://github.com/hpdps-group/MANS",
+    "desc": "An optimized ANS compressor for multi-byte integer data on both CPUs and GPUs.",
+    "stars": 11,
+    "readme_head": "# MANS: Efficient and Portable ANS Encoding for Multi-Byte Integer Data on CPUs and GPUs\n\n[![C++ Version](https://img.shields.io/badge/C++-17%2B-blue.svg)](https://isocpp.org/)\n[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)\n![CUDA](https://img.shields.io/badge/CUDA-12.6-yellow.svg)\n![ROCm](https://img.shields.io/badge/ROCm-supported-red.svg)\n\n**MANS** is a high-performance compression framework designed to make **Asymmetric Numeral Systems (ANS)** efficient and portable for **multi-byte integer data** across CPUs, NVIDIA GPUs, and AMD GPUs.\n\nAt the core of MANS is **ADM (Adaptive Data Mapping)** — a lightweight, distribution-aware transformation that maps 16/32-bit integers into a compact 8-bit domain, significantly improving both compression ratio and throughput while maintaining full numerical fidelity. ⚡\n\nThis framework is tailored for high-volume scientific and HPC workloads such as photon science, large-scale simulations, and sensor-array pipelines, where multi-byte integer data is ubiquitous and processed in small slices. 🔬🚀\n\n(C) 2025 by Institute of Computing Technology, Chinese Academy of Sciences.\n\n**Developers**: Wenjing Huang (Lead Developer, Designer of ADM), Jinwu Yang (CPU and GPU Implementations/Optimizations of Parallel ANS Encoders), Shengquan Yin (HIP Version of ANS Encoder)\n\n**Contributors**: Dingwen Tao (Supervisor), Guangming Tan\n\n---\n\n## ✨ Key Features\n\n* **🚀 High-Efficiency Compression**  \n  Achieves up to **1.24×** higher com"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/WangXY0C25",
+  "title": "MXBLAS: Accelerating 8-bit Deep Learning with a Unified Micro-Scaled GEMM Library",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Weihu Wang",
+   "Yaqi Xia",
+   "Donglin Yang",
+   "Xiaobo Zhou 0002",
+   "Dazhao Cheng"
+  ],
+  "abstract": "Micro-scaling General Matrix Multiplication (MX-GEMM), which leverages 8-bit micro-scaling format (MX-format) inputs, represents a significant step forward in accelerating deep learning workloads. The MX-format space is diverse, encompassing various scaling patterns and granularities. However, current MX-GEMM implementations typically adopt a model-oriented approach, where format customization is tailored to individual models. This results in three key limitations: rigid problem-kernel coupling, inefficient promotion operations, and overlooked quantization overhead.",
+  "candidates": [
+   {
+    "url": "https://github.com/yatorho/MXBLAS",
+    "desc": "",
+    "stars": 7,
+    "readme_head": "# 🚀 MXBLAS: Accelerating 8-bit Deep Learning with a Unified Micro-Scaled GEMM Library\n\n## 🌟 Overview\n\n**MXBLAS** is a high-performance library for **Micro-scaled General Matrix Multiplication (MX-GEMM)**.  \nIt leverages 8-bit micro-scaling formats (**MX-Format**) to accelerate deep learning workloads on modern GPUs.\n\nThe MX-Format supports diverse scaling patterns and granularities, and MXBLAS efficiently handles all MX-Format variations within a unified framework.\n\n## ✨ Highlights\n\n✅ Unified MX-Format support under a single framework  \n✅ Adaptive runtime kernel generation and auto-tuning  \n✅ Compute–store co-optimization to minimize overhead  \n✅ High performance on **NVIDIA Hopper GPUs**\n\n---\n\n## 🧪 Usage\n\n\n### 🔗 Unified MX-GEMM API\n\nThe `mxblas.mx_gemm_kernel` function from MXBLAS provides a unified and flexible API for performing MX-GEMM operations on tensors in MX-Formats, supporting various scaling patterns and output quantization options.\n\nBelow is a basic usage example for **Per-Tensor x Per-Tensor (TT) scaled input** and **16-sized group quantization output**:\n\n```python\nimport torch\nimport mxblas\n\nM, N, K = 8192, 8192, 8192\nSM, SN, SK = 8192, 8192, 8192  # TT Scaling Pattern\nout_quant = True  # Enable quantization in the output\nQM, QN = 1, 16  # Group-wise quantization: 1 row, 16 columns per group\n\n# Generate random input tensors in FP8 format (E4M3FN)\nleft = torch.randn(M, K, dtype=torch.bfloat16, device='cuda').to(torch.float8_e4m3fn)\nright = torch.randn(N, K, dtype"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/WuZDZHC25",
+  "title": "TurboFNO: High-Performance Fourier Neural Operator with Fused FFT-GEMM-iFFT on GPU",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Shixun Wu",
+   "Yujia Zhai",
+   "Huangliang Dai",
+   "Yue Zhu",
+   "Haiyang Hu"
+  ],
+  "abstract": "Fourier Neural Operators (FNO) are widely used for learning partial differential equation solution operators. However, FNO lacks architecture-aware optimizations,with its Fourier layers executing FFT, filtering, GEMM, zero padding, and iFFT as separate stages, incurring multiple kernel launches and significant global memory traffic. We propose TurboFNO, the first fully fused FFT-GEMM-iFFT GPU kernel with built-in FFT optimizations. We first develop FFT and GEMM kernels from scratch, achieving performance comparable to or faster than the closed-source SOTA cuBLAS and cuFFT. Additionally, our FFT kernel integrates a built-in high-frequency truncation, input zero-padding, and pruning feature to",
+  "candidates": [
+   {
+    "url": "https://github.com/shixun404/TurboFNO",
+    "desc": "The first fully fused FFT–GEMM–iFFT GPU kernel.",
+    "stars": 7,
+    "readme_head": "# TurboFNO\n\n**TurboFNO** is a high-performance GPU implementation of the Fourier Neural Operator (FNO), designed for solving PDEs with deep learning. Unlike standard FNO implementations that execute FFT, filtering, GEMM, and iFFT as separate kernels—causing redundant memory traffic—TurboFNO introduces the **first fully fused FFT–GEMM–iFFT GPU kernel** with built-in optimizations.\n\n<p align=\"center\">\n  <img src=\"figs/FNO_illustration.png\" alt=\"TurboFNO\" width=\"450\"/>\n</p>\n\nTurboFNO includes:\n\n* Custom high-performance FFT and GEMM kernels, matching or exceeding cuFFT and cuBLAS performance;\n* Built-in **zero-padding, frequency truncation, and channel pruning** to eliminate unnecessary data movement;\n* A novel kernel fusion strategy where **each thread block traverses the hidden dimension**, aligning FFT output with GEMM computation;\n* Shared memory swizzling techniques to ensure **100% memory bank utilization** between FFT, GEMM, and iFFT stages.\n\n* On NVIDIA A100, TurboFNO achieves up to **1.5× speedup** over PyTorch and NVIDIA’s closed-source libraries.\n\n---\n\n## 📦 Repository Structure\n\n```\nTurboFNO/\n├── fusion_variants/           # All kernel fusion variants (stepwise E→A→B→C→D for 1D/2D)\n├── benchmark_config/          # Input problem sizes for 1D and 2D\n├── TurboFFT/                  # Git submodule (TurboFNO_dev branch)\n├── utils/                     # Shared code and support modules\n├── install.sh                 # Batch compile and PATH setup script\n└── README.md\n```\n\n##"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/HuangDUMCLSC25",
+  "title": "lsCOMP: Efficient Light Source Compression",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Yafan Huang",
+   "Sheng Di",
+   "Robert Underwood",
+   "Peco Myint",
+   "Miaoqi Chu"
+  ],
+  "abstract": "Light source facilities, which generate X-rays for probing microstructures and dynamic processes, produce intense data streams, reaching up to 250 GB/s and projected to exceed 1 TB/s by the end of this decade. Managing such massive data poses critical challenges due to limited local processing capacity and bandwidth constraints when offloading data to HPC systems. To address these challenges, we propose lsCOMP, a GPU compressor that operates within a single kernel. lsCOMP supports both lossless and configurable lossy compression, ensuring high compression ratios and preserved data quality across diverse light source applications. On a single NVIDIA A100 GPU, lsCOMP achieves compression throu",
+  "candidates": [
+   {
+    "url": "https://github.com/szcompressor/lsCOMP",
+    "desc": "Fast GPU lossy/lossless compressor for light source data and unsigned integers.",
+    "stars": 2,
+    "readme_head": "# lsCOMP\n\n<a href=\"./LICENSE\"><img src=\"https://img.shields.io/badge/License-BSD%203--Clause-blue.svg\"></a>\n\nlsCOMP (<u>l</u>ight <u>s</u>ource <u>COMP</u>ression) is a user-friendly and fast GPU lossy/lossless compressor for light source data and unsigned integers (both ```uint32``` and ```uint16```).\nBoth compression and decompression in lsCOMP is fully executed in a single NVIDIA GPU kernel without CPU intervention, guaranteeing high end-to-end performance.\nSupporting both configurable lossy and lossless compression modes, lsCOMP can be used in diverse scenarios that require different level of data fidelity.\nlsCOMP is not only suitable for light source data but also for generic integer compression that requres high speed (e.g., visualization datasets from [Open Scivis Datasets](https://github.com/sci-visus/open-scivis-datasets)).\n\nThis work is published in **[SC'25] lsCOMP: Efficient Light Source Compression**.\n- Developer: Yafan Huang, Sheng Di, Robert Underwood\n- Contributors: Peco Myint, Miaoqi Chu, Guanpeng Li, Nicholas Schwarz, and Franck Cappello\n- Contact: ```yafan-huang@uiowa.edu```\n\n## Environmental Requirements\n- Linux OS with NVIDIA GPUs\n- Git >= 2.15\n- CMake >= 3.21\n- CUDA Toolkit >= 11.0\n- GCC >= 7.3.0\n\n## Compile lsCOMP\nYou can compile lsCOMP by following commands:\n```shell\n$ git clone https://github.com/szcompressor/lsCOMP.git\n$ cd lsCOMP\n$ mkdir build && cd build\n$ cmake ..\n$ make -j\n```\nAfter compilation, you will see 2 executable binaries, ```lsCOMP_uint3"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/ZhangSLHWDW21",
+  "title": "YuenyeungSpTRSV: A Thread-Level and Warp-Level Fusion Synchronization-Free Sparse Triangular Solve",
+  "venue": "TPDS",
+  "year": 2021,
+  "authors": [
+   "Feng Zhang 0007",
+   "Jiya Su",
+   "Weifeng Liu 0002",
+   "Bingsheng He",
+   "Ruofan Wu"
+  ],
+  "abstract": "Sparse triangular solves (SpTRSVs) are widely used in linear algebra domains, and several GPU-based SpTRSV algorithms have been developed. Synchronization-free SpTRSVs, due to their short preprocessing time and high performance, are currently the most popular SpTRSV algorithms. However, we observe that the performance of those SpTRSV algorithms on different matrices can vary greatly by 845 times. Our further studies show that when the average number of components per level is high and the average number of nonzero elements per row is low, those SpTRSVs exhibit extremely low performance. The reason is that, they use a warp on the GPU to process a row in sparse matrices, and such warp-level de",
+  "candidates": [
+   {
+    "url": "https://github.com/JiyaSu/YuenyeungSpTRSV",
+    "desc": "A Thread-Level and Warp-Level Fusion Synchronization-Free Sparse Triangular Solve on GPUs",
+    "stars": 8,
+    "readme_head": "# YuenyeungSpTRSV\nA Thread-Level and Warp-Level Fusion Synchronization-Free Sparse Triangular Solve on GPUs\n\n## Introduction\n\nThis is the source code of our paper \"YuenyeungSpTRSV: A Thread-Level and Warp-Level Fusion Synchronization-Free Sparse Triangular Solve\" by Feng Zhang, Jiya Su, Weifeng Liu, Bingsheng He, Ruofan Wu, Xiaoyong Du, Rujia Wang, 2021.\n\nThere are two versions of YYSpYRSV, namely CUDA and openCL.\n\n## Abstract\n\nSparse triangular solves (SpTRSVs) are widely used in linear algebra domains, and several GPU-based SpTRSV algorithms have been developed. Synchronization-free SpTRSVs, due to their short preprocessing time and high performance, are currently the most popular SpTRSV algorithms. However, we observe that the performance of those SpTRSV algorithms on different matrices can vary greatly by 845 times. Our further studies show that when the average number of components per level is high and the average number of nonzero elements per row is low, those SpTRSVs exhibit extremely low performance. The reason is that, they use a warp on the GPU to process a row in sparse matrices, and such warp-level designs have severe underutilization of the GPU. To solve this problem, we propose YuenyeungSpTRSV, a thread-level and wrap-level fusion synchronization-free SpTRSV algorithm, which handles the rows with a large number of nonzero elements at warp-level while the rows with a low number of nonzero elements at thread-level. Particularly, YuenyeungSpTRSV has three novel f"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/WangLFXT22",
+  "title": "DHash: Dynamic Hash Tables With Non-Blocking Regular Operations",
+  "venue": "TPDS",
+  "year": 2022,
+  "authors": [
+   "Junchang Wang",
+   "Dunwei Liu",
+   "Xiong Fu",
+   "Fu Xiao 0001",
+   "Chen Tian 0001"
+  ],
+  "abstract": "Once started, existing hash tables cannot change their pre-defined hash functions, even if the incoming data cannot be evenly distributed to the hash table buckets. In this paper, we present <sc xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">DHash</small> , a type of hash table for shared memory systems, that can change its hash function and rebuild the hash table on the fly, without noticeably degrading its service. The major technical novelty of <sc xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">DHash</small> stems from an efficient distributing mechanism that can atomically distribute every node when reb",
+  "candidates": [
+   {
+    "url": "https://github.com/benhoyt/dhash",
+    "desc": "Python library to calculate the difference hash (perceptual hash) for a given image, useful for detecting duplicates",
+    "stars": 376,
+    "readme_head": "dhash\n=====\n\n.. image:: https://img.shields.io/pypi/v/dhash.svg\n   :target: https://pypi.org/project/dhash/\n   :alt: dhash on PyPI (Python Package Index)\n\n.. image:: https://github.com/benhoyt/dhash/actions/workflows/ci.yml/badge.svg\n   :target: https://github.com/benhoyt/dhash/actions/workflows/ci.yml\n   :alt: GitHub Actions Tests\n\ndhash is a Python library that generates a \"difference hash\" for a given image\n-- a `perceptual hash`_ based on Neal Krawetz's dHash algorithm in `this\n\"Hacker Factor\" blog entry`_.\n\nThe library is `on the Python Package Index (PyPI)`_ and works on both Python\n3 and Python 2.7. To install it, fire up a command prompt, activate your\nvirtual environment if you're using one, and type:\n\n::\n\n    pip install dhash\n\nThe algorithm to create a difference hash is very simple:\n\n* Convert the image to grayscale\n* Downsize it to a 9x9 thumbnail (size=8 means an 8+1 by 8+1 image)\n* Produce a 64-bit \"row hash\": a 1 bit means the pixel intensity is increasing\n  in the x direction, 0 means it's decreasing\n* Do the same to produce a 64-bit \"column hash\" in the y direction\n* Combine the two values to produce the final 128-bit hash value\n\nThe library defaults to producing a size 8 dhash, but you can override this\neasily by passing ``size=N`` as a keyword argument to most functions. For\nexample, you can produce a more accurate (but slower to work with) dhash of\n512 bits by specifying ``size=16``.\n\nI've found that dhash is great for detecting near duplicates (we\nfound "
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/ChenY25",
+  "title": "ToT: Triangle Counting on Tensor Cores",
+  "venue": "TPDS",
+  "year": 2025,
+  "authors": [
+   "YuAng Chen",
+   "Jeffrey Xu Yu"
+  ],
+  "abstract": "Triangle counting is a fundamental graph algorithm used to identify the number of triangles within a graph. This algorithm can be reformulated into linear algebraic operations, including sparse matrix multiplication, intersection and reduction. Modern GPUs, equipped with Tensor Cores, offer massive parallelism that can significantly accelerate graph algorithms. However, leveraging Tensor Cores, originally designed for dense matrix multiplication, to handle sparse workloads for triangle counting presents non-trivial challenges. In this paper, we conduct an in-depth analysis of the state-of-the-art techniques that utilize Tensor Cores for matrix operations, identifying critical performance sho",
+  "candidates": [
+   {
+    "url": "https://github.com/yuang-chen/ToT-TPDS25",
+    "desc": "Triangle Counting on Tensor Cores - PPoPP25/TPDS25",
+    "stars": 1,
+    "readme_head": "# ToT: Triangle Counting on Tensor Cores\n\nThis repository contains the implementation of ToT, an triangle counting algorithm leveraging Tensor Cores on GPUs for acceleration.\n\n\n### Warning\nThis implementation utilizes Tensor Cores with 16-bit `half` type, which may introduce precision errors during count summation, particularly with large graphs.  Using the `-e 1` flag to extract the upper triangular portion of the graph can mitigate precision problems in some cases.\n\n\n## Requirements\n\n- CMake (version 3.22 or higher)\n- CUDA Toolkit\n- OpenMP\n- C++20 compatible compiler\n- NVIDIA GPUs with SM >= 80 \n\n## Building the Project\n\nTo build the project, follow these steps:\n```bash\nmkdir build\ncd build\ncmake -DCMAKE_BUILD_TYPE=Release ..\nmake\n```\n\n## Running the Program\n\nThe program can be used as follows:\n```bash\nUsage: ./build/apps/tot ... \n              [-i input_file]\n              [-e extract_upper_triangular (1 or 0)]\n              [-v verify (1 or 0)]\n```\nExample command:\n\n```bash\n./build/apps/tot -i toydata/pli.mtx -v 1\n```\n## Citation\n\nIf you use this code in your research, please cite:\n```bibtex\n@ARTICLE{11153046,\n  author={Chen, YuAng and Yu, Jeffrey Xu},\n  journal={IEEE Transactions on Parallel and Distributed Systems}, \n  title={ToT: Triangle Counting on Tensor Cores}, \n  year={2025},\n  volume={36},\n  number={12},\n  pages={2679-2692},\n  keywords={Tensors;Sparse matrices;Graphics processing units;Instruction sets;Registers;Optimization;Linear algebra;Clustering algorithms;B"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/WangTLTXH26",
+  "title": "EDTC: Exact Triangle Counting for Dynamic Graphs on GPU",
+  "venue": "TPDS",
+  "year": 2026,
+  "authors": [
+   "Zhuo Wang",
+   "Jiahao Tang",
+   "Zhixiong Li",
+   "Jinxing Tu",
+   "Wei Xue 0003"
+  ],
+  "abstract": "In the process of updating a dynamic graph, an update to one edge may result in the addition or deletion of multiple triangles, while an update to multiple edges may only result in the addition or deletion of a single triangle. Consequently, accurately counting triangles on a dynamic graph is a challenging undertaking. As dynamic graphs are continuously updated, the GPU's memory may be insufficient to accommodate the storage of larger graphs. This presents a challenge when the graph, which is constantly growing, cannot be stored. The hash-based and binary search-based triangle counting algorithm is regarded as the most efficient for static graphs. However, when vertices with high degrees are",
+  "candidates": [
+   {
+    "url": "https://github.com/xuefeng-zhu5/EDTC",
+    "desc": "Codes and Dataset of the paper: Evidential Detection and Tracking Collaboration: New Problem, Benchmark and Algorithm for Robust Anti-UAV System",
+    "stars": 24,
+    "readme_head": "# Evidential Detection and Tracking Collaboration: New Problem, Benchmark and Algorithm for Robust Anti-UAV System\n### Xue-Feng Zhu, Tianyang Xu*, Jian Zhao*, Jia-Wei Liu, Kai Wang, Gang Wang*, Jianan Li*, Qiang Wang, Lei Jin, Zheng Zhu, Junliang Xing, Xiao-Jun Wu*\n\n[[Models and Raw results]](https://drive.google.com/drive/folders/1qp4rZ-d-KnYNLAz80wmqVAl8UXOPGfO-?usp=sharing) (Google Driver)\n\n[[Paper]](https://arxiv.org/pdf/2306.15767.pdf) (ArXiv)\n\nThe dataset can be download from [Google Drive](https://drive.google.com/drive/folders/1igFX0yISt4auaH7ijHde1pBfvna8nn3G?usp=sharing).\n\n## Install the environment\nUse the Anaconda\n```\nconda create -n edtc python=3.6\nconda activate edtc\nbash install_pytorch17.sh\n```\n\n\n## Training\n### Train YOLO\nEdit dataset settings: \n```\n/path/to/EDTC/yolov5/data/antiuav.yaml\n```\nThen train the detector:\n```\ncd /path/to/EDTC/yolov5\npython train.py\n```\n\n### Train tracking branch\nRun the following command to set paths for this project\n```\npython tracking/create_default_local_file.py --workspace_dir . --data_dir ./data --save_dir .\n```\nAfter running this command, you can modify paths by editing the file:\n```\nlib/train/admin/local.py  # paths about training\n```\n```\nexperiments/uavtrack/baseline.yaml # paths about Stage1 training\n```\n```\nexperiments/uavtrack_eh/baseline.yaml # paths about Stage2 training\n```\n\nStage1 training:\n```\npython tracking/train.py --script uavtrack --config baseline --save_dir . --mode multiple --nproc_per_node 8\n```\nStage2 trai"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/LiWSYDZ26",
+  "title": "cuFalcon: An Adaptive Parallel GPU Implementation for High-Performance Falcon Acceleration",
+  "venue": "TPDS",
+  "year": 2026,
+  "authors": [
+   "Wenqian Li",
+   "Hanyu Wei",
+   "Shiyu Shen 0001",
+   "Hao Yang 0062",
+   "Wangchen Dai"
+  ],
+  "abstract": "The rapid advancement of quantum computing has ushered in a new era of post-quantum cryptography, urgently demanding quantum-resistant digital signatures to secure modern communications and transactions. Among NIST-standardized candidates, Falcon stands out because it is a compact lattice-based signature scheme suitable for size-sensitive applications. In this paper, we present cuFalcon, a high-throughput GPU implementation of Falcon that addresses its computational bottlenecks through adaptive parallel strategies. At the operational level, we optimize Falcon key components for GPU architectures through memory-efficient FFT, adaptive parallel ffSampling, and a compact computation mode. For s",
+  "candidates": [
+   {
+    "url": "https://github.com/encryptorion-lab/cuFalcon",
+    "desc": "CUDA-accelerated Falcon Implementation",
+    "stars": 31,
+    "readme_head": "# cuFalcon\nThis repository contains the artifact for our paper *\"cuFalcon: An Adaptive Parallel GPU Implementation for High-Performance Falcon Acceleration\"*.  \n\nThis project contains CUDA-accelerated implementation of the Falcon post-quantum signature scheme. It includes two parameter sets:\n- `cuFalcon_512`: Falcon-512 implementation\n- `cuFalcon_1024`: Falcon-1024 implementation\n\n## Running the Code\nFor each parameter set, navigate into the corresponding folder and run the provided script to perform signing and verify correctness:\n\n```bash\n# For Falcon-512\ncd cuFalcon_512\n./run.sh\n\n# For Falcon-1024\ncd cuFalcon_1024\n./run.sh\n```\n\n## License\nThis project (cuFalcon) is released under GPLv3 license. See [LICENSE](LICENSE) for more information.\n\nSome files contain the modified code from [Falcon official repository](https://falcon-sign.info/impl/falcon.h.html). These codes are released under MIT License.\n\nSome files contain the modified code from [Falcon-Mitaka](https://github.com/benlwk/Falcon-Mitaka). These codes are released under GPLv3 License.\n\n## Citation\nIf you use cuFalcon in your research, please cite the following paper:\n```\n@article{DBLP:journals/tpds/LiWSYDZ26,\n  author       = {Wenqian Li and\n                  Hanyu Wei and\n                  Shiyu Shen and\n                  Hao Yang and\n                  Wangchen Dai and\n                  Yunlei Zhao},\n  title        = {cuFalcon: An Adaptive Parallel {GPU} Implementation for High-Performance\n                  Falcon "
+   }
+  ]
+ },
+ {
+  "key": "conf/asplos/YiZHYSWZZLL26",
+  "title": "PAT: Accelerating LLM Decoding via Prefix-Aware Attention with Resource Efficient Multi-Tile Kernel",
+  "venue": "ASPLOS",
+  "year": 2026,
+  "authors": [
+   "Jinjun Yi",
+   "Zhixin Zhao",
+   "Yitao Hu",
+   "Ke Yan",
+   "Weiwei Sun"
+  ],
+  "abstract": "LLM serving is increasingly dominated by decode attention, which is a memory-bound operation due to massive KV cache loading from global memory. Meanwhile, real-world workloads exhibit substantial, hierarchical shared prefixes across requests (e.g., system prompts, tools/templates, RAG). Existing attention implementations fail to fully exploit prefix sharing: one-query-per-CTA execution repeatedly loads shared prefix KV cache, while one-size-fits-all tiling leaves on-chip resources idle and exacerbates bubbles for uneven KV lengths. These choices amplify memory bandwidth pressure and stall memory-bound decode attention.",
+  "candidates": [
+   {
+    "url": "https://github.com/flashserve/PAT",
+    "desc": "Prefix-Aware Attention for LLM Decoding",
+    "stars": 41,
+    "readme_head": "<div align=\"center\">\n\n# PAT: Prefix-Aware Attention for LLM Decoding\n\n[![Static Badge](https://img.shields.io/badge/ASPLOS-2026-red?logo=gitbook)](https://dl.acm.org/doi/10.1145/3779212.3790200)\n[![Static Badge](https://img.shields.io/badge/DeepWiki-Docs-6B46C1?logo=book&logoColor=white&labelColor=555555)](https://deepwiki.com/flashserve/PAT)\n[![zread](https://img.shields.io/badge/Ask_Zread-_.svg?style=flat&color=00b0aa&labelColor=000000&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTQuOTYxNTYgMS42MDAxSDIuMjQxNTZDMS44ODgxIDEuNjAwMSAxLjYwMTU2IDEuODg2NjQgMS42MDE1NiAyLjI0MDFWNC45NjAxQzEuNjAxNTYgNS4zMTM1NiAxLjg4ODEgNS42MDAxIDIuMjQxNTYgNS42MDAxSDQuOTYxNTZDNS4zMTUwMiA1LjYwMDEgNS42MDE1NiA1LjMxMzU2IDUuNjAxNTYgNC45NjAxVjIuMjQwMUM1LjYwMTU2IDEuODg2NjQgNS4zMTUwMiAxLjYwMDEgNC45NjE1NiAxLjYwMDFaIiBmaWxsPSIjZmZmIi8%2BCjxwYXRoIGQ9Ik00Ljk2MTU2IDEwLjM5OTlIMi4yNDE1NkMxLjg4ODEgMTAuMzk5OSAxLjYwMTU2IDEwLjY4NjQgMS42MDE1NiAxMS4wMzk5VjEzLjc1OTlDMS42MDE1NiAxNC4xMTM0IDEuODg4MSAxNC4zOTk5IDIuMjQxNTYgMTQuMzk5OUg0Ljk2MTU2QzUuMzE1MDIgMTQuMzk5OSA1LjYwMTU2IDE0LjExMzQgNS42MDE1NiAxMy43NTk5VjExLjAzOTlDNS42MDE1NiAxMC42ODY0IDUuMzE1MDIgMTAuMzk5OSA0Ljk2MTU2IDEwLjM5OTlaIiBmaWxsPSIjZmZmIi8%2BCjxwYXRoIGQ9Ik0xMy43NTg0IDEuNjAwMUgxMS4wMzg0QzEwLjY4NSAxLjYwMDEgMTAuMzk4NCAxLjg4NjY0IDEwLjM5ODQgMi4yNDAxVjQuOTYwMUMxMC4zOTg0IDUuMzEzNTYgMTAuNjg1IDUuNjAwMSAxMS4wMzg0IDUuNjAwMUgxMy43NTg0QzE0LjExMTkgN"
+   }
+  ]
+ },
+ {
+  "key": "conf/asplos/TangLWSLXZL26",
+  "title": "RedFuser: An Automatic Operator Fusion Framework for Cascaded Reductions on AI Accelerators",
+  "venue": "ASPLOS",
+  "year": 2026,
+  "authors": [
+   "Xinsheng Tang",
+   "Yangcheng Li",
+   "Nan Wang",
+   "Zhiyi Shu",
+   "Xingyu Ling"
+  ],
+  "abstract": "Operator fusion, as a key performance optimization technique in the deployment of AI models, significantly improves execution efficiency and has been widely adopted in modern AI compilers. However, for cascaded reduction operations involving multiple loops with inter-loop data dependencies, such as the safe softmax followed by GEMM within attention mechanisms, existing compilers lack effective automated fusion and kernel generation capabilities. Although some works have addressed specific instances through hand-crafted fusion strategies, their solutions are limited in generality and difficult to extend to other similar structures. Given the prevalence of such computational patterns in deep l",
+  "candidates": [
+   {
+    "url": "https://github.com/alibaba/redfuser",
+    "desc": "",
+    "stars": 21,
+    "readme_head": "# RedFuser\n\n[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)\n[![ASPLOS 2026](https://img.shields.io/badge/ASPLOS-2026-orange.svg)](https://asplos-conference.org/)\n\nThis repository contains the artifact for our ASPLOS 2026 paper: **\"RedFuser: An Automatic Operator Fusion Framework for Cascaded Reductions on AI Accelerators\"**.\n\n## Overview\n\nRedFuser is a novel framework for optimizing cascaded reductions in deep learning compilers. Built on top of [Apache TVM](https://github.com/apache/tvm), RedFuser introduces a series of compiler transformation passes that enable efficient fusion of reduction operations with other computations, particularly targeting modern GPU architectures.\n\n## Update\n\n- \\[2026-03\\]: Support Flash Decoding, Moe Routing and Quant GEMM examples.\n- \\[2026-01\\]: RedFuser is now avaliable with flash-attention example.\n- \\[2025-11\\]: 🎉 RedFuser is accepted by ASPLOS 2026!\n\n## Roadmap\n\n- [x] flash-attention\n- [x] flash-decoding\n- [x] moe-routing\n- [x] fp8 quant+gemm\n\n## Getting Started\n\nPlease follow https://tvm.apache.org/docs/install/index.html to install.\n\n## Example\n\nFor flash-attention example, see [`python/tvm/redfuser/example/flash_attention.py`](python/tvm/redfuser/example/flash_attention.py).\n\n## Structure\n\n```\nredfuser/\n├── python/tvm/redfuser/       # RedFuser Python implementation\n│   ├── transform/             # Core transformation passes\n│   └── example/               # Example workloads\n│ ...\n```\n\n## Citation\n\nIf yo"
+   }
+  ]
+ },
+ {
+  "key": "conf/cgo/MatsumuraZWEM20",
+  "title": "AN5D: automated stencil framework for high-degree temporal blocking on GPUs",
+  "venue": "CGO",
+  "year": 2020,
+  "authors": [
+   "Kazuaki Matsumura",
+   "Hamid Reza Zohouri",
+   "Mohamed Wahib",
+   "Toshio Endo",
+   "Satoshi Matsuoka"
+  ],
+  "abstract": "Stencil computation is one of the most widely-used compute patterns in high performance computing applications. Spatial and temporal blocking have been proposed to overcome the memory-bound nature of this type of computation by moving memory pressure from external memory to on-chip memory on GPUs. However, correctly implementing those optimizations while considering the complexity of the architecture and memory hierarchy of GPUs to achieve high performance is difficult. We propose AN5D, an automated stencil framework which is capable of automatically transforming and optimizing stencil patterns in a given C source code, and generating corresponding CUDA code. Parameter tuning in our framewor",
+  "candidates": [
+   {
+    "url": "https://github.com/khaki3/AN5D-Artifact",
+    "desc": "The Artifact of \"AN5D: Automated Stencil Framework for High-Degree Temporal Blocking on GPUs\"",
+    "stars": 4,
+    "readme_head": "# AN5D-Artifact\n\nThis repository provides the artifact to manifest our paper \"AN5D: Automated Stencil Framework for High-Degree Temporal Blocking on GPUs\" (to be presented at CGO 2020). We evaluated the generated code by our framework AN5D (which is available at https://github.com/khaki3/AN5D). This artifact repository (https://github.com/khaki3/AN5D-Artifact) contains the original code converted to CUDA code and all \"Tuned\" code which are evaluated for our paper.\n\nThe artifacts for \"Loop Tiling\", \"Hybrid Tiling\" and \"STENCILGEN\" code are separately presented at https://github.com/khaki3/StencilBench/tree/const and https://github.com/khaki3/IEEE2017.\n\n## Install with nvidia-docker\nWe provide Dockerfile to build a container of nvidia-docker. You would find three repositories inside the container for the artifact evaluation.\n```\n% docker build -t an5d/env .\n% docker run -it --rm --pid=host --gpus all an5d/env\n% ls | egrep 'AN5D-Artifact|StencilBench|IEEE2017'\n```\n\n## Install\n\nAt first, clone AN5D to your local machine:\n\n```\n% git clone 'https://github.com/khaki3/AN5D' && cd AN5D\n```\n\nThen, build it by following commands:\n\n```\n% ./get_submodules.sh && ./autogen.sh\n\n% CC=gcc-4.8 CXX=g++-4.8 ./configure && make && make install\n```\n\n## Evaluation\n\nFirst, clone our artifact repository:\n\n```\n% git clone 'https://github.com/khaki3/AN5D-Artifact' && cd AN5D-Artifact\n```\n\nTo execute benchmarks with Sconf configuration:\n\n```\n% ./run_sconf.sh\n```\n\nTo execute benchmarks with Tuned configur"
+   }
+  ]
+ },
+ {
+  "key": "conf/hpdc/ZhangTD0F0TC23",
+  "title": "FZ-GPU: A Fast and High-Ratio Lossy Compressor for Scientific Computing Applications on GPUs",
+  "venue": "HPDC",
+  "year": 2023,
+  "authors": [
+   "Boyuan Zhang 0002",
+   "Jiannan Tian",
+   "Sheng Di",
+   "Xiaodong Yu 0001",
+   "Yunhe Feng"
+  ],
+  "abstract": "Today's large-scale scientific applications running on high-performance computing (HPC) systems generate vast data volumes. Thus, data compression is becoming a critical technique to mitigate the storage burden and data-movement cost. However, existing lossy compressors for scientific data cannot achieve a high compression ratio and throughput simultaneously, hindering their adoption in many applications requiring fast compression, such as in-memory compression. To this end, in this work, we develop a fast and high- ratio error-bounded lossy compressor on GPUs for scientific data (called FZ-GPU). Specifically, we first design a new compression pipeline that consists of fully parallelized qua",
+  "candidates": [
+   {
+    "url": "https://github.com/szcompressor/FZ-GPU",
+    "desc": "FZ-GPU: A Fast and High-Ratio Lossy Compressor for Scientific Data on GPUs",
+    "stars": 15,
+    "readme_head": "# FZ-GPU: A Fast and High-Ratio Lossy Compressor for Scientific Data on GPUs\n\nThis software is implemented and optimized based on the [cuSZ](https://github.com/szcompressor/cuSZ) framework. Specifically, FZ-GPU modifies cuSZ's dual-quantization kernel and implements a fused kernel containing the bitshuffle operation and a new lossless encoder. Currently, FZ-GPU performs compression and decompression together, but we plan to provide options for performing compression and decompression separately in the future.\n\n(C) 2023 by Indiana University and Argonne National Laboratory.\n\n- Developers: Boyuan Zhang, Jiannan Tian\n- Contributors (alphabetic): Dingwen Tao, Franck Cappello, Sheng Di, Xiaodong Yu\n\n## Recommended Environment\n- Linux OS with NVIDIA GPUs\n- GCC (>= 7.3.0)\n- CUDA (>= 11.0)\n\n## Compile\nPlease use the following command to compile FZ-GPU. You will get the executable ```fz-gpu```.\n```\nmake -j\n```\n\n## Download Data\nPlease use ```get_sample_data.sh``` to download the sample data. More datasets can be downloaded from [SDRBench](http://sdrbench.github.io/).\n\n```\n./get_sample_data.sh\n```\n\n## Run FZ-GPU\nPlease use the below command to run ```fz-gpu``` on a float32 data.\n```\n./fz-gpu [input data path] [dimension x] [dimension y] [dimension z] [error bound]\n```\n\nFor example,\n```\n./fz-gpu cesm-CLDHGH-3600x1800 3600 1800 1 1e-3\n./fz-gpu hurr-CLOUDf48-500x500x100 500 500 100 1e-3\n```\n\nFinally, you can observe the output including compression ratio, compression/decompression end-to-"
+   }
+  ]
+ },
+ {
+  "key": "conf/hpdc/KnespelB23",
+  "title": "Rapidgzip: Parallel Decompression and Seeking in Gzip Files Using Cache Prefetching",
+  "venue": "HPDC",
+  "year": 2023,
+  "authors": [
+   "Maximilian Knespel",
+   "Holger Brunst"
+  ],
+  "abstract": "Gzip is a file compression format, which is ubiquitously used. Although a multitude of gzip implementations exist, only pugz can fully utilize current multi-core processor architectures for decompression. Yet, pugz cannot decompress arbitrary gzip files. It requires the decompressed stream to only contain byte values 9-126. In this work, we present a generalization of the parallelization scheme used by pugz that can be reliably applied to arbitrary gzip-compressed data without compromising performance. We show that the requirements on the file contents posed by pugz can be dropped by implementing an architecture based on a cache and a parallelized prefetcher. This architecture can safely han",
+  "candidates": [
+   {
+    "url": "https://github.com/mxmlnkn/rapidgzip",
+    "desc": "Gzip Decompression and Random Access for Modern Multi-Core Machines",
+    "stars": 457,
+    "readme_head": "<div align=\"center\">\n\n![](https://raw.githubusercontent.com/mxmlnkn/rapidgzip/main/python/rapidgzip/rapidgzip.svg)\n\n# Rapidgzip: Parallelized Decompression of Gzip Files with Support for Fast Random Access\n\n[![PyPI version](https://badge.fury.io/py/rapidgzip.svg)](https://badge.fury.io/py/rapidgzip)\n[![Python Version](https://img.shields.io/pypi/pyversions/rapidgzip)](https://pypi.org/project/rapidgzip/)\n[![PyPI Platforms](https://img.shields.io/badge/pypi-linux%20%7C%20macOS%20%7C%20Windows-brightgreen)](https://pypi.org/project/rapidgzip/)\n[![Downloads](https://static.pepy.tech/badge/rapidgzip/month)](https://pepy.tech/project/rapidgzip)\n<br>\n[![Changelog](https://img.shields.io/badge/Changelog-Markdown-blue)](https://github.com/mxmlnkn/rapidgzip/blob/main/CHANGELOG.md)\n[![License](https://img.shields.io/badge/license-MIT-blue.svg)](http://opensource.org/licenses/MIT)\n[![C++ Code Checks](https://github.com/mxmlnkn/rapidgzip/actions/workflows/test-python.yml/badge.svg)](https://github.com/mxmlnkn/rapidgzip/actions/workflows/test-python.yml)\n![C++17](https://img.shields.io/badge/C++-17-blue.svg)\n[![Discord](https://img.shields.io/discord/783411320354766878?label=discord)](https://discord.gg/Wra6t6akh2)\n[![Telegram](https://img.shields.io/badge/Chat-Telegram-%2330A3E6)](https://t.me/joinchat/FUdXxkXIv6c4Ib8bgaSxNg)\n\n![](https://raw.githubusercontent.com/mxmlnkn/indexed_bzip2/master/results/asciinema/rapidgzip-comparison.gif)\n\n\n</div>\n\nThis repository contains the command line "
+   }
+  ]
+ },
+ {
+  "key": "conf/ics/ElbekK26",
+  "title": "BLEST: Blazingly Efficient BFS using Tensor Cores",
+  "venue": "ICS",
+  "year": 2026,
+  "authors": [
+   "Deniz Elbek",
+   "Kamer Kaya"
+  ],
+  "abstract": "Breadth-First Search (BFS) is a fundamental graph kernel that underpins a wide range of applications. While modern GPUs provide specialised Matrix-Multiply-Accumulate (MMA) units, e.g., Tensor Cores (TC), with extremely high throughput, they target dense operations, making them non-trivial to use for irregular, unstructured graph computations. In particular, fully utilising TCs for BFS requires an efficient mapping of the edge operations onto TCs while avoiding redundancy, load imbalance, and synchronisation. We present Blest, a TC-accelerated framework that reformulates the pull-based BFS pipeline around a bitmap-oriented structure and a carefully engineered execution layout. Blest introduc",
+  "candidates": [
+   {
+    "url": "https://github.com/delbek/blest",
+    "desc": "BLEST: Blazingly Efficient BFS using Tensor Cores ",
+    "stars": 10,
+    "readme_head": "# BLEST: Blazingly Efficient BFS using Tensor Cores\n\nBLEST is a state-of-the-art library to execute Breadth First Search (BFS) on modern GPUs. Its novel data structure, combined with unprecedented compute mechanics, delivers immense performance across massive real-world graphs on massively parallel processors, making it one of the most competitive BFS frameworks ever proposed to date.\n\nPlease see the paper:\n\n```bibtex\n@article{Elbek2025BLEST,\n  title   = {BLEST: Blazingly Efficient BFS using Tensor Cores},\n  author  = {Elbek, Deniz and Kaya, Kamer},\n  journal = {arXiv preprint arXiv:2512.21967},\n  year    = {2025},\n  doi     = {10.48550/arXiv.2512.21967},\n  url     = {https://www.arxiv.org/abs/2512.21967}\n}\n```\n\n---\n\n### Hard Requirements\n\n| **Requirement** | **Minimum Version** |\n| --------------- |---------------------|\n| C++             | `20`                |\n| G++             | `12.3.0`            |\n| CMake           | `3.18`              |\n| CUDA            | `13.0`              |\n| GPU Compute Cap.| `80`                |\n| libcurl         |  -                  |\n| Linux OS        |  -                  |\n\n---\n\n## Step-by-Step Guide\n\n1. Build:\n   ```bash\n   mkdir build\n   cd build\n   cmake ..\n   make\n   ```\n\n2. Run\n   ```bash\n   ./blest -d <directory> -g <graph_name> -j <0|1> -w <window_size> -k <BFS|MBFS|Closeness|CC|WCC>\n   ```\n   Argument Explanations:\n\n   - `-d`: Absolute directory path under which your source files (ending with .txt) are located and to which BLEST w"
+   }
+  ]
+ },
+ {
+  "key": "conf/ics/LiG26",
+  "title": "Ocean: Fast Estimation-Based Sparse General Matrix-Matrix Multiplication on GPU",
+  "venue": "ICS",
+  "year": 2026,
+  "authors": [
+   "Yifan Li",
+   "Giulia Guidi"
+  ],
+  "abstract": "In computational science and data analytics, many workloads involve irregular and sparse computations that are inherently difficult to optimize for modern hardware. A key kernel is Sparse General Matrix-Matrix Multiplication (SpGEMM), which underpins simulations, graph analytics, and machine learning applications. SpGEMM exhibits irregular memory access patterns and workload imbalance, making it challenging to achieve high performance on GPUs. Current GPU SpGEMM solutions typically rely on a two-pass workflow to address load imbalance and reduce memory access. The symbolic pass, which determines the number of output elements per row, accounts for roughly 28% of the total runtime on average. ",
+  "candidates": [
+   {
+    "url": "https://github.com/CornellHPC/Ocean-SpGEMM",
+    "desc": "",
+    "stars": 6,
+    "readme_head": "# Ocean SpGEMM\n\nThis is the implementation of Ocean, a fast estimation-based SpGEMM solution on GPUs.\n\n## Citation\n\nIf you find this repo helpful to your work, please cite our article:\n\n```\n@inproceedings{li2026ocean,\n  title={Ocean: Fast Estimation-Based Sparse General Matrix-Matrix Multiplication on GPU},\n  author={Li, Yifan and Guidi, Giulia},\n  booktitle={Proceedings of the 2026 International Conference on Supercomputing (ICS '26)},\n  year={2026},\n  month={July},\n  address={Belfast, United Kingdom},\n  publisher={ACM},\n  pages={--},\n  doi={10.1145/3797905.3807868}\n}\n```\n\n## Requirement\n\n- Linux Operating System\n- NVIDIA GPUs with compute capability 8.0 or higher\n- CUDA Toolkit Version 12.4 or later\n\nThis repo has only been tested on A100 and H100. \nSince it has not been tested on other hardware, it is very likely to run into compile, configuration, or runtime errors. \nWe are working on testing it on more hardware.\n\n## Program Structure\n\n```\n.\n├── bin\n├── include\t\t\t\t\t\t\t\t\t\t\t\t# C++ header files\n│   ├── Json.hpp\n│   ├── Common.h\n│   ├── CSR.h\n│   └── Utils.h\n├── kernels\t\t\t\t\t\t\t\t\t\t\t\t# CUDA Kernels and SpGEMM main workflow file\n│   ├── AccumulatorCommon.cuh\n│   ├── AccumulatorDense.cuh\n│   ├── AccumulatorESC.cuh\n│   ├── AccumulatorHash.cuh\n│   ├── Analysis.cuh\n│   ├── DeviceCommon.cuh\n│   ├── Epilogue.cuh\n│   ├── Hashmap.cuh\n│   ├── HLL.cuh\n│   ├── MurmurHash.cuh\n│   ├── SpGEMM.cuh\n│   └── Wrappers.cuh\n├── Makefile\n├──  src\t\t\t\t\t\t\t\t\t\t\t\t# C++ Source Files and main file.\n│   ├── Ana"
+   }
+  ]
+ },
+ {
+  "key": "conf/ipps/ZeniGEDSHBOY20",
+  "title": "LOGAN: High-Performance GPU-Based X-Drop Long-Read Alignment",
+  "venue": "IPDPS",
+  "year": 2020,
+  "authors": [
+   "Alberto Zeni",
+   "Giulia Guidi",
+   "Marquita Ellis",
+   "Nan Ding 0006",
+   "Marco D. Santambrogio"
+  ],
+  "abstract": "Pairwise sequence alignment is one of the most computationally intensive kernels in genomic data analysis, accounting for more than 90% of the runtime for key bioinformatics applications. This method is particularly expensive for third-generation sequences due to the high computational cost of analyzing sequences of length between 1Kb and 1Mb. Given the quadratic overhead of exact pairwise algorithms for long alignments, the community primarily relies on approximate algorithms that search only for high-quality alignments and stop early when one is not found. In this work, we present the first GPU optimization of the popular X-drop alignment algorithm, that we named LOGAN. Results show that o",
+  "candidates": [
+   {
+    "url": "https://github.com/albertozeni/LOGAN",
+    "desc": "LOGAN: High-Performance Multi-GPU X-Drop Long-Read Alignment.",
+    "stars": 30,
+    "readme_head": "<p align=\"center\">\n  <img width=\"585\" height=\"460\" src=\"https://github.com/albertozeni/logan/blob/master/media/logan.png\">\n</p>\n\n## Introduction\n<p align=\"justify\">\nPairwise sequence alignment is one of the most computationally intensive kernels in genomic data analysis, accounting for more than 90% of the run time for key bioinformatics applications. This method is particularly expensive for third-generation sequences due to the high computational expense of analyzing these long read lengths (1Kb-1Mb). Given the quadratic overhead of exact pairwise algorithms such as Smith-Waterman, for long alignments the community primarily relies on approximate algorithms that search only for high-quality alignments and stop early when one is not found. In this work, we present the first GPU optimization of the popular X-drop alignment algorithm, named LOGAN.\n</p>\n\n## Usage\n\n### Compilation\n\nLOGAN requires CUDA 10 and C++14. To compile LOGAN simply type:\n```\nmake demo v100=true\n```\nLOGAN has been optimized to run on the NVIDIA Tesla V100 (GB), but can run on any NVIDA GPU.\nTo compile to use other GPUs simply type:\n```\nmake demo\n```\nThis command disables Tesla V100 GPU optmization flags. \nLOGAN has also been optimized to run on a specific number of GPU threads, \nbut it is capable to adapt the number of GPU threads depending on the X drop value.\nTo do so simply type:\n```\nmake demo adapt=true\n```\n### Demo\nLOGAN generates an executable called **demo**.\nTo check everything has been compiled pr"
+   }
+  ]
+ },
+ {
+  "key": "conf/ipps/RahmanSA21",
+  "title": "FusedMM: A Unified SDDMM-SpMM Kernel for Graph Embedding and Graph Neural Networks",
+  "venue": "IPDPS",
+  "year": 2021,
+  "authors": [
+   "Md. Khaledur Rahman",
+   "Majedul Haque Sujon",
+   "Ariful Azad"
+  ],
+  "abstract": "We develop a fused matrix multiplication kernel that unifies sampled dense-dense matrix multiplication and sparsedense matrix multiplication under a single operation called FusedMM. By using user-defined functions, FusedMM can capture almost all computational patterns needed by popular graph embedding and GNN approaches.FusedMM is an order of magnitude faster than its equivalent kernels in Deep Graph Library. The superior performance of FusedMM comes from the low-level vectorized kernels, a suitable load balancing scheme and an efficient utilization of the memory bandwidth. FusedMM can tune its performance using a code generator and perform equally well on Intel, AMD and ARM processors. Fuse",
+  "candidates": [
+   {
+    "url": "https://github.com/HipGraph/FusedMM",
+    "desc": "Implementation of FusedMM method for IPDPS 2021 paper titled \"FusedMM: A Unified SDDMM-SpMM Kernel for Graph Embedding and Graph Neural Networks\"",
+    "stars": 31,
+    "readme_head": "# FusedMM\n\nThis is the official implementation of FusedMM method accepted for publication in IEEE IPDPS 2021 titled \"FusedMM: A Unified SDDMM-SpMM Kernel for Graph Embedding and Graph Neural Networks\". \n\n[**PDF is available in arXiv**](https://arxiv.org/abs/2011.06391)\n\n\n## System Requirements\nUsers need to have the following software/tools installed in their PC/server. The source code was compiled and run successfully in Linux (Ubuntu and Debian distributions).\n```\nGCC version >= 4.9\nOpenMP version >= 4.5\n```\nSome helpful links can be found at [GCC](https://gcc.gnu.org/install/), [OpenMP](https://clang-omp.github.io) and [Environment Setup](http://heather.cs.ucdavis.edu/~matloff/158/ToolsInstructions.html#compile_openmp).\n\n## Compile and Run FusedMM\n\n```\n$ ./configure\n```\nIt will probe the system and generate the Makefile and necessary configuration inside kernels for generated optimized kernels. This step will generate Makefile even if it fails to detect the hardware and users will be able to update the Makefile and kernels/Make.inc manually with appropriate hardware flags.  \n\nTo build the generated library for single precision float, use \n```\n$ make\n```\nTo test FusedMM for single precision float, use \n```\n$ make test \n```\n\nCompiling step will generate all executable files inside the bin folder. To run the tester and timer with a specific kernel using FusedMM, please use the following format:\n```\n./bin/xsOptFusedMMtime_fr_pt -input dataset/harvard.mtx \n```\nThe optimized ker"
+   }
+  ]
+ },
+ {
+  "key": "conf/ppopp/BellavitaPMVG25",
+  "title": "Popcorn: Accelerating Kernel K-means on GPUs through Sparse Linear Algebra",
+  "venue": "PPoPP",
+  "year": 2025,
+  "authors": [
+   "Julian Bellavita",
+   "Thomas Pasquali",
+   "Laura Del Rio Martin",
+   "Flavio Vella",
+   "Giulia Guidi"
+  ],
+  "abstract": "K-means is a popular clustering algorithm with significant applications in numerous scientific and engineering areas. One drawback of K-means is its inability to identify non-linearly separable clusters, which may lead to inaccurate solutions in certain cases. Kernel K-means is a variant of classical K-means that can find non-linearly separable clusters. However, it scales quadratically with respect to the size of the dataset, taking several minutes to cluster even medium-sized datasets on traditional CPU-based machines.",
+  "candidates": [
+   {
+    "url": "https://github.com/HicrestLaboratory/Popcorn",
+    "desc": "",
+    "stars": 10,
+    "readme_head": "# Popcorn: Accelerating Kernel K-means on GPU using Sparse Linear Algebra\nOur [PPoPP 2025 paper](https://arxiv.org/pdf/2501.05587) introduces Popcorn, a new sparse-matrix formulation of Kernel K-means that enables an efficient, high-performance GPU implementation with minimal manual kernel engineering effort. Popcorn achieves up to 123.8× speedup over a CPU version and 2.6× over a GPU implementation that does not use sparse linear algebra.\n\n## Prerequisites\n\n### Python\nNeeded for python utils like `data_generator` and `scatter_plot`.\n\n```bash\npip install -r py_utils/requirements.txt\n```\n\n### Catch2\nUnit testing for C++.\n\n```bash\ngit clone https://github.com/catchorg/Catch2.git\n```\n\n### Data generator\nThis script can be used to generate random datasets. If attribute `-k` is specified the dataset contains clusterized points\n```bash\npython3 py_utils/data_generator.py -n 1000 -d 3 -k 4 -min 0 -max 10 -o datasets/3Dpoints.csv\n```\n\n### Plots\nThis script can be used to display results (reading csv output files).\n\n```bash\npython3 py_utils/scatter_plot.py -f 3Dpoints.csv -d 3\n```\n\n## Compile\nThese are the commands that can be used to compile GPU Kmeans.\n\n*Notice: cmake is required.*\n```bash\nmkdir -p build\ncd build\ncmake ..\ncmake --build .\n```\nThis will build the target `gpukmeans` to `build/src/bin/gpukmeans`.\n\nThis code has is provided in `scripts/build.sh` so that (from the root of the project) you can run `./scripts/build.sh` to build `gpukmeans`.\n\n### Tests\nThe target `unit_kernel"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/MatteisLH20",
+  "title": "fBLAS: streaming linear algebra on FPGA",
+  "venue": "SC",
+  "year": 2020,
+  "authors": [
+   "Tiziano De Matteis",
+   "Johannes de Fine Licht",
+   "Torsten Hoefler"
+  ],
+  "abstract": "Spatial computing architectures pose an attractive alternative to mitigate control and data movement overheads typical of load-store architectures. In practice, these devices are rarely considered in the HPC community due to the steep learning curve, low productivity, and the lack of available libraries for fundamental operations. High-level synthesis (HLS) tools are facilitating hardware programming, but optimizing for these architectures requires factoring in new transformations and resources/performance trade-offs. We present FBLAS, an open-source HLS implementation of BLAS for FPGAs, that enables reusability, portability and easy integration with existing software and hardware codes. FBL",
+  "candidates": [
+   {
+    "url": "https://github.com/spcl/FBLAS",
+    "desc": "BLAS implementation for Intel FPGA",
+    "stars": 78,
+    "readme_head": "<img align=\"left\" width=\"128\" height=\"128\" src=\"/misc/fblas_logo.png?raw=true\">\n\n# FBLAS\n\n**FBLAS** is a porting of the BLAS numerical library ([http://www.netlib.org/blas/](http://www.netlib.org/blas/)) for Intel FPGA platform. \nFor more details, see our [paper](https://arxiv.org/abs/1907.07929).\n\n&nbsp;\n\n\n## Code\n\n### Requirements\n\nThe library depends on:\n\n* Intel FPGA SDK for OpenCL pro, version 19+ ([http://fpgasoftware.intel.com/opencl/](http://fpgasoftware.intel.com/opencl/))\n* GCC (version 5+)\n* Rapidjson ([http://rapidjson.org/](http://rapidjson.org/))\n* Google Test (only for unit tests)\n* Python 3.6+\n\n### Installation\n\nAfter cloning this repository, make sure you clone the [rapidjson](http://rapidjson.org/) submodule dependency, by executing the following command:\n\n```\ngit submodule update --init\npip install -r codegen/requirements.txt\n```\n\n\n## The FBLAS library\n\n<img align=\"right\" width=\"256\" height=\"220\" src=\"/misc/fblas_design.png?raw=true\">\n\nFBLAS provides two layers of abstraction: \n\n* **HLS modules**, which can be integrated into existing hardware designs. They implement BLAS routines (`DOT`, `GEMV`, `GEMM`, etc.). Modules have been designed with compute performance in mind, exploiting the spatial parallelism and fast on-chip memory on FPGAs and have a streaming interface: data is received and produced using channels. In this way, they can be composed and communicate using on-chip resources rather than off-chip device RAM;\n\n* a high-level **Host API** conformin"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/ShibataP20",
+  "title": "SLEEF: A Portable Vectorized Library of C Standard Mathematical Functions",
+  "venue": "TPDS",
+  "year": 2020,
+  "authors": [
+   "Naoki Shibata",
+   "Francesco Petrogalli"
+  ],
+  "abstract": "In this article, we present techniques used to implement our portable vectorized library of C standard mathematical functions written entirely in C language. In order to make the library portable while maintaining good performance, intrinsic functions of vector extensions are abstracted by inline functions or preprocessor macros. We implemented the functions so that they can use sub-features of vector extensions such as fused multiply-add, mask registers, and extraction of mantissa. In order to make computation with SIMD instructions efficient, the library only uses a small number of conditional branches, and all the computation paths are vectorized. We devised a variation of the Payne-Hanek",
+  "candidates": [
+   {
+    "url": "https://github.com/shibatch/sleef",
+    "desc": "SIMD Library for Evaluating Elementary Functions, vectorized libm and DFT",
+    "stars": 837,
+    "readme_head": "== SLEEF - SIMD Library for Evaluating Elementary Functions\n\nimage:http://img.shields.io/badge/DOI-10.1109/TPDS.2019.2960333-blue.svg[TPDS, link=https://ieeexplore.ieee.org/document/8936472]\n\nSLEEF is a library that implements vectorized versions of C standard\nmath functions. This library also includes DFT subroutines.\n\n* *Web Page:* https://sleef.org/\n* *Sources:* https://github.com/shibatch/sleef\n\n\n== Supported environment\n\n=== Test matrix\n\nThe following table summarizes currently supported OSes and compilers.\n\n[cols=\"1,1,1,1,1,1,1,1,1\"]\n|===\n|        2+|Linux            4+|Windows                              2+|Mac\n|          |gcc      |llvm     |MSVC     |Clang    |MinGW    |Cygwin   |Clang    |GCC\n|x86_64    |&#x2714; |&#x2714; |&#x2714; |&#x2714; |&#x2714; |&#x2753; |&#x2714; |&#x2753;\n|AArch64   |&#x2714; |&#x2714; |&#x274c; |&#x274c; |&#x274c; |&#x274c; |&#x2714; |&#x2753;\n|=== \n\n&#x2714; : Tested on CI, &#x2753; : Not tested, &#x274c; : Not supported\n\n\n=== Support status of each vector extension\n\n[cols=\"1, 1, 1\"]\n|===\n| x86_64 | SSE2 | Experimental support, seeking sponsorship\n| x86_64 | AVX2 | Mainline support\n| x86_64 | AVX512F | Mainline support\n| AArch64 | AdvSIMD | Mainline support\n| RISC-V | RVVM1 | Unmaintained\n| RISC-V | RVVM2 | Unmaintained\n|===\n\nUnmaintained features may be removed without notice.\n\nUnmaintained features are not tested and may not build correctly.\n\n\n== How to build SLEEF\n\nThe library itself does not have any additional dependency.\n\nIn order"
+   }
+  ]
+ }
+]

@@ -1,0 +1,177 @@
+kernel: md-force
+summary: >
+  Per-timestep short-range (and, for MLIP/ReaxFF, learned/reactive) pairwise
+  force and potential-energy evaluation in classical molecular dynamics,
+  including the neighbor/cell-list construction that feeds it.
+operation: >
+  Given atom positions X[N,3], box/PBC, a cutoff r_c and a potential
+  (LJ / EAM / Tersoff+ILP / ReaxFF+QEq / MLIP neural potential), compute
+  per-atom forces F[N,3] and total potential energy E for one MD step;
+  periodically (every k_nb steps) rebuild the neighbor/cell list used to
+  restrict the O(N) pairwise search to r < r_c + skin.
+variants:
+  - id: md-force-classical-kernel-f64
+    claim: >
+      steady-state force-kernel throughput for classical empirical
+      potentials on the de facto standard LAMMPS input suite; neighbor-list
+      build reported separately (see md-force-neighbor-list-build), not
+      amortized into this number.
+    inputs:
+      suite: "LAMMPS bench/ standard inputs (github.com/lammps/lammps/tree/stable/bench)"
+      selection: >
+        all three of LAMMPS's canonical single-potential benchmarks, chosen
+        because NONE of the surveyed papers used a shared suite themselves
+        (see Divergences) — this is the closest thing to a de facto standard
+        in the wider MD-HPC community and is what the spec imposes to make
+        cross-implementation comparison possible at all.
+      recommended_subset:
+        - "in.lj — LJ melt, reduced units, rho*=0.8442, r_c=2.5 sigma, 32,000 atoms (4 replicas -> 2,048,000 for the 'large' point)"
+        - "in.eam — EAM Cu (Cu_u3.eam potential), 32,000 atoms (and 4x/32x replicated sizes for weak scaling)"
+        - "in.rhodo — rhodopsin protein in solvated lipid bilayer, 32,000 atoms, CHARMM force field + PPPM long-range electrostatics (the one input in this variant needing a k-space solve, mirroring the Ewald/PME papers in the survey)"
+      size_classes:
+        small: "32,000 atoms (single-node/single-GPU point, comparable to LMFF's case_5016 and TensorMD's Intel-node points)"
+        medium: "256,000 atoms (8x replicate)"
+        large: "2,048,000 atoms (64x replicate; weak-scaling anchor, atoms/process held fixed above this point)"
+    protocol:
+      build: "potential parameters + initial neighbor list built once, not timed"
+      warmup: 10
+      reps: 100
+      statistic: "median; report min and max alongside"
+      timer: "wall-clock around the force+energy call only (std::chrono / LAMMPS internal MPI timer 'Pair' phase)"
+      timing_scope: >
+        force + energy evaluation only; neighbor-list rebuild, I/O, and
+        thermo output excluded and reported under
+        md-force-neighbor-list-build instead. This deliberately breaks with
+        Jia et al. 2020's "loop time incl. I/O" convention (their own choice
+        was flagged as unusually generous in the survey) and follows LMFF's
+        GPTL-style phase separation instead.
+      preprocessing_reported: "potential-table setup / initial cell-list build reported once, separately"
+    metric:
+      primary: "atom-steps/s = N_atoms * (1 / median_step_time)"
+      secondary: ["timesteps/s (for direct comparison to LMFF and the Cerebras WSE paper)", "ms/step"]
+    correctness: >
+      (a) forces within 1e-5 relative L2 error vs. a reference double-precision
+      LAMMPS build on the same input (structural correctness of the ported
+      kernel); (b) NVE energy-drift < 1e-4 (relative, per-atom) over a 10,000-step
+      run at the benchmark's timestep — the classic MD correctness check that,
+      per the survey's open_questions, none of the 6 surveyed papers actually
+      reports quantitatively, so this tolerance is taken from standard LAMMPS/MD
+      practice rather than from the pool.
+  - id: md-force-mlip-kernel-f64
+    claim: >
+      steady-state force-kernel throughput for machine-learned interatomic
+      potentials (DeePMD-kit / TensorMD-style), which are 100-1000x more
+      compute-intensive per atom-step than the classical potentials above and
+      so must not be pooled with them (see Divergences).
+    inputs:
+      suite: "bulk single-element crystals at 3 sizes, mirroring the DeePMD/TensorMD papers' own systems"
+      selection: >
+        copper (fcc, EAM-lattice-equivalent geometry) and tungsten (bcc) —
+        the two elements actually reported in the surveyed MLIP papers — each
+        at 3 sizes; water (SPC/E-equivalent box) as an additional case
+        because both DeePMD papers report it and it is the one input with a
+        6 A rather than 8 A cutoff, testing the harness's cutoff-generality.
+      recommended_subset:
+        - "Cu bulk crystal, 12,288 / 128,000 / 540,000 atoms (0.54M point matches LiLGLLLYWTJ24's Fugaku Cu system)"
+        - "W bulk crystal, 6,912 / 55,296 / 552,960 atoms (matches TensorMD's Intel-node points + a 10x extrapolation)"
+        - "H2O box, 12,288 / 124,416 / 558,000 atoms (0.56M point matches LiLGLLLYWTJ24's water system; 12,288-atom point matches Jia et al. 2020's single-GPU validation case)"
+      dense_operand: "trained DeePMD-kit se_e2_a descriptor, embedding net [25,50,100] + fitting net [240,240,240], fp64 weights for the baseline variant"
+    protocol:
+      build: "network weight load + descriptor-table setup once, not timed"
+      warmup: 10
+      reps: 50
+      statistic: "median; report min and max"
+      timer: "wall-clock around the force+energy call (device-side events if GPU)"
+      timing_scope: "force + energy evaluation only, same neighbor-list exclusion as the classical variant"
+      preprocessing_reported: "network load reported once, separately"
+    metric:
+      primary: "atom-steps/s"
+      secondary: ["s/step/atom (TensorMD's own convention, for direct comparability)", "PFLOPS (Jia et al.'s convention; report the FLOP-counting formula used, since MLIP FLOP counts are not self-evident)"]
+    correctness: >
+      force RMSE < 1e-4 eV/A and energy error < 1e-5 eV/atom vs. an
+      un-optimized direct network evaluation on the same weights (matches
+      TensorMD's "static accuracy" check); additionally, for any
+      reduced-precision run, report energy/force error vs. the fp64 run of
+      THIS variant using the DeePMD papers' own error metrics (eV/atom,
+      eV/A) so precision-vs-speed tradeoffs are visible rather than folded
+      into a single headline number (the failure mode flagged for the
+      Cerebras WSE and Fugaku-DeePMD papers in Divergences).
+  - id: md-force-neighbor-list-build
+    claim: >
+      isolated neighbor/cell-list construction throughput, reported
+      separately because it is the axis every "rebuild every k steps" design
+      choice in the survey trades against, and because it was 2 of the
+      surveyed papers' actual optimization target (LMFF's SWLMFF cell list,
+      the ReaxFF Sunway neighbor-list redesign) yet none of them isolate its
+      cost from the force kernel in a reusable way.
+    inputs:
+      suite: "same atom configurations as md-force-classical-kernel-f64's 3 size classes (32K/256K/2.048M atoms), LJ-melt density"
+      selection: "reuse in.lj geometry so this variant's atom-steps/s is directly divisible against the classical-kernel variant's, giving the neighbor-fraction-of-total-time split the survey found only LMFF reports (via GPTL)"
+    protocol:
+      warmup: 10
+      reps: 100
+      statistic: "median; report min and max"
+      timer: "wall-clock around the list-build call only"
+      timing_scope: "cell-bin + Verlet-list construction only, given a skin distance; excludes force evaluation entirely"
+      rebuild_frequency_reported: >
+        report throughput at skin={1.0, 2.0} Angstrom (the two values found
+        in the survey: TensorMD's 1 A / every-5-steps and the DeePMD
+        papers' 2 A / every-50-steps) so the amortized-into-force-kernel
+        cost can be reconstructed for either convention: amortized_ns_per_atomstep
+        = build_time_per_atom / rebuild_interval.
+    metric:
+      primary: "atom-builds/s = N_atoms / median_build_time"
+      secondary: ["fraction of total per-step time (build_time / (build_time/k_nb + force_time)) at k_nb in {5, 50}, the two rebuild frequencies found in the survey"]
+    correctness: "list completeness: every true neighbor pair within r_c must appear in the built list (zero false negatives), verified against an O(N^2) reference on a <=10,000-atom subset"
+  - id: md-force-e2e-weak-scaling
+    claim: >
+      end-to-end, multi-node weak-scaling throughput including amortized
+      neighbor-list rebuild — the "Gordon-Bell-class" claim every SC paper in
+      the survey actually reports, made comparable by fixing the metric to
+      atom-steps/s (not ns/day, whose per-paper timestep-size confound is
+      documented in Divergences) and requiring the timestep and rebuild
+      interval to be stated alongside it.
+    inputs:
+      suite: "the classical- or MLIP-kernel variant's medium/large size classes, replicated to hold atoms/process fixed as node count scales (LMFF's own '-var SX n' convention)"
+      selection: >
+        atoms/process fixed at 2,000-20,000 (spans LMFF's 2.7M-atoms/process
+        weak-scaling point down through the smaller per-process sizes used by
+        the DeePMD Fugaku paper, ~0.93-0.97 atoms/core, i.e. close to 1
+        atom/core -- report both ends since the pool disagrees by 3+ orders
+        of magnitude on this ratio); node counts {1, 8, 64, full-allocation}.
+    protocol:
+      warmup: "one full k_nb-step neighbor-rebuild cycle (i.e. >= k_nb steps), not counted"
+      reps: "200 measured steps, following LMFF's convention, split into 4x50-step windows each reported separately (not just averaged) so run-to-run variance at scale is visible"
+      statistic: "median of the 4 windows per experiment, averaged over >=5 repeated experiments (LMFF's own recommended practice)"
+      timer: "LAMMPS-style phase timer or equivalent, reporting pair/neighbor/comm/output split"
+      timing_scope: >
+        full step loop INCLUDING amortized neighbor-list rebuild and
+        inter-process communication; I/O and thermo-output timing reported
+        separately from compute (unlike Jia et al. 2020, which folded I/O
+        into the headline number).
+      preprocessing_reported: "one-time domain decomposition + initial neighbor-list build reported separately, once"
+    metric:
+      primary: "atom-steps/s"
+      secondary: ["ns/day (report alongside, but ONLY together with the timestep size used, per the Divergences confound)", "parallel efficiency vs. the single-node point of the same size class"]
+    correctness: "same NVE energy-drift / force-RMSE gate as the corresponding kernel-only variant, evaluated at the largest feasible node count actually run"
+notes_on_fairness:
+  - "No surveyed paper shares a common input suite; the classical-potential and neighbor-list-build variants therefore impose the LAMMPS bench/ suite (in.lj/in.eam/in.rhodo) as the closest available de facto standard, rather than adopting any one paper's bespoke system."
+  - "ns/day is disallowed as the SOLE metric because it silently absorbs the per-system physical timestep (0.5fs water vs 1.0fs Cu vs 2fs EAM-Ta in the surveyed papers) -- atom-steps/s is required in every variant, ns/day only permitted alongside a stated timestep."
+  - "Classical empirical potentials (LJ/EAM/Tersoff/ReaxFF) and MLIP neural potentials (DeePMD/TensorMD) are split into separate variants: pooling them would let a Tersoff kernel's atom-steps/s be misread against a DeePMD kernel's, when the compute intensity differs by 100-1000x (LMFF/Cerebras-WSE vs. Jia-et-al./TensorMD in the survey)."
+  - "Neighbor-list build time is a first-class, separately reported variant instead of being silently amortized: LMFF is the only surveyed paper that reports this split at all (via GPTL); Jia et al. explicitly fold it (and I/O) into the headline loop time, which this spec's md-force-classical/mlip-kernel variants deliberately do NOT do."
+  - "Cross-precision, cross-hardware 'speedup' claims (Cerebras WSE fp32-vs-Frontier fp64; Fugaku DeePMD's 31.7x which also changes atoms/core by >8x) are explicitly out of scope for what this spec calls a valid benchmark result -- a reported number must hold precision and problem size fixed while varying only the implementation, per the correctness/error-reporting requirements in each kernel-only variant."
+  - "Repetition/statistic practice in the pool ranges from LMFF's rigorous >=5-experiment average to TensorMD/Cerebras-WSE's single-run point numbers; this spec fixes warmup+reps+median/min/max reporting for every variant rather than following any one paper's (looser) practice."
+open_questions:
+  - "Exact cutoff radii for LMFF's Tersoff/ILP potentials and the Cerebras WSE paper's Cu/W/Ta EAM potentials were not recoverable from the accessible sources; LAMMPS bench/ defaults are used as a fallback where a paper's own value is unstated."
+  - "No paper in the surveyed pool reports a quantitative NVE energy-drift tolerance; the value used in this spec (1e-4 relative, 10,000 steps) is taken from general LAMMPS/MD practice, not from the track's own literature."
+  - "OCTANE (ICS'26 Best Paper, conf/ics/ToutouniCTH26, 'Breaking the Neighbor-List Bottleneck in GPU Molecular Dynamics') is exactly on-topic for md-force-neighbor-list-build but its methodology could not be recovered (ACM DL/IEEE 403, no arXiv preprint found as of this survey)."
+  - "journals/tpds/GaoDZZSZSZGXFLY20 (ReaxFF billion-atom Sunway): only the scale/metric claim (1.36B atoms, 4.26M cores, 0.015 ns/day) was recoverable; warmup/reps/timer/precision/correctness protocol unknown (paywalled, no preprint)."
+  - "journals/tpds/ChenASGDSYCGYL26 (LJ+Tersoff on ARM Kunpeng) is the pool's one paper using textbook LJ/Tersoff potentials rather than a bespoke production system -- exactly the standard-benchmark data point this spec needed most -- but its IEEE Xplore fulltext is paywalled and only abstract-level detail was recovered, so it was not included as a fully-surveyed source."
+  - "ReaxFF's QEq charge-equilibration solve (an iterative CG coupled into every force-kernel call) is architecturally different enough from the other classical potentials that it may deserve its own variant rather than being folded into md-force-classical-kernel-f64; deferred until a ReaxFF paper's full methodology is recovered."
+evidence:
+  conf/sc/0005DGWSCMLZMLC21: "LMFF: timesteps/s explicitly preferred over ns/day; GPTL-based neighbor-vs-force phase split; >=5 repeated 200-step (4x50) experiments; 5,016 to 16.72M atoms."
+  conf/sc/JiaWCL0CEZ20: "GPU DeePMD-kit 100M-atom Gordon Bell winner: water/Cu at 6/8A cutoff, 2A skin, 50-step rebuild; 500-step loop incl. I/O; PFLOPS + ns/day at fp64/mixed32/mixed16."
+  conf/sc/OuyangC00SCL0WL25: "TensorMD: W MLIP, 1A skin/5-step rebuild, 50-step runs, s/step/atom metric, RMSE-vs-direct-NN correctness, up to 52B atoms."
+  conf/sc/SantosMOSSTKPSP24: "Cerebras WSE EAM (Cu/W/Ta), 8000-step cycle-counter timing, timesteps/s metric, no amortized neighbor list at all (every-step candidate exchange), fp32-vs-fp64-baseline precision confound."
+  conf/sc/LiLGLLLYWTJ24: "DeePMD-kit 149ns/day on Fugaku: Cu/water at 8/6A cutoff, 2A skin, 50-step rebuild, 10-step warmup + 100-step measured; ns/day headline conflates >8x atoms/core change with optimization."
+  journals/tpds/GaoDZZSZSZGXFLY20: "ReaxFF+QEq billion-atom Sunway: 1.36B atoms/4.26M cores/0.015 ns/day; neighbor-list-building redesign is a named contribution; abstract-level only."

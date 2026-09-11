@@ -1,0 +1,31 @@
+diff --git a/gpu/component/utils.cuh b/gpu/component/utils.cuh
+index 4c5bcce..1d9b71b 100644
+--- a/gpu/component/utils.cuh
++++ b/gpu/component/utils.cuh
+@@ -47,14 +47,24 @@ struct GPUGroupDim0 {
+         r = vertex[v + 1];                                                                                                                           \
+     } while (0)
+ 
+-void dev_alloc_and_copy(void **dst, size_t size, const void *src = nullptr) {
++// KernelBench integration patch (see ../../../source.patch): `static` added
++// to both of these -- neither was declared `inline`/`static` in the
++// original header, which is harmless when this header is included by only
++// ONE .cu translation unit (the artifact's own normal build) but becomes an
++// ODR violation ("multiple definition") once a second .cu file (this
++// project's gs_shim.cu, needed to launch gpu_clique.cu's own kernel from a
++// separate translation unit) also includes it and both are linked together
++// with `-rdc=true` (relocatable device code, required for gs_shim.cu to
++// reference gpu_clique.cu's __global__/__device__ symbols across TUs --
++// see build.sh). Pure linkage annotation, zero arithmetic/behavior change.
++static void dev_alloc_and_copy(void **dst, size_t size, const void *src = nullptr) {
+     gpuErrchk(cudaMalloc(dst, size));
+     if (src != nullptr) {
+         gpuErrchk(cudaMemcpy(*dst, src, size, cudaMemcpyHostToDevice));
+     }
+ }
+ 
+-__device__ int lower_bound(const uint32_t *loop_data_ptr, int loop_size, int min_vertex) {
++static __device__ int lower_bound(const uint32_t *loop_data_ptr, int loop_size, int min_vertex) {
+     int l = 0, r = loop_size - 1;
+     while (l <= r) {
+         int mid = r - ((r - l) >> 1);

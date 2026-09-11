@@ -1,0 +1,1127 @@
+[
+ {
+  "key": "conf/cgo/RohwedderHCCA23",
+  "venue": "CGO",
+  "year": 2023,
+  "title": "To Pack or Not to Pack: A Generalized Packing Analysis and Transformation",
+  "abstract": "Packing is an essential loop optimization for handcrafting a high-performance General Matrix Multiplication (GEMM). Packing copies a non-contiguous block of data to a contiguous block to reduce the number of TLB entries required to access it, avoiding expensive TLB misses. When copying data, packing can rearrange elements of the block to decrease the stride between consecutive accesses, improving spatial locality. Until now the use of packing has been limited to handcrafted GEMM implementations and to auto-tuning techniques. Existing loop optimizers, such as Polly and Pluto, either only apply packing to GEMM computations (Polly), or not at all (Pluto). This work proposes GPAT, a generalized packing analysis and code transformation that applies packing, when beneficial, to a generic input loop nest. GPAT is implemented in the Affine dialect of MLIR and evaluated on Polybench/C. GPAT applies packing to benchmarks beyond GEMM and obtains significant speedup compared to current loop optimizers that do not apply packing.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la"
+   ],
+   "kernels": [
+    "GEMM",
+    "Polybench affine kernels"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "GPAT: generalized packing loop transformation, MLIR, applied beyond GEMM to Polybench"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/ShaikhhaHH24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "A Tensor Algebra Compiler for Sparse Differentiation",
+  "abstract": "Sparse tensors are prevalent in many data-intensive applications. However, existing automatic differentiation (AD) frameworks are tailored towards dense tensors, which makes it a challenge to efficiently compute gradients through sparse tensor operations. This is due to irregular sparsity patterns that can result in substantial memory and computational overheads. We propose a novel framework that enables the efficient AD of sparse tensors. The key aspects of our work include a compilation pipeline leveraging two intermediate DSLs with AD-agnostic domain-specific optimizations followed by efficient C++ code generation. We showcase the effectiveness of our framework in terms of performance and scalability through extensive experimentation, outperforming state-of-the-art alternatives across a variety of synthetic and real-world datasets.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "sparse_la",
+    "tensor"
+   ],
+   "kernels": [
+    "sparse tensor automatic differentiation"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Tensor-algebra compiler for efficient automatic differentiation of sparse tensor ops"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/JayaweeraKWK24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "Energy-Aware Tile Size Selection for Affine Programs on GPUs",
+  "abstract": "Loop tiling is a high-order transformation used to increase data locality and performance. While previous work has considered its application to several domains and architectures, its potential impact on energy efficiency has been largely ignored. In this work, we present an Energy-Aware Tile Size Selection Scheme (EATSS) for affine programs targeting GPUs. We automatically derive non-linear integer formulations for affine programs and use the Z3 solver to find effective tile sizes that meet architectural resource constraints, while maximizing performance and minimizing energy consumption. Our approach builds on the insight that reducing the liveness of in-cache data, together with exploiting automatic power scaling, can lead to substantial gains in performance and energy efficiency. We evaluate EATSS on NVIDIA Xavier and GA100 GPUs, and report median performance-per-Watt improvement relative to PPCG on several affine kernels. On Polybench kernels, we achieve 1.5 × and 1.2 × improvement and obtain up to 6.3 × improvement on non-Polybench high-dimensional affine kernels.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la",
+    "stencil_pde"
+   ],
+   "kernels": [
+    "Polybench affine kernels"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "EATSS: Z3-based energy-aware GPU tile-size selection, gains over PPCG on Polybench kernels"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/CruysseD24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "Latent Idiom Recognition for a Minimalist Functional Array Language Using Equality Saturation",
+  "abstract": "Accelerating programs is typically done by recognizing code idioms matching high-performance libraries or hardware interfaces. However, recognizing such idioms automatically is challenging. The idiom recognition machinery is difficult to write and requires expert knowledge. In addition, slight variations in the input program might hide the idiom and defeat the recognizer. This paper advocates for the use of a minimalist functional array language supporting a small, but expressive, set of operators. The minimalist design leads to a tiny sets of rewrite rules, which encode the language semantics. Crucially, the same minimalist language is also used to encode idioms. This removes the need for hand-crafted analysis passes, or for having to learn a complex domain-specific language to define the idioms. Coupled with equality saturation, this approach is able to match the core functions from the BLAS and PyTorch libraries on a set of computational kernels. Compared to reference C kernel implementations, the approach produces a geometric mean speedup of 1.46× for C programs using BLAS, when generating such programs from the high-level minimalist language.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la"
+   ],
+   "kernels": [
+    "BLAS kernels"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Equality-saturation idiom recognition mapping array-language code to BLAS/PyTorch kernels"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/CicoliniCSC24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "One Automaton to Rule Them All: Beyond Multiple Regular Expressions Execution",
+  "abstract": "Regular Expressions (REs) matching is crucial to identify strings exhibiting certain morphological properties in a data stream, resulting paramount in contexts such as deep packet inspection in computer security and genome analysis in bioinformatics. Yet, due to their intrinsic data-dependence characteristics, REs represent a complex computational kernel, and numerous solutions investigate pattern-matching efficiency in different directions. However, most of them lack a comprehensive ruleset optimization approach to truly push the pattern matching performance when considering multiple REs together. Thus, exploiting REs morphological similarities within the same dataset allows memory reduction when storing the patterns and drastically improves the dataset-matching throughput. Based on this observation, we propose the Multi-RE Finite State Automata (MFSA) that extends the Finite State Automata (FSA) model to improve REs parallelization by leveraging similarities within a specific application ruleset. We design a multi-level compilation framework to manage REs merging and optimization to produce MFSA(s). Furthermore, we extend iNFAnt algorithm for MFSAs execution with the novel iMFAnt engine. Our evaluation investigates the MFSA size-reduction impact and the execution throughput compared with the one of multiple FSA in both single-and multi-threaded configurations. This approach shows an average 71.95% compression in terms of states, introducing limited compilation time overhead. Besides, best iMFAnt achieves a geomean <tex xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">$5.99\\times$</tex> throughput improvement and <tex xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">$4.05\\times$</tex> speedup against single and multiple parallel FSAs.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "regex matching (FSA execution)"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "MFSA merges multi-regex automata; ~6x matching throughput vs multiple parallel FSAs"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/ConsolaroZRLTSAZBAB24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "PolyTOPS: Reconfigurable and Flexible Polyhedral Scheduler",
+  "abstract": "Polyhedral techniques have been widely used for automatic code optimization in low-level compilers and higher-level processes. Loop optimization is central to this technique, and several polyhedral schedulers like Feautrier, Pluto, isl and Tensor Scheduler have been proposed, each of them targeting a different architecture, parallelism model, or application scenario. The need for scenario-specific optimization is growing due to the heterogeneity of architectures. One of the most critical cases is represented by NPUs (Neural Processing Units) used for AI, which may require loop optimization with different objectives. Another factor to be considered is the framework or compiler in which polyhedral optimization takes place. Different scenarios, depending on the target architecture, compilation environment, and application domain, may require different kinds of optimization to best exploit the architecture feature set. We introduce a new configurable polyhedral scheduler, PolyTOPS, that can be adjusted to various scenarios with straightforward, high-level configurations. This scheduler allows the creation of diverse scheduling strategies that can be both scenario-specific (like state-of-the-art schedulers) and kernel-specific, breaking the concept of a one-size-fits-all scheduler approach. PolyTOPS has been used with isl and CLooG as code generators and has been integrated in MindSpore AKG deep learning compiler. Experimental results in different scenarios show good performance: a geomean speedup of 7.66x on MindSpore (for the NPU Ascend architecture) hybrid custom operators over isl scheduling, a geomean speedup up to 1.80× on PolyBench on different multicore architectures over Pluto scheduling. Finally, some comparisons with different state-of-the-art tools are presented in the PolyMage scenario.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la"
+   ],
+   "kernels": [
+    "Polybench kernels",
+    "NPU custom AI operators"
+   ],
+   "platform": [
+    "cpu",
+    "other"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "low",
+   "one_liner": "PolyTOPS: reconfigurable polyhedral scheduler, speedups on Polybench and NPU AI kernels"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/IvanovZDEM24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "Retargeting and Respecializing GPU Workloads for Performance Portability",
+  "abstract": "In order to come close to peak performance, accelerators like GPUs require significant architecture-specific tuning that understand the availability of shared memory, parallelism, tensor cores, etc. Unfortunately, the pursuit of higher performance and lower costs have led to a significant diversification of architecture designs, even from the same vendor. This creates the need for performance portability across different GPUs, especially important for programs in a particular programming model with a certain architecture in mind. Even when the program can be seamlessly executed on a different architecture, it may suffer a performance penalty due to it not being sized appropriately to the available hardware resources such as fast memory and registers, let alone not using newer advanced features of the architecture. We propose a new approach to improving performance of (legacy) CUDA programs for modern machines by automatically adjusting the amount of work each parallel thread does, and the amount of memory and register resources it requires. By operating within the MLIR compiler infrastructure, we are able to also target AMD GPUs by performing automatic translation from CUDA and simultaneously adjust the program granularity to fit the size of target GPUs. Combined with autotuning assisted by the platform-specific compiler, our approach demonstrates 27% geomean speedup on the Rodinia benchmark suite over baseline CUDA implementation as well as performance parity between similar NVIDIA and AMD GPUs executing the same CUDA program.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "stencil_pde",
+    "graph",
+    "dense_la"
+   ],
+   "kernels": [
+    "Rodinia benchmark kernels (BFS, hotspot, LUD, etc.)"
+   ],
+   "platform": [
+    "nvidia-gpu",
+    "amd-gpu"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "MLIR-based CUDA-to-AMD retargeting with granularity autotuning, 27% geomean on Rodinia"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/SwannOSM24",
+  "venue": "CGO",
+  "year": 2024,
+  "title": "Seer: Predictive Runtime Kernel Selection for Irregular Problems",
+  "abstract": "Modern GPUs are designed for regular problems and suffer from load imbalance when processing irregular data. Prior to our work, a domain expert selects the best kernel to map fine-grained irregular parallelism to a GPU. We instead propose Seer, an abstraction for producing a simple, reproduceable, and understandable decision tree selector model which performs runtime kernel selection for irregular workloads. To showcase our framework, we conduct a case study in Sparse Matrix Vector Multiplication (SpMV), in which Seer predicts the best strategy for a given dataset with an improvement of 2× over the best single iteration kernel across the entire SuiteSparse Matrix Collection dataset.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "sparse_la"
+   ],
+   "kernels": [
+    "SpMV"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Seer: learned decision-tree runtime SpMV kernel selector, 2x over best single kernel"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/LopoukhineFVLDD25",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "A Multi-level Compiler Backend for Accelerated Micro-kernels Targeting RISC-V ISA Extensions",
+  "abstract": "High-performance micro-kernels must fully exploit today’s diverse and specialized hardware to deliver peak performance to deep neural networks (DNNs). While higher-level optimizations for DNNs are offered by numerous compilers (e.g., MLIR, TVM, OpenXLA), performance-critical micro-kernels are left to specialized code generators or handwritten assembly. Even though widely-adopted compilers (e.g., LLVM, GCC) offer tuned backends, their CPU-focused input abstraction, unstructured intermediate representation (IR) and general-purpose best-effort design inhibit tailored code generation for innovative hardware. We think it is time to widen the classical hourglass backend and embrace progressive lowering across a diverse set of structured abstractions to bring domain-specific code generation to compiler backends. We demonstrate this concept by implementing a custom backend for a RISC-V-based accelerator with hardware loops and streaming registers, leveraging knowledge about the hardware at levels of abstraction that match its custom instruction set architecture (ISA). We use incremental register allocation over structured IRs, while dropping classical spilling heuristics, and show up to 90% floating-point unit (FPU) utilization across key DNN kernels. By breaking the backend hourglass model, we reopen the path from domain-specific abstractions to specialized hardware.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la",
+    "ml_kernels"
+   ],
+   "kernels": [
+    "DNN micro-kernels"
+   ],
+   "platform": [
+    "other"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "MLIR compiler backend generating DNN micro-kernels for RISC-V streaming-register accelerator"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/HoffmannFGLP25",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "Automatic Synthesis of Specialized Hash Functions",
+  "abstract": "This paper introduces a technique for synthesizing hash functions specialized to particular byte formats. This code generation method leverages three prevalent patterns: (i) fixed-length keys, (ii) keys with common subsequences, and (iii) keys ranging on predetermined sequences of bytes. Code generation involves two algorithms: one identifies relevant regular expressions within key examples, and the other generates specialized hash functions based on these expressions. Comparative analysis demonstrates that the synthetic functions outperform the general-purpose hashes in the C++ Standard Template Library and the Google Abseil Library when keys are given in ascending, normal or uniform distribution. In applications where low-mixing hashes are acceptable, the synthetic functions achieve speedups ranging from 2% to 11% on full benchmarks, and speedups of almost 50x once only hashing speed is considered.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "hash function"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Synthesizes specialized hash functions from key-format patterns, faster than STL/Abseil"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/LeeY025",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "CUrator: An Efficient LLM Execution Engine with Optimized Integration of CUDA Libraries",
+  "abstract": "Large Language Models (LLMs) have recently emerged as a state-of-the-art learning model with a wide range of applications in diverse computing environments. Among the various computational operations that comprise the LLM, the GEneral Matrix Multiplication (GEMM) operation is the most frequently utilized operation within the LLM. GEMM libraries such as cuBLAS and CUTLASS provide a variety of optimization techniques to achieve optimal GEMM performance in GPU-enabled computing environments. In particular, the CUTLASS open-source library for GPUs within the CUDA programming environment provides users with the capability to optimize templates for high performance. Previous research has demonstrated the effectiveness of CUTLASS-based GEMMs in improving the performance of real-world deep neural networks on various deep learning platforms. However, these studies have not considered different model parameters for modern LLMs nor have they explored the impact of diverse GPU computing environments. This paper presents CUrator, an efficient LLM execution engine that can achieve optimal end-to-end LLM performance using both cuBLAS and CUTLASS libraries on different GPUs for modern LLMs such as BERT, GPT, and Llama. CUrator first generates CUTLASS-/cuBLAS-friendly graph IRs of various LLMs on the TVM framework to maximize mapping coverage. On the CUTLASS mapping path, it performs a comprehensive search for programmable tuning parameters in the CUTLASS library with the objective of deriving optimal kernels for all GEMMs within each LLM. CUrator further introduces two optimization techniques: 1) build-time reduction key initialization support for CUTLASS Split-K GEMMs, and 2) Split-K support for CUTLASS Batch GEMMs. Finally, CUrator selects the best performing mapping path between cuBLAS and CUTLASS paths. The experimental results show that CUrator achieves inference speedups of 1.50× and 4.99×, respectively, for representative LLMs on the A100 GPU in the single and half precision, compared to the baseline. We strongly believe that the CUrator framework can provide the best direction for next-generation tuning frameworks by showing the maximum end-to-end performance of various LLMs on various GPUs.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la",
+    "ml_kernels"
+   ],
+   "kernels": [
+    "GEMM",
+    "Split-K GEMM"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "CUrator: autotuned cuBLAS/CUTLASS GEMM (incl. new Split-K support) selection for LLMs"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/SomainiCASC25",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "Combining MLIR Dialects with Domain-Specific Architecture for Efficient Regular Expression Matching",
+  "abstract": "Pattern matching based on Regular Expressions (REs) is a pervasive and challenging computational kernel used in several applications to identify critical information in a data stream. Due to the sequential data dependency of REs and the increasing data volume growth, hardware acceleration is gaining attention to address the limitation of general-purpose architectures. RE-oriented Domain-Specific Architectures (DSAs) combine the flexibility of translating REs into binary code with the efficiency of a specialized architecture, filling the gap between frozen hardware accelerators and the versatility of CPUs/GPUs. However, existing DSAs focus mainly on the efficiency execution challenge while missing the optimization opportunities that a structured compilation infrastructure can provide. This paper proposes a RE-tailored multi-level intermediate representation strategy embodied by the MLIR framework at the compiler level to exploit different abstraction optimizations via two domain-specific dialects, one targeting the abstract representation of REs and the other targeting the underlying domain-specific ISA. Moreover, this paper proposes a novel architectural organization of an open-source state-of-the-art DSA to maximize the parallelization capabilities. Overall, the proposed approach significantly improves execution time by up to 2.26×, energy efficiency by up to 2.30×, and resource usage.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "regex matching"
+   ],
+   "platform": [
+    "other"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "low",
+   "one_liner": "MLIR dialects generate regex-matching code targeting a domain-specific architecture"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/HeY25",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "CuAsmRL: Optimizing GPU SASS Schedules via Deep Reinforcement Learning",
+  "abstract": "Large language models (LLMs) are remarked by their substantial computational requirements. To mitigate the cost, researchers develop specialized CUDA kernels, which often fuse several tensor operations to maximize the utilization of GPUs as much as possible. However, those specialized kernels may still leave performance on the table as CUDA assembly experts show that manual optimization of GPU SASS schedules can lead to better performance, and trial-and-error is largely employed to manually find the best GPU SASS schedules. In this work, we employ an automatic approach to optimize GPU SASS schedules, which thus can be integrated into existing compiler frameworks. The key to automatic optimization is training an RL agent to mimic how human experts perform manual scheduling. To this end, we formulate an assembly game, where RL agents can play to find the best GPU SASS schedules. The assembly game starts from a -O3 optimized SASS schedule, and the RL agents can iteratively apply actions to mutate the current schedules. Positive rewards are generated if the mutated schedules get higher throughput by executing on GPUs. Experiments show that CuAsmRL can further improve the performance of existing specialized CUDA kernels transparently by up to 26%, and on average 9%. Moreover, it is used as a tool to reveal potential optimization moves learned automatically",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels"
+   ],
+   "kernels": [
+    "GPU SASS instruction scheduling for fused tensor kernels"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "CuAsmRL: RL-optimized GPU SASS instruction scheduling, up to 26% over specialized kernels"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/TanejaLYML25",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "LLM-Vectorizer: LLM-Based Verified Loop Vectorizer",
+  "abstract": "Vectorization is a powerful optimization technique that significantly boosts the performance of high performance computing applications operating on large data arrays. Despite decades of research on auto-vectorization, compilers frequently miss opportunities to vectorize code. On the other hand, writing vectorized code manually using compiler intrinsics is still a complex, error-prone task that demands deep knowledge of specific architecture and compilers. In this paper, we evaluate the potential of large-language models (LLMs) to generate vectorized (Single Instruction Multiple Data) code from scalar programs that process individual array elements. We propose a novel finite-state-machine multi-agents based approach that harnesses LLMs and test-based feedback to generate vectorized code. Our findings indicate that LLMs are capable of producing high-performance vectorized code with run-time speedup ranging from 1.1x to 9.4x as compared to the state-of-the-art compilers such as Intel Compiler, GCC, and Clang. To verify the correctness of vectorized code, we use Alive2, a leading bounded translation validation tool for LLVM IR. We describe a few domain-specific techniques to improve the scalability of Alive2 on our benchmark dataset. Overall, our approach is able to verify 38.2% of vectorizations as correct on the TSVC benchmark dataset.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "SIMD loop vectorization (TSVC kernels)"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "LLM-Vectorizer: verified LLM-generated SIMD code, up to 9.4x over Intel/GCC/Clang"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/TarabkhahDDS25",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "Synthesis of Quantum Simulators by Compilation",
+  "abstract": "Quantum simulation plays a critical role in advancing our understanding and development of quantum algorithms, quantum computing hardware, and quantum information science. Despite the availability of various quantum circuit simulators, they often face challenges in terms of maintainability and extensibility. In this paper, we introduce Lightweight Functional Quantum Simulator (LFQS), a compilation-based framework that addresses these issues by leveraging an intermediate language to synthesize efficient quantum simulators in C and CUDA. The intermediate language exploits the underlying structured sparsity behind the matrix representation of quantum gates. Our framework generates efficient code for multi-core CPUs and GPUs and outperforms state-of-the-art simulators, such as Qiskit, Catalyst, and QuEST, as well as a representative of dense tensor frameworks, NumPy, in both micro-benchmark and macro-benchmark circuits.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "tensor",
+    "dense_la"
+   ],
+   "kernels": [
+    "quantum gate matrix simulation kernels"
+   ],
+   "platform": [
+    "cpu",
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "LFQS compiles quantum circuit simulators to C/CUDA exploiting gate-matrix sparsity, beats Qiskit/QuEST"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/MoghaddasiSSN25",
+  "venue": "CGO",
+  "year": 2025,
+  "title": "Vectron: A Dynamic Programming Auto-vectorization Framework",
+  "abstract": "Dynamic programming (DP) is a fundamental algorithmic strategy that decomposes large problems into manageable subproblems. It is a cornerstone of many important computational methods in diverse fields, especially in the field of computational genomics, where it is used for sequence comparison. However, as the scale of the data keeps increasing, these algorithms are becoming a major computational bottleneck, and there is a need for strategies that can improve their performance. Here, we present Vectron, a novel auto-vectorization suite that targets array-based DP implementations written in Python and converts them to efficient vectorized counterparts that can efficiently process multiple problem instances in parallel. Leveraging Single Instruction Multiple Data (SIMD) capabilities in modern CPUs, along with Graphics Processing Units (GPUs), Vectron delivers significant speedups, ranging from 10% to more than 20x, over the conventional C++ implementations and manually vectorized and domain-specific state-of-the-art implementations, without necessitating large algorithm or code changes. Vectron's generality enables automatic vectorization of any array-based DP algorithm and, as a result, presents an attractive solution to optimization challenges inherent to DP algorithms.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "dynamic programming / sequence alignment"
+   ],
+   "platform": [
+    "cpu",
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Vectron auto-vectorizes array-based DP kernels (e.g. sequence alignment) for SIMD/GPU, up to 20x"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/AlladiRJ26",
+  "venue": "CGO",
+  "year": 2026,
+  "title": "Enabling Automatic Compiler-Driven Vectorization of Transformers",
+  "abstract": "Compiling neural networks and Transformers for edge devices faces significant challenges due to resource constraints and the reliance on manually optimized operations for performance among others. These limitations hinder the scalability and portability of neural networks on resource-constrained platforms, such as edge devices utilizing the RISC-V ecosystem. Addressing these issues, this paper introduces innovative techniques to overcome the inefficiencies of current compilation methods and reduce dependence on manual optimizations.This work proposes a novel compilation flow, ONNX- MLIR-LLVM (OML), which leverages MLIR and LLVM IR to enable automatic optimizations and generate stand-alone RISC-V binaries. Through comprehensive analysis, we identify key barriers preventing the auto-vectorizer from handling vectorization-friendly operators, particularly reduction operations and vectorization-unfriendly data layouts. We address these through a versatile MLIR reduction detection pass and a compile-time transpose pass, respectively.Our automatic transformations (OML-vect) unlock the capabilities of the MLIR affine super-vectorizer, reducing reliance on manual vectorization. Evaluations on both x86 and RISC-V across eight neural networks and Transformer models demonstrate that automatic vectorization via OML-vect achieves, on average, 5% and 59% on x86 and RISC-V, respectively, compared to baseline (manually vectorized libraries), offering an efficient and portable solution for edge device deployments.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels",
+    "primitives"
+   ],
+   "kernels": [
+    "reduction",
+    "transpose",
+    "transformer ops"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "MLIR passes auto-vectorize Transformer reduction/transpose ops for RISC-V, beating manual libs by 59%"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/YanRGBK26",
+  "venue": "CGO",
+  "year": 2026,
+  "title": "Fast Autoscheduling for Sparse ML Frameworks",
+  "abstract": "The rapid growth in the size of deep learning models strains the capabilities of dense computation paradigms. Leveraging sparse computation has become increasingly popular for training and deploying large-scale models, but existing deep learning frameworks lack extensive support for sparse operations. Current approaches either require manual scheduling expertise or rely on exhaustive search taking hours to days, which are both incompatible with the interactive development essential to machine learning research. We present three algorithmic contributions that enable fast, automatic optimization of sparse tensor computations. First, we develop a heuristic-based loop ordering algorithm that avoids asymptotic performance cliffs while compiling in milliseconds rather than hours. Second, we introduce a tiling algorithm specialized for mixed sparse-dense computations that achieves performance comparable to hand-optimized kernels. Third, we present a format inference algorithm that automatically selects appropriate sparse tensor formats for intermediate and output tensors based on operation semantics. These algorithms are grounded in the computational properties of sparse tensor algebra, making them predictable and robust across diverse workloads. We implement these techniques in Scorch, a prototype sparse tensor compiler for PyTorch that demonstrates their practical effectiveness. With only minimal code changes, our approach achieves 1.05–5.80× speedups over PyTorch Sparse on end-to-end tasks including graph neural networks, sparse autoencoders, and sparse transformers, with compilation times fast enough for interactive ML development.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "sparse_la",
+    "tensor",
+    "ml_kernels"
+   ],
+   "kernels": [
+    "sparse-dense tensor ops",
+    "SpMM"
+   ],
+   "platform": [
+    "other"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Scorch autoschedules sparse tensor loop order/tiling/format for PyTorch, matching hand-tuned kernels"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/LenadoraSGYTM26",
+  "venue": "CGO",
+  "year": 2026,
+  "title": "GRANII: Selection and Ordering of Primitives in GRAph Neural Networks using Input Inspection",
+  "abstract": "Over the years, many frameworks and optimization techniques have been proposed to accelerate graph neural networks (GNNs). In contrast to the optimizations explored in these systems, we observe that different matrix re-associations of GNN computations lead to novel input-sensitive performance behavior. We leverage this observation to propose GRANII, a system that exposes different compositions of sparse and dense matrix primitives based on different matrix re-associations of GNN computations and selects the best among them based on input attributes. GRANII executes in two stages: (1) an offline compilation stage that enumerates all valid re-associations leading to different sparse-dense matrix compositions and uses input-oblivious pruning techniques to prune away clearly unprofitable candidates, and (2) an online runtime system that explores the remaining candidates and uses lightweight cost models to select the best re-association based on the input graph and the embedding sizes. On a wide range of configurations, GRANII achieves a geo-mean speedup of 1.56× for inference and 1.4× for training across multiple GNN models and systems. We also show GRANII’s technique functions on diverse implementations and with techniques such as sampling.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "sparse_la",
+    "ml_kernels"
+   ],
+   "kernels": [
+    "SpMM",
+    "SDDMM (GNN sparse/dense compositions)"
+   ],
+   "platform": [
+    "other"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "GRANII selects best sparse/dense matrix-primitive composition for GNN ops by input, 1.4-1.56x speedup"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/AnaniasSAP26",
+  "venue": "CGO",
+  "year": 2026,
+  "title": "Multidirectional Propagation of Sparsity Information across Tensor Slices",
+  "abstract": "A computational graph in a tensor compiler represents a program as a set of kernels connected by edges that describe how tensors flow between them. Tensors may be dense or sparse, the latter storing only nonzero values. Recognizing sparsity allows the compiler to avoid redundant computation and reduce memory usage. This paper introduces Sparsity Propagation Analysis (SPA), a static analysis that conservatively infers sparsity in tensor slices: sets of tensor elements that share a fixed subset of indices. SPA estimates which slices can be treated as zero, via forward, backward, and lateral propagation of sparsity information. SPA applies to tensors of arbitrary dimension and to operators defined over general semirings (e.g., addition and multiplication, MAX and MIN, logical AND and OR). Its runtime grows with the number of slices rather than the number of elements, making it asymptotically faster than executing even a single iteration of the graph. We implement SPA in the Tensor Algebra Compiler (TACO) and evaluate it on benchmarks from the Einsum Collection. Results indicate that multidirectional propagation increases the precision of the sparsity analysis, reduces memory consumption, and enables optimizations that improve runtime performance.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "tensor",
+    "sparse_la"
+   ],
+   "kernels": [
+    "einsum / tensor contraction"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "SPA static analysis in TACO propagates sparsity across tensor slices, cutting memory and runtime"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/MuLCX26",
+  "venue": "CGO",
+  "year": 2026,
+  "title": "PriTran: Privacy-Preserving Inference for Transformer-Based Language Models under Fully Homomorphic Encryption",
+  "abstract": "Transformer-based language models power many cloud services, but inference on sensitive data raises confidentiality concerns. Fully Homomorphic Encryption (FHE) enables computation on encrypted inputs while preserving privacy, but at high computational cost, making Transformers difficult to deploy. This paper presents PriTran, an efficient CKKS-based library for privacy-preserving Transformer inference on CPUs. Complementing the only prior work, RoLe, which supports only Bert<inf xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">tiny</inf> (2 encoders), PriTran introduces two novel algorithms with optimized data layouts that accelerate ciphertext–plaintext (CP) and ciphertext–ciphertext (CC) matrix multiplications (MMs) across all Bert models by reducing costly rotations and multiplications. On the MNLI dataset, RoLe fails on inputs longer than 36 tokens within a 5-hour per-token budget, while PriTran achieves average speedups of 29.3% and 22.2% for CP- and CC-MMs, respectively, and 24.1% end-to-end. We further evaluate PriTran on scaled Bert<inf xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">tiny</inf> variants with additional encoders and on Bert<inf xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">mini</inf> (4 encoders), demonstrating correctness and scalability beyond RoLe’s limits. Within current FHE limits, these gains and RoLe’s failure on longer inputs underscore PriTran’s promise as a practical approach for FHE-based Transformer inference.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la"
+   ],
+   "kernels": [
+    "ciphertext-plaintext matmul",
+    "ciphertext-ciphertext matmul"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "PriTran: new algorithms/data layouts speed up CKKS ciphertext matrix-multiply kernels for BERT by ~25%"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/ZhangGAA26",
+  "venue": "CGO",
+  "year": 2026,
+  "title": "Pushing Tensor Accelerators beyond MatMul in a User-Schedulable Language",
+  "abstract": "Tensor accelerators now represent a growing share of compute resources in modern CPUs and GPUs. However, they are hard to program, leading developers to use vendor-provided kernel libraries that support tensor accelerators. As a result, the usage of tensor accelerators is limited to the provided interface, mainly designed for traditional ML and scientific computing workloads.In this paper, we show that tensor accelerators can improve the performance of applications beyond simple variants of MatMul. For example, many image processing pipelines are linear transformations over matrices in disguise and can therefore utilize such specialized hardware. This is nonetheless hindered by the difficulties in programming tensor accelerators. We tackle this problem with compiler-based techniques. We use the Halide user-schedulable language and express operations as Halide algorithms succinctly. To this end, we implement a flexible tensor instruction selector based on equality saturation. The tensor instruction selector supports both CPU- and GPU-attached tensor accelerators and works with existing scheduling operations (e.g., producer-consumer fusion). Together, this enables developers to write diverse accelerator-leveraging applications in a few dozen lines.Using our system, we demonstrate the potential of tensor accelerators beyond their traditional domains. We implement several image processing pipelines (e.g., filtering, resampling, and denoising) in our system and evaluate them against non-accelerator-leveraging baselines. We show that these pipelines can achieve significant speedups. For example, a downsampling routine is sped up by 6.1× by utilizing Tensor Cores on an Nvidia RTX 4070 GPU.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la"
+   ],
+   "kernels": [
+    "image filtering/downsampling via Tensor Cores"
+   ],
+   "platform": [
+    "nvidia-gpu",
+    "cpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Halide-based compiler maps non-MatMul image pipelines onto tensor accelerators, 6.1x on downsampling"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/YunCKCJLLK26",
+  "venue": "CGO",
+  "year": 2026,
+  "title": "Selene: Cross-Level Barrier-Free Pipelining for Irregular Nested Loops in High-Level Synthesis",
+  "abstract": "The growing demand for domain-specific accelerators in fields such as machine learning, graph analytics, and scientific computing has highlighted the need for productive and efficient hardware design methodologies. High-level synthesis (HLS) offers an attractive solution by generating hardware from high-level code, with loop pipelining as a cornerstone for maximizing throughput in regular computations. However, existing static and dynamic HLS approaches fail to achieve high pipeline utilization for irregular loop nests characterized by data-dependent bounds, unpredictable memory access patterns, and loop-carried dependencies.To address the pipeline underutilization in irregular loop, this work proposes a new barrier-free pipeline architecture with a cross-level scheduling strategy and the corresponding HLS compiler Selene, that automatically synthesizes the proposed architecture. Our approach introduces a fine-grained pipeline controller and an outer-loop iteration interleaving mechanism, enabling concurrent execution of multiple outer-loop iterations and efficient handling of data dependencies. Implemented within a commercial HLS flow, Vitis HLS, Selene delivers significant speedups of 4.74× and 5.46× over both standard static and dynamic HLS tools on a range of irregular workload benchmarks, demonstrating its effectiveness in overcoming challenges to efficient hardware generation for data-dependent applications.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "irregular nested-loop / graph kernels"
+   ],
+   "platform": [
+    "fpga"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Selene HLS compiler adds barrier-free pipelining for irregular loops, 4.7-5.5x over static/dynamic HLS"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/ZhangWLS26",
+  "venue": "CGO",
+  "year": 2026,
+  "title": "SparseX: Synergizing GPU Libraries for Sparse Matrix Multiplication on Heterogeneous Processors",
+  "abstract": "Sparse Matrix-Matrix Multiplication (SpMM) on GPU is critical to applications ranging from scientific simulations to Graph Neural Networks (GNNs) and Deep Neural Networks (DNNs). Modern GPUs offer diverse processing units, such as CUDA cores, Tensor Cores, and Sparse Tensor Cores. Many SpMM libraries have been built to harness those different types of processors. Although impressive performance has been reported by each, including cuSparse, Sputnik, CLASP, and Jigsaw, a systematic study in this work shows that no single library is a clear winner across all matrices and scenarios. Based on the empirical observations, this work proposes the first solution to synergize the various libraries to best harness the heterogeneous processors and the array of cutting-edge libraries. The solution is an extensible framework, namely SparseX, that can automatically select the best matrix multiplication library (and types of processors) on the fly for a given sparse matrix on a GPU through an agile accurate predictive model. Experiments show that SparseX can speed up sparse matrix multiplications on thousands of real-world matrices significantly over the SOTA GPU libraries, achieving significant speedups (e.g., as much as 95.34x over cuSparse). Its extensible design makes it easy to be extended to cover new libraries and hardware architectures.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "sparse_la",
+    "ml_kernels"
+   ],
+   "kernels": [
+    "SpMM"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "SparseX predicts best GPU SpMM library/processor per matrix, up to 95x over cuSparse"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/BrauckmannCMPO26",
+  "venue": "CGO",
+  "year": 2026,
+  "title": "Tensor Program Superoptimization through Cost-Guided Symbolic Program Synthesis",
+  "abstract": "Modern tensor compiler frameworks like JAX and PyTorch accelerate numerical programs by compiling or mapping Domain-Specific Language (DSL) code to efficient executables. However, they rely on a fixed set of transformation rules and heuristics, which means they can miss profitable optimization opportunities. This leaves significant optimization potential unused for programs that fall outside these fixed patterns.This paper presents STENSO, a tensor DSL program superoptimizer that discovers such missing rewrites. STENSO’s core is a symbolic program synthesis based search algorithm that systematically explores the space of equivalent programs. By combining symbolic execution and sketch-based program synthesis, it generates equivalent candidate implementations. To make the search computationally tractable, STENSO further integrates a cost model with a branch-and-bound algorithm scheme. This effectively prunes the search space, arriving at optimal solutions in a reasonable time.We evaluate STENSO on over 30 benchmarks. The discovered programs achieve geometric mean speedups of 3.8x over NumPy and 1.6x over state-of-the-art compilers like JAX and PyTorch-Inductor. These results underscore the limitations of heuristic-based compilation and demonstrate STENSO’s effectiveness in finding such optimizations automatically.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "tensor"
+   ],
+   "kernels": [
+    "tensor programs"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Symbolic superoptimizer for tensor DSL programs; 3.8x over NumPy, 1.6x over JAX/PyTorch-Inductor"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/MuWLYLZ20",
+  "venue": "DAC",
+  "year": 2020,
+  "title": "A History-Based Auto-Tuning Framework for Fast and High-Performance DNN Design on GPU",
+  "abstract": "While Deep Neural Networks (DNNs) are becoming increasingly popular, there is a growing trend to accelerate the DNN applications on hardware platforms like GPUs, FPGAs, etc., to gain higher performance and efficiency. However, it is time-consuming to tune the performance for such platforms due to the large design space and the expensive cost to evaluate each design point. Although many tuning algorithms, such as XGBoost tuner and genetic algorithm (GA) tuner, have been proposed to guide the design space exploring process in the previous work, the timing issue still remains a critical problem. In this work, we propose a novel auto-tuning framework to optimize the DNN operator design on GPU by leveraging the tuning history efficiently in different scenarios. Our experiments show that we can achieve superior performance than the state-of-the-art work, such as auto-tuning framework TVM and the handcraft optimized library cuDNN, while reducing the searching time by 8.96x and 4.58x comparing with XGBoost tuner and GA tuner in TVM.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels"
+   ],
+   "kernels": [
+    "convolution",
+    "DNN operators"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "History-based autotuner for GPU DNN operator kernels beating TVM/cuDNN with up to 9x less search time"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/ChiC20",
+  "venue": "DAC",
+  "year": 2020,
+  "title": "Exploiting Computation Reuse for Stencil Accelerators",
+  "abstract": "Stencil kernel is an important type of kernel used extensively in many application domains. Over the years, researchers have been studying the optimizations on parallelization, communication reuse, and computation reuse for various target platforms. However, challenges still exist, especially on the computation reuse problem for accelerators, due to the lack of complete design-space exploration and effective design-space pruning. In this paper, we present solutions to the above challenges for a wide range of stencil kernels (i.e., stencil with reduction operations), where the computation reuse patterns are extremely flexible due to the commutative and associative properties. We formally define the complete design space, based on which we present a provably optimal dynamic programming algorithm and a heuristic beam search algorithm that provides near-optimal solutions under an architecture-aware model. Experimental results show that for synthesizing stencil kernels to FPGAs, compared with state-of-the-art stencil compiler without computation reuse capability, our proposed algorithm can reduce the look-up table (LUT) and digital signal processor (DSP) usage by 58.1% and 54.6% on average respectively, which leads to an average speedup of 2.3× for compute-intensive kernels, outperforming the latest CPU/GPU results.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "stencil_pde"
+   ],
+   "kernels": [
+    "stencil"
+   ],
+   "platform": [
+    "fpga"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Optimal computation-reuse exploration for FPGA stencil synthesis; 2.3x speedup, 58% fewer LUTs"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/XiaoLX020",
+  "venue": "DAC",
+  "year": 2020,
+  "title": "FCNNLib: An Efficient and Flexible Convolution Algorithm Library on FPGAs",
+  "abstract": "Convolutions can be implemented with different algorithms, which are diverse in arithmetic complexity, resource requirement, etc. Multiple algorithms can share the FPGA resources spatially as well as temporally, introducing either reconfiguration overhead or resource underutilization. In this paper, we propose an efficient library FCNNLib to coordinate multiple convolution algorithms on FPGAs. We develop three scheduling techniques: spatial, temporal, and hybrid, which exhibit different trade-offs in latency and throughput. We also expose a set of interfaces to arm the users. Experiments using modern CNNs demonstrate FCNNLib achieves up to 1.315X latency improvement compared with dedicated accelerators and 1.755X energy efficiency improvement compared with cuDNN.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels"
+   ],
+   "kernels": [
+    "convolution"
+   ],
+   "platform": [
+    "fpga"
+   ],
+   "approach": "library",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "FPGA convolution algorithm library with spatial/temporal scheduling; 1.75x energy efficiency vs cuDNN"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/MarkovFIB20",
+  "venue": "DAC",
+  "year": 2020,
+  "title": "Massively Parallel Approximate Simulation of Hard Quantum Circuits",
+  "abstract": "As quantum computers grow more capable, simulating them on conventional hardware becomes more challenging yet more attractive since this helps in design and verification. Some quantum algorithms and circuits are amenable to surprisingly efficient simulation, and this makes hard-to-simulate computations particularly valuable. For such circuits, we develop accurate massively-parallel simulation with dramatic speedups over earlier methods on 42- and 45-qubit circuits. We propose two ways to trade circuit fidelity for computational speedups, so as to match the error rate of any quantum computer. Using Google Cloud, we simulate approximate sampling from the output of a circuit with 7 × 8 qubits and depth 42 with fidelity 0.5% at an estimated cost of $35K.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "tensor"
+   ],
+   "kernels": [
+    "quantum circuit simulation",
+    "tensor network contraction"
+   ],
+   "platform": [
+    "cpu",
+    "distributed"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Massively parallel approximate quantum-circuit simulation on classical clusters; big speedups at 42-45 qubits"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/DongWNZLLGRLT20",
+  "venue": "DAC",
+  "year": 2020,
+  "title": "RTMobile: Beyond Real-Time Mobile Acceleration of RNNs for Speech Recognition",
+  "abstract": "Recurrent neural networks (RNNs) based automatic speech recognition has nowadays become promising and important on mobile devices such as smart phones. However, previous RNN compression techniques either suffer from hardware performance overhead due to irregularity or significant accuracy loss due to the preserved regularity for hardware friendliness. In this work, we propose RTMobile that leverages both a novel block-based pruning approach and compiler optimizations to accelerate RNN inference on mobile devices. Our proposed RTMobile is the first work that can achieve real-time RNN inference on mobile platforms. Experimental results demonstrate that RTMobile can significantly outperform existing RNN hardware acceleration methods in terms of both inference accuracy and time. Compared with prior work on FPGA, RTMobile using Adreno 640 embedded GPU on GRU can improve the energy-efficiency by 40× while maintaining the same inference time.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels",
+    "sparse_la"
+   ],
+   "kernels": [
+    "block-sparse MVM (RNN/GRU inference)"
+   ],
+   "platform": [
+    "other"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Block-based pruning + compiler-generated sparse RNN kernels; real-time GRU inference on mobile GPU, 40x vs FPGA"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/QiaoOTH20",
+  "venue": "DAC",
+  "year": 2020,
+  "title": "The Best of Both Worlds: Combining CUDA Graph with an Image Processing DSL",
+  "abstract": "CUDA graph is an asynchronous task-graph programming model recently released by Nvidia. It encapsulates application workflows in a graph, with nodes being operations connected by dependencies. The new API brings two benefits: Reduced work launch overhead and whole workflow optimizations. In this paper, we improve the ability of CUDA graph to exploit workflow optimizations, e.g., concurrent kernel executions with complementary resource occupancy. Additionally, we argue that the advantages of DSLs are complementary to CUDA graph, and joining the two techniques can benefit from the best of both worlds. Here, we propose a compiler-based approach that combines CUDA graph with an image processing DSL and a source-to-source compiler called Hipacc. For ten image processing applications benchmarked on two Nvidia GPUs, our approach is able to achieve a geometric mean speedup of 1.30 over Hipacc without CUDA graph, 1.11 over CUDA graph without Hipacc, and 3.96 over another state-of-the-art DSL called Halide.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "stencil_pde"
+   ],
+   "kernels": [
+    "image processing pipelines",
+    "2D stencil"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Hipacc image DSL compiler emitting CUDA graphs; 1.30x over Hipacc alone, 3.96x over Halide on GPUs."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/AlshboulTS20",
+  "venue": "DAC",
+  "year": 2020,
+  "title": "WET: Write Efficient Loop Tiling for Non-Volatile Main Memory",
+  "abstract": "Future systems are expected to increasingly include a Non-Volatile Main Memory (NVMM). However, due to the limited NVMM write endurance, the number of writes must be reduced. While new architectures and algorithms have been proposed to reduce writes to NVMM, few or no studies have looked at the effect of compiler optimizations on writes.In this paper, we investigate the impact of one popular compiler optimization (loop tiling) on a very important computation kernel (matrix multiplication). Our novel observation includes that tiling on matrix multiplication causes a 25× write amplification. Furthermore, we investigate techniques to make tilling more NVMM friendly, through choosing the right tile size and employing hierarchical tiling. Our method Write-Efficient Tiling (WET) adds a new outer tile designed for fitting the write working set to the Last Level Cache (LLC) to reduce the number of writes to NVMM. Our experiments reduce writes by 81% while simultaneously improve performance.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la"
+   ],
+   "kernels": [
+    "GEMM"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Write-efficient hierarchical loop tiling for matrix multiply on NVMM; 81% fewer writes with better performance."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/TsaiJJ21",
+  "venue": "DAC",
+  "year": 2021,
+  "title": "Bit-Slicing the Hilbert Space: Scaling Up Accurate Quantum Circuit Simulation",
+  "abstract": "Recent advancements in quantum technologies shed light on viable quantum computation in near future. Quantum circuit simulation plays a key role in the toolchain of quantum hardware and software development. Due to the enormous Hilbert space of quantum states, simulating quantum circuits with classical computers is notoriously challenging. This work enhances quantum circuit simulation in two dimensions: accuracy (by representing complex numbers algebraically) and scalability (by bit-slicing number representation and achieving matrix-vector multiplication with symbolic Boolean manipulation). Experiments demonstrate the superiority of our method to the state-of-the-art tools over various quantum circuits with up to tens of thousands of qubits.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la"
+   ],
+   "kernels": [
+    "quantum circuit simulation",
+    "MVM"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Bit-sliced algebraic state encoding scales accurate quantum-circuit simulation to tens of thousands of qubits."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/PoduvalZYSI21",
+  "venue": "DAC",
+  "year": 2021,
+  "title": "Cognitive Correlative Encoding for Genome Sequence Matching in Hyperdimensional System",
+  "abstract": "Pattern matching is one of the key algorithms in identifying and analyzing genomic data. In this paper, we propose HYPERS, a novel framework supporting highly efficient and parallel pattern matching based on HyperDimensional computing (HDC). HYPERS transforms inherent sequential processes of pattern matching to highly-parallelizable computation tasks using HDC. HYPERS exploits HDC memorization to encode and represent the genome sequences using high-dimensional vectors. Then, it combines the genome sequences to generate an HDC reference library. During the matching, HYPERS performs alignment by exact or approximate similarity check of an encoded query with the HDC reference library. HYPERS functionality is supported by theoretical proof, verified by software implementation, and extensively tested on the existing hardware platform. Our evaluation on FPGA shows that HYPERS provides, on average, $ 17.5\\times$ speedup and $ 39.4\\times$ energy efficiency as compared to the state-of-the-art pattern matching tools running on GTX 1080 GPU.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "sequence pattern matching"
+   ],
+   "platform": [
+    "fpga"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Hyperdimensional-computing genome pattern matching on FPGA; 17.5x speedup over GPU matching tools."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/0003CZLH21",
+  "venue": "DAC",
+  "year": 2021,
+  "title": "MELOPPR: Software/Hardware Co-design for Memory-efficient Low-latency Personalized PageRank",
+  "abstract": "Personalized PageRank (PPR) is a graph algorithm that evaluates the importance of the surrounding nodes from a source node. Widely used in social network related applications such as recommender systems, PPR requires real-time responses (latency) for a better user experience. Existing works either focus on algorithmic optimization for improving precision while neglecting hardware implementations or focus on distributed global graph processing on large-scale systems for improving throughput rather than response time. Optimizing low-latency local PPR algorithm with a tight memory budget on edge devices remains unexplored. In this work, we propose a memory-efficient, low-latency PPR solution, namely MeLoPPR, with largely reduced memory requirement and a flexible trade-off between latency and precision. MeLoPPR is composed of stage decomposition and linear decomposition and exploits the node score sparsity: Through stage and linear decomposition, MeLoPPR breaks the computation on a large graph into a set of smaller sub-graphs, that significantly saves the computation memory; Through sparsity exploitation, MeLoPPR selectively chooses the sub-graphs that contribute the most to the precision to reduce the required computation. In addition, through software/hardware co-design, we propose a hardware implementation on a hybrid CPU and FPGA accelerating platform, that further speeds up the sub-graph computation. We evaluate the proposed MeLoPPR on memory-constrained devices including a personal laptop and Xilinx Kintex-7 KC705 FPGA using six real-world graphs. First, MeLoPPR demonstrates significant memory saving by $1. 5 \\times \\sim 13. 4 \\times$ on CPU and $73 \\times \\sim 8699 \\times$ on FPGA. Second, MeLoPPR allows flexible trade-offs between precision and execution time: when the precision is 80%, the speedup on CPU is up to $15\\times$ and up to $707\\times$ on FPGA; when the precision is around 90%, the speedup is up to $70\\times$ on FPGA.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "Personalized PageRank"
+   ],
+   "platform": [
+    "cpu",
+    "fpga"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Stage/linear-decomposed personalized PageRank on CPU+FPGA; up to 707x speedup at ~80-90% precision."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/ParraviciniCSS21",
+  "venue": "DAC",
+  "year": 2021,
+  "title": "Scaling up HBM Efficiency of Top-K SpMV for Approximate Embedding Similarity on FPGAs",
+  "abstract": "Top-K SpMV is a key component of similarity-search on sparse embeddings. This sparse workload does not perform well on general-purpose NUMA systems that employ traditional caching strategies. Instead, modern FPGA accelerator cards have a few tricks up their sleeve. We introduce a Top-KSpMV FPGA design that leverages reduced precision and a novel packet-wise CSR matrix compression, enabling custom data layouts and delivering bandwidth efficiency often unreachable even in architectures with higher peak bandwidth. With HBM-based boards, we are 100x faster than a multi-threaded CPU implementation and 2x faster than a GPU with 20% higher bandwidth, with 14.2x higher power-efficiency.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "sparse_la",
+    "primitives"
+   ],
+   "kernels": [
+    "Top-K SpMV"
+   ],
+   "platform": [
+    "fpga"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Top-K SpMV on HBM FPGA with packet-wise CSR compression and reduced precision; 100x vs CPU, 2x vs GPU."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/ChenTCHWC21",
+  "venue": "DAC",
+  "year": 2021,
+  "title": "Skew-Oblivious Data Routing for Data Intensive Applications on FPGAs with HLS",
+  "abstract": "FPGAs have become emerging computing infrastructures for accelerating applications in datacenters. Meanwhile, high-level synthesis (HLS) tools have been proposed to ease the programming of FPGAs. Even with HLS, irregular data-intensive applications require explicit optimizations, among which multiple processing elements (PEs) with each owning a private BRAM-based buffer are usually adopted to process multiple data per cycle. Data routing, which dynamically dispatches multiple data to designated PEs, avoids data replication in buffers compared to statically assigning data to PEs, hence saving BRAM usage. However, the workload imbalance among PEs vastly diminishes performance when processing skew datasets. In this paper, we propose a skew-oblivious data routing architecture that allocates secondary PEs and schedules them to share the workload of the overloaded PEs at run-time. In addition, we integrate the proposed architecture into a framework called Ditto to minimize the development efforts for applications that require skew handling. We evaluate Ditto on five commonly used applications: histogram building, data partitioning, pagerank, heavy hitter detection and hyperloglog. The results demonstrate that the generated implementations are robust to skew datasets and outperform the state-of-the-art designs in both throughput and BRAM usage efficiency.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives",
+    "graph"
+   ],
+   "kernels": [
+    "histogram",
+    "data partitioning",
+    "PageRank",
+    "heavy hitter",
+    "HyperLogLog"
+   ],
+   "platform": [
+    "fpga"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Skew-oblivious data-routing HLS framework; faster histogram/partitioning/PageRank/HyperLogLog on FPGA."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/GuoML21",
+  "venue": "DAC",
+  "year": 2021,
+  "title": "Ultrafast CPU/GPU Kernels for Density Accumulation in Placement",
+  "abstract": "Density accumulation is a widely-used primitive operation in physical design, especially for placement. Iterative invocation in the optimization flow makes it one of the runtime bottlenecks. Accelerating density accumulation is challenging due to data dependency and workload imbalance. In this paper, we propose efficient CPU/GPU kernels for density accumulation by decomposing the problem into two phases: constant-time density collection for each instance and a linear-time prefix sum. We develop CPU and GPU dedicated implementations, and demonstrate promising efficiency benefits on tasks from large-scale placement problems.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "density accumulation",
+    "prefix sum"
+   ],
+   "platform": [
+    "cpu",
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "CPU/GPU density-accumulation kernels via constant-time collection plus linear prefix sum for placement"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/SunZGZBZ022",
+  "venue": "DAC",
+  "year": 2022,
+  "title": "GTuner: tuning DNN computations on GPU via graph attention network",
+  "abstract": "It is an open problem to compile DNN models on GPU and improve the performance. A novel framework, GTuner, is proposed to jointly learn from the structures of computational graphs and the statistical features of codes to find the optimal code implementations. A Graph ATtention network (GAT) is designed as the performance estimator in GTuner. In GAT, graph neural layers are used to propagate the information in the graph and a multi-head self-attention module is designed to learn the complicated relationships between the features. Under the guidance of GAT, the GPU codes are generated through auto-tuning. Experimental results demonstrate that our method outperforms the previous arts remarkably.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels"
+   ],
+   "kernels": [
+    "DNN operator codegen (conv/matmul)"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "GAT-guided auto-tuning search finds optimal GPU code implementations for DNN computations"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/AhnKE22",
+  "venue": "DAC",
+  "year": 2022,
+  "title": "Glimpse: mathematical embedding of hardware specification for neural compilation",
+  "abstract": "Success of Deep Neural Networks (DNNs) and their computational intensity has heralded Cambrian explosion of DNN hardware. While hardware design has advanced significantly, optimizing the code for them is still an open challenge. Recent research has moved past traditional compilation techniques and taken a stochastic search algorithmic path that blindly generates rather stochastic samples of the binaries for real hardware measurements to guide the search. This paper opens a new dimension by incorporating the mathematical embedding of the hardware specification of the GPU accelerators dubbed Blueprint to better guide the search algorithm and focus on sub-spaces that have higher potential for yielding higher performance binaries. While various sample efficient yet blind hardware-agnostic techniques have been proposed, none of the state-of-the-art compilers have considered hardware specification as hints to improve the sample efficiency and the search. To mathematically embed the hardware specifications into the search, we devise a Bayesian optimization framework called Glimpse with multiple exclusively unique components. We first use the Blueprint as an input to generate prior distributions of different dimensions in the search space. Then, we devise a light-weight neural acquisition function that takes into account the Blueprint to conform to the hardware specification while balancing the exploration-exploitation trade-off. Finally, we generate an ensemble of predictors from the Blueprint that collectively vote to reject invalid binary samples. We compare Glimpse with hardware-agnostic compilers. Comparison to AutoTVM [3], Chameleon [2], and DGP [16] with multiple generations of GPUs shows that Glimpse provides 6.73×, 1.51×, and 1.92× faster compilation time, respectively, while also achieving the best inference latency.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels"
+   ],
+   "kernels": [
+    "DNN operator codegen"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Bayesian optimization embeds GPU hardware specs to guide DNN kernel code auto-tuning search"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/SongCGC22",
+  "venue": "DAC",
+  "year": 2022,
+  "title": "Serpens: a high bandwidth memory based accelerator for general-purpose sparse matrix-vector multiplication",
+  "abstract": "Sparse matrix-vector multiplication (SpMV) multiplies a sparse matrix with a dense vector. SpMV plays a crucial role in many applications, from graph analytics to deep learning. The random memory accesses of the sparse matrix make accelerator design challenging. However, high bandwidth memory (HBM) based FPGAs are a good fit for designing accelerators for SpMV. In this paper, we present Serpens, an HBM based accelerator for general-purpose SpMV, which features memory-centric processing engines and index coalescing to support the efficient processing of arbitrary SpMVs. From the evaluation of twelve large-size matrices, Serpens is 1.91x and 1.76x better in terms of geomean throughput than the latest accelerators GraphLiLy and Sextans, respectively. We also evaluate 2,519 SuiteSparse matrices, and Serpens achieves 2.10x higher throughput than a K80 GPU. For the energy/bandwidth efficiency, Serpens is 1.71x/1.99x, 1.90x/2.69x, and 6.25x/4.06x better compared with GraphLily, Sextans, and K80, respectively. After scaling up to 24 HBM channels, Serpens achieves up to 60.55 GFLOP/s (30,204 MTEPS) and up to 3.79x over GraphLily. The code is available at https://github.com/UCLA-VAST/Serpens.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "sparse_la"
+   ],
+   "kernels": [
+    "SpMV"
+   ],
+   "platform": [
+    "fpga"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "HBM-based FPGA SpMV accelerator with memory-centric engines, beats GraphLily/Sextans/K80 GPU"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/HuangLQSDX22",
+  "venue": "DAC",
+  "year": 2022,
+  "title": "Shfl-BW: accelerating deep neural network inference with tensor-core aware weight pruning",
+  "abstract": "Weight pruning in deep neural networks (DNNs) can reduce storage and computation cost, but struggles to bring practical speedup to the model inference time. Tensor-cores can significantly boost the throughput of GPUs on dense computation, but exploiting tensor-cores for sparse DNNs is very challenging. Compared to existing CUDA-cores, tensor-cores require higher data reuse and matrix-shaped instruction granularity, both difficult to yield from sparse DNN kernels. Existing pruning approaches fail to balance the demands of accuracy and efficiency: random sparsity preserves the model quality well but prohibits tensor-core acceleration, while highly-structured block-wise sparsity can exploit tensor-cores but suffers from severe accuracy loss.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels",
+    "dense_la"
+   ],
+   "kernels": [
+    "sparse GEMM (tensor-core)"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Tensor-core-aware structured weight pruning kernels for faster DNN inference"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/BasalamaWC23",
+  "venue": "DAC",
+  "year": 2023,
+  "title": "A Comprehensive Automated Exploration Framework for Systolic Array Designs",
+  "abstract": "Many researchers studying the performance tuning of systolic arrays have based their works on oversimplified assumptions like considering only divisors for loop tiling or pruning based on off-chip data communication to reduce the design space. In this paper, we present a comprehensive design space exploration tool named Odyssey for systolic array optimization. Odyssey results show that limiting tiling factors to only divisors of the problem size can cause up to 39% performance loss, and pruning the design space based on off-chip data movement can miss optimal designs. We tested Odyssey using various matrix multiplication and convolution kernels and validated the results with FPGA implementations.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la",
+    "ml_kernels"
+   ],
+   "kernels": [
+    "GEMM",
+    "convolution"
+   ],
+   "platform": [
+    "fpga"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Odyssey DSE tool explores tiling/dataflow for systolic-array matmul and conv kernels on FPGA"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/JiangMGLLLJZ23",
+  "venue": "DAC",
+  "year": 2023,
+  "title": "ACGraph: Accelerating Streaming Graph Processing via Dependence Hierarchy",
+  "abstract": "Streaming graph processing needs to timely evaluate continuous queries. Prior systems suffer from massive redundant computations due to the irregular order of processing vertices influenced by updates. To address this issue, we propose ACGraph, a novel streaming graph processing approach for monotonic graph algorithms. It maintains dependence trees during runtime, and makes affected vertices processed in a top-to-bottom order in the hierarchy of the dependence trees, thus normalizing the state propagation order and coalescing of multiple propagation to the same vertices. Experimental results show that ACGraph reduces the number of updates by 50% on average, and achieves the speedup of 1.75~7.43× over state-of-the-art systems.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "streaming graph update",
+    "incremental graph traversal"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "low",
+   "one_liner": "ACGraph reorders vertex updates via dependence hierarchy for 1.75-7.43x streaming graph speedup"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/ZhaoCSWZ23",
+  "venue": "DAC",
+  "year": 2023,
+  "title": "Automatic End-to-End Joint Optimization for Kernel Compilation on DSPs",
+  "abstract": "Digital signal processors (DSPs) commonly adopt VLIW-SIMD architecture and are extensively applied in most compute-heavy embedded sensing applications. The performances for DSP kernels rely heavily on compilations and handwritten optimizations. Hand-crafted methods suffer from heavy burden on programmers, while state-of-the-art automatic compilation methods always focus more on a certain aspect (tiling or auto-vectorization), lacking of global and sequential vision on the intact compilation optimization process. It still requires empirical adjustments by programmers in the actual scenario.In order to release programmers from kernel tuning, we propose JOKer, an automatic end-to-end multi-level code generator for kernel joint optimization on DSPs. JOKer integrates means of optimizations in compiling process and provides an end-to-end workflow for performance tuning. It explores compilation configurations through a reinforcement learning based agent for global optimal solution and generates high performance kernel codes for DSPs automatically.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "DSP kernel codegen"
+   ],
+   "platform": [
+    "other"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "low",
+   "one_liner": "JOKer: RL-driven end-to-end code generator jointly tuning tiling/vectorization for DSP kernels"
+  },
+  "mode": "confirm-include"
+ }
+]

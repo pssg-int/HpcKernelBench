@@ -1,0 +1,328 @@
+kernel: multigrid
+summary: >
+  Algebraic/geometric multigrid as a preconditioner or standalone solver for
+  Ax=b, measured with the setup phase (hierarchy construction: coarsening +
+  interpolation + Galerkin SpGEMM triple product) and the solve phase
+  (V-cycle smoothing + SpMV) reported as fully separate numbers — the split
+  every surveyed solver paper's own code enforces internally, even when its
+  headline speedup blends them. GPU/algebraic-AMG variants and a CPU/
+  geometric-MG variant are kept separate because they have structurally
+  different hierarchies (SpGEMM-coarsened matrix hierarchy vs. a
+  geometrically-refined structured grid with no comparable "setup phase").
+operation: "solve A[N,N](sparse, s.p.d.) x[N] = b[N] via (P)CG with an AMG/MG V-cycle preconditioner; A_k+1 = R_k A_k P_k for the algebraic-setup variants"
+
+variants:
+  - id: mg-gpu-setup-kernel-f64
+    claim: >
+      steady-state GPU AMG SETUP-phase throughput (coarsening + interpolation
+      + Galerkin triple-product SpGEMM chain that builds the grid hierarchy),
+      reported ENTIRELY separately from solve-phase time — the axis this
+      track's own instructions call out as the classic AMG split, and one
+      that AmgT's and BootCMatchGX's own code/plots both already keep
+      separate internally (AmgT's `t_start/t_stop` bracket around
+      `HYPRE_BoomerAMGSetup` alone; BootCMatchGX's `tsetup` reported apart
+      from `tsolve`). This variant exists so a paper cannot advertise a
+      blended "total speedup" number that hides a setup-time regression
+      behind a solve-time win, or vice versa.
+    inputs:
+      suite: >
+        two explicitly separate, non-interchangeable input classes (see
+        Divergences in survey.md — no surveyed paper mixes them, and results
+        on one are not comparable to results on the other):
+        (a) "poisson-3d": a synthetic 3D Poisson problem, -div(K grad u)=f on
+        [0,1]^3, homogeneous Dirichlet BC, K=1, discretized by the standard
+        7-point finite-difference stencil (BootCMatchGX's exact generator,
+        the closest match in this track to an "AMG2023-style Poisson"
+        generator); (b) "suitesparse-real": real algebraic matrices from the
+        SuiteSparse Matrix Collection.
+      selection: >
+        (a) poisson-3d: cubic grids nd in {64, 128, 192, 300}, i.e. up to
+        300^3 ~= 27e6 dofs (BootCMatchGX's own strong-scaling size), RHS
+        f=1, unitary right-hand side. (b) suitesparse-real: real, square,
+        s.p.d.-or-near-s.p.d. matrices with 2e4 <= nnz <= 5e7, matching the
+        order-of-magnitude range AmgT's own 16-matrix set spans
+        (229,947-46,522,475 nnz); no cherry-picking beyond that range filter.
+      recommended_subset: >
+        poisson-3d: [64^3, 128^3, 192^3, 300^3] (192^3 matches MGopt-APP's
+        HPCG grid size for CPU/GPU cross-reference; 300^3 matches
+        BootCMatchGX's strong-scaling size exactly). suitesparse-real (AmgT's
+        own 16-matrix curated list, Table II): [spmsrtls, thermal1,
+        Pres_Poisson, Chevron2, venkat25, bcsstk39, mc2depi, stomach,
+        parabolic_fem, cant, TSOPF_RS_b300_c3, af_shell4, msdoor, CoupCons3D,
+        nd24k, ldoor].
+      rhs_operand: "b: all-ones vector (matches AmgT's test driver) for suitesparse-real; b=f=1 (unitary RHS) for poisson-3d (matches BootCMatchGX)."
+    protocol:
+      hierarchy_config: >
+        V-cycle only for this variant (see mg-cpu-geometric-symgs for the
+        F-cycle case and open_questions for W-cycle, which no surveyed paper
+        benchmarks). Coarsening: PMIS (AmgT's exact choice) or
+        maximum-weight-matching pairwise aggregation (BootCMatchGX's exact
+        choice) — report which was used, do not silently pick one. Max
+        levels: 7 (AmgT) or until coarsest size <= 40*nd with max 40 levels
+        (BootCMatchGX) — implementation-specific, report the actual level
+        count reached per input. Strong threshold 0.25 (AmgT) as the default
+        if the implementation exposes this knob.
+      format: "matrix given as CSR (or COO->CSR); any internal reformatting the setup phase itself performs (e.g. AmgT's CSR<->mBSR conversion, invoked 2*levels-1 times) stays INSIDE this variant's timed setup window, since it is part of what 'setup' means for that implementation — it is NOT amortized or excluded the way spmv/spgemm-track format conversion is, because here it genuinely only happens once per solve, not once-then-reused-across-many-calls."
+      warmup: 3
+      reps: 10
+      statistic: "geometric mean (MGopt-APP's own stated protocol — the only surveyed paper with an explicit statistic); report min/max and the run-to-run coefficient of variation alongside (MGopt-APP reports <5% variance and this is the bar every other surveyed paper failed to state at all)"
+      timer: "device-side wall-clock bracket around ONLY the hierarchy-construction call (e.g. HYPRE_BoomerAMGSetup, or the equivalent aggregation+SpGEMM chain), matching AmgT's own t_start/t_stop code exactly"
+      timing_scope: "setup kernel only; H2D of the input matrix excluded (matrix assumed device-resident before setup starts, or its H2D cost reported once, separately, under preprocessing_reported)"
+      preprocessing_reported: "H2D transfer of the input matrix/RHS: separately, once. Any host-side matrix generation (poisson-3d stencil assembly) or Matrix-Market parsing (suitesparse-real): separately, once; neither counts toward setup_time."
+      precision: "fp64 (both input classes; matches all 3 solver papers' baseline — none of them runs setup itself in reduced precision, only the solve-phase SpMV/smoother steps use mixed precision in AmgT)"
+    metric:
+      primary: "setup_time (ms), geometric mean of 10 reps"
+      secondary: "operator complexity OPC = sum_k nnz(A_k)/nnz(A_0) (BootCMatchGX's exact metric — required so a faster-but-worse hierarchy is visible, not just a smaller number)"
+    correctness: "hierarchy is well-formed: coarsest-level matrix size > 0 and <= configured max coarse size; every A_k+1 = R_k A_k P_k Galerkin product checked against a reference (host CPU, fp64) triple-sparse-product for a small held-out grid (64^3 poisson-3d or one small suitesparse-real matrix) with max relative nnz-pattern and value mismatch < 1e-10"
+
+  - id: mg-gpu-solve-kernel-fixed-iter
+    claim: >
+      steady-state GPU AMG SOLVE-phase throughput for a FIXED, disconnected-
+      from-convergence iteration count — the protocol AmgT's own driver code
+      actually implements (`HYPRE_BoomerAMGSetMaxIter(precond, 50)` combined
+      with `HYPRE_BoomerAMGSetTol(precond, 1e-20)`, which can never trigger
+      early exit). This variant exists specifically to give every
+      implementation the SAME fixed amount of work (comparable per-iteration
+      throughput, no implementation can "win" by converging in fewer
+      iterations that happen to do less real work) — paired with
+      mg-gpu-e2e-pcg below, which is the honest convergence-gated
+      counterpart this variant alone cannot provide.
+    inputs:
+      suite: "same two classes as mg-gpu-setup-kernel-f64 (poisson-3d, suitesparse-real)"
+      selection: "same as mg-gpu-setup-kernel-f64"
+      recommended_subset: "same as mg-gpu-setup-kernel-f64"
+      rhs_operand: "same as mg-gpu-setup-kernel-f64"
+    protocol:
+      hierarchy_config: >
+        V-cycle, fixed 50 iterations (AmgT's exact number), pre/post
+        smoothing sweeps = 3/3 (AmgT) or 4/4 (BootCMatchGX) — report which
+        configuration; coarsest-level solve = a fixed number of smoother
+        sweeps (BootCMatchGX: 20 l1-Jacobi sweeps; AmgT: direct or iterative,
+        implementation-dependent), NOT a sparse-triangular direct solve
+        (both surveyed GPU papers deliberately avoid this for GPU-friendliness
+        — see BootCMatchGX's explicit discussion of why direct coarsest-level
+        solves are avoided on GPU).
+      format: "hierarchy from mg-gpu-setup-kernel-f64 is reused (given, not rebuilt); if the implementation's solve phase requires its own internal reformatting per iteration (e.g. AmgT's CSR<->mBSR round trips inside the V-cycle), that stays inside the timed solve window"
+      warmup: 3
+      reps: 10
+      statistic: "geometric mean, min/max/coefficient-of-variation reported (same protocol as mg-gpu-setup-kernel-f64)"
+      timer: "device-side wall-clock bracket around ONLY the solve call (e.g. HYPRE_BoomerAMGSolve), matching AmgT's t1/t2 code exactly"
+      timing_scope: "solve kernel only, hierarchy already resident on device; H2D/D2H of x/b vectors excluded from the timed window (assumed device-resident)"
+      preprocessing_reported: "N/A for this variant (setup already excluded by construction; see mg-gpu-setup-kernel-f64 for that number)"
+      precision: >
+        two required sub-variants, both against the SAME fixed 50-iteration
+        protocol: (i) fp64 throughout (baseline); (ii) AmgT's exact
+        level-dependent mixed-precision cascade — fp64 at the finest grid
+        level, fp32 at the second-finest level, fp16 (or fp64 fallback if the
+        target GPU/instruction set has no usable fp16 tensor-core path for
+        this operation) at all remaining coarser levels. Report both; do not
+        report only the faster one.
+    metric:
+      primary: "solve_time (ms) for the fixed 50-iteration V-cycle, geometric mean of 10 reps"
+      secondary: >
+        final relative residual norm ||b-Ax||_2/||b||_2 reached after the 50
+        fixed iterations (NOT gated as pass/fail for this variant, since the
+        point is fixed-work throughput regardless of convergence quality —
+        but MUST be reported so a reader can see whether 50 iterations
+        actually reached a usable answer for that input, closing the gap
+        AmgT's own paper leaves open by never disclosing this number itself)
+    correctness: >
+      the final x from the 50-iteration run must be finite (no NaN/Inf) and
+      the reported residual norm above must be computed from an
+      independently-recomputed b-Ax (not reused from the solver's internal
+      bookkeeping), fp64, regardless of the run's own precision — this
+      catches a mixed-precision implementation silently corrupting the
+      answer while still reporting fast, since a fast-but-wrong 50th
+      iteration is not a valid result even under a fixed-iteration protocol.
+
+  - id: mg-gpu-e2e-pcg
+    claim: >
+      end-to-end, CONVERGENCE-GATED preconditioned-CG solve: one-shot AMG
+      setup + PCG iterations to a real stopping tolerance — BootCMatchGX's
+      exact protocol (relative residual < 1e-6 in the l2 norm, capped at
+      1000 iterations), the honest counterpart to
+      mg-gpu-solve-kernel-fixed-iter's fixed-work number. This is the claim
+      practitioners actually care about ("how long until I have a usable
+      answer"), and the one AmgT's own fixed-iteration/tol=1e-20 protocol
+      structurally cannot answer.
+    inputs:
+      suite: "same two classes as mg-gpu-setup-kernel-f64"
+      selection: "same as mg-gpu-setup-kernel-f64, restricted to matrices/grids where the problem is s.p.d. (a PCG requirement both surveyed convergence-gated papers rely on)"
+      recommended_subset: "same as mg-gpu-setup-kernel-f64"
+      rhs_operand: "same as mg-gpu-setup-kernel-f64"
+    protocol:
+      hierarchy_config: "same V-cycle configuration as mg-gpu-solve-kernel-fixed-iter; preconditioner = ONE V-cycle application per PCG iteration (both AmgT and BootCMatchGX use exactly one V-cycle per outer iteration, not a nested inner loop)"
+      format: "same as mg-gpu-solve-kernel-fixed-iter"
+      warmup: 3
+      reps: 10
+      statistic: "geometric mean of wall time; report the PCG iteration count as its own reported quantity (not averaged away — report min/median/max iteration count across the 10 reps, since a fixed problem+solver should converge in a near-constant iteration count and material variance across reps is itself a red flag worth surfacing)"
+      timer: "device-side wall-clock bracket around setup+solve combined (total time to solution) AND the solve-only portion reported separately, so both 'time to answer including hierarchy build' and 'PCG solve time given a hierarchy' are available"
+      timing_scope: "setup + PCG solve to convergence; H2D/D2H of matrix/vectors excluded (device-resident), same as the other GPU variants"
+      preprocessing_reported: "same as mg-gpu-setup-kernel-f64"
+      precision: "fp64 baseline required; AmgT's mixed-precision cascade run as a secondary comparison IF the implementation supports it, with the same finite-answer + independently-recomputed-residual correctness gate as mg-gpu-solve-kernel-fixed-iter"
+    metric:
+      primary: "time-to-solution (ms): setup_time + solve_time to reach the tolerance below"
+      secondary: "PCG iteration count to convergence; operator complexity OPC (same definition as mg-gpu-setup-kernel-f64, reported alongside so a cheaper-but-worse hierarchy that needs many more iterations is visible rather than hidden behind a fast per-iteration time)"
+    correctness: >
+      relative residual ||b-Ax||_2/||b||_2 < 1e-6 (BootCMatchGX's exact
+      tolerance) REQUIRED to reach within the iteration cap (max 1000
+      iterations, BootCMatchGX's exact cap) for the run to count as a valid
+      result at all — unlike mg-gpu-solve-kernel-fixed-iter, failing to
+      converge within the cap is a hard FAIL for this variant, not just a
+      reported number, since the entire claim being measured here is
+      "time to a real answer."
+
+  - id: mg-cpu-geometric-symgs
+    claim: >
+      end-to-end CPU multi-core geometric-multigrid throughput (HPCG-style):
+      no separate algebraic setup phase exists for this problem class (the
+      grid hierarchy is defined directly by geometric refinement, factor of
+      8 per level, not by SpGEMM coarsening from a matrix) — MGopt-APP's
+      exact evaluation shape, kept as its own variant rather than forced
+      into the GPU setup/solve split above, since that split does not apply
+      to a geometrically-generated hierarchy.
+    inputs:
+      suite: "HPCG v3.1's own synthetic 3D 27-point-stencil-flavored problem generator (structured grid, no external matrix file)"
+      selection: "cubic local grids per MPI rank; standard HPCG problem-size convention (grid dimensions must be multiples of 8 to support the 4-level V-cycle's factor-of-8-per-level coarsening)"
+      recommended_subset: "[64^3, 104^3, 144^3, 192^3] per MPI rank (192^3 is MGopt-APP's exact evaluated size); optionally a real-application-embedded validation problem (YHAMG solving Poisson via 7-point or 27-point stencil, or CitcomCU's finite-element earth-simulation grid) reported separately, not blended into the synthetic-grid numbers"
+      rhs_operand: "HPCG reference RHS convention (b constructed so the exact solution x is known, for correctness checking)"
+    protocol:
+      hierarchy_config: "V-cycle, 4 levels (HPCG standard), SYMGS as pre-/post-smoother (1 sweep each, HPCG default) and as the bottom/coarsest-level solver; F-cycle reported as a secondary configuration ONLY if the implementation under test is applied to CitcomCU or an equivalent F-cycle-capable application (do not force F-cycle onto the synthetic HPCG grid, which MGopt-APP itself only ever runs as V-cycle)"
+      format: "N/A — no sparse-matrix input format; grid and stencil operator generated in-memory by the HPCG reference generator"
+      warmup: 0
+      reps: 10
+      statistic: "geometric mean; report cross-run variance explicitly (MGopt-APP's own bar: must be < 5%, stated in the report, not just computed silently)"
+      timer: "wall-clock (e.g. MPI_Wtime or std::chrono::steady_clock) around the full timed HPCG run, matching MGopt-APP's own 'end-to-end benchmark performance' scope exactly"
+      timing_scope: "whole benchmark run (there is no separable setup phase for this problem class, per the claim above); MPI/OpenMP process and thread counts must be reported alongside the result (MGopt-APP: 8 MPI x 7 OpenMP on ARM, 4 MPI x 7 OpenMP on x86 to match 28 physical cores) since GFLOPS without a reported core/rank count is not comparable across machines"
+      preprocessing_reported: "N/A (grid generation cost is part of the timed run in HPCG convention, matching MGopt-APP's own practice, since it is a fixed, small, one-time cost relative to the iterative solve that follows)"
+      precision: "fp64 (HPCG reference convention; no paper in this track's CPU-solver methodology explores mixed precision on this problem class)"
+    metric:
+      primary: "GFLOPS (HPCG's own reference FLOP-counting convention: fixed FLOP count per SYMGS+SpMV+dot+axpy call in the reference algorithm, independent of the optimized implementation's actual instruction count)"
+      secondary: "parallel efficiency T_1/(N*T_N) for multi-node runs, N = node/rank count (MGopt-APP's own metric for its 256-node scaling result)"
+    correctness: >
+      HPCG's own built-in reference-residual check: computed x must satisfy
+      the reference implementation's convergence/correctness gate (HPCG
+      spec: relative residual reduction by a fixed factor within the
+      standard iteration count) — reject any run that alters this numerical
+      behavior even if it alters loop structure/memory layout, since
+      MGopt-APP's own stated design goal is "preserves SYMGS semantics
+      without changing the computation outcome," and a spec permitting
+      numerically-different-but-faster SYMGS would undercut the entire
+      point of that constraint.
+
+notes_on_fairness:
+  - >
+    AmgT's own benchmark driver sets `HYPRE_BoomerAMGSetTol(precond, 1e-20)`
+    — a tolerance so tight it can never trigger — specifically so every
+    timed solve always executes exactly 50 iterations regardless of actual
+    convergence, and the paper never reports the final residual reached.
+    This spec does not just adopt that protocol: mg-gpu-solve-kernel-fixed-iter
+    keeps the fixed-work comparison (useful for isolating per-iteration
+    kernel throughput) but requires the final residual be reported anyway,
+    and mg-gpu-e2e-pcg adds the convergence-gated counterpart AmgT's own
+    paper never provides, so a reader can tell whether "50 iterations" was
+    ever enough to reach a real answer for a given input.
+  - >
+    No two of the three genuine solver papers (AmgT, BootCMatchGX,
+    MGopt-APP) share a baseline library, an input suite, or even a
+    problem-generation philosophy (real matrices vs. synthetic Poisson vs.
+    HPCG's own generator) — see survey.md's Divergences. Rather than forcing
+    all three into one variant and hiding this incompatibility, the spec
+    keeps poisson-3d and suitesparse-real as explicitly separate, labeled
+    input classes within the GPU variants, and keeps the CPU/geometric-MG
+    variant entirely separate from the GPU/algebraic-AMG variants, since
+    their setup/solve semantics genuinely differ (see claim text above).
+  - >
+    Only MGopt-APP's paper states an explicit timing protocol (10 reps,
+    geometric mean, <5% variance stated in prose) among the 3 solver
+    papers; AmgT's own code shows a single, unrepeated `gettimeofday`
+    bracket per phase, and BootCMatchGX's paper gives no repetition/
+    statistic language at all. This spec fixes MGopt-APP's protocol
+    (reps=10, geometric mean, explicit variance report) as the uniform
+    requirement across every GPU and CPU variant, rather than the
+    single-shot measurement AmgT's own artifact actually performs.
+  - >
+    BootCMatchGX's comparison against Nvidia AmgX is a rare example of a
+    genuinely fair baseline-matching effort in this track: the authors
+    modified AmgX's own `PCG_AGGREGATION_JACOBI.json` config specifically to
+    produce a hierarchy with comparable operator complexity to their own
+    BCMG solver, rather than comparing against AmgX's arbitrary defaults.
+    This spec generalizes that discipline: every variant above requires
+    operator complexity (or an equivalent hierarchy-quality metric) be
+    reported alongside timing, specifically so config-mismatched
+    comparisons (a "fast" solver that got there by building a cheaper,
+    lower-quality hierarchy) are visible rather than laundered into a bare
+    speedup number.
+  - >
+    MGARD and GPTuneCrowd are excluded from the 4 variants above even
+    though both are in this track's paper set — see open_questions. Folding
+    MGARD's non-iterative data-refactoring throughput or GPTuneCrowd's
+    black-box-tuning-of-Hypre-as-one-of-five-applications into a "multigrid
+    solver kernel" spec would blend three incompatible claims (solve a
+    linear system fastest vs. compress data fastest vs. tune parameters
+    best) under one metric, which is exactly the kind of apples-to-oranges
+    comparison this track's fairness principles are meant to prevent.
+
+open_questions:
+  - >
+    W-cycle is asserted as "equally applicable" by MGopt-APP but never
+    actually benchmarked by any of the 3 solver papers (all three report
+    V-cycle only; MGopt-APP additionally reports F-cycle for one real
+    application, CitcomCU, but not on its synthetic HPCG grid). A W-cycle
+    variant was considered but not added — no surveyed paper provides even
+    one concrete number to calibrate expected iteration-count/convergence-
+    rate tradeoffs against, so adding the variant now would mean inventing
+    a protocol with no literature anchor at all, unlike every other variant
+    above which traces to a specific paper's actual practice.
+  - >
+    MGARD's data-refactoring throughput (GB/s/TB/s against theoretical peak
+    memory bandwidth, no setup/solve split, no convergence criterion, no
+    Ax=b ever solved) does not fit any of the 4 variants above and was
+    deliberately left out rather than forced in. If this track's scope is
+    later widened to include "multigrid mathematics applied to non-solver
+    problems," MGARD's own evaluation methodology (§IV-A in survey.md item
+    4) is a ready-made template for a `mg-data-refactoring-throughput`
+    variant: synthetic Gray-Scott-simulation grids, GB/s vs. hardware peak,
+    weak-scaling up to 1024 nodes — but this is a decision for whoever owns
+    the track's scope, not implicit in the 5-paper survey alone.
+  - >
+    GPTuneCrowd's Hypre/BoomerAMG sensitivity-analysis result (agg_num_levels
+    and smooth_type are the most-influential of 12 tuning parameters, per
+    Sobol S1/ST scores on a 100^3 Poisson grid) is a genuinely useful signal
+    for anyone building an autotuning harness ON TOP of the mg-gpu-*
+    variants above (e.g. "which of BootCMatchGX's/AmgT's exposed knobs are
+    worth a search budget"), but GPTuneCrowd itself benchmarks tuning
+    QUALITY (tuned runtime after N function evaluations), not kernel
+    throughput — a fundamentally different measurement axis this spec does
+    not attempt to fold in. Left as a candidate cross-reference for a future
+    autotuner-focused track (see benchspecs/autotuner-multi-kernel/) rather
+    than a multigrid-track variant.
+  - >
+    AmgT's exact fp16 substitution behavior when the target GPU/HYPRE build
+    lacks a usable tensor-core fp16 path for the coarse-level SpGEMM/SpMV
+    (the paper states it "did not utilize FP16 precision" in its own
+    mixed-precision run and set the coarser levels to fp64 instead of the
+    fp32/fp16 cascade described elsewhere in the same paper) means the exact
+    per-GPU precision cascade actually run is inconsistent even within
+    AmgT's own paper (H100/A100 runs vs. the MI210 run use different
+    fallbacks). mg-gpu-solve-kernel-fixed-iter's precision sub-variant (ii)
+    requires reporting WHICH actual per-level precision assignment was used,
+    rather than assuming "AmgT's mixed-precision cascade" is one fixed,
+    unambiguous configuration across all hardware.
+  - >
+    Neither BootCMatchGX's nor MGopt-APP's paper discloses a warmup-run
+    count (BootCMatchGX: none discussed at all; MGopt-APP: "we run each test
+    case 10 times," ambiguous on whether the first of the 10 is a cold run
+    included in the geometric mean or excluded as warmup). This spec's
+    warmup=3 for the GPU variants is not traceable to any single surveyed
+    paper's stated practice (none states a warmup count at all) and should
+    be treated as a spec-author default pending a code-level check of
+    whichever reference implementation is actually used to run this
+    benchmark, not as a value extracted from the literature.
+
+evidence:
+  conf/sc/LuZWFLCY0C024: "16 curated SuiteSparse matrices; V-cycle, MaxIter=50 fixed with Tol=1e-20 (never converges early, code-verified); setup(SpGEMM)/solve(SpMV) timed as separate gettimeofday brackets in test_new.c; fp64 baseline vs. fp64/fp32/fp16-per-level mixed-precision cascade; HYPRE-GPU/cuSPARSE/rocSPARSE baselines; no stated warmup/rep count."
+  journals/tpds/BernaschiCVD23: "synthetic 3D 7-point-stencil Poisson (300^3 strong-scaling, 130^3/node weak-scaling to 100 nodes); V-cycle, 4 pre/post l1-Jacobi sweeps, 20 sweeps at coarsest level (no direct solve); REAL convergence gate: relative l2 residual < 1e-6, max 1000 PCG iterations; setup(tsetup)/solve(tsolve) reported separately; operator complexity reported alongside time; fp64 only; AmgX baseline config-matched for comparable operator complexity; no stated rep count."
+  conf/ics/YangLYDHW23: "HPCG v3.1 synthetic 192^3 grid (4-level geometric V-cycle, no algebraic setup phase) + YHAMG/CitcomCU real-app validation; explicit protocol: 10 reps, geometric mean, <5% cross-run variance (only surveyed paper stating this); GFLOPS metric; HPCG_for_ARM/HPCG_for_MKL vendor baselines + own synchronous-BMC ablation; fp64, no precision axis explored."
+  conf/ipps/ChenW0W0PTCWMFK21: "NOT a solver — multigrid-based lossy data-refactoring (Gray-Scott synthetic grids, single/double precision); no setup/solve split, no convergence criterion (deterministic error bound instead); GB/s vs. hardware peak-bandwidth metric, weak-scaled to 1024 Summit nodes (250 TB/s, 83% of peak); baseline = own prior CPU/GPU implementation, not a third-party library; excluded from the 4 solver-kernel variants above, left as an open_questions template."
+  conf/ipps/ChoDKLLL23: "NOT a multigrid implementation — crowd-based autotuner (GPTuneCrowd) that treats Hypre/BoomerAMG as 1 of 5 black-box tuning targets (also PDGEQRF, NIMROD, SuperLU_DIST); Sobol sensitivity analysis over 12 BoomerAMG knobs on a synthetic 100^3/120^3 Poisson grid, 1000 pre-collected samples; measures tuned-runtime-after-N-evaluations, not kernel throughput; excluded from the 4 solver-kernel variants above, cross-referenced as autotuning-harness context in open_questions."

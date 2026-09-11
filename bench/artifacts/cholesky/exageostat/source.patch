@@ -1,0 +1,126 @@
+diff --git a/chameleon b/chameleon
+--- a/chameleon
++++ b/chameleon
+@@ -1 +1 @@
+-Subproject commit 4db899ca30d29927018d83964b9b6d517269abe1
++Subproject commit 4db899ca30d29927018d83964b9b6d517269abe1-dirty
+diff --git a/exageostat_exact/cuda_core/compute/cuda_conv.cu b/exageostat_exact/cuda_core/compute/cuda_conv.cu
+index 37b9b45..838cd58 100644
+--- a/exageostat_exact/cuda_core/compute/cuda_conv.cu
++++ b/exageostat_exact/cuda_core/compute/cuda_conv.cu
+@@ -20,7 +20,13 @@
+ 
+ #define CHUNKSIZE 32
+ 
+-#include <cublas.h>
++/* HPC-KernelBench / exageostat integration (build-system fix, CUDA-version
++ * guard -- no numerics touched): CUDA 12.9's cublas_v2.h hard-errors if
++ * legacy cublas.h is also included in the same translation unit; the
++ * exageostatcudacore.h include below brings in cudablas.h, which pulls in
++ * cublas_v2.h (this project is built with CHAMELEON_USE_CUBLAS_V2=ON
++ * throughout, see build.sh). This redundant direct legacy include is
++ * dropped, not replaced. */
+ #include <stdio.h>
+ #include "../include/exageostatcudacore.h"
+ 
+diff --git a/exageostat_exact/cuda_core/compute/cuda_zcmg.cu b/exageostat_exact/cuda_core/compute/cuda_zcmg.cu
+index dbf1dcb..1512f68 100644
+--- a/exageostat_exact/cuda_core/compute/cuda_zcmg.cu
++++ b/exageostat_exact/cuda_core/compute/cuda_zcmg.cu
+@@ -20,7 +20,13 @@
+ 
+ #define CHUNKSIZE 32
+ 
+-#include <cublas.h>
++/* HPC-KernelBench / exageostat integration (build-system fix, CUDA-version
++ * guard -- no numerics touched): CUDA 12.9's cublas_v2.h hard-errors if
++ * legacy cublas.h is also included in the same translation unit; the
++ * exageostatcudacore.h include below brings in cudablas.h, which pulls in
++ * cublas_v2.h (this project is built with CHAMELEON_USE_CUBLAS_V2=ON
++ * throughout, see build.sh). This redundant direct legacy include is
++ * dropped, not replaced. */
+ #include <stdio.h>
+ #include "../include/exageostatcudacore.h"
+ 
+diff --git a/include/chameleon_starpu.h b/include/chameleon_starpu.h
+index d4b0500..897f45a 100644
+--- a/include/chameleon_starpu.h
++++ b/include/chameleon_starpu.h
+@@ -53,11 +53,18 @@
+ #include <starpu_scheduler.h>
+ #include <starpu_cuda.h>
+ 
+-#include <cublas.h>
+-#include <starpu_cublas.h>
++/* HPC-KernelBench / exageostat integration (build-system fix, CUDA-version
++ * guard -- no numerics touched): see
++ * chameleon/runtime/starpu/include/chameleon_starpu.h.in's identical fix --
++ * this is exageostat's own vendored copy of the same file. CUDA 12.9's
++ * cublas_v2.h hard-errors if legacy cublas.h is also included; this project
++ * is built with CHAMELEON_USE_CUBLAS_V2=ON throughout (see build.sh). */
+ #if defined(CHAMELEON_USE_CUBLAS_V2)
+ #include <cublas_v2.h>
+ #include <starpu_cublas_v2.h>
++#else
++#include <cublas.h>
++#include <starpu_cublas.h>
+ #endif
+ #endif
+ 
+diff --git a/include/common.h b/include/common.h
+index 9f9742d..b51a03a 100644
+--- a/include/common.h
++++ b/include/common.h
+@@ -62,7 +62,15 @@
+ #include <cuda.h>
+ #include <cuda_runtime.h>
+ #include <cuda_runtime_api.h>
+-#include <cublas.h>
++/* HPC-KernelBench / exageostat integration (build-system fix, CUDA-version
++ * guard -- no numerics touched): CUDA 12.9's cublas_v2.h hard-errors if the
++ * legacy cublas.h is also included in the same translation unit (a
++ * deprecation the CUDA toolkit added after this ~2019-era code was written;
++ * see chameleon/cudablas/include/cudablas.h's own CHAMELEON_USE_CUBLAS_V2
++ * option for the same conflict one level down, resolved there via
++ * -DCHAMELEON_USE_CUBLAS_V2=OFF at configure time in build.sh). This file
++ * has no equivalent CMake option, so the legacy header (superseded by
++ * cublas_v2.h, included right below) is dropped directly. */
+ #include <cublas_v2.h>
+ #endif
+ 
+@@ -120,8 +128,17 @@ extern char *chameleon_lapack_constants[];
+ extern "C" {
+ #endif
+ 
++/* HPC-KernelBench / exageostat integration (build-system / language-compat
++ * fix, no numerics touched -- see build.sh's own note): `operator` is a
++ * reserved keyword in C++. This prototype is inside an `extern "C" { }`
++ * block (linkage only, not a language switch), and this header is now
++ * reached from .cu files compiled by nvcc's C++ front end (previously only
++ * plain C/gcc compiled it), which correctly rejects it. Renamed to `op`
++ * here -- a prototype's parameter names are cosmetic in C, so the actual
++ * definition's parameter name (wherever it lives) needs no matching
++ * change. */
+ void chameleon_pmap(cham_uplo_t uplo, CHAM_desc_t *A,
+-                    cham_unary_operator_t operator, void *op_args,
++                    cham_unary_operator_t op, void *op_args,
+                     RUNTIME_sequence_t *sequence, RUNTIME_request_t *request);
+ 
+ #if defined(__GNUC__)
+@@ -135,7 +152,15 @@ static inline int chameleon_asprintf(char **strp, const char *fmt, ...) {
+     int rc;
+ 
+     va_start(ap, fmt);
+-    rc = vsprintf(strp, fmt, ap);
++    /* HPC-KernelBench / exageostat integration (build-system fix, no
++     * numerics touched): this called plain vsprintf(strp, ...) with
++     * strp declared char** -- a pointer-type mismatch (vsprintf wants
++     * char*) that a C compiler accepts with a warning but nvcc's C++
++     * front end correctly rejects as a hard error. `chameleon_asprintf`'s
++     * own name, its __attribute__((format(printf,...))) annotation above,
++     * and its char** out-parameter all match the GNU libc vasprintf(3)
++     * signature exactly -- this is what the code always meant to call. */
++    rc = vasprintf(strp, fmt, ap);
+     va_end(ap);
+ 
+     assert(rc != -1);

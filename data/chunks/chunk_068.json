@@ -1,0 +1,484 @@
+[
+ {
+  "key": "journals/tpds/SzustakWKO21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Architectural Adaptation and Performance-Energy Optimization for CFD Application on AMD EPYC Rome",
+  "abstract": "The advantages of the second-generation AMD EPYC Rome processors can be successfully used in the race to Exascale. However, the novel architecture's complexity makes it challenging to adapt demanding scientific codes - like stencil ones - to platforms with Rome CPUs. This article tackles this challenge by exploring the adaptation of the stencil-based CFD (computational fluid dynamics) application called MPDATA to these processors' influential features. We show that the previously proposed parametric adaptation methodology can be profitably applied to extend the performance portability of the memory-bound MPDATA on the AMD EPYC architecture. The extension of the parametric adaptation on the novel architecture requires careful consideration of two relevant aspects that reflect splitting the Rome architecture into multiple dies - features of the cache hierarchy and partitioning cores into work teams. The article also investigates the correlation between the performance optimizations and energy efficiency for a ccNUMA platform powered by top-of-the-line 64-core AMD Rome 7742 CPUs, comparing the results against two servers with Intel Xeon Scalable processors of different generations. Even without appealing to prices, the achieved performance and energy efficiency results are a solid argument confirming the competitiveness of AMD Rome processors against Intel Xeon CPUs in scientific applications.",
+  "hint_categories": [
+   "stencil_pde"
+  ]
+ },
+ {
+  "key": "journals/tpds/LiHCJXY21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Auditing Cache Data Integrity in the Edge Computing Environment",
+  "abstract": "Edge computing allows app vendors to deploy their applications and relevant data on distributed edge servers to serve nearby users. Caching data on edge servers can minimize users' data retrieval latency. However, such cache data are subject to both intentional and accidental corruption in the highly distributed, dynamic, and volatile edge computing environment. Given a large number of edge servers and their limited computing resources, how to effectively and efficiently audit the integrity of app vendors' cache data is a critical and challenging problem. This article makes the first attempt to tackle this Edge Data Integrity (EDI) problem. We first analyze the threat model and the audit objectives, then propose a lightweight sampling-based probabilistic approach, namely EDI-V, to help app vendors audit the integrity of their data cached on a large scale of edge servers. We propose a new data structure named variable Merkle hash tree (VMHT) for generating the integrity proofs of those data replicas during the audit. VMHT can ensure the audit accuracy of EDI-V by maintaining sampling uniformity. EDI-V allows app vendors to inspect their cache data and locate the corrupted ones efficiently and effectively. Both theoretical analysis and comprehensively experimental evaluation demonstrate the efficiency and effectiveness of EDI-V.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "journals/tpds/ChenFLY21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "BALS: Blocked Alternating Least Squares for Parallel Sparse Matrix Factorization on GPUs",
+  "abstract": "Matrix factorization on sparse matrices has been proven to be an effective approach for data mining and machine learning. However, the prior parallel implementations for matrix factorization fail to capture the internal social property embedded in real-world use cases. This article presents an efficient implementation of the alternative least squares (ALS) algorithm called <italic xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">BALS</i> built on top of a new sparse matrix format for parallel matrix factorization. The BALS storage format organizes the sparse matrix into 2D tiles to avoid repeated data loads and improve data reuses. We further propose a data reordering technique to sort sparse matrices according to nonzeros. The experimental results show that BALS can yield a superior performance than state-of-the-art implementations, i.e., our BALS generally runs faster than Gates’ implementation over different latent feature sizes, with a speedup of up to 2.08× on K20C, 3.72× on TITAN X and 3.13× on TITAN RTX. When compared with alternative matrix factorization algorithms, our BALS consistently outperforms CDMF, cuMF_CCD, and cuMF_SGD over various latent feature sizes and datasets. The reordering technique can provide an extra improvement of up to 23.68 percent on K20C, 19.87 percent on TITAN X and 20.38 percent on TITAN RTX.",
+  "hint_categories": [
+   "sparse_la",
+   "primitives"
+  ]
+ },
+ {
+  "key": "journals/tpds/KhaleghzadehFSM21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Bi-Objective Optimization of Data-Parallel Applications on Heterogeneous HPC Platforms for Performance and Energy Through Workload Distribution",
+  "abstract": "Performance and energy are the two most important objectives for optimization on modern parallel platforms. In this article, we show that moving from single-objective optimization for performance or energy to their bi-objective optimization on heterogeneous processors results in a tremendous increase in the number of optimal solutions (workload distributions) even for the simple case of linear performance and energy profiles. We then study full performance and energy profiles of two real-life data-parallel applications and find that they exhibit shapes that are non-linear and complex enough to prevent good approximation of them as analytical functions for input to exact algorithms or optimization software for determining the Pareto front. We, therefore, propose a solution method solving the bi-objective optimization problem on heterogeneous processors. The method's novel component is an efficient and exact global optimization algorithm that takes as an input performance and energy profiles as arbitrary discrete functions of workload size, which accurately and realistically take into account resource contention and NUMA inherent in modern parallel platforms, and returns the Pareto-optimal solutions (generally speaking, load imbalanced). To construct the input discrete energy functions, the method employs a methodology that accurately models the energy consumption by a hybrid data-parallel application executing on a heterogeneous HPC platform containing different computing devices using system-level power measurements provided by power meters. We experimentally analyse the proposed solution method using three data-parallel applications, matrix multiplication, 2D fast Fourier transform (2D-FFT), and gene sequencing, on two connected heterogeneous servers consisting of multicore CPUs, GPUs, and Intel Xeon Phi. We show that it determines a superior Pareto front containing the best load balanced solutions and all the load imbalanced solutions that are ignored by load balancing methods.",
+  "hint_categories": [
+   "dense_la",
+   "fft_spectral"
+  ]
+ },
+ {
+  "key": "journals/tpds/GokturkK21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Boosting Parallel Influence-Maximization Kernels for Undirected Networks With Fusing and Vectorization",
+  "abstract": "Influence maximization (IM) is the problem of finding a seed vertex set which is expected to incur the maximum influence spread on a graph. It has various applications in practice such as devising an effective and efficient approach to disseminate information, news or ad within a social network. The problem is shown to be NP-hard and approximation algorithms with provable quality guarantees exist in the literature. However, these algorithms are computationally expensive even for medium-scaled graphs. Furthermore, graph algorithms usually suffer from spatial and temporal irregularities during memory accesses, and this adds an extra cost on top of the already expensive IM kernels. In this article we leverage fused sampling, memoization, and vectorization to restructure, parallelize and boost their performance on undirected networks. The proposed approach employs a pseudo-random function and performs multiple Monte-Carlo simulations in parallel to exploit the SIMD lanes effectively and efficiently. In addition, it significantly reduces the number of edge traversals, hence the amount of data brought from the memory, which is critical for almost all memory-bound graph kernels. We apply the proposed approach to the traditional MIXGREEDY algorithm and propose INFUSER-MG which is more than 3000χ fasterthan the greedy approaches and can run on large graphs that have been considered as too large in the literature. For instance, the new algorithm runs in 2.09, 0.08, 0.36 seconds on graphs Amazon, NetHEP, NetPhy with 16 threads where the sequential baseline takes 141.3, 259.1 and 1725.2 seconds, respectively. To compare INFUSER-MG with the state-of-the-art approximation algorithms, we conduct a thorough experimental analysis with various influence settings. The results on real-life, undirected networks show that on 16 threads, INFUSER-MG is 2:3χ-173:8χ faster than state-of-the-art while being superior in terms of influence scores, and using a comparable amount of memory.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "journals/tpds/LiBNGDAH21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Breaking (Global) Barriers in Parallel Stochastic Optimization With Wait-Avoiding Group Averaging",
+  "abstract": "Deep learning at scale is dominated by communication time. Distributing samples across nodes usually yields the best performance, but poses scaling challenges due to global information dissemination and load imbalance across uneven sample lengths. State-of-the-art decentralized optimizers mitigate the problem, but require more iterations to achieve the same accuracy as their globally-communicating counterparts. We present Wait-Avoiding Group Model Averaging (WAGMA) SGD, a wait-avoiding stochastic optimizer that reduces global communication via subgroup weight exchange. The key insight is a combination of algorithmic changes to the averaging scheme and the use of a group allreduce operation. We prove the convergence of WAGMA-SGD, and empirically show that it retains convergence rates similar to Allreduce-SGD. For evaluation, we train ResNet-50 on ImageNet; Transformer for machine translation; and deep reinforcement learning for navigation at scale. Compared with state-of-the-art decentralized SGD variants, WAGMA-SGD significantly improves training throughput (e.g., 2.1× on 1,024 GPUs for reinforcement learning), and achieves the fastest time-to-solution (e.g., the highest score using the shortest training time for Transformer).",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "journals/tpds/XiaoLCHZL21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "CASpMV: A Customized and Accelerative SpMV Framework for the Sunway TaihuLight",
+  "abstract": "The Sunway TaihuLight, equipped with 10 million cores, is currently the world's third fastest supercomputer. SpMV is one of core algorithms in many high-performance computing applications. This paper implements a fine-grained design for generic parallel SpMV based on the special Sunway architecture and finds three main performance limitations, i.e., storage limitation, load imbalance, and huge overhead of irregular memory accesses. To address these problems, this paper introduces a customized and accelerative framework for SpMV (CASpMV) on the Sunway. The CASpMV customizes an auto-tuning four-way partition scheme for SpMV based on the proposed statistical model, which describes the sparse matrix structure characteristics, to make it better fit in with the computing architecture and memory hierarchy of the Sunway. Moreover, the CASpMV provides an accelerative method and customized optimizations to avoid irregular memory accesses and further improve its performance on the Sunway. Our CASpMV achieves a performance improvement that ranges from 588.05 to 2118.62 percent over the generic parallel SpMV on a CG (which corresponds to an MPI process) of the Sunway on average and has good scalability on multiple CGs. The performance comparisons of the CASpMV with state-of-the-art methods on the Sunway indicate that the sparsity and irregularity of data structures have less impact on CASpMV.",
+  "hint_categories": [
+   "sparse_la"
+  ]
+ },
+ {
+  "key": "journals/tpds/ZhouWLXSG21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Canary: Decentralized Distributed Deep Learning Via Gradient Sketch and Partition in Multi-Interface Networks",
+  "abstract": "The multi-interface networks are efficient infrastructures to deploy distributed Deep Learning (DL) tasks as the model gradients generated by each worker can be exchanged to others via different links in parallel. Although this decentralized parameter synchronization mechanism can reduce the time of gradient exchange, building a high-performance distributed DL architecture still requires the balance of communication efficiency and computational utilization, i.e., addressing the issues of traffic burst, data consistency, and programming convenience. To achieve this goal, we intend to asynchronously exchange gradient pieces without the central control in multi-interface networks. We propose the Piece-level Gradient Exchange and Multi-interface Collective Communication to handle parameter synchronization and traffic transmission, respectively. Specifically, we design the gradient sketch approach based on 8-bit uniform quantization to compress gradient tensors and introduce the colayerabstraction to better handle gradient partition, exchange and pipelining. Also, we provide general programming interfaces to capture the synchronization semantics and build the Gradient Exchange Index (GEI) data structures to make our approach online applicable. We implement our algorithms into a prototype system called Canary by using PyTorch-1.4.0. Experiments conducted in Alibaba Cloud demonstrate that Canary reduces 56.28 percent traffic on average and completes the training by up to 1.61x, 2.28x, and 2.84x faster than BML, Ako on PyTorch, and PS on TensorFlow, respectively.",
+  "hint_categories": []
+ },
+ {
+  "key": "journals/tpds/YuZJPZLT21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Collaborative Heterogeneity-Aware OS Scheduler for Asymmetric Multicore Processors",
+  "abstract": "Asymmetric multicore processors (AMP) offer multiple types of cores under the same programming interface. Extracting the full potential of AMPs requires intelligent scheduling decisions, matching each thread with the right kind of core, the core that will maximize performance or minimize wasted energy for this thread. Existing OS schedulers are not up to this task. While they may handle certain aspects of asymmetry in the system, none can handle all runtime factors affecting AMPs for the general case of multi-threaded multi-programmed workloads. We address this problem by introducing COLAB, a general purpose asymmetry-aware scheduler targeting multi-threaded multi-programmed workloads. It estimates the performance and power of each thread on each type of core and identifies communication patterns and bottleneck threads. With this information, the scheduler makes coordinated core assignment and thread selection decisions that still provide each application its fair share of the processor's time. We evaluate our approach using both the GEM5 simulator on four distinct big.LITTLE configurations and a development board with ARM Cortex-A73/A53 processors and mixed workloads composed of PARSEC and SPLASH2 benchmarks. Compared to the state-of-the art Linux CFS and AMP-aware schedulers, we demonstrate performance gains of up to 25 and 5 to 15 percent on average, together with an average 5 percent energy saving depending on the hardware setup.",
+  "hint_categories": []
+ },
+ {
+  "key": "journals/tpds/KarnKHSE21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Cryptomining Detection in Container Clouds Using System Calls and Explainable Machine Learning",
+  "abstract": "The use of containers in cloud computing has been steadily increasing. With the emergence of Kubernetes, the management of applications inside containers (or pods) is simplified. Kubernetes allows automated actions like self-healing, scaling, rolling back, and updates for the application management. At the same time, security threats have also evolved with attacks on pods to perform malicious actions. Out of several recent malware types, cryptomining has emerged as one of the most serious threats with its hijacking of server resources for cryptocurrency mining. During application deployment and execution in the pod, a cryptomining process, started by a hidden malware executable can be run in the background, and a method to detect malicious cryptomining software running inside Kubernetes pods is needed. One feasible strategy is to use machine learning (ML) to identify and classify pods based on whether or not they contain a running process of cryptomining. In addition to such detection, the system administrator will need an explanation as to the reason(s) of the ML's classification outcome. The explanation will justify and support disruptive administrative decisions such as pod removal or its restart with a new image. In this article, we describe the design and implementation of an ML-based detection system of anomalous pods in a Kubernetes cluster by monitoring Linux-kernel system calls (syscalls). Several types of cryptominers images are used as containers within an anomalous pod, and several ML models are built to detect such pods in the presence of numerous healthy cloud workloads. Explainability is provided using SHAP, LIME, and a novel auto-encoding-based scheme for LSTM models. Seven evaluation metrics are used to compare and contrast the explainable models of the proposed ML cryptomining detection engine.",
+  "hint_categories": []
+ },
+ {
+  "key": "journals/tpds/SongZLYH21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "DTransE: Distributed Translating Embedding for Knowledge Graph",
+  "abstract": "Knowledge graphs play an important role in many applications, such as link prediction and question answering. Translating embedding for knowledge graphs is done with the aim of encoding structured information on entities and their rich relations in a low-dimensional embedding space. TransE is one of the most important methods in translation-based models, and uses translation invariance to implement translating embedding for knowledge graphs. In this line of work, translating embedding models represent the relation as a translation from the head entity to the tail entity and have achieved impressive results. Currently, the TransE model is only developed on single-node machines. Unfortunately, the computing and storage capacities of a single machine can easily reach their limits as knowledge graphs become larger and more complex, which limits the application scope of TransE. In order to solve this problem, we propose a distributed TransE method, known as DTransE, which can utilize distributed computing resources to calculate knowledge graph embeddings. However, building a distributed TransE is complicated and involves challenges of knowledge graph partitioning and computation. To solve these challenges, we provide a high-quality edge partitioning algorithm for the power-law graph by considering the high-degree and low-degree vertices with adaptive weights, which can balance the workload. By using the unactivated Gather-Apply-Scatter model on TransE, the processes periodically exchange messages in a loop. The irregular data distribution among the processes is also optimized to further accelerate communication. As far as we know, this is the first work on a distributed TransE method. We use link prediction to evaluate the DTransE in a distributed environment. Experiments show that, compared to the original TransE method, our proposed DTransE is, on average, 24.5 times faster with a minimum loss of accuracy; compared to the state-of-the-art parallel TransE implementation, DTransE is two times faster on average.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "journals/tpds/RangYCW21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Data Life Aware Model Updating Strategy for Stream-Based Online Deep Learning",
+  "abstract": "Many deep learning applications deployed in dynamic environments change over time, in which the training models are supposed to be continuously updated with streaming data to guarantee better descriptions of data trends. However, most state-of-the-art learning frameworks support well in <italic xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">offline</i> training methods while omitting <italic xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">online model updating</i> strategies. In this work, we propose and implement <italic xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">iDlaLayer</i> , a thin middleware layer on top of existing training frameworks that streamlines the support and implementation of online deep learning applications. In pursuit of good model quality and fast data incorporation, we design a Data Life Aware model updating strategy (DLA), which builds training data samples according to contributions of data from different life stages, and considers the training cost consumed in model updating. We evaluate iDlaLayer's performance through simulations and experiments based on TensorflowOnSpark with three representative online learning workloads. Our experimental results demonstrate that iDlaLayer reduces the overall elapsed time of ResNet, DeepFM and PageRank by 11.3, 28.2, and 15.2 percent compared to the periodic update strategy, respectively. It further achieves an average 20 percent decrease in training cost and brings about a 5 percent improvement in model quality against the traditional continuous training method.",
+  "hint_categories": [
+   "graph"
+  ]
+ },
+ {
+  "key": "journals/tpds/HanPB21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Design and Implementation of a Criticality- and Heterogeneity-Aware Runtime System for Task-Parallel Applications",
+  "abstract": "Heterogeneous multiprocessing (HMP) is an emerging technology for high-performance and energy-efficient computing. While task parallelism is widely used in various computing domains, such as embedded, big-data, and machine-learning computing domains, it still remains unexplored to investigate the efficient runtime support that effectively utilizes the criticality of the tasks of the target application and the heterogeneity of the underlying HMP system with full resource management. To bridge this gap, we propose CHRT, a criticality- and heterogeneity-aware runtime system for task-parallel applications. CHRT dynamically estimates the performance and power consumption of the target task-parallel application and robustly manages the full HMP system resources (i.e., core types, counts, and voltage/frequency levels) to maximize the overall efficiency. Our quantitative evaluation based on widely-used task parallel benchmarks and two full HMP systems (i.e., the XU3 and HiKey970 HMP systems) demonstrates the effectiveness of CHRT in that CHRT achieves significantly higher energy (e.g., 60.4 and 57.2 percent on average on the XU3 system) and energy-delay product (e.g., 52.2 and 44.0 percent on average on the HiKey970 system) efficiency than the baseline runtime system that employs the breadth-first scheduler and the state-of-the-art criticality-aware runtime system and incurs low performance overheads.",
+  "hint_categories": [
+   "graph"
+  ]
+ },
+ {
+  "key": "journals/tpds/LiuTHLTL21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Distributed Task Migration Optimization in MEC by Extending Multi-Agent Deep Reinforcement Learning Approach",
+  "abstract": "Closer to mobile users geographically, mobile edge computing (MEC) can provide some cloud-like capabilities to users more efficiently. This enables it possible for resource-limited mobile users to offload their computation-intensive and latency-sensitive tasks to MEC nodes. For its great benefits, MEC has drawn wide attention and extensive works have been done. However, few of them address task migration problem caused by distributed user mobility, which can't be ignored with quality of service (QoS) consideration. In this article, we study task migration problem and try to minimize the average completion time of tasks under migration energy budget. There are multiple independent users and the movement of each mobile user is memoryless with a sequential decision-making process, thus reinforcement learning algorithm based on Markov chain model is applied with low computation complexity. To further facilitate cooperation among users, we devise a distributed task migration algorithm based on counterfactual multi-agent (COMA) reinforcement learning approach to solve this problem. Extensive experiments are carried out to assess the performance of this distributed task migration algorithm. Compared with no migrating (NM) and single-agent actor-critic (AC) algorithms, the proposed distributed task migration algorithm can achieve up 30-50 percent reduction about average completion time.",
+  "hint_categories": [
+   "primitives",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "journals/tpds/GiordanoRRDS21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Dynamic Load Balancing in Parallel Execution of Cellular Automata",
+  "abstract": "The allocation of the computational load across different processing elements is an important issue in parallel computing. Indeed, an unbalanced load distribution can strongly affect the performances of a parallel system caused by an excess of synchronization idle times due to less loaded processes waiting for more loaded ones. In this article, we focus on the load balancing issues in the context of the parallel execution of spatial-related applications where the domain space is partitioned in regions that are assigned to different processing elements. In particular, without loss of generality, we consider the well-known spatial-related Cellular Automata computational paradigm for evaluating the proposed dynamic load balancing approach. The main contribution of this article is the derivation of simple closed-form expressions that allow to compute the optimal workload assignment in a dynamic fashion, with the goal of guaranteeing a fully balanced workload distribution during the parallel execution. Based on these expressions, an algorithm for balanced execution of cellular automata is presented and implemented using the MPI technology. Eventually, an experimental section practically shows the behaviour of the proposed dynamic load balancing approach and proves its performance improvement, compared to the not-balanced version, as witnessed by the appreciable reduction of execution times.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "journals/tpds/CuiCZWTG21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "E2bird: Enhanced Elastic Batch for Improving Responsiveness and Throughput of Deep Learning Services",
+  "abstract": "We aim to tackle existing problems about deep learning serving on GPUs in the view of the system. GPUs have been widely adopted to serve online deep learning-based services that have stringent QoS(Quality-of-Service) requirements. However, emerging deep learning serving systems often result in poor responsiveness and low throughput of the inferences that damage user experience and increase the number of GPUs required to host an online service. Our investigation shows that the poor batching operation and the lack of data transfer-computation overlap are the root causes of the poor responsiveness and low throughput. To this end, we propose E <sup xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">2</sup> bird, a deep learning serving system that is comprised of a GPU-resident memory pool, a multi-granularity inference engine, and an elastic batch scheduler. The memory pool eliminates the unnecessary waiting of the batching operation and enables data transfer-computation overlap. The inference engine enables concurrent execution of different batches, improving the GPU resource utilization. The batch scheduler organizes inferences elasticallyto guarantee the QoS. Our experimental results on an Nvidia Titan RTXGPU show that E <sup xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">2</sup> bird reduces the response latency of inferences by up to 82.4 percent and improves the throughput by up to 62.8 percent while guaranteeing the QoS target compared with TensorFlow Serving.",
+  "hint_categories": []
+ },
+ {
+  "key": "journals/tpds/YangLL21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "EDGES: An Efficient Distributed Graph Embedding System on GPU Clusters",
+  "abstract": "Graph embedding training models access parameters sparsely in a “one-hot” manner. Currently, the distributed graph embedding neural network is learned by data parallel with the parameter server, which suffers significant performance and scalability problems. In this article, we analyze the problems and characteristics of training this kind of models on distributed GPU clusters for the first time, and find that fixed model parameters scattered among different machine nodes are a major limiting factor for efficiency. Based on our observation, we develop an efficient distributed graph embedding system called EDGES, which can utilize GPU clusters to train large graph models with billions of nodes and trillions of edges using data and model parallelism. Within the system, we propose a novel dynamic partition architecture for training these models, achieving at least one half of communication reduction compared to existing training systems. According to our evaluations on real-world networks, our system delivers a competitive accuracy for the trained embeddings, and significantly accelerates the training process of the graph node embedding neural network, achieving a speedup of 7.23x and 18.6x over the existing fastest training system on single node and multi-node, respectively. As for the scalability, our experiments show that EDGES obtains a nearly linear speedup.",
+  "hint_categories": [
+   "primitives",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "journals/tpds/AhmadianSMA21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "ETICA: Efficient Two-Level I/O Caching Architecture for Virtualized Platforms",
+  "abstract": "In recent years, increased I/O demand of Virtual Machines (VMs) in large-scale data centers and cloud computing has encouraged system architects to design high-performance storage systems. One common approach to improving performance is to employ fast storage devices such as Solid-State Drives (SSDs) as an I/O caching layer for slower storage devices. SSDs provide high performance, especially on random requests, but they also have limited endurance: they support only a limited number of write operations and can therefore wear out relatively fast due to write operations. In addition to the write requests generated by the applications, each read miss in the SSD cache is served at the cost of imposing a write operation to the SSD (to copy the data block into the cache), resulting in an even larger number of writes into the SSD. Previous I/O caching schemes on virtualized platforms only partially mitigate the endurance limitations of SSD-based I/O caches; they mainly focus on assigning efficient cache write policies and cache space to the VMs. Moreover, existing cache space allocation schemes have inefficiencies: they do not take into account the impact of cache write policy in reuse distance calculation of the running workloads and hence, reserve cache blocks for accesses that would not be served by cache. In this article, we propose an Efficient Two-Level I/O Caching Architecture (ETICA) for virtualized platforms that can significantly improve I/O latency, endurance, and cost (in terms of cache size) while preserving the reliability of write-pending data blocks. As opposed to previous one-level I/O caching schemes in virtualized platforms, our proposed architecture 1) provides two levels of cache by employing both Dynamic Random-Access Memory (DRAM) and SSD in the I/O caching layer of virtualized platforms and 2) effectively partitions the cache space between running VMs to achieve maximum performance and minimum cache size. To manage the two-level cache, unlike the previous reuse distance calculation schemes such as Useful Reuse Distance (URD), which only consider the request type and neglect the impact of cache write policy, we propose a new metric, Policy Optimized reuse Distance (POD). The key idea of POD is to effectively calculate the reuse distance and estimate the amount of two-level DRAM+SSD cache space to allocate by considering both 1) the request type and 2) the cache write policy. Doing so results in enhanced performance and reduced cache size due to the allocation of cache blocks only for the requests that would be served by the I/O cache. ETICA maintains the reliability of write-pending data blocks and improves performance by 1) assigning an effective and fixed write policy at each level of the I/O cache hierarchy and 2) employing effective promotion and eviction methods between cache levels. Our extensive experiments conducted with a real implementation of the proposed two-level storage caching architecture show that ETICA provides 45 percent higher performance, compared to the state-of-the-art caching schemes in virtualized platforms, while improving both cache size and SSD endurance by 51.7 and 33.8 percent, respectively.",
+  "hint_categories": []
+ },
+ {
+  "key": "journals/tpds/DiSCL21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Efficient Buffer Overflow Detection on GPU",
+  "abstract": "Rich thread-level parallelism of GPU has motivated co-running GPU kernels on a single GPU. However, when GPU kernels co-run, it is possible that one kernel can leverage buffer overflow to attack another kernel running on the same GPU. There is very limited work aiming to detect buffer overflow for GPU. Existing work has either large performance overhead or limited capability in detecting buffer overflow. In this article, we introduce GMODx, a runtime software system that can detect GPU buffer overflow. GMODx performs always-on monitoring on allocated memory based on a canary-based design. First, for the fine-grained memory management, GMODx introduces a set of byte arrays to store buffer information for overflow detection. Techniques, such as lock-free accesses to the byte arrays, delayed memory free, efficient memory reallocation, and garbage collection for the byte arrays, are proposed to achieve high performance. Second, for the coarse-grained memory management, GMODx utilizes unified memory to delegate the always-on monitoring to the CPU. To reduce performance overhead, we propose several techniques, including customized list data structure and specific optimizations against the unified memory. For micro-benchmarking, our experiments show that GMODx is capable of detecting buffer overflow for the fine-grained memory management without performance loss, and that it incurs small runtime overhead (4.2 percent on average and up to 9.7 percent) for the coarse-grained memory management. For real workloads, we deploy GMODx on the TensorFlow framework, it only causes 0.8 percent overhead on average (up to 1.8 percent).",
+  "hint_categories": []
+ },
+ {
+  "key": "journals/tpds/BaiLLWMLX21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Efficient Data Loader for Fast Sampling-Based GNN Training on Large Graphs",
+  "abstract": "Emerging graph neural networks (GNNs) have extended the successes of deep learning techniques against datasets like images and texts to more complex graph-structured data. By leveraging GPU accelerators, existing frameworks combine mini-batch and sampling for effective and efficient model training on large graphs. However, this setup faces a scalability issue since loading rich vertex features from CPU to GPU through a limited bandwidth link usually dominates the training cycle. In this article, we propose PaGraph, a novel, efficient data loader that supports general and efficient sampling-based GNN training on single-server with multi-GPU. PaGraph significantly reduces the data loading time by exploiting available GPU resources to keep frequently-accessed graph data with a cache. It also embodies a lightweight yet effective caching policy that takes into account graph structural information and data access patterns of sampling-based GNN training simultaneously. Furthermore, to scale out on multiple GPUs, PaGraph develops a fast GNN-computation-aware partition algorithm to avoid cross-partition access during data-parallel training and achieves better cache efficiency. Finally, it overlaps data loading and GNN computation for further hiding loading costs. Evaluations on two representative GNN models, GCN and GraphSAGE, using two sampling methods, Neighbor and Layer-wise, show that PaGraph could eliminate the data loading time from the GNN training pipeline, and achieve up to 4.8× performance speedup over the state-of-the-art baselines. Together with preprocessing optimization, PaGraph further delivers up to 16.0× end-to-end speedup.",
+  "hint_categories": [
+   "primitives",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "journals/tpds/LiLLZP21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Efficient Forwarding Anomaly Detection in Software-Defined Networks",
+  "abstract": "Data centers, the critical infrastructure underpinning Cloud computing, often employ Software-Defined Networks (SDN) to manage cluster, wide-area and enterprise networks. As the network forwarding in SDN is dynamically programmed by controllers, it is crucial to ensure that the controller intent is correctly translated into underlying forwarding rules. Therefore, detecting and locating forwarding anomalies in SDN is a fundamental problem in production networks. Existing research proposals, roughly categorized into probing-based, packet piggybacking-based, and flow statistics analysis-based, either impose significant overhead or do not provide sufficient coverage for certain forwarding anomalies. In this article, we propose <inline-formula><tex-math notation=\"LaTeX\">${\\sf FADE}$</tex-math></inline-formula> , a controllable and passive measuring scheme to simultaneously deliver detection efficiency and accuracy. <inline-formula><tex-math notation=\"LaTeX\">${\\sf FADE}$</tex-math></inline-formula> first analyzes the entire network topology and flow rules, and then computes a minimal set of flows that can cover all forwarding rules. For each selected network flow, <inline-formula><tex-math notation=\"LaTeX\">${\\sf FADE}$</tex-math></inline-formula> decides the optimal number of monitoring positions on its path (much less than total number of hops), and installs dedicated rules to collect flow statistics. <inline-formula><tex-math notation=\"LaTeX\">${\\sf FADE}$</tex-math></inline-formula> controls the installation and expiration of these rules, along with unique flow labels, to guarantee the accuracy of collected statistics, based on which <inline-formula><tex-math notation=\"LaTeX\">${\\sf FADE}$</tex-math></inline-formula> algorithmically decides whether a forwarding anomaly is detected, and if so it further locates the anomaly. On top of <inline-formula><tex-math notation=\"LaTeX\">${\\sf FADE}$</tex-math></inline-formula> , we propose <inline-formula><tex-math notation=\"LaTeX\">${\\sf iFADE}$</tex-math></inline-formula> (a more scalable version of <inline-formula><tex-math notation=\"LaTeX\">${\\sf FADE}$</tex-math></inline-formula> ) to further optimize the usage and deployment of dedicated measurement rules. <inline-formula><tex-math notation=\"LaTeX\">${\\sf iFADE}$</tex-math></inline-formula> achieves over 40 percent rule reduction compared with <inline-formula><tex-math notation=\"LaTeX\">${\\sf FADE}$</tex-math></inline-formula> . We implement a prototype of both <inline-formula><tex-math notation=\"LaTeX\">${\\sf FADE}$</tex-math></inline-formula> and <inline-formula><tex-math notation=\"LaTeX\">${\\sf iFADE}$</tex-math></inline-formula> in about 12000 lines of code and evaluate the prototype extensively. The experiment results demonstrate <inline-formula><tex-math notation=\"LaTeX\">${\\sf (i)}$</tex-math></inline-formula> <inline-formula><tex-math notation=\"LaTeX\">${\\sf FADE}$</tex-math></inline-formula> and <inline-formula><tex-math notation=\"LaTeX\">${\\sf iFADE}$</tex-math></inline-formula> are accurate, e.g., they achieve over 95 percent true positive rate and 99 percent true negative rate in anomaly detection; <inline-formula><tex-math notation=\"LaTeX\">${\\sf (ii)}$</tex-math></inline-formula> <inline-formula><tex-math notation=\"LaTeX\">${\\sf FADE}$</tex-math></inline-formula> and <inline-formula><tex-math notation=\"LaTeX\">${\\sf iFADE}$</tex-math></inline-formula> are lightweight, e.g., they reduce the overhead of control messages compared with state-of-the-art by about 50 and 90 percent, respectively.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "journals/tpds/LiZXHC21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Efficient Methods for Mapping Neural Machine Translator on FPGAs",
+  "abstract": "Neural machine translation (NMT) is one of the most critical applications in natural language processing (NLP) with the main idea of converting text in one language to another using deep neural networks. In recent year, we have seen continuous development of NMT by integrating more emerging technologies, such as bidirectional gated recurrent units (GRU), attention mechanisms, and beam-search algorithms, for improved translation quality. However, with the increasing problem size, the real-life NMT models have become much more complicated and difficult to implement on hardware for acceleration opportunities. In this article, we aim to exploit the capability of FPGAs to deliver highly efficient implementations for real-life NMT applications. We map the inference of a large-scale NMT model with total computation of 172 GFLOP to a highly optimized high-level synthesis (HLS) IP and integrate the IP into Xilinx VCU118 FPGA platform. The model has widely used key features for NMTs, including the bidirectional GRU layer, attention mechanism, and beam search. We quantize the model to mixed-precision representation in which parameters and portions of calculations are in 16-bit half precision, and others remain as 32-bit floating-point. Compared to the float NMT implementation on FPGA, we achieve 13.1× speedup with an end-to-end performance of 22.0 GFLOPS without any accuracy degradation. Based on our knowledge, this is the first work that successfully implements a real-life end-to-end NMT model to an FPGA on board.",
+  "hint_categories": [
+   "dense_la",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "journals/tpds/FanXCCY21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Efficient Virtual Network Embedding of Cloud-Based Data Center Networks into Optical Networks",
+  "abstract": "The demand for data center bandwidth has exploded due to the continuous development of cloud computing, causing the use of network resources close to saturation. Optical network has become an encouraging technology for many burgeoning networks and parallel/distributed computing applications because of its huge bandwidth. This article focuses on efficient embedding of data centers into optical networks, which aims to reduce complexity of the network topology by using the parallel transmission characteristics of optical fiber. We first present a novel virtual network embedding (VNE) mathematical model used for optical data center networks. Then we derive a priority of location VNE algorithm according to node proximity sensing and path comprehensive evaluation. Furthermore, we propose routing and wavelength assignment for DCNs into optical networks, and identify the lower bound of the required number of wavelengths. Extensive evaluations show that the proposed embedding algorithm can reduce the average waiting time of virtual network requests by 20 percent, increase the request acceptance rate and revenue-overhead ratio by 13 percent, as compared to the latest VNE algorithm.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "journals/tpds/XuZLRZXXW21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Energy-Aware Inference Offloading for DNN-Driven Applications in Mobile Edge Clouds",
+  "abstract": "With increasing focus on Artificial Intelligence (AI) applications, Deep Neural Networks (DNNs) have been successfully used in a number of application areas. As the number of layers and neurons in DNNs increases rapidly, significant computational resources are needed to execute a learned DNN model. This ever-increasing resource demand of DNNs is currently met by large-scale data centers with state-of-the-art GPUs. However, increasing availability of mobile edge computing and 5G technologies provide new possibilities for DNN-driven AI applications, especially where these application make use of data sets that are distributed in different locations. One fundamental process of a DNN-driven application in mobile edge clouds is the adoption of “inferencing” - the process of executing a pre-trained DNN based on newly generated image and video data from mobile devices. We investigate offloading DNN inference requests in a 5G-enabled mobile edge cloud (MEC), with the aim to admit as many inference requests as possible. We propose exact and approximate solutions to the problem of inference offloading in MECs. We also consider dynamic task offloading for inference requests, and devise an online algorithm that can be adapted in real time. The proposed algorithms are evaluated through large-scale simulations and using a real world test-bed implementation. The experimental results demonstrate that the empirical performance of the proposed algorithms outperform their theoretical counterparts and other similar heuristics reported in literature.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "journals/tpds/ZhaoDLLZCOCC21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "FT-CNN: Algorithm-Based Fault Tolerance for Convolutional Neural Networks",
+  "abstract": "Convolutional neural networks (CNNs) are becoming more and more important for solving challenging and critical problems in many fields. CNN inference applications have been deployed in safety-critical systems, which may suffer from soft errors caused by high-energy particles, high temperature, or abnormal voltage. Of critical importance is ensuring the stability of the CNN inference process against soft errors. Traditional fault tolerance methods are not suitable for CNN inference because error-correcting code is unable to protect computational components, instruction duplication techniques incur high overhead, and existing algorithm-based fault tolerance (ABFT) techniques cannot protect all convolution implementations. In this article, we focus on how to protect the CNN inference process against soft errors as efficiently as possible, with the following three contributions. (1) We propose several systematic ABFTschemes based on checksum techniques and analyze their fault protection ability and runtime thoroughly. Unlike traditional ABFT based on matrix-matrix multiplication, our schemes support any convolution implementations. (2) We design a novel workflow integrating all the proposed schemes to obtain a high detection/correction ability with limited total runtime overhead. (3) We perform our evaluation using ImageNet with well-known CNN models including AlexNet, VGG-19, ResNet-18, and YOLOv2. Experimental results demonstrate that our implementation can handle soft errors with very limited runtime overhead (4%~8% in both error-free and error-injected situations).",
+  "hint_categories": [
+   "dense_la",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "journals/tpds/ChoKOKKN21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Failure-Atomic Byte-Addressable R-tree for Persistent Memory",
+  "abstract": "In this article, we propose Failure-atomic Byte-addressable R-tree (FBR-tree) that leverages the byte-addressability, persistence, and high performance of persistent memory while guaranteeing the crash consistency. We carefully control the order of store and cacheline flush instructions and prevent any single store instruction from making an FBR-tree inconsistent and unrecoverable. We also develop a non-blocking lock-free range query algorithm for FBR-tree. Since FBR-tree allows read transactions to detect and ignore any transient inconsistent states, multiple read transactions can concurrently access tree nodes without using shared locks while other write transactions are making changes to them. Our performance study shows that FBR-tree successfully reduces the legacy logging overhead and the lock-free range query algorithm shows up to 2.6x higher query processing throughput than the shared lock-based crabbing concurrency protocol.",
+  "hint_categories": []
+ },
+ {
+  "key": "journals/tpds/PrietoFGP21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Fast, Accurate Processor Evaluation Through Heterogeneous, Sample-Based Benchmarking",
+  "abstract": "Performance evaluation is a key task in computing and communication systems. Benchmarking is one of the most common techniques for evaluation purposes, where the performance of a set of representative applications is used to infer system responsiveness in a general usage scenario. Unfortunately, most benchmarking suites are limited to a reduced number of applications, and in some cases, rigid execution configurations. This makes it hard to extrapolate performance metrics for a general-purpose architecture, supposed to have a multi-year lifecycle, running dissimilar applications concurrently. The main culprit of this situation is that current benchmark-derived metrics lack generality, statistical soundness and fail to represent general-purpose environments. Previous attempts to overcome these limitations through random app mixes significantly increase computational cost (workload population shoots up), making the evaluation process barely affordable. To circumvent this problem, in this article we present a more elaborate performance evaluation methodology named BenchCast. Our proposal provides more representative performance metrics, but with a drastic reduction of computational cost, limiting app execution to a small and representative fraction marked through code annotation. Thanks to this labeling and making use of synchronization techniques, we generate heterogeneous workloads where every app runs simultaneously inside its Region Of Interest, making a few execution seconds highly representative of full application execution.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "journals/tpds/WuYW21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "FedSCR: Structure-Based Communication Reduction for Federated Learning",
+  "abstract": "Federated Learning allows edge devices to collaboratively train a shared model on their local data without leaking user privacy. The non-independent-and-identically-distributed (Non-IID) property of data distribution, which leads to severe accuracy degradation, and enormous communication overhead for aggregating parameters should be tackled in federated learning. In this article, we conduct a detailed analysis of parameter updates on the Non-IID datasets and compare the difference with the IID setting. Experimental results exhibit that parameter update matrices are structure-sparse and show that more gradients could be identified as negligible updates on the Non-IID data. As a result, we propose a structure-based communication reduction algorithm, called FedSCR, that reduces the number of parameters transported through the network while maintaining the model accuracy. FedSCR aggregates the parameter updates over channels and filters, identifies and removes the redundant updates by comparing the aggregated values with a threshold. Unlike the traditional structured pruning methods, FedSCR retains the complete model that does not require to be retrained and fine-tuned. The local loss and weight divergence on each device vary a lot because of the unbalanced data distribution. We further propose an adaptive FedSCR, that dynamically changes the bounded threshold, to enhance the model robustness on the Non-IID data. Evaluation results show that our proposed strategies achieve almost 50 percent upstream communication reduction without loss of accuracy. FedSCR can be integrated into state-of-the-art federated learning algorithms to dramatically reduce the number of parameters pushed to the global server with a tolerable accuracy reduction.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "journals/tpds/ZhengSHJWDP21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Feluca: A Two-Stage Graph Coloring Algorithm With Color-Centric Paradigm on GPU",
+  "abstract": "There are great challenges in performing graph coloring on GPU in general. First, the long-tail problem exists in the recursion algorithm because the conflict (i.e., different threads assign the adjacent nodes to the same color) becomes more likely to occur as the number of iterations increases. Second, it is hard to parallelize the sequential spread algorithm because the color allocation depends on the adjoining iteration. Third, the atomic operation is widely used on GPU to maintain the color list, which can greatly reduce the efficiency of GPU threads. In this article, we propose a two-stage high-performance graph coloring algorithm, called Feluca, aiming to address the above challenges. Feluca combines the recursion-based method with the sequential spread-based method. In the first stage, Feluca uses a recursive routine to color a majority of vertices in the graph. Then, it switches to the sequential spread method to color the remaining vertices in order to avoid the conflicts of the recursive algorithm. Moreover, the following techniques are proposed to further improve the graph coloring performance. i) A new method is proposed to eliminate the cycles in the graph; ii) a top-down scheme is developed to avoid the atomic operation originally required for color selection; and iii) a novel color-centric coloring paradigm is designed to improve the degree of parallelism for the sequential spread part. All these newly developed techniques, together with further GPU-specific optimizations such as coalesced memory access, comprise an efficient parallel graph coloring solution in Feluca. We have conducted extensive experiments on NVIDIA GPU. The results show that Feluca can achieve 1.19 - 8.39× speedup over the state-of-the-art algorithms.",
+  "hint_categories": []
+ },
+ {
+  "key": "journals/tpds/ZhangZYZHLD21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Fine-Grained Multi-Query Stream Processing on Integrated Architectures",
+  "abstract": "Exploring the sharing opportunities among multiple stream queries is crucial for high-performance stream processing. Modern stream processing necessitates accelerating multiple queries by utilizing heterogeneous coprocessors, such as GPUs, and this has shown to be an effective method. Emerging CPU-GPU integrated architectures 6integrate CPU and GPU on the same chip and eliminate PCI-e bandwidth bottleneck. Such a novel architecture provides new opportunities for improving multi-query performance in stream processing but has not been fully explored by existing systems. We introduce a stream processing engine, called FineStream, for efficient multi-query window-based stream processing on CPU-GPU integrated architectures. FineStream's key contribution is a novel fine-grained workload scheduling mechanism between CPU and GPU to take advantage of both architectures. Particularly, FineStream is able to efficiently handle multiple queries in both static and dynamic streams. Our experimental results show that 1) on integrated architectures, FineStream achieves an average 52 percent throughput improvement and 36 percent lower latency over the state-of-the-art stream processing engine; 2) compared to the coarse-grained strategy of applying different devices for multiple queries, FineStream achieves 32 percent throughput improvement; 3) compared to the stream processing engine on the discrete architecture, FineStream on the integrated architecture achieves 10.4× price-throughput ratio, 1.8× energy efficiency, and can enjoy lower latency benefits.",
+  "hint_categories": []
+ },
+ {
+  "key": "journals/tpds/HaoZWLWV21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Fine-Grained Powercap Allocation for Power-Constrained Systems Based on Multi-Objective Machine Learning",
+  "abstract": "Power capping is an important solution to keep the system within a fixed power constraint. However, for the over-provisioned and power-constrained systems, especially the future exascale supercomputers, powercap needs to be reasonably allocated according to the workloads of compute nodes to achieve trade-offs among performance, energy and powercap. Thus it is necessary to model performance and energy and to predict the optimal powercap allocation strategies. Existing power allocation approaches have insufficient granularity within nodes. Modeling approaches usually model performance and energy separately, ignoring the correlation between objectives, and do not expose the Pareto-optimal powercap configurations. Therefore, this article combines the powercap with uncore frequency scaling and proposes an approach to predict the Pareto-optimal powercap configurations on the power-constrained system for input MPI and OpenMP parallel applications. Our approach first uses the elaborately designed micro-benchmarks and a small number of existing benchmarks to build the training set, and then applies a multi-objective machine learning algorithm which combines the stacked single-target method with extreme gradient boosting to build multi-objective models of performance and energy. The models can be used to predict the optimal processor and memory powercap settings, helping compute nodes perform fine-grained powercap allocation. When the optimal powercap configuration is determined, the uncore frequency scaling is used to further optimize the energy consumption. Compared with the reference powercap configuration, the predicted optimal configurations predicted by our method can achieve an average powercap reduction of 31.35 percent, an average energy reduction of 12.32 percent, and average performance degradation of only 2.43 percent.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "journals/tpds/NavarroCBRV21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "GPU Tensor Cores for Fast Arithmetic Reductions",
+  "abstract": "This article proposes a parallel algorithm for computing the arithmetic reduction of n numbers as a set of matrix-multiply accumulate (MMA) operations that are executed simultaneously by GPU tensor cores. The analysis, assuming tensors of size m x m, shows that the proposed algorithm has a parallel running time of T(n) = 5log <sub xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">m2</sub> n and a speedup of S = 45log <sub xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">2m</sub> 2 over a canonical parallel reduction. Experimental performance results on a Tesla V100 GPU show that the tensor-core based approach is energy efficient and runs up to ~ 3:2× and 2× faster than a standard GPU-based reduction and Nvidia's CUB library, respectively, while keeping the numerical error below 1 percent with respect to a double precision CPU reduction. The chained design of the algorithm allows a flexible configuration of GPU thread-blocks and the optimal values found through experimentation agree with the theoretical ones. The results obtained in this work show that GPU tensor cores are relevant not only for Deep Learning or Linear Algebra computations, but also for applications that require the acceleration of large summations.",
+  "hint_categories": [
+   "dense_la",
+   "primitives"
+  ]
+ },
+ {
+  "key": "journals/tpds/LiYHCMWYY21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Group Reassignment for Dynamic Edge Partitioning",
+  "abstract": "Graph partitioning is a mandatory step in large-scale distributed graph processing. When partitioning real-world power-law graphs, the edge partitioning algorithm performs better than the traditional vertex partitioning algorithm, because it can cut a single vertex into multiple replicas to apportion the computation. Many advanced edge partitioning methods are designed for partitioning a static graph from scratch. However, the real-world graph structure changes continuously, which leads to a decrease in partition quality and affects the performance of the graph applications. Some studies are devoted to offline repartitioning or batch incremental partitioning, but how to deal with dynamics in real-time is still worthy of in-depth study. In this article, we discuss the impact of dynamic change on partition and discover that both insertion and deletion will lead to local suboptimal partitioning, which is the reason for the degradation of partition quality. As a solution, a dynamic edge partitioning algorithm is proposed to partition dynamics in real-time. Specifically, we deal with dynamics by a distributed stream and improve partition quality by reassigning some closely connected edges. Experiments show that it is robust to initial partition quality, dynamic scale and type, and distributed scale. Compared with the state-of-the-art dynamic partitioner, it can reduce vertex-cuts by 29.5 percent. Compared with the repartitioning algorithms, it can save the partitioning time by 91.0 percent. Applied on the graph task, it can reduce the increase of communication cost and the increase of the total time of task by 41.5 and 71.4 percent.",
+  "hint_categories": [
+   "graph"
+  ]
+ },
+ {
+  "key": "journals/tpds/AsriMWBJG21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Hardware Accelerator Integration Tradeoffs for High-Performance Computing: A Case Study of GEMM Acceleration in N-Body Methods",
+  "abstract": "In this article, we study performance and energy saving benefits of hardware acceleration under different hardware configurations and usage scenarios for a state-of-the-art Fast Multipole Method (FMM), which is a popular N-body method. We use a dedicated Application Specific Integrated Circuit (ASIC) to accelerate General Matrix-Matrix Multiply (GEMM) operations. FMM is widely used in applications and is representative example of the workload for many HPC applications. We compare architectures that integrate the GEMM ASIC next to, in or near main memory with an on-chip coupling aimed at minimizing or avoiding repeated round-trip transfers through DRAM for communication between accelerator and CPU. We study tradeoffs using detailed and accurately calibrated x86 CPU, accelerator and DRAM simulations. Our results show that simply moving accelerators closer to the chip does not necessarily lead to performance/energy gains. We demonstrate that, while careful software blocking and on-chip placement optimizations can reduce DRAM accesses by 2X over a naive on-chip integration, these dramatic savings in DRAM traffic do not automatically translate into significant total energy or runtime savings. This is chiefly due to the application characteristics, the high idle power and effective hiding of memory latencies in modern systems. Only when more aggressive co-optimizations such as software pipelining and overlapping are applied, additional performance and energy savings can be unlocked by 37 and 35 percent respectively over baseline acceleration. When similar optimizations (pipelining and overlapping) are applied with an off-chip integration, on-chip integration delivers up to 20 percent better performance and 17 percent less total energy consumption than off-chip integration.",
+  "hint_categories": [
+   "dense_la",
+   "nbody_md"
+  ]
+ },
+ {
+  "key": "journals/tpds/SalvanaAHLSGK21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "High Performance Multivariate Geospatial Statistics on Manycore Systems",
+  "abstract": "Modeling and inferring spatial relationships and predicting missing values of environmental data are some of the main tasks of geospatial statisticians. These routine tasks are accomplished using multivariate geospatial models and the cokriging technique. The latter requires the evaluation of the expensive Gaussian log-likelihood function, which has impeded the adoption of multivariate geospatial models for large multivariate spatial datasets. However, this large-scale cokriging challenge provides a fertile ground for supercomputing implementations for the geospatial statistics community as it is paramount to scale computational capability to match the growth in environmental data coming from the widespread use of different data collection technologies. In this article, we develop and deploy large-scale multivariate spatial modeling and inference on parallel hardware architectures. To tackle the increasing complexity in matrix operations and the massive concurrency in parallel systems, we leverage low-rank matrix approximation techniques with task-based programming models and schedule the asynchronous computational tasks using a dynamic runtime system. The proposed framework provides both the dense and the approximated computations of the Gaussian log-likelihood function. It demonstrates accuracy robustness and performance scalability on a variety of computer systems. Using both synthetic and real datasets, the low-rank matrix approximation shows better performance compared to exact computation, while preserving the application requirements in both parameter estimation and prediction accuracy. We also propose a novel algorithm to assess the prediction accuracy after the online parameter estimation. The algorithm quantifies prediction performance and provides a benchmark for measuring the efficiency and accuracy of several approximation techniques in multivariate spatial modeling.",
+  "hint_categories": []
+ },
+ {
+  "key": "journals/tpds/GillLPHFI21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "High-Performance Computing Implementations of Agent-Based Economic Models for Realizing 1: 1 Scale Simulations of Large Economies",
+  "abstract": "We present a scalable high-performance computing implementation of an agent-based economic model using distributed + shared-memory hybrid parallelization paradigms, capable of simulating 1:1 scale models of large economies like the eurozone. Agent-based economic models consist of millions of agents interacting over several graphs, which are either centralized or scale-free in nature. While most of the interactions are bi-directional, the interaction graphs are dense and random and keep evolving as the simulation progresses. These characteristics cause a very large and unknown number of random communications among MPI processes, posing challenges to developing scalable parallel extensions. Further, random access to large volume of data makes the algorithms highly memory-bound, severely degrading computational performance. Adopting various strategies inspired by the real-world functioning of economies, we reduce the large unknown number of communications to a known handful number. Memory-intensive algorithms are improved to make these cache-efficient, and advanced MPI functions are used to minimize communication overhead, thereby attaining higher performance and scalability. Further, an MPI + OpenMP hybrid model is developed to best utilize modern many-core computing nodes with low per-core memory capacity. It is demonstrated that our implementation can simulate a full fledged economic model with 331 million agents within 108 seconds using 128 CPU cores attaining 70 percent strong scalability.",
+  "hint_categories": []
+ },
+ {
+  "key": "journals/tpds/BestaDSKGSSH21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "High-Performance Routing With Multipathing and Path Diversity in Ethernet and HPC Networks",
+  "abstract": "The recent line of research into topology design focuses on lowering network diameter. Many low-diameter topologies such as Slim Fly or Jellyfish that substantially reduce cost, power consumption, and latency have been proposed. A key challenge in realizing the benefits of these topologies is routing. On one hand, these networks provide shorter path lengths than established topologies such as Clos or torus, leading to performance improvements. On the other hand, the number of shortest paths between each pair of endpoints is much smaller than in Clos, but there is a large number of non-minimal paths between router pairs. This hampers or even makes it impossible to use established multipath routing schemes such as ECMP. In this article, to facilitate high-performance routing in modern networks, we analyze existing routing protocols and architectures, focusing on how well they exploit the diversity of minimal and non-minimal paths. We first develop a taxonomy of different forms of support for multipathing and overall path diversity. Then, we analyze how existing routing schemes support this diversity. Among others, we consider multipathing with both shortest and non-shortest paths, support for disjoint paths, or enabling adaptivity. To address the ongoing convergence of HPC and “Big Data” domains, we consider routing protocols developed for both HPC systems and for data centers as well as general clusters. Thus, we cover architectures and protocols based on Ethernet, InfiniBand, and other HPC networks such as Myrinet. Our review will foster developing future high-performance multipathing routing protocols in supercomputers and data centers.",
+  "hint_categories": []
+ },
+ {
+  "key": "journals/tpds/CetinSS21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Homomorphic Sorting With Better Scalability",
+  "abstract": "Homomorphic sorting is an operation that blindly sorts a given set of encrypted numbers without decrypting them (thus, there is no need for the secret key). In this article, we propose a new, efficient, and scalable method for homomorphic sorting of numbers: polynomial rank sort algorithm. To put the new algorithm in a comparative perspective, we provide an extensive survey of classical sorting algorithms and networks that are not directly suitable for homomorphic computation. We also include, in our discussions, two of our previous algorithms specifically designed for homomorphic sorting operation: direct and greedy sort, and explain how they evolve from classical sorting networks. We theoretically show that the new algorithm is superior in terms of multiplicative depth when compared with all other algorithms. When batched implementation is used, the number of comparisons is reduced from O(N <sub xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">2</sub> ) to O(N) provided that the number of slots is larger than or equal to the number of elements in the set. Our software implementation results confirm that the new algorithm is several orders of magnitude faster than many methods in the literature. Also, the polynomial sort algorithm scales better than the fastest algorithm in the literature to the best our knowledge although for small sets the execution times are comparable. The proposed algorithm is amenable to parallel implementation as most time consuming operations in the algorithm can naturally be performed concurrently.",
+  "hint_categories": [
+   "dense_la",
+   "primitives"
+  ]
+ },
+ {
+  "key": "journals/tpds/DjigalFLG21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "IPPTS: An Efficient Algorithm for Scientific Workflow Scheduling in Heterogeneous Computing Systems",
+  "abstract": "Efficient scheduling algorithms are key for attaining high performance in heterogeneous computing systems. In this article, we propose a new list scheduling algorithm for assigning task graphs to fully connected heterogeneous processors with an aim to minimize the scheduling length. The proposed algorithm, called Improved Predict Priority Task Scheduling (IPPTS) algorithm has two phases: task prioritization phase, which gives priority to tasks, and processor selection phase, which selects a processor for a task. The IPPTS algorithm has a quadratic time complexity as the related algorithms for the same goal, that is <inline-formula><tex-math notation=\"LaTeX\">$O(t^{2} \\times p)$</tex-math></inline-formula> , for <inline-formula><tex-math notation=\"LaTeX\">$t$</tex-math></inline-formula> tasks and <inline-formula><tex-math notation=\"LaTeX\">$p$</tex-math></inline-formula> processors. Our algorithm reduces the scheduling length significantly by looking ahead in both task prioritization phase and processor selection phase. In this way, the algorithm is looking ahead to schedule a task and its heaviest successor task to the optimistic processor, i.e., the processor that minimizes their computation and communication costs. The experiments based on both randomly generated graphs and graphs of real-world applications show that the IPPTS algorithm significantly outperforms previous list scheduling algorithms in terms of makespan, speedup, makespan standard deviation, efficiency, and frequency of best results.",
+  "hint_categories": []
+ },
+ {
+  "key": "journals/tpds/ChappTBT21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Identifying Degree and Sources of Non-Determinism in MPI Applications Via Graph Kernels",
+  "abstract": "As the scientific community prepares to deploy an increasingly complex and diverse set of applications on exascale platforms, the need to assess reproducibility of simulations and identify the root causes of reproducibility failures increases correspondingly. One of the greatest challenges facing reproducibility issues at exascale is the inherent non-determinism at the level of inter-process communication. The use of non-deterministic communication constructs is necessary to boost performance, but communication non-determinism can also hamper software correctness and result reproducibility. To address this challenge, we propose a software framework for identifying the percentage and sources of communication non-determinism. We model parallel executions as directed graphs and leverage graph kernels to characterize run-to-run variations in inter-process communication. We demonstrate the effectiveness of graph kernel similarity as a proxy for non-determinism, by showing that these kernels can quantify the type and degree of non-determinism present in communication patterns. To demonstrate our framework's ability to link and quantify runtime non-determinism to root sources, demonstrate with present for an adaptive mesh refinement application, where our framework automatically quantifies the impact of function calls on non-determinism, and a Monte Carlo application, where our framework automatically quantifies the impact of parameter configurations on non-determinism.",
+  "hint_categories": [
+   "unstructured_amr"
+  ]
+ },
+ {
+  "key": "journals/tpds/TanXXYJSCL21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Improving the Performance of Deduplication-Based Storage Cache via Content-Driven Cache Management Methods",
+  "abstract": "Data deduplication, as a proven technology for effective data reduction in backup and archiving storage systems, is also showing promises in increasing the logical space capacity for storage caches by removing redundant data. However, our in-depth evaluation of the existing deduplication-aware caching algorithms reveals that they only work well when the cached block size is set to 4 KB. Unfortunately, modern storage systems often set the block size to be much larger than 4 KB, and in this scenario, the overall performance of these caching schemes drops below that of the conventional replacement algorithms without any deduplication. There are several reasons for this performance degradation. The first reason is the deduplication overhead, which is the time spent on generating the data fingerprints and their use to identify duplicate data. Such overhead offsets the benefits of deduplication. The second reason is the extremely low cache space utilization caused by read and write alignment. The third reason is that existing algorithms only exploit access locality to identify block replacement. There is a lost opportunity to effectively leverage the content usage patterns such as intensity of content redundancy and sharing in deduplication-based storage caches to further improve performance. We propose CDAC, a Content-driven Deduplication-Aware Cache, to address this problem. CDAC focuses on exploiting the content redundancy in blocks and intensity of content sharing among source addresses in cache management strategies. We have implemented CDAC based on LRU and ARC algorithms, called CDAC-LRU and CDAC-ARC respectively. Our extensive experimental results show that CDAC-LRU and CDAC-ARC outperform the state-of-the-art deduplication-aware caching algorithms, D-LRU, and D-ARC, by up to 23.83X in read cache hit ratio, with an average of 3.23X, and up to 53.3 percent in IOPS, with an average of 49.8 percent, under a real-world mixed workload when the cache size ranges from 20 to 50 percent of the workload size and the block size ranges from 4KB to 32 KB.",
+  "hint_categories": [
+   "primitives",
+   "compression"
+  ]
+ },
+ {
+  "key": "journals/tpds/GreteGO21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "K-Athena: A Performance Portable Structured Grid Finite Volume Magnetohydrodynamics Code",
+  "abstract": "Large scale simulations are a key pillar of modern research and require ever-increasing computational resources. Different novel manycore architectures have emerged in recent years on the way towards the exascale era. Performance portability is required to prevent repeated non-trivial refactoring of a code for different architectures. We combine ATHENA++, an existing magnetohydrodynamics (MHD) CPU code, with KOKKOS, a performance portable on-node parallel programming paradigm, into K-ATHENA to allow efficient simulations on multiple architectures using a single codebase. We present profiling and scaling results for different platforms including Intel Skylake CPUs, Intel Xeon Phis, and NVIDIA GPUs. K-ATHENA achieves > 10 <sup xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">8</sup> cell-updates/s on a single V100 GPU for second-order double precision MHD calculations, and a speedup of 30 on up to 24 576 GPUs on Summit (compared to 172,032 CPU cores), reaching 1:94 × 10 <sup xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">12</sup> total cell-updates/s at 76 percent parallel efficiency. Using a roofline analysis we demonstrate that the overall performance is currently limited by DRAM bandwidth and calculate a performance portability metric of 62.8 percent. Finally, we present the implementation strategies used and the challenges encountered in maximizing performance. This will provide other research groups with a straightforward approach to prepare their own codes for the exascale era. K-ATHENA is available at https://gitlab.com/pgrete/kathena.",
+  "hint_categories": [
+   "stencil_pde"
+  ]
+ },
+ {
+  "key": "journals/tpds/ZhaoTAARSPCB21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Large-Scale Analysis of Docker Images and Performance Implications for Container Storage Systems",
+  "abstract": "Docker containers have become a prominent solution for supporting modern enterprise applications due to the highly desirable features of isolation, low overhead, and efficient packaging of the application’s execution environment. Containers are created from images which are shared between users via a registry. The amount of data registries store is massive. For example, Docker Hub, a popular public registry, stores at least half a million public images. In this article, we analyze over 167 TB of uncompressed Docker Hub images, characterize them using multiple metrics and evaluate the potential of file-level deduplication. Our analysis helps to make conscious decisions when designing storage for containers in general and Docker registries in particular. For example, only 3 percent of the files in images are unique while others are redundant file copies, which means file-level deduplication has a great potential to save storage space. Furthermore, we carry out a comprehensive analysis of both small I/O request performance and copy-on-write performance for multiple popular container storage drivers. Our findings can motivate and help improve the design of data reduction and caching methods for images, pulling optimizations for registries, and storage drivers.",
+  "hint_categories": [
+   "primitives",
+   "compression"
+  ]
+ },
+ {
+  "key": "journals/tpds/AralB21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Learning Spatiotemporal Failure Dependencies for Resilient Edge Computing Services",
+  "abstract": "Edge computing services are exposed to infrastructural failures due to geographical dispersion, ad hoc deployment, and rudimentary support systems. Two unique characteristics of the edge computing paradigm necessitate a novel failure resilience approach. First, edge servers, contrary to cloud counterparts with reliable data center networks, are typically connected via ad hoc networks. Thus, link failures need more attention to ensure truly resilient services. Second, network delay is a critical factor for the deployment of edge computing services. This restricts replication decisions to geographical proximity and necessitates joint consideration of delay and resilience. In this article, we propose a novel machine learning based mechanism that evaluates the failure resilience of a service deployed redundantly on the edge infrastructure. Our approach learns the spatiotemporal dependencies between edge server failures and combines them with the topological information to incorporate link failures. Ultimately, we infer the probability that a certain set of servers fails or disconnects concurrently during service runtime. Furthermore, we introduce Dependency- and Topology-aware Failure Resilience (DTFR), a two-stage scheduler that minimizes either failure probability or redundancy cost, while maintaining low network delay. Extensive evaluation with various real-world failure traces and workload configurations demonstrate superior performance in terms of availability, number of failures, network delay, and cost with respect to the state-of-the-art schedulers.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "journals/tpds/ZhangGM21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Learning-Driven Interference-Aware Workload Parallelization for Streaming Applications in Heterogeneous Cluster",
+  "abstract": "In the past few years, with the rapid development of CPU-GPU heterogeneous computing, the issue of task scheduling in the heterogeneous cluster has attracted a great deal of attention. This problem becomes more challenging with the need for efficient co-execution of tasks on the GPUs. However, the uncertainty of heterogeneous cluster and the interference caused by resource contention among co-executing tasks can lead to the unbalanced use of computing resource and further cause the degradation in performance of computing platform. In this article, we propose a two-stage task scheduling approach for streaming applications based on deep reinforcement learning and neural collaborative filtering, which considers fine-grained task division and task interference on the GPU. Specifically, the Learning-Driven Workload Parallelization (LDWP) method selects an appropriate execution node for the mutually independent tasks. By using the deep Q-network, the cluster-level scheduling model is online learned to perform the current optimal scheduling actions according to the runtime status of cluster environments and characteristics of tasks. The Interference-Aware Workload Parallelization (IAWP) method assigns subtasks with dependencies to the appropriate computing units, taking into account the interference of subtasks on the GPU by using neural collaborative filtering. For making the learning of neural network more efficient, we use pre-training in the two-stage scheduler. Besides, we use transfer learning technology to efficiently rebuild task scheduling model referring to the existing model. We evaluate our learning-driven and interference-aware task scheduling approach on a prototype platform with other widely used methods. The experimental results show that the proposed strategy can averagely improve the throughout for distributed computing system by 26.9 percent and improve the GPU resource utilization by around 14.7 percent.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "journals/tpds/HuangLHTM21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Lewat: A Lightweight, Efficient, and Wear-Aware Transactional Persistent Memory System",
+  "abstract": "Emerging non-volatile memory (also termed as persistent memory, PM) technologies promise persistence, byte-addressability, and DRAM-like read/write latency. A proliferation of persistent memory systems have been proposed to leverage PM for fast data persistence and expose malloc-like persistent APIs. By eliminating disk I/Os, these systems gain low-latency and high-throughput access performance for persistent data. However, there still exist non-negligible limitations in these systems, such as frequent context switches, inefficient allocation, heavy logging overhead, and lack of wear-leveling techniques. To solve these problems, we develop Lewat, a lightweight, efficient, and wear-aware transactional persistent memory system. Lewat is built in user-layer to avoid kernel/user layer context switches and enables lightweight persistent data access. We decouple the data space into slot zone and page zone. Based on this, we design different allocators in these two zones to achieve efficient allocation performance for both small-sized data and large-sized data. To minimize logging overhead, we propose an efficient adaptive logging framework. The main idea is to utilize different logging techniques for different workloads. We also propose a suite of system-coupled wear-leveling techniques that contain wear-aware allocation, wear-aware update, and write reduction. We evaluate Lewat on a real non-volatile memory platform and the experimental results show that compared with state-of-the-art persistent memory systems, Lewat has much lower latency and higher throughput.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "journals/tpds/Hassanzadeh-Nazarabadi21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "LightChain: Scalable DHT-Based Blockchain",
+  "abstract": "As an append-only distributed database, blockchain is utilized in a vast variety of applications including the cryptocurrency and Internet-of-Things (IoT). The existing blockchain solutions show downsides in communication and storage scalability, as well as decentralization. In this article, we propose LightChain, which is the first blockchain architecture that operates over a Distributed Hash Table (DHT) of participating peers. LightChain is a permissionless blockchain that provides addressable blocks and transactions within the network, which makes them efficiently accessible by all peers. Each block and transaction is replicated within the DHT of peers and is retrieved in an on-demand manner. Hence, peers in LightChain are not required to retrieve or keep the entire ledger. LightChain is fair as all of the participating peers have a uniform chance of being involved in the consensus regardless of their influence such as hashing power or stake. We provide formal mathematical analysis and experimental results (simulations and cloud deployment) to demonstrate the security, efficiency, and fairness of LightChain, and show that LightChain is the only existing blockchain that can provide integrity under the corrupted majority power of peers. As we experimentally demonstrate, compared to the mainstream blockchains such as Bitcoin and Ethereum, LightChain requires around 66 times smaller per node storage, and is around 380 times faster on bootstrapping a new node to the system, and each LightChain node is rewarded equally likely for participating in the protocol.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "journals/tpds/ZambreSZBCB21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Logically Parallel Communication for Fast MPI+Threads Applications",
+  "abstract": "Supercomputing applications are increasingly adopting the MPI+threads programming model over the traditional “MPI everywhere” approach to better handle the disproportionate increase in the number of cores compared with other on-node resources. In practice, however, most applications observe a slower performance with MPI+threads primarily because of poor communication performance. Recent research efforts on MPI libraries address this bottleneck by mapping logically parallel communication, that is, operations that are not subject to MPI's ordering constraints to the underlying network parallelism. Domain scientists, however, typically do not expose such communication independence information because the existing MPI-3.1 standard's semantics can be limiting. Researchers had initially proposed user-visible endpoints to combat this issue, but such a solution requires intrusive changes to the standard (new APIs). The upcoming MPI-4.0 standard, on the other hand, allows applications to relax unneeded semantics and provides them with many opportunities to express logical communication parallelism. In this article, we show how MPI+threads applications can achieve high performance with logically parallel communication. Through application case studies, we compare the capabilities of the new MPI-4.0 standard with those of the existing one and user-visible endpoints (upper bound). Logical communication parallelism can boost the overall performance of an application by over 2×.",
+  "hint_categories": []
+ },
+ {
+  "key": "journals/tpds/LuoGZRML21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "MCFsyn: A Multi-Party Set Reconciliation Protocol With the Marked Cuckoo Filter",
+  "abstract": "Multi-party set reconciliation is a key component in distributed and networking systems. It naturally contains two dimensions, i.e., set representation and reconciliation protocol. However, existing sketch data structures are insufficient to satisfy the new needs brought by the multi-party scenario simultaneously, including space-efficiency, mergeability, and completeness. The current reconciliation protocols, on the other hand, fail to achieve the global optimization of communication cost. To this end, in this article, we propose the marked cuckoo filter (MCF), a data structure for representing set members. Grounded on MCF, we implement the MCFsyn protocol to reconcile multiple sets. MCFsyn aggregates and distributes sets information represented by MCFs along with an underlying minimum spanning tree among the participants. The participants then identify the different elements by traversing the overall MCF which contains the information of all elements in the union set. For the identified missing elements, MCFsyn helps the participants to choose the optimal senders to fetch with the minimum communication cost. Comprehensive evaluations indicate that MCFsyn significantly outperforms existing alternatives in terms of both reconciliation accuracy and communication cost.",
+  "hint_categories": [
+   "graph"
+  ]
+ },
+ {
+  "key": "journals/tpds/ShiCL21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "MG-WFBP: Merging Gradients Wisely for Efficient Communication in Distributed Deep Learning",
+  "abstract": "Distributed synchronous stochastic gradient descent has been widely used to train deep neural networks (DNNs) on computer clusters. With the increase of computational power, network communications generally limit the system scalability. Wait-free backpropagation (WFBP) is a popular solution to overlap communications with computations during the training process. In this article, we observe that many DNNs have a large number of layers with only a small amount of data to be communicated at each layer in distributed training, which could make WFBP inefficient. Based on the fact that merging some short communication tasks into a single one can reduce the overall communication time, we formulate an optimization problem to minimize the training time in pipelining communications and computations. We derive an optimal solution that can be solved efficiently without affecting the training performance. We then apply the solution to propose a distributed training algorithm named merged-gradient WFBP (MG-WFBP) and implement it in two platforms Caffe and PyTorch. Extensive experiments in three GPU clusters are conducted to verify the effectiveness of MG-WFBP. We further exploit trace-based simulations of 4 to 2048 GPUs to explore the potential scaling efficiency of MG-WFBP. Experimental results show that MG-WFBP achieves much better scaling performance than existing methods.",
+  "hint_categories": []
+ }
+]

@@ -1,0 +1,92 @@
+{
+ "kernel": "preconditioner",
+ "papers": [
+  {
+   "key": "conf/ppopp/YangNYLDXJ026",
+   "title": "A Diagonal Block Memory-Aware Polynomial Preconditioner for Linear and Eigenvalue Solvers",
+   "venue": "PPoPP",
+   "year": 2026,
+   "doi": "10.1145/3774934.3786446",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/YXJ-123/DBMPK",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu",
+    "arm-cpu"
+   ],
+   "approach": "manual",
+   "abstract": "Krylov subspace methods are widely used in scientific computing to solve large sparse linear systems and eigenvalue problems. Their performance bottleneck is often dominated by high-order matrix-power kernels (MPK), especially in polynomial preconditioners that must scale to millions or billions of variables. We present Diagonal Block MPK (DBMPK), a lightweight and parallel-friendly optimization that partitions the input matrix into diagonal blocks and off-diagonal regions. This design enables efficient intra-block data reuse and eliminates inter-block dependencies. It improves cache locality, parallelism, and reduces preprocessing overheads, compared to existing techniques. Our evaluation on x86 and Arm HPC platforms shows that DBMPK improves MPK performance by 26.6%-38.4%. When applied to polynomial preconditioners for linear systems and eigenvalue problems, it achieves consistent end-",
+   "one_liner": "Diagonal-block matrix-power kernel optimization speeds polynomial preconditioners 18.6-34.0%"
+  },
+  {
+   "key": "conf/ipps/NoackKK25",
+   "title": "Accelerating Sparse Linear Solvers on Intelligence Processing Units",
+   "venue": "IPDPS",
+   "year": 2025,
+   "doi": "10.1109/IPDPS64566.2025.00095",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/esa-tu-darmstadt/graphene",
+   "artifact_status": "verified",
+   "platform": [
+    "other"
+   ],
+   "approach": "codegen",
+   "abstract": "This paper presents an open-source framework for solving large, sparse linear systems on Intelligence Processing Units (IPUs). The IPU is a massively parallel architecture consisting of thousands of independent cores connected by an all-to-all communication fabric. We introduce two Domain-Specific Languages, CodeDSL and TensorDSL, that allow us to express complex algebraic algorithms like solvers and preconditioners close to their mathematical notation. Our framework symbolically executes these DSLs to generate the dataflow graph, execution schedule, and the codelets required by IPU's programming model. The IPU's cacheless design allows us to reorder matrices without performance penalties. We present a novel matrix reordering strategy that enables efficient blockwise halo exchanges with the IPU's all-to-all communication fabric. Our framework implements a suite of parallel linear solvers",
+   "one_liner": "DSL-generated sparse linear solvers (SpMV/ILU/PBiCGStab) on Graphcore IPUs, up to 150x vs CPU/GPU."
+  },
+  {
+   "key": "conf/sc/MaACSH25",
+   "title": "Sparsified Preconditioned Conjugate Gradient Solver on GPUs",
+   "venue": "SC",
+   "year": 2025,
+   "doi": "10.1145/3712285.3759796",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3712285.3759796",
+   "artifact_url": "https://github.com/SwiftWare-Lab/SPCG",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Preconditioned iterative sparse linear solvers are memory-efficient for large scientific simulations, but the dependences between iterations introduced by preconditioners limit parallelization. This issue is exacerbated on GPUs, which feature many parallel cores. We propose a sparsified preconditioned conjugate gradient (SPCG) solver that increases parallelism by reducing dependences through sparsification, while preserving convergence behavior. We evaluate the proposed SPCG using both ILU(0) and ILU(K) preconditioners on a wide range of symmetric positive definite (SPD) matrices. The proposed SPCG improves the performance of the iterative phase of SPCG by a geometric mean speedup of 1.23 × and 1.65 × over the non-sparsified PCG using ILU(0) and ILU(K), respectively on an NVIDIA A100 GPU. SPCG also yields geometric mean end-to-end speedups of 1.68 × and 3.73 × over the non-sparsified ver",
+   "one_liner": "Sparsified ILU-preconditioned CG solver increases GPU parallelism, up to 3.73x end-to-end speedup"
+  },
+  {
+   "key": "journals/tpds/BernaschiCVD23",
+   "title": "A Multi-GPU Aggregation-Based AMG Preconditioner for Iterative Linear Solvers",
+   "venue": "TPDS",
+   "year": 2023,
+   "doi": "10.1109/TPDS.2023.3287238",
+   "arxiv": "",
+   "oa_url": "https://ieeexplore.ieee.org/abstract/document/10155151",
+   "artifact_url": "https://github.com/bootcmatch/BootCMatchGX",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu",
+    "distributed"
+   ],
+   "approach": "manual",
+   "abstract": "We present and release in open source format a sparse linear solver which efficiently exploits heterogeneous parallel computers. The solver can be easily integrated into scientific applications that need to solve large and sparse linear systems on modern parallel computers made of hybrid nodes hosting Nvidia Graphics Processing Unit (GPU) accelerators. The work extends previous efforts of some of the authors in the exploitation of a single GPU accelerator and proposes an implementation, based on the hybrid MPI-CUDA software environment, of a Krylov-type linear solver relying on an efficient Algebraic MultiGrid (AMG) preconditioner already available in the <italic xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">BootCMatchG</i> library. Our design for the hybrid implementation has been driven by the best practices for minimizing data communication ",
+   "one_liner": "Multi-GPU MPI-CUDA AMG-preconditioned Krylov solver (BootCMatchG), up to 2x over Nvidia AmgX."
+  },
+  {
+   "key": "conf/ipps/ZarebavaniCLSD22",
+   "title": "HDagg: Hybrid Aggregation of Loop-carried Dependence Iterations in Sparse Matrix Computations",
+   "venue": "IPDPS",
+   "year": 2022,
+   "doi": "10.1109/IPDPS53621.2022.00121",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/BehroozZare/HDagg-benchmark",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "This paper proposes a novel aggregation algorithm, called Hybrid DAG Aggregation (HDagg), that groups iterations of sparse matrix computations with loop carried dependence to improve their parallel execution on multicore processors. Prior approaches to optimize sparse matrix computations fail to provide an efficient balance between locality, load balance, and synchronization and are primarily optimized for codes with a tree-structure data dependence. HDagg is optimized for sparse matrix computations that their data dependence graphs (DAGs) do not have a tree structure, such as incomplete matrix factorization algorithms. It uses a hybrid approach to aggregate vertices and wavefronts in the DAG of a sparse computation to create well-balanced parallel workloads with good locality. Across three sparse kernels, triangular solver, incomplete Cholesky, and incomplete LU, HDagg outperforms exist",
+   "one_liner": "HDagg hybrid DAG aggregation scheduling beats MKL 3.56x on triangular-solve/ILU/IC kernels"
+  }
+ ]
+}

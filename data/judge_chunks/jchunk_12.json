@@ -1,0 +1,750 @@
+[
+ {
+  "key": "conf/ics/KamelYC25",
+  "title": "CLOVER: A GPU-native, Spatio-graph-based Approach to Exact kNN",
+  "venue": "ICS",
+  "year": 2025,
+  "authors": [
+   "Victor Kamel",
+   "Hanxueyu Yan",
+   "Sean Chester"
+  ],
+  "abstract": "Finding the k nearest neighbours (kNN) of every point in a dataset is a key primitive in many GPU applications. Unfortunately, algorithmic techniques for kNN do not translate well to GPUs, require (offline) preprocessing, sacrifice accuracy, or require low query volume. Recently, ray-tracing cores have been proposed to accelerate exact kNN, but it is not well understood how these compare to grid-based methods. This work introduces a novel approach to exact kNN for spatial data that constructs and then traverses a graph from a random voronoi tesselation. On an NVIDIA V100, we answer ten million exact 30-NN queries with no prior preprocessing in 2.71s, about 4 × faster than an optimised grid-b",
+  "candidates": [
+   {
+    "url": "https://github.com/ampslab/clover-knn",
+    "desc": "A GPU-native algorithm for accelerated low-dimensional kNN",
+    "stars": 6,
+    "readme_head": "# CLOVER: A GPU-native, Spatio-graph-based Approach to Exact kNN\n\nThis repository accompanies the paper:\n\n**CLOVER: A GPU-native, Spatio-graph-based Approach to Exact kNN**  \nVictor Kamel, Hanxueyu Yan, and Sean Chester (2025)\n\nIf you use this work, please cite the paper.\n\n---\n\n## 📬 Contact\n\nFor questions or collaboration inquiries, please reach out:\n\n- Victor Kamel — [vkamel@cs.toronto.edu](mailto:vkamel@cs.toronto.edu)  \n- Hanxueyu Yan — [hyan76131@uvic.ca](mailto:hyan76131@uvic.ca)  \n- Sean Chester — [schester@uvic.ca](mailto:schester@uvic.ca)\n\n---\n\n## ⚙️ Build Instructions\n\n### 1. On Compute Canada\n\nFirst, load the necessary modules:\n\n```bash\nmodule --force purge\nmodule load StdEnv/2023 gcc/12.3 openmpi/4.1.5 cmake/3.27.7 cuda/12.2\n```\n\nThen build the project:\n\n```bash\nmkdir build\ncd build\ncmake -DCMAKE_BUILD_TYPE=Release ..\nmake\n```\n\nThe executable `linear-scans` will be created.\n\nTo run:\n\n```bash\n./linear-scans\n```\n\n---\n\n### 2. On Local Linux (e.g., CLOVER Workstation)\n\n#### Requirements:\n- CUDA 12.6  \n- GCC 13.3  \n\n#### Build Steps:\n\n```bash\nmkdir build\ncd build\ncmake -DCMAKE_BUILD_TYPE=Release .. [If using FAISS methods, add: -DLINK_FIASS=1]\nmake\n```\n\n#### To run:\n\n```bash\n./linear-scans 2\n# or\n./linear-scans 3\n```\n\nSupported arguments are listed in `/src/linear-scans.cu`, lines 31–42.  \nAlternatively, you can view them by running:\n\n```bash\n./linear-scans\n```\n\n---\n\n### 🧠 Supported Algorithms\n\n```cu\nenum class Algorithm\n{\n    bitonic,     // Data-parallel batch inserti"
+   }
+  ]
+ },
+ {
+  "key": "conf/ics/LiC25",
+  "title": "Fused3S: Fast Sparse Attention on Tensor Cores",
+  "venue": "ICS",
+  "year": 2025,
+  "authors": [
+   "Zitong Li",
+   "Aparna Chandramowlishwaran"
+  ],
+  "abstract": "Sparse attention is a core building block in many leading neural network models, from graph-structured learning to sparse sequence modeling.It can be decomposed into a sequence of three sparse matrix operations (3S): sampled dense-dense matrix multiplication (SDDMM), softmax normalization, and sparse matrix multiplication (SpMM).Efficiently executing the 3S computational pattern on modern GPUs remains challenging due to (a) the mismatch between unstructured sparsity and tensor cores optimized for dense operations, and (b) the high cost of data movement.Previous works have optimized these sparse operations individually or addressed one of these challenges.This paper introduces Fused3S, the fi",
+  "candidates": [
+   {
+    "url": "https://github.com/HPCForge/Fused3S",
+    "desc": "Source code for paper Fused3S: Fast Sparse Attention on Tensor Cores",
+    "stars": 11,
+    "readme_head": "## Fused3S\n\nThis repository provides the official implementation of Fused3S from the following paper.\n\nFused3S: Fast Sparse Attention on Tensor Cores  \nZitong Li, Aparna Chandramowlishwaran  \nPaper: https://dl.acm.org/doi/full/10.1145/3721145.3730430\n\nSparse attention forward pass on H100 for single graph and batched graphs datasets.\n<img width=\"7089\" height=\"1661\" alt=\"speedup_full_GH200\" src=\"https://github.com/user-attachments/assets/cf4fd105-be0d-49c2-bfb7-413b87640795\" />\n<img width=\"7113\" height=\"1661\" alt=\"speedup_batched_GH200\" src=\"https://github.com/user-attachments/assets/20d1bd13-3fc6-4129-b5da-66936a2f0e88\" />\n\nThe kernels are optimized for Ampere architecture with ongoing work to exploit new features introduced in Hopper.\n\n## Installation\n\n**Dependencies**\n> + `CUDA/12.1`\n> + `GCC/11.2`\n> + `Pytorch/2.4.0`\n> + `Dgl/2.4.0` (optional)\n> + `PyG/2.6.1` (optional)\n> + Nvidia A30/H100 GPU\n\n**Clone this repo and submodules**\n  \n```shell\ngit clone --recursive git@github.com:HPCForge/Fused3S.git\n```\n\n**Build using Docker image**  \n\nWe provide a dockerfile to build the environment needed to run F3S and baseline methods.\nTo build, clone this repository and its submodules. \nRun the following command in the cloned F3S directory.\n```shell\ndocker build -t fused3s -f dockerfile .\n```\n\n**Build from source**\n  \nAssuming the dependencies are satisfied.\n```shell\n# To build Fused3S itself\ncd src\nsource build.sh\n# To build DF-GNN and FlashSparse as baselines\ncd baselines/DF-GNN/\nsour"
+   }
+  ]
+ },
+ {
+  "key": "conf/ics/ZhangZLLJZYLL26",
+  "title": "WindStencil: Unleashing GPU Potential for High-Order Stencil Computation in High-Performance Inviscid CFD Simulations",
+  "venue": "ICS",
+  "year": 2026,
+  "authors": [
+   "Xinxin Zhang",
+   "Haoyuan Zhang",
+   "Xiazhen Liu",
+   "Jialin Li",
+   "Runfeng Jin"
+  ],
+  "abstract": "",
+  "candidates": [
+   {
+    "url": "https://github.com/BabyXPrince/WindStencil",
+    "desc": "WindStencil is an innovative stencil computing system unleashing GPU potential for high-order stencil computation in inviscid CFD simulations. We implement WindStencil within the open-source, high-order CFD software OpenCFD, targeting its computationally intensive inviscid module.",
+    "stars": 2,
+    "readme_head": "# WindStencil: Unleashing GPU Potential for High-Order Stencil Computation in High-Performance Inviscid CFD Simulations\n\n[![Linux](https://img.shields.io/badge/OS-Linux-333333?logo=linux&logoColor=white)](https://kernel.org/)\n[![ROCm](https://img.shields.io/badge/GPU-AMD%20ROCm%20%7C%20HIP-e4002b?logo=amd&logoColor=white)](https://rocm.docs.amd.com/)\n[![MPI](https://img.shields.io/badge/MPI-required-0077cc?logo=openmpi&logoColor=white)](https://www.open-mpi.org/)\n[![Language](https://img.shields.io/badge/code-C%20%2F%20C%2B%2B-00599c?logo=cplusplus&logoColor=white)]()\n[![FP64](https://img.shields.io/badge/compute-FP64%20WENO-6f42c1)]()\n[![GitHub](https://img.shields.io/badge/GitHub-repository-181717?logo=github)](https://github.com/BabyXPrince/WindStencil)\n[![Paper](https://img.shields.io/badge/paper-ICS%202026-informational)](README.md#citation)\n[![Docs](https://img.shields.io/badge/docs-ARCHITECTURE-238636)](docs/README.md)\n\n**WindStencil** is a GPU architecture and implementation methodology for **high-order (e.g. 7th-order) three-dimensional WENO** stencils inside **production-style compressible Navier–Stokes** solvers. Generic stencil optimizations rarely survive the full **split-form inviscid flux + multi-variable 3D templates + face/center alignment** found in real CFD codes; this repository is the **reference implementation** of the techniques described in the paper—**block-fused 3D WENO (BF3W)**, **yz-plane scanning** to match SIMT execution to the stencil’s geometry"
+   }
+  ]
+ },
+ {
+  "key": "conf/ipps/TianMYD20",
+  "title": "PCGCN: Partition-Centric Processing for Accelerating Graph Convolutional Network",
+  "venue": "IPDPS",
+  "year": 2020,
+  "authors": [
+   "Chao Tian 0001",
+   "Lingxiao Ma",
+   "Zhi Yang 0001",
+   "Yafei Dai"
+  ],
+  "abstract": "Inspired by the successes of convolutional neural networks (CNN) in computer vision, the convolutional operation has been moved beyond low-dimension grids (e.g., images) to high-dimensional graph-structured data (e.g., web graphs, social networks), leading to graph convolutional network (GCN). And GCN has been gaining popularity due to its success in real-world applications such as recommendation, natural language processing, etc. Because neural network and graph propagation have high computation complexity, GPUs have been introduced to both neural network training and graph processing. However, it is notoriously difficult to perform efficient GCN computing on data parallel hardware like GPU",
+  "candidates": [
+   {
+    "url": "https://github.com/NicolasMeseguer/pcgcn",
+    "desc": "Partition Centric Graph Convolutional Networks in PyTorch",
+    "stars": 6,
+    "readme_head": "Partition Centric Graph Convolutional Networks in PyTorch, PCGCN\n====\n\nPyTorch implementation of Graph Convolutional Networks (GCNs) for semi-supervised classification [1] and Partition Centric Processing (PCGCN) for Accelerating Graph Convolutional Network [3] using METIS [4] as the partitioning algorithm and a synthetic graph dataset generator [5] + PaRMAT dataset generator [7].\n\nFor a high-level introduction to GCNs, see: Thomas Kipf, [Graph Convolutional Networks](http://tkipf.github.io/graph-convolutional-networks/) (2016).\n\nThis implementation makes use of the Cora dataset from [2]. Also includes PubMed and citeseer citation network datasets (see `data` folder) in a preprocess format, provided by [6] (https://github.com/kimiyoung/planetoid).\n\n## Requirements\n\n* C compiler that supports the C99 standard (e.g. gcc 7.5.0).\n* CMake 2.8 or above.\n* Python 3.6.x (rec. 15)\n   * NumPy 1.19.5\n   * PyTorch 1.2.0\n   * SciPy 1.5.4\n\nThe dependencies of Python can be easily installed running the following command:\n```bash\npython -m pip install -r requirements.txt\n```\n\n## Installation\n\n0. Clone the repo\n   1. `$ git clone https://github.com/NicolasMeseguer/pcgcn` :open_file_folder: Clone the repo to local.\n   2. `$ cd pcgcn` :point_right: Move to the PCGCN root dir.\n\n1. Install METIS\n   1. `$ cd metis-5.1.0/` :point_right: Move to the METIS dir.\n   2. `$ make config cc=gcc prefix=../../../metis` :wrench: Configure METIS passing options to the Makefile.\n   3. `$ make install` :arrow_do"
+   }
+  ]
+ },
+ {
+  "key": "conf/ipps/WangFD21",
+  "title": "DSXplore: Optimizing Convolutional Neural Networks via Sliding-Channel Convolutions",
+  "venue": "IPDPS",
+  "year": 2021,
+  "authors": [
+   "Yuke Wang",
+   "Boyuan Feng",
+   "Yufei Ding 0001"
+  ],
+  "abstract": "As the key advancement of the convolutional neural networks (CNNs), depthwise separable convolutions (DSCs) are becoming one of the most popular techniques to reduce the computations and parameters size of CNNs meanwhile maintaining the model accuracy. It also brings profound impact to improve the applicability of the compute- and memory-intensive CNNs to a broad range of applications, such as mobile devices, which are generally short of computation power and memory. However, previous research in DSCs are largely focusing on compositing the limited existing DSC designs, thus, missing the opportunities to explore more potential designs that can achieve better accuracy and higher computation/p",
+  "candidates": [
+   {
+    "url": "https://github.com/YukeWang96/DSXplore_IPDPS21",
+    "desc": "Artifact for IPDPS'21: DSXplore: Optimizing Convolutional Neural Networks via Sliding-Channel Convolutions.",
+    "stars": 13,
+    "readme_head": "<!-- # Train CIFAR10 with PyTorch -->\n\n# DSXplore: Optimizing Convolutional Neural Networks via Sliding-Channel Convolutions\nAccepted at **IPDPS-2021** [[arxiv](https://arxiv.org/abs/2101.00745)]\n\n> Author: **Yuke Wang**, Boyuan Feng, and Yufei Ding \\\n> Email: yuke_wang@cs.ucsb.edu\n\n# Install\n+ Dependency: `Python 3.7`, `nvcc 11.1`.\n+ Install Conda to set up an virtual environment [Toturial](https://www.digitalocean.com/community/tutorials/how-to-install-anaconda-on-ubuntu-18-04-quickstart).\n+ Install Pytorch with GPU support [Toturial](https://pytorch.org/get-started/locally/).\n+ Go to ``SCC_conv/``, then ``python setup.py install``.\n\n\n# Run\n+ Avaiable Models ``[model name]``: ``VGG11, VGG13, VGG16, VGG19, ResNet18, ResNet34, ResNet50, MobileNet``.\n+ Avaiable groups ``[num_group]``: ``1,2,4,8``.\n+ Avaiable overlap ``[overlap_ratio]``: ``0.25,0.33,0.50,0.75``.\n+ Then execute ``python main.py --model [Model Name] --groups [num_group] --overlap [overlap_ratio]`` .\n+ A detailed example of changing backend convolution implementation is illustrated in `models/vgg.py`.\n\n# Cite\n\n```\n@inproceedings{DSXplore,\n  title={DSXplore: Optimizing Convolutional Neural Networks via Sliding-Channel Convolutions},\n  author={Yuke Wang and Boyuan Feng and Yufei Ding},\n  booktitle={2021 IEEE International Parallel and Distributed Processing Symposium (IPDPS)},\n  year={2021}\n}\n```\n\n# Reference\n[Train CIFAR10 with PyTorch](https://github.com/kuangliu/pytorch-cifar.git)\n"
+   }
+  ]
+ },
+ {
+  "key": "conf/ipps/NiuLDJ0T21",
+  "title": "TileSpMV: A Tiled Algorithm for Sparse Matrix-Vector Multiplication on GPUs",
+  "venue": "IPDPS",
+  "year": 2021,
+  "authors": [
+   "Yuyao Niu",
+   "Zhengyang Lu 0003",
+   "Meichen Dong",
+   "Zhou Jin 0001",
+   "Weifeng Liu 0002"
+  ],
+  "abstract": "With the extensive use of GPUs in modern supercomputers, accelerating sparse matrix-vector multiplication (SpMV) on GPUs received much attention in the last couple of decades. A number of techniques, such as increasing utilization of wide vector units, reducing load imbalance and selecting the best formats, have been developed. However, the 2D spatial sparsity structure has not been well exploited in the existing work for SpMV on GPUs. In this paper, we propose an efficient tiled algorithm called TileSpMV for optimizing SpMV on GPUs through exploiting 2D spatial structure of sparse matrices. We first implement seven warp-level SpMV methods for calculating sparse tiles stored in a variety of ",
+  "candidates": [
+   {
+    "url": "https://github.com/SuperScientificSoftwareLaboratory/TileSpMV",
+    "desc": "Source code of the IPDPS '21 paper: \"TileSpMV: A Tiled Algorithm for Sparse Matrix-Vector Multiplication on GPUs\" by Yuyao Niu, Zhengyang Lu, Meichen Dong, Zhou Jin, Weifeng Liu, and Guangming Tan.",
+    "stars": 13,
+    "readme_head": "# TileSpMV\r\n\r\n \r\n\r\n**TileSpMV** is an open source code that uses a tiled structure to optimize sparse matrix-vector multiplication (SpMV) on GPUs. \r\n\r\n\r\n-------------------\r\n## Paper information\r\n\r\nYuyao Niu, Zhengyang Lu, Meichen Dong, Zhou Jin, Weifeng Liu and Guangming Tan, \"TileSpMV: A Tiled Algorithm for Sparse Matrix-Vector Multiplication on GPUs,\" 2021 IEEE International Parallel and Distributed Processing Symposium (IPDPS), 2021, pp. 68-78, DOI: https://doi.org/10.1109/IPDPS49936.2021.00016.\r\n\r\n## Contact us\r\n\r\nIf you have any questions about running the code, please contact Yuyao Niu. \r\n\r\nE-mail: yuyao.niu.phd@gmail.com\r\n\r\n## Introduction\r\n\r\nSparse matrix-vector multiplication(SpMV) executes Ax=y, where A is a sparse matrix, x and y are dense vectors. TileSpMV implemented seven warp-level SpMV methods to calculate sparse tiles stored in different formats, and a format selection method is designed to select the best format and algorithm for each sparse tile to improve performance from the perspective of the local sparse structure of the matrix. In addition, nonzeros in very sparse tiles are extracted into a separate matrix for better performance. \r\nTileSpMV provides a version of CUDA on a high parallelism currently.\r\n\r\n\r\n<!-- ## Structure\r\nREADME     instructions on installation\r\nsrc        C source code\r\nscr/main.cu  testing code\r\nbeidoublas/Makefile   Makefile that does installation and testing\r\n``` -->\r\n\r\n## Installation\r\n\r\n<!-- To use this code, you need to modify"
+   }
+  ]
+ },
+ {
+  "key": "conf/ipps/ZarebavaniCLSD22",
+  "title": "HDagg: Hybrid Aggregation of Loop-carried Dependence Iterations in Sparse Matrix Computations",
+  "venue": "IPDPS",
+  "year": 2022,
+  "authors": [
+   "Behrooz Zarebavani",
+   "Kazem Cheshmi",
+   "Bangtian Liu",
+   "Michelle Mills Strout",
+   "Maryam Mehri Dehnavi"
+  ],
+  "abstract": "This paper proposes a novel aggregation algorithm, called Hybrid DAG Aggregation (HDagg), that groups iterations of sparse matrix computations with loop carried dependence to improve their parallel execution on multicore processors. Prior approaches to optimize sparse matrix computations fail to provide an efficient balance between locality, load balance, and synchronization and are primarily optimized for codes with a tree-structure data dependence. HDagg is optimized for sparse matrix computations that their data dependence graphs (DAGs) do not have a tree structure, such as incomplete matrix factorization algorithms. It uses a hybrid approach to aggregate vertices and wavefronts in the DA",
+  "candidates": [
+   {
+    "url": "https://github.com/BehroozZare/HDagg-benchmark",
+    "desc": "HDagg's source code used to evaluate the paper \"HDagg: Hybrid Aggregation of Loop-carried Dependence Iterations in Sparse Matrix Computations.\"",
+    "stars": 6,
+    "readme_head": "\n![APM](https://badgen.net/github/license/micromatch/micromatch)\n![example workflow](https://github.com/sympiler/lbc/actions/workflows/cmakeUbuntu.yml/badge.svg)\n![example workflow](https://github.com/sympiler/lbc/actions/workflows/cmakeMac.yml/badge.svg)\n\n\n# HDagg\n [Hybrid Aggregation of Loop-carried\nDependence Iterations in Sparse Matrix\nComputations (HDagg)](https://www.cs.toronto.edu/~mmehride/papers/HDag.pdf) is a DAG partitioning/scheduling algorithm used for making sparse matrix loops parallel.\n It can be used within code generators or libraries. It is integrated into Sympiler framework.\n This repository is the opensource reference implementation of the IPDPS 2022 paper.\n For more information see [Sympiler documents](https://www.sympiler.com/docs/lbc/).\n\n## Files\n\n* `src/`: source code\n* `cmake/` and `CMakeLists.txt`: CMake files\n* `input/`: input folder where matrices reside\n* `output/`: output folder to store data\n* `demo/`: example folder to show HDagg usage\n* `scripts/`: Python and Bash scripts for generating and processing results\n\n## Install\n\n### Prerequisites\nFirst following items should be installed:\n* CMake\n* C++ compiler (GCC, ICC, or CLang)\n* METIS (optional) dependency for running the demo efficiently\n  and is handled by the cmake. If you have installed the package using\n  a packet manager (e.g., apt of homebrew), CMake should be able to detect it.\n  Otherwise, it installs METIS from source internally.\n* OpenMP (optional) for running some parts of the code "
+   }
+  ]
+ },
+ {
+  "key": "conf/ipps/ZhaiJWJZCLZ23",
+  "title": "ByteTransformer: A High-Performance Transformer Boosted for Variable-Length Inputs",
+  "venue": "IPDPS",
+  "year": 2023,
+  "authors": [
+   "Yujia Zhai",
+   "Chengquan Jiang",
+   "Leyuan Wang",
+   "Xiaoying Jia 0001",
+   "Shang Zhang"
+  ],
+  "abstract": "Transformers have become keystone models in natural language processing over the past decade. They have achieved great popularity in deep learning applications, but the increasing sizes of the parameter spaces required by transformer models generate a commensurate need to accelerate performance. Natural language processing problems are also routinely faced with variable-length sequences, as word counts commonly vary among sentences. Existing deep learning frameworks pad variable-length sequences to a maximal length, which adds significant memory and computational overhead. In this paper, we present ByteTransformer, a high-performance transformer boosted for variable-length inputs. We propose",
+  "candidates": [
+   {
+    "url": "https://github.com/bytedance/ByteTransformer",
+    "desc": "optimized BERT transformer inference on NVIDIA GPU.  https://arxiv.org/abs/2210.03052",
+    "stars": 479,
+    "readme_head": "# ByteTransformer: Optimized BERT Transformer Inference on NVIDIA GPUs\r\n\r\n## Introduction\r\n\r\nByteTransformer is a high-performance inference library for BERT-like transformers that offers the following features:\r\n\r\n* Provides Python and C++ APIs, with the PyTorch plugin allowing users to enhance transformer inference with just a few lines of Python code.\r\n* Supports both fixed-length and variable-length transformers.\r\n* Includes end-to-end architectural-aware optimizations for the padding-free algorithm on BERT routines, including QKV encoding, softmax, feed forward network, activation, layernorm, and multi-head attention.\r\n\r\nByteTransformer has been widely deployed to improve in-house transformer inference serving systems at ByteDance, delivering superior performance over other transformer implementations for both fixed-length and variable-length inputs. The technical details have been published at IEEE IPDPS 2023.\r\n\r\n## Cite Us\r\n\r\nIf you use our library, please cite our research paper.\r\n\r\n```\r\n@article{zhai2022bytetransformer,\r\n  title={ByteTransformer: A High-Performance Transformer Boosted for Variable-Length Inputs},\r\n  author={Zhai, Yujia and Jiang, Chengquan and Wang, Leyuan and Jia, Xiaoying and Zhang, Shang and Chen, Zizhong and Liu, Xin and Zhu, Yibo},\r\n  journal={arXiv preprint arXiv:2210.03052},\r\n  year={2022}\r\n}\r\n```\r\n\r\n## Performance and Speedup\r\n\r\nWe compared ByteTransformer with PyTorch, TensorFlow, FasterTransformer, and DeepSpeed on an A100 GPU. The benchmar"
+   }
+  ]
+ },
+ {
+  "key": "conf/ipps/SidLakhdarCBALGTJWDDA23",
+  "title": "PAQR: Pivoting Avoiding QR factorization",
+  "venue": "IPDPS",
+  "year": 2023,
+  "authors": [
+   "Wissam M. Sid-Lakhdar",
+   "Sébastien Cayrols",
+   "Daniel Bielich",
+   "Ahmad Abdelfattah",
+   "Piotr Luszczek"
+  ],
+  "abstract": "The solution of linear least-squares problems is at the heart of many scientific and engineering applications. While any method able to minimize the backward error of such problems is considered numerically stable, the theory states that the forward error depends on the condition number of the matrix in the system of equations. On the one hand, the QR factorization is an efficient method to solve such problems, but the solutions it produces may have large forward errors when the matrix is rank deficient. On the other hand, rank-revealing QR (RRQR) is able to produce smaller forward errors on rank deficient matrices, but its cost is prohibitive compared to QR due to memory-inefficient operati",
+  "candidates": [
+   {
+    "url": "https://github.com/luszczek/paqr",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "\nThis is a repo of codes used for IPDPS 2023 best paper nominee listed\nin https://www.ipdps.org/ipdps2023/2023-advance-program.html under\n\"PLENARY SESSION: Best Papers\" on Tuesday, May 16, 2023.\nThe paper details are as follows: \"PAQR: Pivoting Avoiding QR factorization\" by\nWissam Sid-Lakhdar, Sebastien Cayrols, Daniel Bielich, Ahmad Abdelfattah,\nPiotr Luszczek, Mark Gates, and Stanimire Tomov (University of Tennessee at Knoxville);\nHans Johansen and David Williams-Young (Lawrence Berkeley National Laboratory);\nTimothy Davis (Texas A&M University);\nand Jack Dongarra and Hartwig Anzt (University of Tennessee at Knoxville)\nDOI: 10.1109/IPDPS54959.2023.00040\nhttps://doi.ieeecomputersociety.org/10.1109/IPDPS54959.2023.00040\n\n# Originally github.com/drslmw/paqr_SC22\nOriginally it was an artifact description for article evaluation for SC22\n\nFour components are present to reproduce the results in the paper.\n\n1) paqr_matlab.tar.gz\n2) docker wissamsid/paqr_lapack\n3) docker abdelfattah83/paqr_batch_cuda:latest\n4) paqr_scalapack.tar.gz\n\n# MATLAB\n\nIn order to reproduce MATLAB results.\n\n```\ntar xz paqr_matlab.tar.gz\ncd matlab/src\nmatlab\n>>> test(100);\n```\n\nThe \"100\" should be replaced by \"1000\" to get results of Table1.\n\nNOTE: The version of MATLAB used is `R2020a Update 2 (9.8.0.1380330) 64-bit (glnxa64)`.\n\n# LAPACK\n\n```\ndocker pull wissamsid/paqr_lapack\ndocker run -it --entrypoint=bash --privileged --userns=host wissamsid/paqr_lapack\nsh test_paqr_lapack.sh 100 100\n```\n\nIn order to repro"
+   }
+  ]
+ },
+ {
+  "key": "conf/ipps/LuLWLL23",
+  "title": "ZFP-X: Efficient Embedded Coding for Accelerating Lossy Floating Point Compression",
+  "venue": "IPDPS",
+  "year": 2023,
+  "authors": [
+   "Bing Lu 0001",
+   "Yida Li 0001",
+   "Junqi Wang 0002",
+   "Huizhang Luo",
+   "Kenli Li 0001"
+  ],
+  "abstract": "Today’s scientific simulations are confronting seriously limited I/O bandwidth, network bandwidth, and storage capacity because of immense volumes of data generated in high-performance computing systems. Data compression has emerged as one of the most effective approaches to resolve the issue of the exponential increase of scientific data. However, existing state-of-the-art compressors also are confronting the issue of low throughput, especially under the trend of growing disparities between the compute and I/O rates. Among them, embedded coding is widely applied, which contributes to the dominant running time for the corresponding compressors. In this work, we propose a new kind of embedded",
+  "candidates": [
+   {
+    "url": "https://github.com/BingluCS/ZFP-X",
+    "desc": "",
+    "stars": 1,
+    "readme_head": "ZFP-X\n===\n\n**This is the open-source repository for our paper in IPDPS'23.**\n\nZFP-X is an extended version of ZFP. ZFP-X has improved the embedded coding in the fixed-precision and fixed-accuracy mode of ZFP, which lead to the compression and decompression throughput achieved significant improvement.\n\n## Citation\n\n```\n@inproceedings{lu2023zfp,\n  title={ZFP-X: Efficient Embedded Coding for Accelerating Lossy Floating Point Compression},\n  author={Lu, Bing and Li, Yida and Wang, Junqi and Luo, Huizhang and Li, Kenli},\n  booktitle={2023 IEEE International Parallel and Distributed Processing Symposium (IPDPS)},\n  pages={1041--1050},\n  year={2023},\n  organization={IEEE}\n}\n```\n\n* Bing Lu, Yida Li1, Junqi Wang, Huizhang Luo, Kenli Li.\n  [ZFP-X: Efficient Embedded Coding for Accelerating Lossy Floating Point Compression](https://ieeexplore.ieee.org/abstract/document/10177402). 2023 IEEE International Parallel and Distributed Processing Symposium (IPDPS), St. Petersburg, FL, USA, 2023, pp. 1041-1050, [doi: 10.1109/IPDPS54959.2023.00107](https://doi.org/10.1109/IPDPS54959.2023.00107).\n  \nZFP\n===\n[![Github Actions Build Status](https://github.com/LLNL/zfp/actions/workflows/main.yml/badge.svg?branch=develop)](https://github.com/LLNL/zfp/actions/workflows/main.yml)\n[![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/qb3ld7j11segy52k/branch/develop?svg=true)](https://ci.appveyor.com/project/lindstro/zfp)\n[![Documentation Status](https://readthedocs.org/projects/zfp/badge/"
+   }
+  ]
+ },
+ {
+  "key": "conf/ipps/HuLJ24",
+  "title": "cuKE: An Efficient Code Generator for Score Function Computation in Knowledge Graph Embedding",
+  "venue": "IPDPS",
+  "year": 2024,
+  "authors": [
+   "Lihan Hu",
+   "Jing Li",
+   "Peng Jiang 0004"
+  ],
+  "abstract": "Knowledge graph embedding (KGE) plays an important role in graph mining and learning applications by converting discrete graph structures to continuous vector representations. While previous systems have focused on scaling KGE onto multiple GPUs, the score function computation on each GPU can be a performance bottleneck. Existing KGE systems implement the score functions with separate tensor operations, leading to large memory consumption and poor memory access efficiency. To overcome the issues, we propose a code generator that automatically translates Python-like definitions of KGE score functions into efficient CUDA code. Our code generator exploits the unique feature of KGE score functio",
+  "candidates": [
+   {
+    "url": "https://github.com/parallel-group/cuke",
+    "desc": "",
+    "stars": 5,
+    "readme_head": "# Cuke\nCuke is a source-to-source compiler that translates tensor computations written in Python into C++/CUDA code.\nIt was initially developed to teach compiler optimization at the University of Iowa and has since evolved into a platform for constructing domain-specific compilers  for different applications.\n\n\n## Installation\nMake sure to use python 3.8 or later:\n```cmd\nconda create -n cuke python=3.8\nconda activate cuke \n```\nCheck out and install this repository:\n```cmd\ngit clone https://github.com/pengjiang-hpc/cuke\ncd cuke\npip install .\n```\n\n\n## Usage\n**An example of elementwise add**\n```python\n# pycuke.asg contains the class definitions of Tensor and Operators.\nfrom pycuke.asg import *\n# pycuke.asg2ir contains the translation function from ASG to IR.\nfrom pycuke.asg2ir import gen_ir\n# pycuke.codegen is the module translating IR to C++ code. \nimport pycuke.codegen as codegen\n\n# Create two tensor nodes: A and B of size 10\nA = Tensor((10, ))\nB = Tensor((10, ))\n\n# Create an elementwise add operator.\n# 'A' and 'B' are the input nodes, 'res' is the output node. \nres = A + B\n\n# Now, we get a computational graph of three tensor nodes.\n# 'gen_ir' invokes the asg->ir procedure and 'print_cpp' returns the generated C++ code. \ncode = codegen.cpu.print_cpp(gen_ir(res))\nprint(code)\n```\n**An example of set intersection using cond apply**\n ```python\ndef is_in(x, li):\n    src = inspect.cleandoc(\"\"\"\n    F = BinarySearch(LI, 0, LSIZE, X);\n    \"\"\")\n    found = Var(dtype='int')\n    found.att"
+   }
+  ]
+ },
+ {
+  "key": "conf/ipps/LiuDYC0025",
+  "title": "Gensor: A Graph-Based Construction Tensor Compilation Method for Deep Learning",
+  "venue": "IPDPS",
+  "year": 2025,
+  "authors": [
+   "Hangda Liu",
+   "Boyu Diao",
+   "Yu Yang",
+   "Wenxin Chen",
+   "Xiaohui Peng 0002"
+  ],
+  "abstract": "High-performance deep learning depends on efficient tensor programs. In recent years, automatic tensor program optimization, also known as tensor compilation, has emerged as the primary approach to generating efficient tensor programs. However, how to generate kernels with higher performance in a shorter time is still the key challenge. In this paper, we present Gensor, a graph-based construction tensor compilation method for deep learning, to further improve the performance of construction tensor compilation. Unlike existing tree-based methods, Gensor abstracts construction space into a graph structure. Gensor then explores the construction space with Markov analysis. Gensor takes tensor pr",
+  "candidates": [
+   {
+    "url": "https://github.com/EMLS-ICTCAS/Gensor",
+    "desc": "Official code for \"Gensor: A Graph-based Construction Tensor Compilation Method for Deep Learning\" (IPDPS 2025)",
+    "stars": 3,
+    "readme_head": "# Gensor: A Graph-based Construction Tensor Compilation Method for Deep Learning\n\n[![Paper](https://img.shields.io/badge/Paper-Link-green)](https://ieeexplore.ieee.org/document/11078487)\n\nThe official repository for [IPDPS'25 paper](https://ieeexplore.ieee.org/document/11078487) \"Gensor: A Graph-based Construction Tensor Compilation Method for Deep Learning\".\n\n###  Overview\n\nWe present Gensor, a graph-based construction tensor compilation method for deep learning, to further improve the performance of construction tensor compilation. The framework process is outlined as follows:\n<div align=\"center\">\n<img src=\"figures/algo_arch.png\" alt=\"diagram\" width=\"500\" />\n</div>\nGensor can generate operator kernels in seconds, with performance increasing by 18% on average, reaching a maximum of 30%. It also achieves high speedup for end-to-end models like ResNet50 and GPT-2, with an average acceleration of 20%.\n\n  \n## Acknowledgements\nWe extended the original repo [Roller](https://www.usenix.org/conference/osdi22/presentation/zhu) with our method.\nWe extend our gratitude to the authors for their support and for providing the research community with the framework.\n\n## Citing this work\nIf you find the project helpful, please consider citing our paper:\n```bibtex\n@inproceedings{liu2025gensor,\n  title={Gensor: A Graph-based Construction Tensor Compilation Method for Deep Learning},\n  author={Liu, Hangda and Diao, Boyu and Yang, Yu and Chen, Wenxin and Peng, Xiaohui and Xu, Yongjun},\n  booktit"
+   }
+  ]
+ },
+ {
+  "key": "conf/ipps/RenUDKLYCG26",
+  "title": "FFCz: Fast Fourier Correction for Spectrum-Preserving Lossy Compression of Scientific Data",
+  "venue": "IPDPS",
+  "year": 2026,
+  "authors": [
+   "Congrong Ren",
+   "Robert Underwood",
+   "Sheng Di",
+   "Emrecan Kutay",
+   "Zarija Lukic"
+  ],
+  "abstract": "This paper introduces a novel technique to preserve spectral features in lossy compression based on a novel fast Fourier correction algorithm for regular-grid data. Preserving both spatial and frequency representations of data is crucial for applications such as cosmology, turbulent combustion, and X-ray diffraction, where spatial and frequency views provide complementary scientific insights. In particular, many analysis tasks rely on frequency-domain representations to capture key features, including the power spectrum of cosmology simulations, the turbulent energy spectrum in combustion, and diffraction patterns in reciprocal space for ptychography. However, existing compression methods gu",
+  "candidates": [
+   {
+    "url": "https://github.com/rcrcarissa/FFCz",
+    "desc": "",
+    "stars": 2,
+    "readme_head": "# FFCz\n\nFFCz is a correction-based method for lossy compression of regular-grid data that preserves accuracy in both **spatial** and **frequency** domains. It augments decompressed results from existing compressors by applying a GPU/CPU-parallel correction stage to enforce **dual-domain error guarantees**.\n\n## Installation\n\n### Requirements\n- CMake (tested with 3.18+)\n- CUDA (for GPU build and runs; tested with 12.4+)\n- FFTW (for CPU build and runs; tested with 3.3.10+)\n\n### Compile\n\n```bash\ngit clone https://github.com/rcrcarissa/FFCz.git\ncd FFCz\n\n# Build FFCz GPU only\ncd GPU\nmkdir build && cd build\ncmake -DCMAKE_INSTALL_PREFIX:PATH=[INSTALL_DIR] ..\nmake\ncd ../../\n\n# Build FFCz CPU only\ncd CPU\nmkdir build && cd build\ncmake -DCMAKE_INSTALL_PREFIX:PATH=[INSTALL_DIR] ..\nmake\ncd ../../\n\n# Build both GPU and CPU versions of FFCz\nsh build.sh\n```\n\n## Usage\n### Correction (editing) stage\n```bash\nffcz (-f | -d) -i <original_path> -e <base_path> -z <compressed_path> \\\n     -M REL <epsilon> -F REL <delta> (-1 N | -2 Nx Ny | -3 Nx Ny Nz)\n```\n### Decompression stage\n```bash\nffcz (-f | -d) -e <base_path> -z <compressed_path> -o <decompressed_path> \\\n     -M REL <epsilon> -F REL <delta> (-1 N | -2 Nx Ny | -3 Nx Ny Nz)\n```\n### Example\nTo edit decompressed data `decomp.dat` in 3D with\n512×512×512 single-precision floating-point values, using the original data\n`original.dat`, and write the corrected compressed output to `comp.dat`:\n```bash\nffcz -f -i original.dat -e decomp.dat -z comp.dat -M "
+   }
+  ]
+ },
+ {
+  "key": "conf/ipps/JiangYLHDJ26",
+  "title": "PackKV: Reducing KV Cache Memory Footprint through LLM-Aware Lossy Compression",
+  "venue": "IPDPS",
+  "year": 2026,
+  "authors": [
+   "Bo Jiang",
+   "Taolue Yang",
+   "Youyuan Liu",
+   "Xubin He",
+   "Sheng Di"
+  ],
+  "abstract": "Transformer-based large language models (LLMs) have demonstrated remarkable potential across a wide range of practical applications. However, long-context inference remains a significant challenge due to the substantial memory requirements of the KV Cache, which can scale to several gigabytes as sequence length and batch size increase. In this paper, we present PackKV, a generic and efficient KV cache management framework optimized for long-context generation. PackKV introduces novel lossy compression techniques specifically tailored to the characteristics of KV cache data, featuring a careful co-design of compression algorithms and system architecture. Our approach is compatible with the dy",
+  "candidates": [
+   {
+    "url": "https://github.com/BoJiang03/PackKV",
+    "desc": "Official repository for the paper \"PackKV: Reducing KV Cache Memory Footprint through LLM-Aware Lossy Compression\" (IPDPS 2026).",
+    "stars": 8,
+    "readme_head": "# PackKV\n\nThis is the official repository for the paper **\"PackKV: Reducing KV Cache Memory Footprint through LLM-Aware Lossy Compression\"** (IPDPS 2026). [[Paper](https://arxiv.org/abs/2512.24449)]\n\nPackKV is a high-performance framework designed to reduce the memory footprint of KV cache for Large Language Models Inference with Lossy Compression. By utilizing custom CUDA kernels and sophisticated lossy compression techniques, PackKV aims to reduce memory usage and improve inference throughput.\n\n## Installation\n\n### Prerequisites\n\n- Linux\n- NVIDIA GPU with CUDA(13.0 for RTX Pro 6000 Blackwell Workstation Edition, 12.8 for 4XA100) support\n- Anaconda or Miniconda or Miniforge\n\n### Step 1: Set up the Environment\n\nCreate a new Conda environment using the provided configuration file:\n\nFor RTX Pro 6000 machine:\n\n```bash\nconda env create -f environment.yml\nconda activate packkv_pub\npip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cu130 # to support RTX Pro 6000\npip install -r requirements.txt\npip install flash-attn==2.8.1 --no-build-isolation # this may take quit a while to compile flash-attn\n```\n\nFor 4XA100 machine:\n\n```bash\nconda env create -f environment.yml\nconda activate packkv_pub\npip install torch==2.9.0 --index-url https://download.pytorch.org/whl/cu128\npip install -r requirements.txt\npip install \"https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.1/flash_attn-2.8.1+cu12torch2.9cxx11abiTRUE-cp312-cp312-linux_x86_64.whl\"\n```\n\n\n### Step "
+   }
+  ]
+ },
+ {
+  "key": "conf/ppopp/WangFD22",
+  "title": "QGTC: accelerating quantized graph neural networks via GPU tensor core",
+  "venue": "PPoPP",
+  "year": 2022,
+  "authors": [
+   "Yuke Wang",
+   "Boyuan Feng",
+   "Yufei Ding 0001"
+  ],
+  "abstract": "Over the most recent years, quantized graph neural network (QGNN) attracts lots of research and industry attention due to its high robustness and low computation and memory overhead. Unfortunately, the performance gains of QGNN have never been realized on modern GPU platforms. To this end, we propose the first Tensor Core (TC) based computing framework, QGTC, to support any-bitwidth computation for QGNNs on GPUs. We introduce a novel quantized low-bit arithmetic design based on the low-bit data representation and bit-decomposed computation. We craft a novel TC-tailored CUDA kernel design by incorporating 3D-stacked bit compression, zero-tile jumping, and non-zero tile reuse technique to impr",
+  "candidates": [
+   {
+    "url": "https://github.com/YukeWang96/QGTC_PPoPP22",
+    "desc": "Artifact for PPoPP22 QGTC: Accelerating Quantized GNN via GPU Tensor Core.",
+    "stars": 30,
+    "readme_head": "QGTC: Accelerating Quantized GNN via GPU Tensor Core\n============\n\n+ **Cite this project and [paper](https://arxiv.org/abs/2111.09547).**\n```\n@inproceedings{QGTC,\n  title={QGTC: Accelerating Quantized GNN via GPU Tensor Core},\n  author={Yuke Wang and Boyuan Feng and Yufei Ding},\n  booktitle={ACM SIGPLAN Symposium on Principles and Practice of Parallel Programming. (PPoPP'22)},\n  year={2022}\n}\n```\n\n\n## Clone this project.\n------------\n\n```\ngit clone git@github.com:YukeWang96/PPoPP22_QGTC.git\n```\n\n## Dependencies.\n------------\n- Python 3.7+.\n- PyTorch 1.5.0+.\n- Deep Graph Library.\n\n## Environment Setup.\n------------\n### [**Method-1**] Install via Docker (**Recommended**).\n\n+ (i)  Pull docker image:  \n```\ndocker pull happy233/qgtc:updated\ndocker run -it --rm --gpus all -v $PWD/:/qgtc happy233/qgtc:updated /bin/bash\n```\n+ (ii) Build docker from scratch:\n```\ncd Docker/\n./build.sh\n./launch.sh\n```\n### [**Method-2**] Install via Conda.\n+ Install **`conda`** on system **[Toturial](https://www.digitalocean.com/community/tutorials/how-to-install-anaconda-on-ubuntu-18-04-quickstart)**.\n+ Create a **`conda`** environment: \n```\nconda create -n env_name python=3.6\n```\n+ Install **`Pytorch`**: \n```\nconda install pytorch torchvision torchaudio cudatoolkit=11.1 -c pytorch -c conda-forge\n```\nor using `pip` [**Note that make sure the `pip` you use is the `pip` from current conda environment. You can check this by `which pip`**]\n```\npip install torch==1.8.0+cu111 torchvision==0.9.0+cu111 torchaud"
+   }
+  ]
+ },
+ {
+  "key": "conf/ppopp/000122",
+  "title": "RTNN: accelerating neighbor search using hardware ray tracing",
+  "venue": "PPoPP",
+  "year": 2022,
+  "authors": [
+   "Yuhao Zhu 0001"
+  ],
+  "abstract": "Neighbor search is of fundamental importance to many engineering and science fields such as physics simulation and computer graphics. This paper proposes to formulate neighbor search as a ray tracing problem and leverage the dedicated ray tracing hardware in recent GPUs for acceleration. We show that a naive mapping under-exploits the ray tracing hardware. We propose two performance optimizations, query scheduling and query partitioning, to tame the inefficiencies. Experimental results show 2.2X - 65.0X speedups over existing neighbor search libraries on GPUs. The code is available at https://github.com/horizon-research/rtnn.",
+  "candidates": [
+   {
+    "url": "https://github.com/horizon-research/rtnn",
+    "desc": "",
+    "stars": 76,
+    "readme_head": "# RTNN: Accelerating Neighbor Search Using Hardware Ray Tracing\n\nThis repository contains the code that uses the hardware ray tracing capability provided by Nvidia's RT cores to accelerate neighbor search in low-dimensional space (lower than 3D), which is prevalent in engineering and science fields (e.g., computational fluid dynamics, graphics, vision), because they deal with physical data such as particles and surface samples that inherently reside in the 2D/3D space.\n\nWhile RT cores are designed (and optimized) for ray tracing, we show how to map neighbor search to the ray tracing hardware to achieve significant speedups (an order of magnitude) over traditional GPU (CUDA) implementations. The code is primarily developed using the OptiX programming interface (for ray tracing) and also uses CUDA to parallelize many non-ray tracing helper functions. The technical aspects of the code are discussed in this [PPoPP 2022 paper](https://horizon-lab.org/pubs/ppopp22.pdf). The performance of RTNN has been much improved since the publication of the paper.\n\n### What forms of neighbor search are supported?\n\nTwo types of neighbor search exist: fixed-radius search (a.k.a., range search) and K nearest neighbor search (KNN). RTNN optimizes for both types. For both types of search we assume a search interface that provides a search radius `r` and a maximum neighbor count `K`, consistent with the interface of many existing neighbor search libraries. We could emulate an unbounded KNN search by "
+   }
+  ]
+ },
+ {
+  "key": "conf/ppopp/NiuLJS0022",
+  "title": "TileSpGEMM: a tiled algorithm for parallel sparse general matrix-matrix multiplication on GPUs",
+  "venue": "PPoPP",
+  "year": 2022,
+  "authors": [
+   "Yuyao Niu",
+   "Zhengyang Lu 0003",
+   "Haonan Ji",
+   "Shuhui Song",
+   "Zhou Jin 0001"
+  ],
+  "abstract": "Sparse general matrix-matrix multiplication (SpGEMM) is one of the most fundamental building blocks in sparse linear solvers, graph processing frameworks and machine learning applications. The existing parallel approaches for shared memory SpGEMM mostly use the row-row style with possibly good parallelism. However, because of the irregularity in sparsity structures, the existing row-row methods often suffer from three problems: (1) load imbalance, (2) high global space complexity and unsatisfactory data locality, and (3) sparse accumulator selection.",
+  "candidates": [
+   {
+    "url": "https://github.com/SuperScientificSoftwareLaboratory/TileSpGEMM",
+    "desc": "Source code of the PPoPP '22 paper: \"TileSpGEMM: A Tiled Algorithm for Parallel Sparse General Matrix-Matrix Multiplication on GPUs\" by Yuyao Niu, Zhengyang Lu, Haonan Ji, Shuhui Song, Zhou Jin, and Weifeng Liu.",
+    "stars": 48,
+    "readme_head": "# TileSpGEMM\n\n \n\n**TileSpGEMM** is an open source code that uses a tiled structure to optimize general sparse matrix-matrix multiplication (SpGEMM) on GPUs. \n\n\n-------------------\n## Paper information\n\nYuyao Niu, Zhengyang Lu, Haonan Ji, Shuhui Song, Zhou Jin, and Weifeng Liu. 2022. TileSpGEMM: A Tiled Algorithm for Parallel Sparse General Matrix-Matrix Multiplication on GPUs. In 27th ACM SIGPLAN Symposium on Principles and Practice of Parallel Programming (PPoPP ’22), 17 pages. DOI:  https://doi.org/10.1145/3503221.3508431\n\n## Contact us\n\nIf you have any questions about running the code, please contact Yuyao Niu. \n\nE-mail: yuyao.niu.phd@gmail.com\n\n## Introduction\n\nGeneral sparse matrix-matrix multiplication(SpGEMM) executes C=AB, where A, B and C are all sparse matrices. TileSpGEMM sparsifies the tiled method in dense general matrix-matrix multiplication (GEMM) and saves each non-empty tile in a sparse form. By this way, the three performance issues of load imbalance, allocating proper size for intermediate products and designing a sparse accumulator can be resolved. Several optimization techniques, such as binary search for set intersection, bit mask operations for symbolic SpGEMM, and an adaptive method for selecting sparse or dense accumulator in on-chip memory, are also developed to improve efficiency. TileSpGEMM provides a version of CUDA on a high parallelism currently. \n\n\n<!-- ## Structure\n```\nbeidoublas/README     instructions on installation\nbeidoublas/src        C "
+   }
+  ]
+ },
+ {
+  "key": "conf/ppopp/XiangY0SS0T23",
+  "title": "TDC: Towards Extremely Efficient CNNs on GPUs via Hardware-Aware Tucker Decomposition",
+  "venue": "PPoPP",
+  "year": 2023,
+  "authors": [
+   "Lizhi Xiang",
+   "Miao Yin",
+   "Chengming Zhang 0006",
+   "Aravind Sukumaran-Rajam",
+   "P. Sadayappan"
+  ],
+  "abstract": "Tucker decomposition is one of the SOTA CNN model compression techniques. However, unlike the FLOPs reduction, we observe very limited inference time reduction with Tucker-compressed models using existing GPU software such as cuDNN. To this end, we propose an efficient end-to-end framework that can generate highly accurate and compact CNN models via Tucker decomposition and optimized inference code on GPUs. Specifically, we propose an ADMM-based training algorithm that can achieve highly accurate Tucker-format models. We also develop a high-performance kernel for Tucker-format convolutions and analytical performance models to guide the selection of execution parameters. We further propose a ",
+  "candidates": [
+   {
+    "url": "https://github.com/mims-harvard/TDC",
+    "desc": "Therapeutics Commons (TDC): Multimodal Foundation for Therapeutic Science",
+    "stars": 1263,
+    "readme_head": "<p align=\"center\"><img src=\"https://raw.githubusercontent.com/mims-harvard/TDC/master/fig/logo.png\" alt=\"logo\" width=\"600px\" /></p>\n\n----\n\n[![website](https://img.shields.io/badge/website-live-brightgreen)](https://tdcommons.ai)\n[![PyPI version](https://badge.fury.io/py/PyTDC.svg)](https://badge.fury.io/py/PyTDC)\n[![Downloads](https://pepy.tech/badge/pytdc/month)](https://pepy.tech/project/pytdc)\n[![Downloads](https://pepy.tech/badge/pytdc)](https://pepy.tech/project/pytdc)\n[![GitHub Repo stars](https://img.shields.io/github/stars/mims-harvard/TDC)](https://github.com/mims-harvard/TDC/stargazers)\n[![GitHub Repo stars](https://img.shields.io/github/forks/mims-harvard/TDC)](https://github.com/mims-harvard/TDC/network/members)\n\n[![TDC CircleCI](https://circleci.com/gh/mims-harvard/TDC.svg?style=svg)](https://app.circleci.com/pipelines/github/mims-harvard/TDC)\n![Conda Github Actions Build](https://github.com/mims-harvard/TDC/actions/workflows/conda-tests.yml/badge.svg)\n[![Documentation Status](https://readthedocs.org/projects/tdc/badge/?version=latest)](http://tdc.readthedocs.io/?badge=latest)\n[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)\n[![Twitter](https://img.shields.io/twitter/url/https/twitter.com/cloudposse.svg?style=social&label=Follow%20%40ProjectTDC)](https://twitter.com/ProjectTDC)\n\n\n[**Website**](https://tdcommons.ai) | [**NeurIPS 2024 AIDrugX Paper**](https://openreview.net/forum?id=kL8dlYp6IM) | [**Nature C"
+   }
+  ]
+ },
+ {
+  "key": "conf/ppopp/ChenLWBWMYZCY24",
+  "title": "ConvStencil: Transform Stencil Computation to Matrix Multiplication on Tensor Cores",
+  "venue": "PPoPP",
+  "year": 2024,
+  "authors": [
+   "Yuetao Chen",
+   "Kun Li 0016",
+   "Yuhao Wang",
+   "Donglin Bai",
+   "Lei Wang 0222"
+  ],
+  "abstract": "Tensor Core Unit (TCU) is increasingly integrated into modern high-performance processors to enhance matrix multiplication performance. However, constrained to its over-specification, its potential for improving other critical scientific operations like stencil computations remains untapped.",
+  "candidates": [
+   {
+    "url": "https://github.com/microsoft/ConvStencil",
+    "desc": "",
+    "stars": 37,
+    "readme_head": "# ConvStencil\n\n> ConvStencil: Transform Stencil Computation to Matrix Multiplication on Tensor Cores\n\n## Abstract\n\nThis artifact contains the source code of ConvStencil, a novel stencil computing system to transform stencil computation to matrix multiplication on Tensor Cores efficiently.\n\n## Prerequisites\n\n- Hardware\n    - x86-64 CPU\n    - a single NVIDIA A100 GPU\n- Software (attached in the docker image)\n    - CUDA - 12.2 (Tested). Lower versions down to CUDA 11.0 are also supported, but it may affect the performance.\n    - GCC - above 9.4.0. You may also try to use icx or clang.\n    - cuDNN - above 8.0\n\n## Getting Code\nThe code can be downloaded using git:\n```\ngit clone https://github.com/microsoft/ConvStencil.git\n```\n\n## Compile\n\nUse the following commands:\n```\nmkdir -p build\ncd build\ncmake ..\nmake all -j24\n```\n\n## Usage\n\nYou can run `convstencil` in the following input format.\n```\nconvstencil_program shape input_size time_interation_size options\n```\n- `convstencil_program` can be chosen from `convstencil_1d`, `convstencil_2d`, and `convstencil_3d` for different dimensions.\n- `shape` can be chosen by the different dimension:\n    - `1d1r` and `1d2r` for 1D\n    - `star2d1r`, `box2d1r`, `star2d3r` and `box2d3r` for 2D\n    - `star3d1r` and `box3d1r` for 3D\n- `input_size` depends on the number of dimensions; the number of inputs required is equal to the number of dimensions.\n- `time_interation_size` is the iteration time.\n- `options`:\n    - `--help` prints the help information"
+   }
+  ]
+ },
+ {
+  "key": "conf/ppopp/HanLCBZYCZCY25",
+  "title": "FlashFFTStencil: Bridging Fast Fourier Transforms to Memory-Efficient Stencil Computations on Tensor Core Units",
+  "venue": "PPoPP",
+  "year": 2025,
+  "authors": [
+   "Haozhi Han",
+   "Kun Li 0016",
+   "Wei Cui",
+   "Donglin Bai",
+   "Yiwei Zhang 0009"
+  ],
+  "abstract": "While Tensor Core Units (TCUs) excel in AI tasks, their application to HPC algorithms like stencil computations faces significant challenges due to sparsity, which leads to underutilization and exacerbates memory-bound limitations. This paper introduces FlashFFTStencil1, a memory-efficient stencil computing system designed to bridge FFT to fully-dense stencil computations on TCUs. Aimed at bound shifting, FlashFFTStencil comprises three key techniques: Kernel Tailoring on HBM fuses distinct kernels to enhance parallelism while reducing memory transfer and footprint; Architecture Aligning on SMEM restructures FFT-based stencil computations into dense matrix multiplications tailored for shared",
+  "candidates": [
+   {
+    "url": "https://github.com/KevinWu2017/FlashFFTStencil",
+    "desc": "FlashFFTStencil: Bridging Fast Fourier Transforms to Memory-Efficient Stencil Computations on Tensor Core Units (PPoPP'25)",
+    "stars": 0,
+    "readme_head": "# FlashFFTStencil: Bridging Fast Fourier Transforms to Memory-Efficient Stencil Computations on Tensor Core Units\n\nThis repository contains the official code for FlashFFTStencil, a memory-efficient stencil computing system designed to bridge fast Fourier transforms to fully-dense stencil computations on Tensor Core Units.\n\nFlashFFTStencil demonstrates remarkable efficiency in stencil computations, achieving an average speedup of 2.57× over the current state-of-the-art methods. Notably, in 1D cases, it achieves an exceptional 103.0× speedup compared to stencil implementations based on cuFFT.\n\n\n**FlashFFTStencil: Bridging Fast Fourier Transforms to Memory-Efficient Stencil Computations on Tensor Core Units (PPoPP'25)** \\\nPaper: https://ppopp25.sigplan.org/track/PPoPP-2025-Main-Conference-1 \\\nBlog: https://mp.weixin.qq.com/s/KBUiKvvXqAHB0YC5XdQ4ww\n\n\n![FlashFFTStencil](assets/intro.png)\n\n## Contact\n\nIf you have any questions or would like to discuss more detail, please feel free to reach out to Haozhi at **haozhi.han@stu.pku.edu.cn**.\n\n\n## Installation\n\nRecommended Setup:\n\nWe suggest utilizing the Nvidia PyTorch Docker container, as this library has been developed and validated using version 23.05.\n\n* This library has been tested with CUDA 12.1 and its corresponding toolkit.\n* While our testing was conducted on A100 and H100 GPUs, it should work seamlessly on any Ampere/Hopper architecture (e.g., 3090, 4090).\n* PyTorch 2.0 is Required (for benchmarking only)\n\nVerifying CUDA Versi"
+   }
+  ]
+ },
+ {
+  "key": "conf/ppopp/ShiLXFWW25",
+  "title": "FlashSparse: Minimizing Computation Redundancy for Fast Sparse Matrix Multiplications on Tensor Cores",
+  "venue": "PPoPP",
+  "year": 2025,
+  "authors": [
+   "Jinliang Shi",
+   "Shigang Li 0002",
+   "Youxuan Xu",
+   "Rongtian Fu",
+   "Xueying Wang 0003"
+  ],
+  "abstract": "Sparse Matrix-matrix Multiplication (SpMM) and Sampled Dense-dense Matrix Multiplication (SDDMM) are important sparse operators in scientific computing and deep learning. Tensor Core Units (TCUs) enhance modern accelerators with superior computing power, which is promising to boost the performance of matrix operators to a higher level. However, due to the irregularity of unstructured sparse data, it is difficult to deliver practical speedups on TCUs. To this end, we propose FlashSparse, a novel approach to bridge the gap between sparse workloads and the TCU architecture. Specifically, FlashSparse minimizes the sparse granularity for SpMM and SDDMM on TCUs through a novel swap-and-transpose m",
+  "candidates": [
+   {
+    "url": "https://github.com/ParCIS/FlashSparse",
+    "desc": "FlashSparse significantly reduces the computation redundancy for unstructured sparsity (for SpMM and SDDMM) on Tensor Cores through a Swap-and-Transpose mapping strategy. FlashSparse is accepted by PPoPP 2025.",
+    "stars": 39,
+    "readme_head": "## FlashSparse: Minimizing Computation Redundancy for Fast Sparse Matrix Multiplications on Tensor Cores\n**FlashSparse is accepted by PPoPP 2025**. See the **[published version of the paper](https://dl.acm.org/doi/10.1145/3710848.3710858)**. FlashSparse significantly reduces the computation redundancy for unstructured sparsity (for SpMM and SDDMM) on Tensor Cores through a **Swap-and-Transpose** mapping strategy.\n![FlashSparse](FlashSparseThumbnail.png)\n\n## 1. Clone this project.\n```\ngit clone --recursive https://github.com/ParCIS/FlashSparse.git\n```\n+ **Requirements**: \n> + `Ubuntu 16.04+`\n> + `cmake >= 3.29`\n> + `CUDA >= 11.8`\n> + one NVIDIA RTX4090 GPU and one H100 PCIe GPU.\n\n## 2. Environment Setup.\nConda environments need to be set up on machines with H100 PCIe and RTX4090 GPUs following the steps below.\n\n### 2.1 Install via Conda.\n+ 2.1.1 Install **`conda`** on system. **[(Toturial)](https://docs.anaconda.com/anaconda/install/linux/)**.\n+ 2.1.2 Create a **`conda`** environment: \n```\nconda create -n env_name python=3.9\n```\n+ 2.1.3 Install **`PyTorch`** **[(Toturial)](https://pytorch.org/get-started/locally/)**: \n```\nconda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia \n```\n\n## 3. Install **`FlashSparse`**.\n```\ncd FlashSparse/\nbash compile.sh\n``` \n\n## 4. Download datasets. (optional)\n```\ncat dataset.txt\nThe sparse matrices can be downloaded from the SuiteSparse repository, while GNN-related datasets are available on the official websites of "
+   }
+  ]
+ },
+ {
+  "key": "conf/ppopp/FrantarCCHA25",
+  "title": "MARLIN: Mixed-Precision Auto-Regressive Parallel Inference on Large Language Models",
+  "venue": "PPoPP",
+  "year": 2025,
+  "authors": [
+   "Elias Frantar",
+   "Roberto L. Castro",
+   "Jiale Chen 0004",
+   "Torsten Hoefler",
+   "Dan Alistarh"
+  ],
+  "abstract": "As inference on Large Language Models (LLMs) emerges as an important workload in machine learning applications, model weight quantization has become a standard technique for efficient GPU deployment. Quantization not only reduces model size, but has also been shown to yield substantial speedups for single-user inference, due to reduced memory movement, with low accuracy impact. Yet, it remains a key open question whether speedups are achievable also in batched settings with multiple parallel clients, which are highly relevant for practical serving. It is unclear whether GPU kernels can be designed to remain practically memory-bound, while supporting the substantially increased compute requir",
+  "candidates": [
+   {
+    "url": "https://github.com/IST-DASLab/marlin",
+    "desc": "FP16xINT4 LLM inference kernel that can achieve near-ideal ~4x speedups up to medium batchsizes of 16-32 tokens.",
+    "stars": 1108,
+    "readme_head": "<div align=\"center\">\n  <img src=\"assets/marlin.png\" width=\"250\"/>\n</div>\n\n# Marlin\n\nThis is Marlin, a **M**ixed **A**uto-**R**egressive **Lin**ear kernel (and the name of one of the planet's fastest fish), an extremely optimized FP16xINT4 matmul kernel aimed at LLM inference that can deliver close to ideal (4x)\nspeedups up to batchsizes of 16-32 tokens (in contrast to the 1-2 tokens of prior work with comparable speedup). This makes Marlin well suited for larger-scale\nserving, speculative decoding or advanced multi-inference schemes such as CoT-Majority.\n\n## Techniques:\n\nMost modern GPUs feature FLOP to byte ratios of around 100-200.\nHence, as long as we perform less than 25-50 (tensor core) multiply-accumulates per 4-bit quantized weight, it should (theoretically) be possible to maintain near ideal 4x speedup over FP16 weights.\nThis means that the full performance benefits of weight-only quantization should, in principle, extend to batchsizes 4-8x larger than what is currently achieved by existing kernels.\nHowever, actually realizing this in practice is very challenging, since we essentially need to fully utilize all available GPU resources (global memory, L2 cache, shared memory, tensor cores, vector cores), *simultaneously*.\nMarlin accomplishes this through numerous techniques and optimizations, briefly sketched below:\n\n* We organize computation in such a way that all activations are essentially always fetched from L2 cache and are further reused several times within regis"
+   }
+  ]
+ },
+ {
+  "key": "conf/ppopp/GuW0Y26",
+  "title": "SPIDER: Unleashing Sparse Tensor Cores for Stencil Computation via Strided Swapping",
+  "venue": "PPoPP",
+  "year": 2026,
+  "authors": [
+   "Qiqi Gu 0002",
+   "Chenpeng Wu",
+   "Heng Shi 0005",
+   "Jianguo Yao 0002"
+  ],
+  "abstract": "Recent research has focused on accelerating stencil computations by exploiting emerging hardware like Tensor Cores. To leverage these accelerators, the stencil operation must be transformed to matrix multiplications. However, this transformation introduces undesired sparsity into the kernel matrix, leading to significant redundant computation.",
+  "candidates": [
+   {
+    "url": "https://github.com/KevinWu2017/SPIDER",
+    "desc": "SPIDER: Unleashing Sparse Tensor Cores for Stencil Computation via Strided Swapping (PPoPP'26)",
+    "stars": 3,
+    "readme_head": "# SPIDER\n\n> SPIDER: Unleashing Sparse Tensor Cores for Stencil Computation via Strided Swapping (PPoPP'26)\n\n## Abstract\n\nThis repository contains the source code of SPIDER, a novel  system to converting stencil computation into sparse matrix multiplication using Sparse Tensor Core (SpTC).\n\n## Preprequisties\n\n- Hardware\n  - 1x NVIDIA A100 GPU\n- Software\n  - CUDA (12.8 Tested). Should support all CUDA version above 12.5 (supporting `mma.sp.ordered_metadata`)\n  - GCC (11.4 Tested) or Clang.\n  - cuDNN (9.8.0 Tested).\n\nYou can use the `Dockerfile` to quickly prepare the environment. \n\n## Installing\n\n### Preparing\n\nFirst clone the code repository by:\n```shell\ngit clone --recurse-submodules https://github.com/KevinWu2017/SPIDER.git SPIDER\ncd SPIDER\n```\n\n> [!NOTE]\n> If you prefer using docker for environment preparation, you can run:\n> ```shell\n> # Please make sure you nvidia driver supports cuda-12.8 (driver version newer than 570.26).\n> docker build -t spider_ae .\n> docker run --gpus all --name spider_ae -it spider_ae /bin/bash\n> ```\n\nThen create the virtual environment and install packages:\n```shell\npython3 -m venv spider_venv\nsource spider_venv/bin/activate\npip install -r requirements.txt\n```\n\n### Build\n\nIn project root, you can build the SPIDER and baselines by using:\n```shell\n./scripts/build_SPIDER.sh # build SPIDER\n./scripts/build_baseline.sh # build baselines.\n```\n\n### Running\nThe executable program is listed in ./build/bin/\n```shell\n# e.g. To run a 2d stencil with SpTC and h"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/HuYWYZL0ZW20",
+  "title": "FeatGraph: a flexible and efficient backend for graph neural network systems",
+  "venue": "SC",
+  "year": 2020,
+  "authors": [
+   "Yuwei Hu",
+   "Zihao Ye 0001",
+   "Minjie Wang",
+   "Jiali Yu",
+   "Da Zheng 0004"
+  ],
+  "abstract": "Graph neural networks (GNNs) are gaining popularity as a promising approach to machine learning on graphs. Unlike traditional graph workloads where each vertex/edge is associated with a scalar, GNNs attach a feature tensor to each vertex/edge. This additional feature dimension, along with consequently more complex vertex- and edge-wise computations, has enormous implications on locality and parallelism, which existing graph processing systems fail to exploit. This paper proposes FeatGraph to accelerate GNN workloads by co-optimizing graph traversal and feature dimension computation. FeatGraph provides a flexible programming interface to express diverse GNN models by composing coarse-grained ",
+  "candidates": [
+   {
+    "url": "https://github.com/amazon-science/FeatGraph",
+    "desc": "",
+    "stars": 69,
+    "readme_head": "FeatGraph: Sparse kernels for GNNs based on TVM\n===============================================\n\nGraph neural networks (GNNs) are gaining popularity in recent years as a promising approach to machine learning on graphs. Unlike traditional graph workloads where each vertex/edge is associated with a scalar, GNNs attach a feature tensor to each vertex/edge. This additional feature dimension, along with consequently more complex vertex- and edge-wise computations, has enormous implications on locality and parallelism, which existing graph processing systems fail to exploit.\n\nTo tackle the challenge, FeatGraph maps the building blocks of GNNs to generalized SpMM (sparse-dense matrix multiplication) and SDDMM (sampled dense-dense matrix multiplication) kernels, and provides high-performance implementations of these sparse kernels based on [TVM](https://tvm.apache.org/).\n\nFor more information, refer to our [SC'20 paper](https://www.csl.cornell.edu/~zhiruz/pdfs/featgraph-sc2020.pdf).\n```\n@article{hu2020featgraph,\n  title={FeatGraph: A Flexible and Efficient Backend for Graph Neural Network Systems},\n  author={Hu, Yuwei and Ye, Zihao and Wang, Minjie and Yu, Jiali and Zheng, Da and Li, Mu and Zhang, Zheng and Zhang, Zhiru and Wang, Yida},\n  journal={International Conference for High Performance Computing, Networking, Storage and Analysis},\n  year={2020}\n}\n```\n\n## Run the code\n\n1. Install TVM ([instructions](https://tvm.apache.org/docs/install/index.html)) and DGL ([instructions](https"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/HuangD0Y20",
+  "title": "GE-SpMM: general-purpose sparse matrix-matrix multiplication on GPUs for graph neural networks",
+  "venue": "SC",
+  "year": 2020,
+  "authors": [
+   "Guyue Huang",
+   "Guohao Dai 0001",
+   "Yu Wang 0002",
+   "Huazhong Yang"
+  ],
+  "abstract": "The acceleration of Graph Neural Networks (GNNs) requires efficient and framework-compatible Sparse-Dense Matrix-Matrix Multiplication (SpMM). From the compatibility perspective, the sophisticated sparse matrix representations in state-of-the-art SpMM designs cause heavy preprocessing overhead for the framework. From the efficiency perspective, optimizations for SpMV (Sparse Matrix-Vector) do not apply well to SpMM, leading to redundant and uncoalesced global memory access. We propose GE-SpMM1, which takes the CSR format consistent with GNN frameworks to enable integration without the format transformation overhead. We use Coalesced Row Caching to ensure coalesced access to both sparse and d",
+  "candidates": [
+   {
+    "url": "https://github.com/hgyhungry/ge-spmm",
+    "desc": "",
+    "stars": 115,
+    "readme_head": "# GE-SpMM: General-purposed Sparse Matrix-Matrix Multiplication on GPUs for Graph Neural Networks\r\n\r\nGuyue Huang\\*, Guohao Dai, Yu Wang and Huazhong Yang\r\n\r\n\\*hguyue1@outlook.com\r\n\r\n# News\r\n* The code for SC20 publication AE is archived at branch sc20_AE.\r\n* The code for ACM SRC publication ( upgraded SpMM kernel) is released as part of the [dgSPARSE](https://github.com/dgSPARSE/dgSPARSE-Library) project. Code link: https://github.com/dgSPARSE/dgSPARSE-Library/tree/main/src/ge-spmm\r\n* Future updates will be released in [dgSPARSE](https://github.com/dgSPARSE/dgSPARSE-Library) project. \r\n\r\n# Collaborative Projects\r\n* [dgSPARSE](https://github.com/dgSPARSE/dgSPARSE-Library) (Deep Graph Sparse Library) collects GPU sparse routines for HPC and GNN systems, developed in [NICS-EFC](http://nicsefc.ee.tsinghua.edu.cn) research lab\r\n    * SpMM\r\n    * SDDMM\r\n    * Edge softmax\r\n    * ...\r\n* [CogDL](https://github.com/THUDM/cogdl) is a flexible and efficient graph-learning framework that uses GE-SpMM to accelerate GNN algorithms. \r\n\r\n\r\n```\r\n@inproceedings{9355302,  \r\n    author={Huang, Guyue and Dai, Guohao and Wang, Yu and Yang, Huazhong},  \r\n    booktitle={SC20: International Conference for High Performance Computing, Networking, Storage and Analysis},   \r\n    title={GE-SpMM: General-Purpose Sparse Matrix-Matrix Multiplication on GPUs for Graph Neural Networks},   \r\n    year={2020},  \r\n    pages={1-12},  \r\n    doi={10.1109/SC41405.2020.00076}\r\n}\r\n\r\n@misc{huang2021efficient,\r\n      titl"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/GoenkaTPH20",
+  "title": "SegAlign: a scalable GPU-based whole genome aligner",
+  "venue": "SC",
+  "year": 2020,
+  "authors": [
+   "Sneha D. Goenka",
+   "Yatish Turakhia",
+   "Benedict Paten",
+   "Mark Horowitz"
+  ],
+  "abstract": "Pairwise Whole Genome Alignment (WGA) is a crucial first step to understanding evolution at the DNA sequence-level. Pairwise WGA of thousands of currently available species genomes could help make biological discoveries, however, computing them for even a fraction of the millions of possible pairs is prohibitive - WGA of a single pair of vertebrate genomes (human-mouse) takes 11 hours on a 96-core Amazon Web Services (AWS) instance (c5.24xlarge). This paper presents SegAlign - a scalable, GPU-accelerated system for computing pairwise WGA. SegAlign is based on the standard seed-filter-extend heuristic, in which the filtering stage dominates the runtime (e.g. 98% for human-mouse WGA), and is a",
+  "candidates": [
+   {
+    "url": "https://github.com/gsneha26/SegAlign",
+    "desc": "A Scalable GPU-Based Whole Genome Aligner, published in SC20: https://doi.ieeecomputersociety.org/10.1109/SC41405.2020.00043",
+    "stars": 72,
+    "readme_head": "[license-badge]: https://img.shields.io/badge/License-MIT-yellow.svg \n[license-link]: https://opensource.org/licenses/MIT\n\n[![License][license-badge]][license-link]\n[![Build Status](https://travis-ci.com/gsneha26/SegAlign.svg?branch=master)](https://travis-ci.com/gsneha26/SegAlign)\n[![Published in SC20](https://img.shields.io/badge/published%20in-SC20-blue.svg)](https://doi.ieeecomputersociety.org/10.1109/SC41405.2020.00043)\n\n<img src=\"logo.png\" width=\"300\">\n\nA Scalable GPU System for Pairwise Whole Genome Alignments based on LASTZ's seed-filter-extend paradigm.\n\n## Table of Contents\n\n- [Overview](#overview)\n- [Dependencies](#dependencies)\n- [How to run SegAlign](#run)\n    - [Running a test](#test)\n- [How to run SegAlign repeat masker](#run_rm)\n    - [Running a test](#test_rm)\n- [Running Docker Image](#docker)\n    - [Running segalign](#d_segalign)\n    - [Running segalign_repeat_masker](#d_segalign_rm)\n- [Citing SegAlign](#cite_segalign)\n\n## <a name=\"overview\"></a> Overview\n\nThe system has been tested on all the AWS G3 and P3 GPU instances with AMI Ubuntu Server 18.04 LTS (HVM), SSD Volume Type (ami-0fc20dd1da406780b (64-bit x86))\n\n* Clone SegAlign repository (https://github.com/gsneha26/SegAlign)\n\n```\ngit clone https://github.com/gsneha26/SegAlign.git\nexport PROJECT_DIR=$PWD/SegAlign\n```\n\n## <a name=\"dependencies\"></a> Dependencies\nThe following dependencies are required by SegAlign:\n  * NVIDIA CUDA 10.2 toolkit\n  * CMake 3.8\n  * Intel TBB library\n  * libboost-all-dev\n  * par"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/FengWGLD21",
+  "title": "APNN-TC: accelerating arbitrary precision neural networks on ampere GPU tensor cores",
+  "venue": "SC",
+  "year": 2021,
+  "authors": [
+   "Boyuan Feng",
+   "Yuke Wang",
+   "Tong Geng",
+   "Ang Li 0006",
+   "Yufei Ding 0001"
+  ],
+  "abstract": "Over the years, accelerating neural networks with quantization has been widely studied. Unfortunately, prior efforts with diverse precisions (e.g., 1-bit weights and 2-bit activations) are usually restricted by limited precision support on GPUs (e.g., int1 and int4). To break such restrictions, we introduce the first Arbitrary Precision Neural Network framework (APNN-TC)1 to fully exploit quantization benefits on Ampere GPU Tensor Cores. Specifically, APNN-TC first incorporates a novel emulation algorithm to support arbitrary short bit-width computation with int1 compute primitives and XOR/AND Boolean operations. Second, APNN-TC integrates arbitrary precision layer designs to efficiently map",
+  "candidates": [
+   {
+    "url": "https://github.com/BoyuanFeng/APNN-TC",
+    "desc": "",
+    "stars": 20,
+    "readme_head": "# APNN-TC: Accelerating Arbitrary Precision Neural Networks on Ampere GPU Tensor Cores\n[**[Paper on arXiv]**](https://arxiv.org/abs/2106.12169)\n```\n@inproceedings{APNN-TC,\n  title={APNN-TC: Accelerating Arbitrary Precision Neural Networks on Ampere GPU Tensor Cores},\n  author={Boyuan Feng, Yuke Wang, Tong Geng, Ang Li, Yufei Ding.},\n  booktitle={The International Conference for High Performance Computing, Networking, Storage, and Analysis. (SC'21)},\n  year={2021}\n}\n```\n\n## Clone this project.\n```\ngit clone --recursive git@github.com:BoyuanFeng/APNN-TC.git\ncd APNN-TC-kernel && git checkout main\n```\nin case of missing `--recursive` during the clone\n```\ngit submodule init\ngit submodule update\n```\n\n## OS & Compiler:\n+ `Ubuntu 16.04+`\n+ `gcc >= 7.5`\n+ `make >= 4.2.1`\n+ `CUDA >= 11.0`\n+ `libjpeg`\n+ `cuDNN == 8.2`\n\n## Files & Directory\n+ `APNN-TC-kernel/`: our APNN-TC GEMM and CONV kernels with different bit combinations.\n+ `APNN-TC/`: our APNN-TC NN low-bit model (AlextNet, VGG-variant, ResNet18) with `w1a2` for demonstration.\n+ `cutlass/`: CUTLASS header and source files.\n+ `cutlass_kernel/`: CUTLASS baselines GEMM and CONV kernels, including INT4 and INT1.\n+ `cutlass_nn/`: CUTLASS baselines NN models, including FP32, FP16, and INT8.\n\n\n## Setup Environment.\n+ Install NVIDIA Docker.\n```\ncurl https://get.docker.com | sh \\\n  && sudo systemctl --now enable docker\n\ndistribution=$(. /etc/os-release;echo $ID$VERSION_ID) \\\n   && curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | s"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/YangFDSW21",
+  "title": "LIBSHALOM: optimizing small and irregular-shaped matrix multiplications on ARMv8 multi-cores",
+  "venue": "SC",
+  "year": 2021,
+  "authors": [
+   "Weiling Yang",
+   "Jianbin Fang",
+   "Dezun Dong",
+   "Xing Su 0004",
+   "Zheng Wang 0001"
+  ],
+  "abstract": "General Matrix Multiplication (GEMM) is a key subroutine in highperformance computing. While the mainstream linear algebra libraries can deliver high performance on large and regular-shaped GEMM, they are inadequate for optimizing small and irregular-shaped GEMMs, which are commonly seen in new HPC applications. Some of the recent works in this direction have made promising progress on x86 architectures and GPUs but still leave much room for improvement on emerging HPC hardware built upon the ARMv8 architecture. We present LibShalom, an open-source library for optimizing small and irregular-shaped GEMMs, explicitly targeting the ARMv8 architecture. LibShalom builds upon the classical Goto al",
+  "candidates": [
+   {
+    "url": "https://github.com/AnonymousYWL/LibShalom",
+    "desc": "",
+    "stars": 30,
+    "readme_head": "# LibShalom\nContact: Weiling Yang (2954427597@qq.com)\n\nLibShalom is a Library for Small Irregular-shaped Matrix Multiplications on ARMv8-based processors. It improves the performance of small and irregular-shaped GEMMs on ARMv8-based\nprocessors by improving the shortcomings of existing BLAS libraries, such as packing accounts for a large portion of the runtime, inefficient edge case processing and unreasonable parallelization methods.\n\n\n__This work continues to be optimized, and we need some time. Packing at micro-kernel is key to improving performance. This trick can even be used on large-scale GEMM.__\n\n# Reference\nWeiling Yang, Jianbin Fang, Dezun Dong, Xing Su, Zheng Wang. LIBSHALOM: optimizing small and irregular-shaped matrix multiplications on ARMv8 multi-cores (SC 2021).\nDOI: https://dl.acm.org/doi/10.1145/3458817.3476217 \n\n# Software dependences\n- [GNU Compiler (GCC)](https://gcc.gnu.org/) (>=v8.2)\n- [OpenMP](https://www.openmp.org/)\n\n# hardware platform\nPhytium 2000+, Kunpeng 920, ThunderX2 or otther ARMv8-based processors\n![image](https://github.com/AnonymousYWL/MYLIB/blob/main/platforms.png)\n\n# Compile and install\n```bash\n$ cd NN_LIB && make  \n$ make install PREFIX= the installation path\n```\nThese commands will copy LibShalom library and headers in the installation path PREFIX.\n\n# Compiling with LibShalom\nAll LibShalom definitions and prototypes may be included in your C source file by including a single header file, ```LibShalom.h```:\n```C\n#include <stdio.h>\n#incl"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/0005DGWSCMLZMLC21",
+  "title": "LMFF: efficient and scalable layered materials force field on heterogeneous many-core processors",
+  "venue": "SC",
+  "year": 2021,
+  "authors": [
+   "Ping Gao 0005",
+   "Xiaohui Duan",
+   "Jiaxu Guo",
+   "Jin Wang",
+   "Zhenya Song"
+  ],
+  "abstract": "LAMMPS is one of the most popular Molecular Dynamic (MD) packages and is widely used in the field of physics, chemistry and materials simulation. Layered Materials Force Field (LMFF) is our expansion of the LAMMPS potential function based on the Tersoff potential and inter-layer potential (ILP) in LAMMPS. LMFF is designed to study layered materials such as graphene and boron hexanitride. It is universal and does not depend on any platform. We have also carried out a series of optimizations on LMFF and the optimization work is carried out on the new generation of Sunway supercomputer, called SWLMFF. Experiments show that our implementation is efficient, scalable and portable. When generic LMF",
+  "candidates": [
+   {
+    "url": "https://github.com/run-towards-the-future/LAMMPS-LMFF",
+    "desc": "LAMMPS is one of the most popular Molecular Dynamic (MD) packages and is widely used in the field of physics, chemistry and materials simulation. Layered Materials Force Field (LMFF) is our expansion of the LAMMPS potential function based on the Tersoff potential and inter-layer potential (ILP) in LAMMPS. LMFF is designed to study layered materials such as graphene and boron hexanitride. It is universal and does not depend on any platform. We have also carried out a series of optimizations on LMFF and the optimization work is carried out on the new generation of Sunway supercomputer, called SWLMFF. Experiments show that our implementation is efficient, scalable and portable.",
+    "stars": 7,
+    "readme_head": "# Layered Materials Force Field (LMFF)\n\n\n## A.Abstract\n* LAMMPS is one of the most popular Molecular Dynamic (MD) packages and is widely used in the field of physics, chemistry and materials simulation. Layered Materials Force Field (LMFF) is our expansion of the LAMMPS potential function based on the Tersoff potential and  inter-layer potential (ILP) in LAMMPS. LMFF is designed to study layered materials such as graphene and boron hexanitride. It is universal and does not depend on any platform. We have also carried out a series of optimizations on LMFF and the optimization work is carried out on the new generation of Sunway supercomputer, called SWLMFF. Experiments show that our implementation is efficient, scalable and portable. When generic LMFF is ported to Intel Xeon Gold 6278C, 2× performance improvement is achieved. For the optimized SWLMFF, the overall performance improvement is nearly 200-330× compared to the original ILP and Tersoff potentials. And SWLMFF has good parallel efficiency of 95%-100% under weak scaling with 2.7 million atoms on a single process. The maximum atomic system simulated by SWLMFF is close to 2^31 atoms. And nanosecond simulations in one day can be realized.\n\n## B. Description\n* Artifact name: LMFF\n* [![DOI](https://zenodo.org/badge/386895896.svg)](https://zenodo.org/badge/latestdoi/386895896)\n* Version: LAMMPS with the stable version of 3Mar2020 from https://download.lammps.org/tars/lammps-3Mar2020.tar.gz\n* Key algorithms: Molecular Dynamics\n"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/LiFGPHRK21",
+  "title": "SV-sim: scalable PGAS-based state vector simulation of quantum circuits",
+  "venue": "SC",
+  "year": 2021,
+  "authors": [
+   "Ang Li 0006",
+   "Bo Fang 0002",
+   "Christopher E. Granade",
+   "Guen Prawiroatmodjo",
+   "Bettina Heim"
+  ],
+  "abstract": "High-performance quantum circuit simulation in a classic HPC is still imperative in the NISQ era. Observing that the major obstacle of scalable state-vector quantum simulation arises from the massively fine-grained irregular data-exchange with remote nodes, in this paper we present SV-Sim to apply the PGAS-based communication models (i.e., direct peer access for intra-node CPUs/GPUs and SHMEM for inter-node CPU/GPU clusters) for efficient generalpurpose quantum circuit simulation. Through an orchestrated design based on device functional pointer, SV-Sim is able to abstract various quantum gates across multiple heterogeneous backends, including IBM/Intel/AMD CPUs, NVIDIA/AMD GPUs, and Intel X",
+  "candidates": [
+   {
+    "url": "https://github.com/pnnl/SV-Sim",
+    "desc": "SV-Sim: Scalable PGAS-based State Vector Simulation of Quantum Circuits",
+    "stars": 22,
+    "readme_head": "# SV-Sim: State Vector Quantum Circuit Simulation Environment (Merged in [NWQSim](https://github.com/pnnl/nwq-sim))\n\nA State Vector Quantum Simulation Environment based on PGAS model for single-GPU/CPU, single-node-multi-GPUs/CPUs and multi-nodes GPU/CPU clusters. It supports Intel/AMD/IBM CPUs, NVIDIA/AMD GPUs and Xeon-Phi. It has been tested on OLCF Summit and Spock, ALCF Theta, NERSC Cori, DGX-2 and DGX-A100. Please see our SuperComputing (SC-21) [paper](doc/paper_sc21.pdf) for details. \n\n![alt text](img/structure.png)\n\n## Current version\n\nLatest version: **1.0**\n\nSV-Sim is under active development. Please propose any bugs and suggest any features. We will continuously add new features. Questions and suggestions are welcome.\n\n\n## About SV-Sim\n\nSV-Sim is a C++/CUDA/HIP implementation for simulating generic quantum circuits through state-vector on single CPU/GPU/Xeon-Phi, single-node-multi-CPUs/GPUs, and multi-node CPU/GPU cluster. As shown in the figure, SV-Sim provides Python/C++ interface. It supports Qiskit, Cirq, Q# as the front-end. It supports OpenQASM and QIR as the intermediate representation. SV-Sim relies on PGAS-based SHMEM model for communication, this includes (1) GPUDirect Peer-to-Peer for single-node multi-GPU (NVIDIA and AMD GPUs) communication; (2) OpenSHMEM for CPU multi-node communication; (3) NVSHMEM (ROC_SHMEM) for GPU multi-node communication. Please see our Supercomputing-21[paper](doc/paper_sc21.pdf) for details. \n\nIn addition to the generic SV-Sim, "
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/HuangC22",
+  "title": "CA3DMM: A New Algorithm Based on a Unified View of Parallel Matrix Multiplication",
+  "venue": "SC",
+  "year": 2022,
+  "authors": [
+   "Hua Huang 0011",
+   "Edmond Chow"
+  ],
+  "abstract": "This paper presents the Communication-Avoiding 3D Matrix Multiplication (CA3DMM) algorithm, a simple and novel algorithm that has optimal or near-optimal communication cost. CA3DMM is based on a unified view of parallel matrix multiplication. Such a view generalizes 1D, 2D, and 3D matrix multiplication algorithms to reduce the data exchange volume for different shapes of input matrices. CA3DMM further minimizes the actual communication costs by carefully organizing its communication patterns. CA3DMM is much simpler than some other generalized 3D algorithms, and CA3DMM does not require low-level optimization. Numerical experiments show that CA3DMM has good parallel scalability and has similar",
+  "candidates": [
+   {
+    "url": "https://github.com/scalable-matrix/CA3DMM",
+    "desc": "Communication-Avoiding 3D Matrix Multiplication",
+    "stars": 8,
+    "readme_head": "# CA3DMM\nCommunication-Avoiding 3D Matrix Multiplication\n\n## 1. Compilation\n\nClone the CA3DMM library from GitHub:\n```shell\ngit clone https://github.com/scalable-matrix/CA3DMM.git\n```\n\nEnter directory `CA3DMM/src`. CA3DMM provides 4 example make files in `CA3DMM/src`:\n- `icc-mkl-impi.make`: Use Intel C compiler, Intel MKL, and Intel MPI library\n- `icc-mkl-anympi.make`: Use Intel C compiler, Intel MKL, and any MPI library\n- `icc-mkl-nvcc-impi.make`: Use Intel C compiler, Intel MKL, NVCC compiler for NVIDIA GPU support, and Intel MPI library\n- `icc-mkl-nvcc-anympi.make`: Use Intel C compiler, Intel MKL, NVCC compiler for NVIDIA GPU support, and any MPI library\nWe use the `icc-mkl-anympi.make` and `icc-mkl-nvcc-anympi.make` make files for compiling the CPU and GPU versions on the Georgia Tech PACE-Phoenix cluster. Run the following command to compile the CA3DMM library:\n```shell\nmake -f icc-mkl-anympi.make -j\n```\nAfter compilation, the dynamic and static library files are copied to directory `CA3DMM/lib`, and the C header files are copied to directory `CA3DMM/include`.\n\nEnter directory `CA3DMM/examples` to compile the example program. This directory also contains 4 example make files as those in `CA3DMM/src`. Run the following command to compile the CA3DMM library:\n```shell\nmake -f icc-mkl-anympi.make -j\n```\nAfter compilation, executable `CA3DMM/examples/example_AB.exe` is the example program we needed.\n\n\n## 2. Example programs\n\nFor single node execution or launching on clusters"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/FuZWLLYZGLZ0023",
+  "title": "PanguLU: A Scalable Regular Two-Dimensional Block-Cyclic Sparse Direct Solver on Distributed Heterogeneous Systems",
+  "venue": "SC",
+  "year": 2023,
+  "authors": [
+   "Xu Fu",
+   "Bingbin Zhang",
+   "Tengcheng Wang",
+   "Wenhao Li",
+   "Yuechen Lu"
+  ],
+  "abstract": "Sparse direct solvers play a vital role in large-scale high performance computing in science and engineering. Existing distributed sparse direct methods employ multifrontal/supernodal patterns to aggregate columns of nearly identical forms and to exploit dense basic linear algebra subprograms (BLAS) for computation. However, such a data layout may bring more unevenness when the structure of the input matrix is not ideal, and using dense BLAS may waste many floating-point operations on zero fill-ins.",
+  "candidates": [
+   {
+    "url": "https://github.com/SuperScientificSoftwareLaboratory/PanguLU",
+    "desc": "PanguLU: A Scalable Regular Two-Dimensional Block-Cyclic Sparse Direct Solver on Distributed Heterogeneous Systems",
+    "stars": 49,
+    "readme_head": "# PanguLU\n\n-------------------\n\n## Introduction\n\nPanguLU is an open source software package for solving a linear system *Ax = b* on heterogeneous distributed platforms. The library is written in C, and exploits parallelism from MPI, OpenMP and CUDA. The sparse LU factorisation algorithm used in PanguLU splits the sparse matrix into multiple equally-sized sparse matrix blocks and computes them by using sparse BLAS. The latest version of PanguLU uses a synchronisation-free communication strategy to reduce the overall latency overhead, and a variety of block-wise sparse BLAS methods have been adaptively called to improve efficiency on CPUs and GPUs. Currently, PanguLU supports both single and double precision, both real and complex values. In addition, our team at the SSSLab is constantly optimising and updating PanguLU.\n\n## Structure of code\n\n```\nPanguLU/README         instructions on installation\nPanguLU/src            C and CUDA source code, to be compiled into libpangulu.a and libpangulu.so\nPanguLU/examples       example code\nPanguLU/include        contains headers archieve pangulu.h\nPanguLU/lib            contains library archieve libpangulu.a and libpangulu.so\nPanguLU/Makefile       top-level Makefile that does installation and testing\nPanguLU/make.inc       compiler, compiler flags included in all Makefiles (excepts examples/Makefile)\n```\n\n## Installation\n#### Step 1 : Assert \"make\" is available.\n\"make\" is an automatic build tool, it is required to build PanguLU. \"make\" i"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/ChenZDHJL23",
+  "title": "TANGO: re-thinking quantization for graph neural network training on GPUs",
+  "venue": "SC",
+  "year": 2023,
+  "authors": [
+   "Shiyang Chen 0004",
+   "Da Zheng 0004",
+   "Caiwen Ding",
+   "Chengying Huan",
+   "Yuede Ji"
+  ],
+  "abstract": "Graph learning is becoming increasingly popular due to its superior performance in tackling many grand challenges. While quantization is widely used to accelerate Graph Neural Network (GNN) computation, quantized training faces remarkable roadblocks. Current quantized GNN training systems often experience longer training time than their full-precision counterparts for two reasons: (i) addressing the quantization accuracy challenge leads to excessive overhead, and (ii) the optimization potential exposed by quantization is not adequately leveraged. This paper introduces Tango which re-thinks quantization challenges and opportunities for graph neural network training on GPUs with three contribu",
+  "candidates": [
+   {
+    "url": "https://github.com/NetEase/tango",
+    "desc": "A code driven low-code builder, develop low-code app on your codebase.",
+    "stars": 3120,
+    "readme_head": "<p align=\"center\">\n  <img width=\"200\" src=\"https://p6.music.126.net/obj/wonDlsKUwrLClGjCm8Kx/30218210645/b186/3974/338b/2ddfa3cd042cf988ca452686552f8462.png\" />\n</p>\n\n<h1 align=\"center\">Tango LowCode Builder</h1>\n<div align=\"center\">\n\nA source code based low-code builder.\n\n[![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/NetEase/tango/blob/main/LICENSE)\n[![NPM version](https://img.shields.io/npm/v/@music163/tango-designer.svg?style=flat-square)](http://npmjs.org/package/@music163/tango-designer)\n\n<img src=\"https://p6.music.126.net/obj/wonDlsKUwrLClGjCm8Kx/30108735057/7ba9/dced/9ac3/420f6e04b371dd47de06e7d71142560d.gif\" alt=\"preview\" />\n\n</div>\n\nEnglish | [简体中文](/README.zh-CN.md)\n\n## 📄 Documentation\n\nYou can view the detailed usage guide through the following links:\n\n- Document site: <https://netease.github.io/tango-site/>\n- Playground application: <https://tango-demo.musicfe.com/designer/>\n\n## ✨ Features\n\n- Tested in the production environment of NetEase Cloud Music, can be flexibly integrated into low-code platforms, local development tools, etc.\n- Based on source code AST, with no private DSL and protocol\n  Real-time code generation capability, supporting source code in and source code out\n- Out-of-the-box front-end low-code designer, providing flexible and easy-to-use designer React components\n- Developed using TypeScript, providing complete type definition files\n\n## 💡 Examples\n\nYou can use tango to build lowcode builders, for example:\n\n| "
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/HuangD0LC23",
+  "title": "cuSZp: An Ultra-fast GPU Error-bounded Lossy Compression Framework with Optimized End-to-End Performance",
+  "venue": "SC",
+  "year": 2023,
+  "authors": [
+   "Yafan Huang",
+   "Sheng Di",
+   "Xiaodong Yu 0001",
+   "Guanpeng Li",
+   "Franck Cappello"
+  ],
+  "abstract": "Modern scientific applications and supercomputing systems are generating large amounts of data in various fields, leading to critical challenges in data storage footprints and communication times. To address this issue, error-bounded GPU lossy compression has been widely adopted, since it can reduce the volume of data within a customized threshold on data distortion. In this work, we propose an ultra-fast error-bounded GPU lossy compressor cuSZp. Specifically, cuSZp computes the linear recurrences with hierarchical parallelism to fuse the massive computation into one kernel, drastically improving the end-to-end throughput. In addition, cuSZp adopts a block-wise design along with a lightweigh",
+  "candidates": [
+   {
+    "url": "https://github.com/szcompressor/cuSZp",
+    "desc": "Fast GPU error-bounded lossy compressor for floating-point data.",
+    "stars": 68,
+    "readme_head": "# cuSZp\n<a href=\"./LICENSE\"><img src=\"https://img.shields.io/badge/License-BSD%203--Clause-blue.svg\"></a>\n[![codecov](https://codecov.io/github/szcompressor/cuSZp/graph/badge.svg?token=Y9S48L75L7)](https://codecov.io/github/szcompressor/cuSZp)\n[![Documentation Status](https://readthedocs.org/projects/cuszp-documentation/badge/?version=latest)](https://cuszp-documentation.readthedocs.io/en/latest/?badge=latest)\n[![Build status](https://ci.appveyor.com/api/projects/status/sr6nbou988c9opv2?svg=true)](https://ci.appveyor.com/project/hyfshishen/cuszp)\n[![GitHub release](https://img.shields.io/github/v/release/szcompressor/cuSZp)](https://github.com/szcompressor/cuSZp/releases)\n\ncuSZp is an ultra-fast and user-friendly GPU error-bounded lossy compressor for floating-point data array (both single- and double-precision). In short, cuSZp has several key features:\n\n1. Fusing entire compression/decompression phase into **one CUDA kernel function**.\n2. Various system-level optimizations -- targeting **ultra-fast end-to-end throughput** (~300 GB/s on A100).\n3. Dimensionality (1D, 2D, and 3D) and three encoding modes (fixed, plain, or outlier modes) supported, ensuring **high compression ratio** for different data patterns.\n    - *fixed*: Only fixed-length encoding is used. This mode is designed for compressing unsmooth and non-structured scientific data or machine learning weights/tokens.\n    - *plain*: Dimension-aware delta encoding + fixed-length encoding. This mode is designed for scie"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/LuZWFLCY0C024",
+  "title": "AmgT: Algebraic Multigrid Solver on Tensor Cores",
+  "venue": "SC",
+  "year": 2024,
+  "authors": [
+   "Yuechen Lu",
+   "Lijie Zeng",
+   "Tengcheng Wang",
+   "Xu Fu",
+   "Wenxuan Li"
+  ],
+  "abstract": "Algebraic multigrid (AMG) methods are particularly efficient to solve a wide range of sparse linear systems, due to their good flexibility and adaptability. Even though modern parallel devices, such as GPUs, brought massive parallelism to AMG, the latest major hardware features, i.e., tensor core units and their low precision compute power, have not been exploited to accelerate AMG. This paper proposes AmgT, a new AMG solver that utilizes the tensor core and mixed precision ability of the latest GPUs during multiple phases of the AMG algorithm. Considering that the sparse general matrix-matrix multiplication (SpGEMM) and sparse matrix-vector multiplication (SpMV) are extensively used in the ",
+  "candidates": [
+   {
+    "url": "https://github.com/SuperScientificSoftwareLaboratory/AmgT",
+    "desc": "Source code of the SC '24 paper: \"AmgT: Algebraic Multigrid Solver on Tensor Cores\" by Yuechen Lu, Lijie Zeng, Tengcheng Wang, Xu Fu, Wenxuan Li, Helin Cheng, Dechuang Yang, Zhou Jin, Marc Casas and Weifeng Liu.",
+    "stars": 8,
+    "readme_head": "# AmgT\n\nAlgebraic Multigrid Solver on Tensor Cores\n\n## Paper\n\nThis is the code of our paper published at SC '24:\n\nYuechen Lu, Lijie Zeng, Tengcheng Wang, Xu Fu, Wenxuan Li, Helin Cheng, Dechuang Yang, Zhou Jin, Marc Casas and Weifeng Liu. 2024. AmgT: Algebraic Multigrid Solver on Tensor Cores. In Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis (SC '24). https://doi.ieeecomputersociety.org/10.1109/SC41406.2024.00058\n\n## Introduction\n\nAlgebraic multigrid (AMG) methods are particularly efficient to solve a wide range of sparse linear systems, due to their good flexibility and adaptability. Even though modern parallel devices, such as GPUs, brought massive parallelism to AMG, the latest major hardware features, i.e., tensor core units and their low precision compute power, have not been exploited to accelerate AMG.\n\nThis paper proposes AmgT, a new AMG solver that utilizes the tensor core and mixed precision ability of the latest GPUs during multiple phases of the AMG algorithm. Considering that the sparse general matrix-matrix multiplication (SpGEMM) and sparse matrix-vector multiplication (SpMV) are extensively used in the setup and solve phases, respectively, we propose a novel method based on a new unified sparse storage format that leverages tensor cores and their variable precision. Our method improves both the performance of GPU kernels, and also reduces the cost of format conversion in the whole data flow of AMG."
+   }
+  ]
+ }
+]

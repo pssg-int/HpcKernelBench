@@ -1,0 +1,279 @@
+{
+ "kernel": "quantized-gemm",
+ "papers": [
+  {
+   "key": "conf/asplos/DingHZL0Y0P26",
+   "title": "Tilus: A Tile-Level GPGPU Programming Language for Low-Precision Computation",
+   "venue": "ASPLOS",
+   "year": 2026,
+   "doi": "10.1145/3760250.3762219",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3760250.3762219",
+   "artifact_url": "https://github.com/NVIDIA/tilus",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "abstract": "Serving Large Language Models (LLMs) is critical for AI-powered applications, yet it demands substantial computational resources, particularly in memory bandwidth and computational throughput. Low-precision computation has emerged as a key technique to improve efficiency while reducing resource consumption. Existing approaches for generating low-precision kernels are limited to weight bit widths that are powers of two and suffer from suboptimal performance because of high-level GPU programming abstractions. These abstractions restrict critical optimizations, such as fine-grained register management and optimized memory access patterns, that are essential for efficient low-precision computations. In this paper, we introduce Tilus, a domain-specific language designed for General-Purpose GPU (GPGPU) computing that supports low-precision data types with arbitrary bit widths from 1 to 8 while",
+   "one_liner": "Tile-level GPU DSL generating 1-8 bit low-precision GEMM kernels; 1.75x over Triton, beats Marlin"
+  },
+  {
+   "key": "conf/asplos/FanYPLLW0026",
+   "title": "ZipServ: Fast and Memory-Efficient LLM Inference with Hardware-Aware Lossless Compression",
+   "venue": "ASPLOS",
+   "year": 2026,
+   "doi": "10.1145/3779212.3790250",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3779212.3790250",
+   "artifact_url": "https://github.com/xxyux/ZipServ",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Lossless model compression holds tremendous promise for alleviating the memory and bandwidth bottlenecks in bit-exact Large Language Model (LLM) serving. However, existing approaches often result in substantial inference slowdowns due to fundamental design mismatches with GPU architectures: at the kernel level, variable-length bitstreams produced by traditional entropy codecs break SIMT parallelism; at the system level, decoupled pipelines lead to redundant memory traffic. We present ZipServ, a lossless compression framework co-designed for efficient LLM inference. ZipServ introduces Tensor-Core-Aware Triple Bitmap Encoding (TCA-TBE), a novel fixed-length format that enables constant-time, parallel decoding, together with a fused decompression-GEMM (ZipGEMM) kernel that decompresses weights on-the-fly directly into Tensor Core registers. This '' load-compressed, compute-decompressed '' d",
+   "one_liner": "Tensor-core-aware lossless weight compression with fused decompress-GEMM kernel; 2.21x over cuBLAS"
+  },
+  {
+   "key": "conf/cgo/PegolottiAP26",
+   "title": "QIGen: A Kernel Generator for Inference on Nonuniformly Quantized Large Language Models",
+   "venue": "CGO",
+   "year": 2026,
+   "doi": "10.1109/CGO68049.2026.11395231",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/IST-DASLab/QIGen",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "abstract": "Efficient inference on large language models (LLMs) has become a popular topic in both academia and industry. Roughly speaking, LLMs consist of a collection of weight matrices, and generative inference on these models essentially computes a sequence of matrix-vector products and thus can be heavily memory-bound. Consequently, much work has been devoted to reducing the size of the weights to lower bit-widths through various forms of quantization. In turn, these diverse precision formats complicate both the arithmetic and optimized kernel implementation. So far, the vast majority of implementation work for mixed-precision LLM computation has been done manually. Currently, one of the most powerful and complex scalar LLM compression techniques is nonuniform quantization, in which a matrix is divided unevenly into parts that are quantized with different bit-widths, minimizing the output compr",
+   "one_liner": "QIGen generates CPU matrix-vector kernels for nonuniformly quantized LLM inference"
+  },
+  {
+   "key": "conf/ppopp/ChenZY26",
+   "title": "High-Throughput Non-uniformly Quantized 3-bit LLM Inference",
+   "venue": "PPoPP",
+   "year": 2026,
+   "doi": "10.1145/3774934.3786423",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/yuang-chen/Quantix-PPoPP26",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "While Large Language Models (LLMs) are widely adopted, their massive parameter size constrains practical deployment. A common solution is clustering-based non-uniform quantization, which effectively compresses models to as low as 3 bits per weight while preserving high accuracy. However, instead of accelerating memory-bound LLM inference, the memory reduction paradoxically often causes a significant slowdown due to dequantization overhead and GPU underutilization. To address the issue, we propose Quantix, a framework designed to convert memory savings into inference speedups. Quantix applies two key optimizations: (1) a hardware-aligned bit shuffling scheme for efficient data access, and (2) a fused dequantization-multiplication pipeline that effectively maps workloads on both CUDA and Tensor Cores. Quantix enables high-throughput batched inference, delivering average kernel-level speedu",
+   "one_liner": "Quantix: fused dequant+matmul kernel for 3-bit LLM inference, 4.82x over FP16 cuBLAS"
+  },
+  {
+   "key": "conf/usenix/ZhangZSZ25",
+   "title": "QFactory: Accelerating Quantized Large Language Model Serving with Qtile Graphs",
+   "venue": "ATC",
+   "year": 2025,
+   "doi": "",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/zqh-wz/QFactory-AE",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "abstract": "Quantization is a critical technique for accelerating large language models. To achieve tangible speedups, weight dequantization must be performed on-the-fly, necessitating tailored quantized kernels for various quantization algorithms and precision formats. Existing methods typically rely on a static eager execution paradigm for dequantization operations, which overlooks a broader range of potential optimizations, leading to suboptimal performance. In this paper, we present QFactory, an efficient compilation framework designed to generate high-performance quantized kernels. QFactory introduces a novel Qtile abstraction that facilitates the representation of quantized tensors, transforming the traditional tensor computation graph into a Qtile-graph (Qgraph). Leveraging this QGraph abstraction, QFactory first explores graph-level Qtile computation transformations to generate equivalent QG",
+   "one_liner": "Qtile-graph compiler generating quantized LLM kernels; 1.66x kernel and 1.23x end-to-end speedup"
+  },
+  {
+   "key": "conf/ppopp/FrantarCCHA25",
+   "title": "MARLIN: Mixed-Precision Auto-Regressive Parallel Inference on Large Language Models",
+   "venue": "PPoPP",
+   "year": 2025,
+   "doi": "10.1145/3710848.3710871",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3710848.3710871",
+   "artifact_url": "https://github.com/IST-DASLab/marlin",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "As inference on Large Language Models (LLMs) emerges as an important workload in machine learning applications, model weight quantization has become a standard technique for efficient GPU deployment. Quantization not only reduces model size, but has also been shown to yield substantial speedups for single-user inference, due to reduced memory movement, with low accuracy impact. Yet, it remains a key open question whether speedups are achievable also in batched settings with multiple parallel clients, which are highly relevant for practical serving. It is unclear whether GPU kernels can be designed to remain practically memory-bound, while supporting the substantially increased compute requirements of batched workloads.",
+   "one_liner": "Mixed-precision GPU GEMM kernels enabling memory-bound batched LLM inference speedups"
+  },
+  {
+   "key": "conf/sc/WangXY0C25",
+   "title": "MXBLAS: Accelerating 8-bit Deep Learning with a Unified Micro-Scaled GEMM Library",
+   "venue": "SC",
+   "year": 2025,
+   "doi": "10.1145/3712285.3759809",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/yatorho/MXBLAS",
+   "artifact_status": "likely",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "library",
+   "abstract": "Micro-scaling General Matrix Multiplication (MX-GEMM), which leverages 8-bit micro-scaling format (MX-format) inputs, represents a significant step forward in accelerating deep learning workloads. The MX-format space is diverse, encompassing various scaling patterns and granularities. However, current MX-GEMM implementations typically adopt a model-oriented approach, where format customization is tailored to individual models. This results in three key limitations: rigid problem-kernel coupling, inefficient promotion operations, and overlooked quantization overhead.",
+   "one_liner": "Unified micro-scaled 8-bit (MX-format) GEMM library removing model-specific kernel coupling"
+  },
+  {
+   "key": "conf/usenix/XiaZWCYYBWZZRHS24",
+   "title": "Quant-LLM: Accelerating the Serving of Large Language Models via FP6-Centric Algorithm-System Co-Design on Modern GPUs",
+   "venue": "ATC",
+   "year": 2024,
+   "doi": "",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/usyd-fsalab/fp6_llm",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Six-bit quantization (FP6) can effectively reduce the size of large language models (LLMs) and preserve the model quality consistently across varied applications. However, existing systems do not provide Tensor Core support for FP6 quantization and struggle to achieve practical performance improvements during LLM inference. It is challenging to support FP6 quantization on GPUs due to (1) unfriendly memory access of model weights with non-power-of-two bit-width and (2) high runtime overhead of weight de-quantization. To address these problems, we propose TC-FPx, the first full-stack GPU kernel design scheme with unified Tensor Core support of 6-bit and arbitrary bit-width quantization (5-bit, etc.). We integrate TC-FPx kernel into an existing inference system, providing new end-to-end support (called Quant-LLM) for quantized LLM inference, where better trade-offs between inference cost an",
+   "one_liner": "TC-FPx: first Tensor-Core GPU GEMM kernels for FP6/arbitrary-bit weights; 1.69-2.65x over FP16 LLM inference"
+  },
+  {
+   "key": "conf/sc/00030DZZLZ24",
+   "title": "MixQ: Taming Dynamic Outliers in Mixed-Precision Quantization by Online Prediction",
+   "venue": "SC",
+   "year": 2024,
+   "doi": "10.1109/SC41406.2024.00080",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/Qcompiler/MIXQ",
+   "artifact_status": "likely",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Mixed-precision quantization has shown to be a promising method for enhancing the efficiency of LLMs. This technique boosts computational efficiency by processing most values with low-precision, high-throughput compute units and maintains accuracy by processing outliers in high-precision. However, due to the dynamic, irregular, and sparse nature of outliers, this approach is far from using hardware efficiently. In this work, we propose MixQ, an efficient mixed-precision quantization system. Through our in-depth analysis of outlier distribution, we introduce a locality-based outlier prediction algorithm that can predict all outliers of 95.8% of tokens. Based on this accurate prediction, we propose a quantization ahead of detection (QAD) technique that can verify the correctness of prediction. A new data structure is proposed for efficient outlier processing. Evaluation shows that MixQ ach",
+   "one_liner": "MixQ: locality-based outlier prediction enables efficient mixed-precision LLM quantization kernel"
+  },
+  {
+   "key": "conf/ics/MaWFZXH0Z22",
+   "title": "Efficiently emulating high-bitwidth computation with low-bitwidth hardware",
+   "venue": "ICS",
+   "year": 2022,
+   "doi": "10.1145/3524059.3532377",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3524059.3532377",
+   "artifact_url": "https://github.com/JohndeVostok/APE",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Domain-Specific Accelerators (DSAs) are being rapidly developed to support high-performance domain-specific computation. Although DSAs provide massive computation capability, they often only support limited native data types. To mitigate this problem, previous works have explored software emulation for certain data types, which provides some compensation for hardware limitations. However, how to efficiently design more emulated data types and choose a high-performance one without hurting correctness or precision for a given application still remains an open problem.",
+   "one_liner": "Emulating high-bitwidth computation on low-bitwidth hardware (precision emulation) for DSAs/GPUs"
+  },
+  {
+   "key": "conf/ppopp/WangFD22",
+   "title": "QGTC: accelerating quantized graph neural networks via GPU tensor core",
+   "venue": "PPoPP",
+   "year": 2022,
+   "doi": "10.1145/3503221.3508408",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3503221.3508408",
+   "artifact_url": "https://github.com/YukeWang96/QGTC_PPoPP22",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Over the most recent years, quantized graph neural network (QGNN) attracts lots of research and industry attention due to its high robustness and low computation and memory overhead. Unfortunately, the performance gains of QGNN have never been realized on modern GPU platforms. To this end, we propose the first Tensor Core (TC) based computing framework, QGTC, to support any-bitwidth computation for QGNNs on GPUs. We introduce a novel quantized low-bit arithmetic design based on the low-bit data representation and bit-decomposed computation. We craft a novel TC-tailored CUDA kernel design by incorporating 3D-stacked bit compression, zero-tile jumping, and non-zero tile reuse technique to improve the performance systematically. We incorporate an effective bandwidth-optimized subgraph packing strategy to maximize the transferring efficiency between CPU host and GPU device. We integrate QGTC",
+   "one_liner": "QGTC: Tensor-Core CUDA kernels for any-bitwidth quantized GNN computation, 2.7x over DGL"
+  },
+  {
+   "key": "conf/sc/LiOH22",
+   "title": "Efficient Quantized Sparse Matrix Operations on Tensor Cores",
+   "venue": "SC",
+   "year": 2022,
+   "doi": "10.1109/SC41404.2022.00042",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/ParCIS/Magicube",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "library",
+   "abstract": "The exponentially growing model size drives the continued success of deep learning, but it brings prohibitive computation and memory cost. From the algorithm perspective, model sparsification and quantization have been studied to alleviate the problem. From the architecture perspective, hardware vendors provide Tensor cores for acceleration. However, it is very challenging to gain practical speedups from sparse, low-precision matrix operations on Tensor cores, because of the strict requirements for data layout and lack of support for efficiently manipulating the low-precision integers. We propose Magicube, a high-performance sparse-matrix library for low-precision integers on Tensor cores. Magicube supports SpMM and SDDMM, two major sparse operations in deep learning with mixed precision. Experimental results on an NVIDIA A100show that Magicube achieves on average 1.44x (up to 2.37x) spe",
+   "one_liner": "Magicube: quantized low-precision SpMM/SDDMM on Tensor Cores, up to 2.37x over vendor library"
+  },
+  {
+   "key": "journals/tpds/WangRLS22",
+   "title": "NITI: Training Integer Neural Networks Using Integer-Only Arithmetic",
+   "venue": "TPDS",
+   "year": 2022,
+   "doi": "10.1109/TPDS.2022.3149787",
+   "arxiv": "2009.13108",
+   "oa_url": "https://arxiv.org/pdf/2009.13108",
+   "artifact_url": "https://github.com/wangmaolin/niti",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu",
+    "fpga"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Low bitwidth integer arithmetic has been widely adopted in hardware implementations of deep neural network inference applications. However, despite the promised energy-efficiency improvements demanding edge applications, the use of low bitwidth integer arithmetic for neural network training remains limited. Unlike inference, training demands high dynamic range and numerical accuracy for high quality results, making the use of low-bitwidth integer arithmetic particularly challenging. To address this challenge, we present a novel neural network training framework called NITI that exclusively utilizes low bitwidth integer arithmetic. NITI stores all parameters and accumulates intermediate values as 8-bit integers while using no more than 5 bits for gradients. To provide the necessary dynamic range during the training process, a per-layer block scaling exponentiation scheme is utilized. By d",
+   "one_liner": "NITI: integer-only (8-bit) DNN training via per-layer block-scaling quantization, GPU+FPGA impl."
+  },
+  {
+   "key": "conf/sc/FengWGLD21",
+   "title": "APNN-TC: accelerating arbitrary precision neural networks on ampere GPU tensor cores",
+   "venue": "SC",
+   "year": 2021,
+   "doi": "10.1145/3458817.3476157",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3458817.3476157",
+   "artifact_url": "https://github.com/BoyuanFeng/APNN-TC",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Over the years, accelerating neural networks with quantization has been widely studied. Unfortunately, prior efforts with diverse precisions (e.g., 1-bit weights and 2-bit activations) are usually restricted by limited precision support on GPUs (e.g., int1 and int4). To break such restrictions, we introduce the first Arbitrary Precision Neural Network framework (APNN-TC)1 to fully exploit quantization benefits on Ampere GPU Tensor Cores. Specifically, APNN-TC first incorporates a novel emulation algorithm to support arbitrary short bit-width computation with int1 compute primitives and XOR/AND Boolean operations. Second, APNN-TC integrates arbitrary precision layer designs to efficiently map our emulation algorithm to Tensor Cores with novel batching strategies and specialized memory organization. Third, APNN-TC embodies a novel arbitrary precision NN design to minimize memory access acr",
+   "one_liner": "Arbitrary-precision GEMM emulation via int1 Ampere Tensor Core primitives, beats CUTLASS"
+  },
+  {
+   "key": "journals/tpds/LiS21",
+   "title": "Accelerating Binarized Neural Networks via Bit-Tensor-Cores in Turing GPUs",
+   "venue": "TPDS",
+   "year": 2021,
+   "doi": "10.1109/TPDS.2020.3045828",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/pnnl/TCBNN",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Despite foreseeing tremendous speedups over conventional deep neural networks, the performance advantage of binarized neural networks (BNNs) has merely been showcased on general-purpose processors such as CPUs and GPUs. In fact, due to being unable to leverage bit-level-parallelism with a word-based architecture, GPUs have been criticized for extremely low utilization (1 percent) when executing BNNs. Consequently, the latest tensorcores in NVIDIA Turing GPUs start to experimentally support bit computation. In this article, we look into this brand new bit computation capability and characterize its unique features. We show that the stride of memory access can significantly affect performance delivery and a data-format co-design is highly desired to support the tensorcores for achieving superior performance than existing software solutions without tensorcores. We realize the tensorcore-acc",
+   "one_liner": "Bit-Tensor-Core BNN kernels (bit-GEMM, bit-convolution) on Turing GPUs, 77% faster than prior art"
+  },
+  {
+   "key": "conf/cgo/CowanMCBC20",
+   "title": "Automatic generation of high-performance quantized machine learning kernels",
+   "venue": "CGO",
+   "year": 2020,
+   "doi": "10.1145/3368826.3377912",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3368826.3377912",
+   "artifact_url": "https://github.com/cowanmeg/cgo-artifact-2020",
+   "artifact_status": "verified",
+   "platform": [
+    "arm-cpu",
+    "cpu"
+   ],
+   "approach": "codegen",
+   "abstract": "Quantization optimizes machine learning inference for resource constrained environments by reducing the precision of its computation. In the extreme, even single-bit computations can produce acceptable results at dramatically lower cost. But this ultra-low-precision quantization is difficult to exploit because extracting optimal performance requires hand-tuning both high-level scheduling decisions and low-level implementations. As a result, practitioners settle for a few predefined quantized kernels, sacrificing optimality and restricting their ability to adapt to new hardware.",
+   "one_liner": "Automatic generation/tuning of ultra-low-precision quantized ML inference kernels"
+  }
+ ]
+}

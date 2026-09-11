@@ -1,0 +1,556 @@
+kernel: eigensolver
+summary: >
+  Symmetric eigenvalue decomposition spanning three claims this track's own
+  literature treats as genuinely different: dense single-GPU full-spectrum
+  2-stage EVD (tridiagonalize + divide-and-conquer + back-transform, with
+  tile size and back-transform panel width as required disclosed
+  parameters); distributed structured divide-and-conquer for the symmetric
+  TRIDIAGONAL full-spectrum sub-problem (with deflation threshold as a
+  required disclosed parameter); and polynomial-filtered PARTIAL-spectrum
+  solves (k eigenpairs inside a disclosed interval, generalized or standard
+  eigenproblem), with the matrix-power-kernel degree and the search interval
+  itself as required, disclosed, spec-level parameters. Every paper in this
+  5-paper track is symmetric or symmetric-definite-generalized; no
+  genuinely nonsymmetric eigensolver appears in this track's literature —
+  this spec covers the symmetric case only and flags the nonsymmetric gap
+  explicitly (see notes_on_fairness and open_questions) rather than
+  fabricating a variant unevidenced by any surveyed paper.
+operation: >
+  Standard form: A[N,N] (symmetric) = Q[N,N] * Lambda[N,N] * Q[N,N]^T, Q
+  orthogonal (Q^T*Q=I), Lambda diagonal with eigenvalues as its diagonal
+  entries. Generalized form: A[N,N]*x = lambda*B[N,N]*x, A,B symmetric, B
+  positive (semi)definite. FULL-spectrum variants compute all N eigenpairs
+  (optionally with eigenvectors); PARTIAL-spectrum variants compute only the
+  k eigenpairs whose eigenvalues fall inside a disclosed interval
+  [lambda_lo, lambda_hi], via polynomial-filtered Krylov iteration built on
+  a matrix-power kernel A^d*x (or a shifted/scaled operator's power) as the
+  dominant per-iteration cost.
+
+variants:
+  - id: eigensolver-dense-symmetric-full-spectrum-kernel
+    claim: >
+      steady-state single-GPU dense symmetric EVD, full spectrum WITH
+      eigenvectors, via the standard 2-stage pipeline (dense -> band ->
+      tridiagonal -> tridiagonal-eigensolve -> back-transform), with BLOCK
+      SIZE and BACK-TRANSFORM PANEL WIDTH as required, disclosed CLI
+      parameters and a MANDATORY per-stage timing breakdown — matches
+      WangDZWZLJZ25 (tridiagonalization) and WangHZSJWDZ25 (back-
+      transformation)'s own combined pipeline exactly (their successor
+      artifact, ASE, implements both papers' contributions together and is
+      this variant's primary source). WangDZWZLJZ25's own headline finding
+      motivates the mandatory per-stage breakdown: on cuSOLVER, FP64
+      tridiagonalization alone consumes "over 97%" of total EVD time — a
+      single end-to-end number would hide exactly the bottleneck this
+      track's own papers are about.
+    inputs:
+      suite: >
+        deterministic (fixed-seed) synthetic dense symmetric matrices,
+        matches the ASE/cuEV successor artifact's bench.cpp generator
+        (entries in (-1,1), symmetrized by mirroring the lower triangle);
+        ADDITIONALLY, matching the same artifact's own test suite, three
+        adversarial eigenvalue-structure cases: identity, repeated
+        eigenvalues (engineered maximal deflation), and clustered
+        (near-equal) eigenvalues (forces the divide-and-conquer secular-
+        equation path) — these are correctness-suite inputs, not
+        performance inputs, but this spec requires at least one performance
+        run per adversarial case too, since a D&C-based tridiagonal
+        eigensolve's cost is NOT input-independent (deflation changes the
+        actual work done).
+      selection: >
+        single-GPU-feasible sizes; matches the successor artifact's own
+        default sweep exactly, since it is this track's largest
+        single-GPU-dense evidence point.
+      recommended_subset: "N in {512, 1024, 2048, 4096, 8192, 16384, 32768}
+        (matches the ASE/cuEV bench.cpp default sweep verbatim); adversarial
+        cases at N in {96 (identity), 120 (repeated), a clustered case} per
+        the same artifact's own test sizes"
+      dense_operand: fp64, matches both source papers exactly.
+    protocol:
+      tile_size: >
+        REQUIRED, disclosed, positional (not a flag with a silent default):
+        block size `b` (default 32 per WangHZSJWDZ25's own EVD4SC2025
+        driver) and back-transformation panel width `nb` (default `4*b`).
+        This variant adopts WangHZSJWDZ25's OWN enforcement mechanism
+        (the CLI refuses to run without both) as the spec's disclosure
+        requirement, the strictest tile-size enforcement found across this
+        project's three dense-factorization-track surveys.
+      preprocessing: >
+        one-shot: matrix generation happens once before the timed region,
+        reported separately, never amortized into per-call time.
+      warmup: >
+        1 full EVD (a spec addition — neither WangHZSJWDZ25's
+        EVD4SC2025 driver nor the ASE/cuEV successor's bench.cpp has an
+        explicit warmup call).
+      reps: 3 (matches the ASE/cuEV successor artifact's bench.cpp default
+        `iters=3` exactly — the one concrete rep count with clear
+        provenance in this variant's literature).
+      statistic: >
+        median (report min and max alongside) — DEVIATES from the ASE/cuEV
+        successor's own stated practice (`best = std::min(best, ms)`,
+        explicit best-of-3), per this project's general fairness principle
+        preferring median over best-of-N.
+      timer: "device-side event timer (CUDA events), matches both source
+        artifacts' own timer choice exactly."
+      timing_scope: >
+        kernel-only EVD time (all pipeline stages combined), REPORTED
+        alongside a MANDATORY per-stage breakdown (DBBR / bulge-chasing /
+        divide-and-conquer / bulge-chasing-back / SBR-back, matching the
+        ASE/cuEV successor's own `--timing` flag output exactly) — this
+        breakdown is REQUIRED, not optional, per this variant's claim
+        rationale above; matrix generation is excluded and reported
+        separately.
+      preprocessing_reported: separately, once.
+    metric:
+      primary: "GFLOP/s ((22/3)*N^3 / time — the field-standard LAPACK
+        JobZ='V' full-symmetric-EVD-with-eigenvectors FLOP count, matches
+        the ASE/cuEV successor artifact's own formula exactly)"
+      secondary: "ms (median, min, max), both end-to-end and per-stage;
+        memory footprint (MB)"
+    correctness: >
+      TWO required, GATING measurements, run ALWAYS (not compile-time-
+      gated) — a deliberate spec addition responding directly to
+      WangHZSJWDZ25's own EVD4SC2025 artifact, whose correctness check is
+      gated behind a `#if CHECH_EVD_RESULT_ENABLE` compile flag not
+      confirmed to default on (see survey.md open_questions); this variant
+      instead adopts the ASE/cuEV successor artifact's OWN fix (a
+      separate, always-run test suite) as the spec's required practice:
+      (1) reconstruction residual, `max|A - Q*Lambda*Q^T| / scale < 1e-10`
+      where `scale = max|A_ij|` (matches the ASE/cuEV successor's own
+      `solve_test.cu` convention: max-entrywise difference, normalized by
+      input scale, NOT a Frobenius or spectral-norm ratio — chosen as this
+      variant's primary convention since it is this track's most recently
+      published, most thoroughly tested artifact's own choice); (2)
+      orthogonality, `max|Q^T*Q - I| < 1e-10` (same source, same
+      normalization-free max-entrywise convention). Both thresholds are a
+      spec default (the source artifact uses a size-and-scale-dependent
+      `tol_evec(scale)` function whose exact formula was not extracted
+      during this survey — flagged in open_questions); eigenvalues are
+      ADDITIONALLY required to be sorted and within a size-dependent
+      tolerance of a reference LAPACK `dsyevd` computation on the same
+      input, matching the ASE/cuEV successor's own reference-comparison
+      practice exactly. A run failing any of these does not count toward
+      reported throughput.
+
+  - id: eigensolver-symmetric-tridiagonal-dc-distributed
+    claim: >
+      distributed (multi-node) structured divide-and-conquer eigensolver
+      for the symmetric TRIDIAGONAL full-spectrum sub-problem, with
+      DEFLATION THRESHOLD K as a required, disclosed, per-matrix-tuned
+      parameter alongside tile size — matches LiaoLLR21 (PSDC) exactly, the
+      one distributed paper in this track and the natural companion to
+      variant 1's dense-to-tridiagonal reduction stage (this variant picks
+      up exactly where variant 1's tridiagonalization stage leaves off).
+    inputs:
+      suite: >
+        three synthetic structured tridiagonal families (Clement, Hermite,
+        Toeplitz — matches LiaoLLR21's own generators exactly, standard
+        closed-form NLA test matrices) PLUS real matrices reduced to
+        tridiagonal form via a prior dense-symmetric-EVD reduction step
+        (matches LiaoLLR21's own SiO/Si5H12-from-SuiteSparse practice,
+        reusing this track's variant-1 pipeline as the upstream reduction
+        step for a genuinely real-data entry point).
+      selection: >
+        square symmetric tridiagonal, N up to LiaoLLR21's own tested range;
+        real matrices matched to LiaoLLR21's own two SuiteSparse-derived
+        points.
+      recommended_subset: "synthetic: N in {8192, 16384, 32768} (matches
+        LiaoLLR21's own strong-scaling sizes) for each of {Clement, Hermite,
+        Toeplitz}; real: SiO (N=33401), Si5H12 (N=19896), both from
+        SuiteSparse, matching LiaoLLR21's own real-data points exactly;
+        process counts P in {64, 256, 1024, 4096} (matches LiaoLLR21's own
+        Table 3 sweep)."
+      dense_operand: fp64, matches LiaoLLR21 exactly.
+    protocol:
+      deflation_threshold: >
+        required, disclosed per matrix: K (the secular-equation-size
+        threshold above which PSDC's rank-structured technique activates).
+        Report both a literature-matched value (K=20000 for the N=30000
+        synthetic case, K=15000 for the real-matrix case, matching
+        LiaoLLR21's own two examples exactly) and confirm K is BELOW the
+        matrix's own largest realized secular-equation size at the chosen
+        NB (LiaoLLR21 reports this concretely for Si5H12: "the largest K...
+        is 15,489 when NB=64").
+      tile_size: "required, disclosed: NB (block size). Report NB=64
+        (matches LiaoLLR21's own selected value, after its own NB in
+        {64,128,256} ablation) alongside one off-default comparison point,
+        per this track's general tile-size-sensitivity convention."
+      process_grid: "P processes, 1D or 2D layout per the underlying
+        library's own convention (LiaoLLR21 uses 24 MPI ranks/node, one
+        rank/core, no further grid structure disclosed in the extracted
+        text); disclosed per run."
+      preprocessing: >
+        one-shot: matrix generation (synthetic) or dense-to-tridiagonal
+        reduction (real matrices, via ScaLAPACK or equivalent) happens once
+        before the timed region and is reported separately, matching
+        LiaoLLR21's own practice of calling ScaLAPACK's reduction routines
+        as a distinct, unmeasured preprocessing step before invoking PSDC.
+      warmup: >
+        1 full solve (a spec addition — LiaoLLR21's own protocol has
+        no separate warmup, only the "twice per program invocation" inner
+        loop described below).
+      reps: >
+        6 (matches LiaoLLR21's own explicit protocol — "evaluated ...
+        twice in the same program and called that program three times" =
+        2x3=6 total executions).
+      statistic: >
+        median (report min and max alongside) — a DELIBERATE, explicit
+        divergence from LiaoLLR21's own stated practice ("chose the BEST
+        results among these six executions"), the most granular best-of-N
+        structure found across this project's three dense-factorization-
+        track surveys, per this project's general fairness principle.
+      timer: "wall-clock (matches LiaoLLR21's own timer choice, exact API
+        not specified in the extracted text)."
+      timing_scope: kernel-only tridiagonal-eigensolve time; excludes
+        matrix generation/reduction and any prior dense-to-tridiagonal
+        step (that belongs to variant 1's scope if the pipeline is run
+        end-to-end).
+      preprocessing_reported: separately, once.
+    metric:
+      primary: "aggregate GFLOP/s (standard D&C tridiagonal-eigensolve
+        FLOP count / time, summed across the run)"
+      secondary: "ms; speedup vs. ScaLAPACK PDSTEDC (the literature's own
+        primary baseline, 1.4x-1.6x per LiaoLLR21's own results) and vs.
+        PHDC (a competing HSS-based D&C variant, with an explicit
+        crossover at low process counts per LiaoLLR21's own finding — both
+        comparisons kept, since the crossover itself is methodologically
+        informative, not just a single winner/loser result)"
+    correctness: >
+      TWO required, gating measurements, adopting LiaoLLR21's OWN explicit
+      formulas verbatim (the most complete correctness disclosure found in
+      this track, and one of the most complete across all three of this
+      project's dense-factorization-track surveys) rather than substituting
+      a different convention: (1) orthogonality, `||I - Q*Q^T||_max < 1e-12`
+      (max absolute entry norm; LiaoLLR21's own reported values are all in
+      the 2.5e-14 to 3.8e-14 range at every tested process count, so this
+      spec's threshold is set well above the observed range, not
+      arbitrarily); (2) backward-error residual,
+      `||A - Q*Lambda*Q^*||_c / ||A||_2 < 1e-10` where `||X||_c` is the
+      MAXIMUM Frobenius norm across X's individual columns and `||X||_2` is
+      X's spectral norm (LiaoLLR21's own exact formula, adopted verbatim
+      since it is this track's most concretely evidenced residual
+      convention). A run failing either gate does not count toward reported
+      throughput.
+
+  - id: eigensolver-polynomial-filtered-partial-spectrum-kernel
+    claim: >
+      PARTIAL-spectrum eigensolve (only the k eigenpairs inside a disclosed
+      interval [lambda_lo, lambda_hi]), via polynomial-filtered Krylov
+      iteration, with the SEARCH INTERVAL and the underlying matrix-power-
+      kernel POLYNOMIAL DEGREE both required, disclosed, spec-level
+      parameters — this is the one variant in this track's spec that
+      addresses the "partial spectrum" half of the task's own key axis,
+      combining ShiLXSH21 (the application-level generalized-eigenproblem
+      solve, interval-bounded) with YangNYLDXJ026 (the kernel-level
+      matrix-power-kernel optimization that makes exactly this class of
+      solve efficient) as complementary, not merely co-located, evidence.
+    inputs:
+      suite: >
+        two tiers matching this variant's two source papers exactly: (a)
+        REAL/synthetic FEM operator pairs (A,B) from planetary
+        normal-mode models, matches ShiLXSH21's own four shipped models
+        (CONST, PREM, Mtopo, RTMDWAK); (b) any SuiteSparse-format sparse
+        matrix for the underlying matrix-power-kernel microbenchmark
+        (matches YangNYLDXJ026's own unrestricted `-in` input, this spec
+        additionally requiring the SAME SuiteSparse selection criterion
+        this project's `spmv`/`spmm` tracks already use, for cross-track
+        matrix-suite consistency, since YangNYLDXJ026's own artifact
+        enforces no selection criterion at all).
+      selection: >
+        for tier (a): the four models shipped in ShiLXSH21's own artifact,
+        spanning ~3k to ~100k mesh-derived DOFs; for tier (b): matrices
+        matching this project's spmv-track SuiteSparse subset (for direct
+        cross-track GFLOP/s comparability of the underlying MPK kernel).
+      recommended_subset: >
+        tier (a): CONST3k, PREM3k, Mtopo100k (pOrder=1 only, per
+        ShiLXSH21's own artifact note), RTMDWAK8k, each run at JOB=1 (no
+        reference gravity, the simpler/faster operator) and, as a stretch
+        point, JOB=2 (with reference gravity); tier (b): this project's
+        existing spmv-track canonical SuiteSparse subset, reused rather
+        than re-selected.
+      dense_operand: "N/A (sparse/FEM-generated); fp64 throughout, matches
+        both source papers."
+    protocol:
+      search_interval: >
+        REQUIRED, disclosed, swept parameter (tier a only): [lambda_lo,
+        lambda_hi], reported in the problem's own natural units (mHz for
+        ShiLXSH21's frequency-domain framing, converted internally via
+        `(2*pi*freq*1e-3)^2` per the paper's own artifact README) — this is
+        this variant's direct implementation of the task's "tolerance as
+        part of the spec" requirement: a partial-spectrum solve's reported
+        performance is MEANINGLESS without the interval that determines
+        how many eigenpairs k actually fall inside it, since k (not N)
+        governs cost.
+      polynomial_degree: >
+        REQUIRED, disclosed, swept parameter: the matrix-power-kernel
+        degree `d` (tier b: matches YangNYLDXJ026's own `-d` CLI flag,
+        default 20 in its README's own example; tier a: the filter
+        polynomial's own degree, not directly exposed in ShiLXSH21's
+        artifact materials read during this survey — flagged in
+        open_questions, this spec requires it be disclosed once the
+        underlying pEVSL configuration is inspected).
+      discretization_order: >
+        required, disclosed (tier a only): `pOrder` (1 or 2, FEM polynomial
+        basis order), matches ShiLXSH21's own `demos/global_conf` parameter
+        exactly — trades matrix size/accuracy, a genuinely different
+        "tolerance" axis than a numerical convergence threshold, specific
+        to this variant's PDE-discretization origin.
+      preprocessing: >
+        one-shot: matrix/operator generation (tier a: FEM assembly of A,B
+        from the mesh model; tier b: reading the .mtx file and CSR
+        conversion) happens once before the timed region, reported
+        separately, never amortized.
+      warmup: 1 full solve (a spec addition; neither source paper's
+        artifact states a warmup practice).
+      reps: >
+        tier (a): 5 (a spec addition, matching this project's general
+        convention; no repetition protocol found in ShiLXSH21's artifact
+        materials); tier (b): 50 (matches YangNYLDXJ026's own hardcoded
+        `iterations=50` exactly, the cleanest fixed-rep-count evidence
+        found in this track).
+      statistic: >
+        median (report min and max alongside) for tier (a), a spec default
+        with no literature statistic to diverge from; MEDIAN for tier (b)
+        too, DEVIATING from YangNYLDXJ022's own implicit mean-over-50-
+        iterations (`total_time/iterations`), per this project's general
+        fairness principle.
+      timer: "wall-clock (host-side, matches both source papers' own
+        implicit choice, exact API not confirmed for ShiLXSH21)."
+      timing_scope: >
+        kernel-only solve time (tier a: the full polynomial-filtered
+        Lanczos solve for the disclosed interval; tier b: the matrix-power-
+        kernel `A^d*x` application only, matches YangNYLDXJ022's own
+        separately-reported `DBMPK Setup Time` vs. solve-time split exactly
+        — this spec REQUIRES that split be preserved, not combined, per
+        this project's general preprocessing-reported-separately
+        principle).
+      preprocessing_reported: >
+        tier (a): FEM assembly, reported separately, once; tier (b): DBMPK
+        setup time (matches YangNYLDXJ022's own `setup_time` field exactly,
+        already separately reported in the artifact's own output),
+        reported separately, once.
+    metric:
+      primary: "for tier (a): eigenpairs/second (k eigenpairs found inside
+        the disclosed interval, divided by wall time) — NOT a FLOP-based
+        metric, since k (not N) is the quantity that actually varies with
+        the interval and matrix, matching how this variant's actual claim
+        (partial-spectrum efficiency) should be measured; for tier (b):
+        GFlop/s (2*d*iterations*nnz / time, matches YangNYLDXJ022's own
+        formula exactly, kept separate from tier (a)'s metric since they
+        measure genuinely different things - see notes_on_fairness)"
+      secondary: "ms; k (realized eigenpair count, tier a); for tier (b),
+        speedup vs. MKL sparse-BLAS baseline (matches YangNYLDXJ022's own
+        comparison exactly)"
+    correctness: >
+      PRIMARY (required) gate, tier (a): per-eigenpair relative residual,
+      `||A*x - lambda*B*x|| / ||lambda|| < 1e-10` (matches ShiLXSH21's own
+      artifact-documented metric exactly; the README states "typically
+      around 1e-13" is achieved in practice, so this spec's 1e-10 threshold
+      is set well above the literature-reported typical value, not
+      arbitrarily, pending confirmation of the paper's own actual gating
+      threshold — see open_questions). ADDITIONALLY required: completeness
+      of the found spectrum inside [lambda_lo, lambda_hi] — no established
+      numeric check for this exists in the surveyed literature (a
+      polynomial-filtered method can, in principle, miss eigenpairs near
+      the interval's edges), so this spec requires a documented
+      cross-check (e.g. inertia-counting via a shift-and-count LDL^T
+      factorization at lambda_lo and lambda_hi) be run at least once per
+      configuration to validate k is not silently truncated — a spec
+      addition not evidenced by either source paper, flagged as such. For
+      tier (b), no correctness check exists in YangNYLDXJ022's own artifact
+      (see survey.md); this spec requires the standard SpMV correctness
+      convention already established by this project's `spmv` track (dense-
+      reference comparison at a stated tolerance) be applied to the
+      underlying `A^d*x` kernel's output, reusing that track's spec rather
+      than inventing a new one for this variant.
+
+notes_on_fairness:
+  - >
+    This spec covers SYMMETRIC (and symmetric-definite-generalized)
+    eigenproblems only, since every one of this track's 5 papers is
+    symmetric or symmetric-definite-generalized. This is a genuine, not
+    superficial, gap in this track's own paper coverage (the direct
+    eigensolver-track analogue of the `qr` track's TSQR/CAQR gap) and is
+    disclosed here rather than filled with a fabricated nonsymmetric
+    variant no surveyed paper evidences.
+  - >
+    Full spectrum vs. partial (k eigenpairs) is treated as a genuinely
+    different CLAIM, not a size variant of the same claim, following the
+    task's own design brief directly: variants 1-2 report GFLOP/s (a
+    quantity meaningful when the full N-sized problem is solved); variant 3
+    reports eigenpairs/second for its interval-bounded tier, since reusing
+    a FLOP-based metric there would silently reward a wider interval (more
+    eigenpairs, more real work) and a narrower one (less work, but also
+    "less achieved") with the SAME apparent GFLOP/s if the per-eigenpair
+    cost happened to be similar — the metric itself must change with the
+    claim, not just the input size.
+  - >
+    Residual/orthogonality normalization is standardized PER VARIANT to
+    whichever surveyed paper's own convention is most concretely evidenced
+    for that variant (max-entrywise for the dense full-spectrum variant,
+    per the ASE/cuEV successor's own test suite; column-wise-Frobenius-
+    over-spectral-norm for the distributed tridiagonal variant, per
+    LiaoLLR21's own explicit formula; per-eigenpair relative residual for
+    the generalized partial-spectrum tier, per ShiLXSH21's own artifact) —
+    RATHER than forcing one convention across all three variants, since
+    survey.md documents FOUR distinct residual normalizations already in
+    active use across just 3 of this track's 5 papers, and picking a single
+    "winner" convention would misrepresent what each source paper's own
+    artifact actually validates against.
+  - >
+    Correctness checks are REQUIRED and ALWAYS RUN (not compile-time-gated
+    or run in a separate, optional binary) in every variant of this spec —
+    a direct response to this track being the FOURTH consecutive track
+    across this project's three dense-factorization-track surveys where a
+    correctness check exists in an artifact but is disabled or separated
+    from the performance-measurement path by default (WangHZSJWDZ25's
+    EVD4SC2025 `#if CHECH_EVD_RESULT_ENABLE` flag being this track's own
+    instance). The ASE/cuEV successor artifact's own fix (correctness
+    always-run in a separate but MANDATORY test suite, not an optional
+    compile flag) is the model this spec's "always run, report separately
+    from timing if needed" requirement follows.
+  - >
+    Timing statistic is fixed to median (with min/max reported) across
+    every variant, diverging from every stated statistic found in this
+    track's own literature: best-of-6 (LiaoLLR21, the most granular
+    best-of-N structure found across this entire project's surveys),
+    best-of-3 (the ASE/cuEV successor artifact), and mean-over-50-fixed-
+    iterations (YangNYLDXJ022) — no paper in this track states a median.
+
+open_questions:
+  - >
+    ShiLXSH21's own paper fulltext (OA link is an OSTI landing page) was
+    not read during this survey pass — the search-interval-polynomial-
+    degree relationship (how the pEVSL filter's own polynomial degree is
+    chosen or disclosed per interval/model) was not recoverable from the
+    artifact's README/config alone and is required before
+    eigensolver-polynomial-filtered-partial-spectrum-kernel's
+    polynomial_degree parameter can be fully specified for tier (a).
+  - >
+    The exact gating threshold ShiLXSH21's own paper uses for its stated
+    "typically around 1e-13" relative-residual metric (as opposed to a
+    typically-observed value) was not found — this spec's 1e-10 threshold
+    is a conservative spec default pending confirmation.
+  - >
+    WangHZSJWDZ25's EVD4SC2025 `CHECH_EVD_RESULT_ENABLE` flag's default
+    state (on/off in the shipped build configuration) was not confirmed -
+    needed to know whether this paper's own reported performance numbers
+    were measured with or without its correctness check active.
+  - >
+    The ASE/cuEV successor artifact's own `tol_eval`/`tol_evec` tolerance
+    functions' exact formulas (referenced in `solve_test.cu` but not
+    themselves fetched, likely in `ref.hpp`) were not extracted - this
+    spec's 1e-10 thresholds for
+    eigensolver-dense-symmetric-full-spectrum-kernel are conservative spec
+    defaults pending confirmation against the actual size/scale-dependent
+    formula the source artifact uses.
+  - >
+    Whether YangNYLDXJ026's own paper (not read as fulltext) reports ANY
+    correctness/accuracy check for the polynomial preconditioner's
+    downstream effect on solver convergence, as opposed to the raw
+    matrix-power-kernel's own performance, was not investigated - needed to
+    know whether this spec's tier-(b) reuse of the `spmv` track's
+    correctness convention is a reasonable substitute or misses something
+    the paper itself actually validates.
+  - >
+    Whether this track's 5-paper input set omitting a genuinely
+    nonsymmetric eigensolver reflects a real corpus gap or a narrower
+    selection within a broader available set was not investigated during
+    this pass.
+
+evidence:
+  journals/tpds/LiaoLLR21: >
+    Symmetric tridiagonal, FULL spectrum, distributed structured D&C (PSDC,
+    built on rank-structured PSMMA); synthetic Clement/Hermite/Toeplitz +
+    real SiO/Si5H12 (SuiteSparse, reduced via ScaLAPACK); deflation
+    threshold K disclosed and per-matrix-tuned (15000-20000); NB=64 after
+    explicit {64,128,256} ablation; explicit best-of-6 (2 inner x 3 outer)
+    timing statistic; orthogonality ||I-QQ^T||_max (~1e-14, matches
+    ScaLAPACK) and residual ||A-QLambdaQ^*||_c/||A||_2 both explicitly
+    formula'd; 1.4-1.6x vs. PDSTEDC, crossover vs. PHDC at low process
+    counts; scales to 4096 processes on Tianhe-2. arXiv 2008.01990 fulltext
+    (pypdf-extracted) + shengguolsg/PSMMA (URL confirmed, not independently
+    re-fetched).
+  journals/tpds/ShiLXSH21: >
+    Symmetric-definite GENERALIZED eigenproblem (A*x=lambda*B*x), PARTIAL
+    spectrum via polynomial-filtered Lanczos (pEVSL) over a disclosed
+    frequency interval [lowfreq,upfreq] mHz; pOrder (FEM basis order) and
+    JOB (with/without reference gravity) as disclosed problem-structure
+    parameters; four shipped models (~3k-100k DOFs); correctness metric
+    ||Ax-lambda*Bx||/||lambda|| ~1e-13 stated directly in the artifact
+    README; no timing/repetition protocol recovered; abstract states
+    scaling to 20k cores. No arXiv/OA fulltext available - artifact repo
+    js1019/NormalModes (README + demos/README.md + demos/global_conf) only.
+  conf/sc/WangHZSJWDZ25: >
+    Dense symmetric EVD, FULL spectrum with eigenvectors, single GPU;
+    back-transformation-stage optimization (BLAS2-for-BLAS3 substitution +
+    reordered workflow); block size `b` and panel width `nb` REQUIRED
+    positional CLI args; possible Ozaki-scheme tensor-core-emulated FP64
+    GEMM path (role in default execution not confirmed); correctness
+    (orthogonality + ||A-QDQ^T||_2/||A||_2/m backward error) computed but
+    gated behind `#if CHECH_EVD_RESULT_ENABLE` (default state unconfirmed);
+    TFLOPS metric specific to the back-transform GEMM step; no warmup/
+    repetition in main(). No arXiv/OA fulltext available - artifact repo
+    hansheng1001/EVD4SC2025 (README + src/EVD/myEVD.cu, full source read)
+    only.
+  conf/ppopp/WangDZWZLJZ25: >
+    Dense symmetric EVD, FULL spectrum, single GPU; tridiagonalization-
+    stage optimization (Double Blocking Band Reduction + wavefront bulge
+    chasing); paper's own headline finding: cuSOLVER FP64 tridiagonalization
+    is 2.1/67 TFLOPS but >97% of total EVD time, motivating per-stage
+    disclosure; successor artifact (ASE/cuEV, covers both this paper and
+    WangHZSJWDZ25) has deterministic matrix generator, default sweep
+    512-32768, explicit best-of-3 (CUDA events), GFLOPS=(22/3)*n^3/time
+    (field-standard JobZ='V' convention); SEPARATE, always-run GoogleTest
+    correctness suite (vs. dsyevd reference, identity/repeated/clustered
+    adversarial cases, orthogonality + max-entrywise residual) - fixes the
+    disabled-by-default pattern found in its own sibling artifact. No
+    arXiv/OA fulltext available for the original PPoPP'25 paper - evidence
+    is for the successor artifact's implementation; artifact repo ynkrue/cuEV
+    (README + bench/bench.cpp + test/solve_test.cu, full source read) only.
+  conf/ppopp/YangNYLDXJ026: >
+    Matrix-power-kernel (A^d*x) optimization (Diagonal Block MPK) for
+    polynomial preconditioners feeding BOTH linear and eigenvalue solvers;
+    kernel-level companion to ShiLXSH21's application-level polynomial-
+    filtered partial-spectrum solve; SuiteSparse-format input, no fixed
+    suite; polynomial degree `d` disclosed CLI flag (default 20); fixed 50-
+    iteration repetition (mean statistic); GFlop/s vs. MKL sparse-BLAS
+    baseline, same flop formula both sides; DBMPK setup time reported
+    separately from solve time; no correctness check found in the artifact.
+    No arXiv/OA fulltext available - artifact repo YXJ-123/DBMPK (README +
+    DBMPK.cpp, full source read) only.
+
+artifact_repos:
+  shengguolsg/PSMMA: >
+    Fortran/C (ScaLAPACK-family), license not independently confirmed
+    during this pass; URL confirmed from the paper's own in-text citation,
+    not independently re-fetched beyond that confirmation. Primary source
+    for eigensolver-symmetric-tridiagonal-dc-distributed.
+  js1019/NormalModes: >
+    C++/MPI (finite-element + pEVSL-based), license badge present in README
+    (not independently verified). Depends on companion repos
+    `eigs/pEVSL`/`js1019/pEVSL` (polynomial-filtered eigenvalue-slicing
+    library, the actual eigensolver engine) and `js1019/PlanetaryModels`
+    (mesh/model generator) - NormalModes itself is the FEM-assembly +
+    driver layer, not a self-contained eigensolver implementation. Primary
+    source for eigensolver-polynomial-filtered-partial-spectrum-kernel's
+    tier (a).
+  hansheng1001/EVD4SC2025: >
+    CUDA/C++, license not independently confirmed. `src/EVD/myEVD.cu` is a
+    single-file, single-binary driver (`myEVD <n> <b> <nb>`) covering the
+    full 2-stage pipeline including back-transformation, this paper's own
+    contribution. Correctness gated behind `CHECH_EVD_RESULT_ENABLE`.
+  ynkrue/cuEV (now "ASE — Accelerated Symmetric Eigensolver"): >
+    CUDA/C++, MIT license. Successor/consolidation artifact implementing
+    BOTH WangDZWZLJZ25 (tridiagonalization) and WangHZSJWDZ25 (back-
+    transformation)'s algorithms together, with separate `ase_bench`
+    (performance, best-of-N) and `ase_test` (correctness, GoogleTest vs.
+    LAPACK dsyevd) targets - primary source for
+    eigensolver-dense-symmetric-full-spectrum-kernel, and the model this
+    spec's "correctness always required, separately reported if needed"
+    principle is drawn from directly.
+  YXJ-123/DBMPK: >
+    C++/OpenMP, no license file found during this pass (flagged for
+    whoever runs artifact-status verification for this track). Single-file
+    driver (`DBMPK.cpp`, `.mtx` input via `-in`, degree via `-d`). Primary
+    source for eigensolver-polynomial-filtered-partial-spectrum-kernel's
+    tier (b).

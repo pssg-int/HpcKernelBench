@@ -1,0 +1,415 @@
+kernel: cg-krylov
+summary: >
+  Preconditioned Conjugate Gradient (and closely related nested/mixed-
+  precision Krylov variants) for sparse symmetric positive-definite linear
+  systems A x = b; measured as four distinct claims this track's own
+  artifacts already draw different lines around — a fixed-iteration
+  unpreconditioned kernel-throughput variant (PERKS's own research
+  question), an end-to-end to-convergence ILU(0)-preconditioned variant
+  with mandatory separate preconditioner-setup reporting (generalizing
+  SPCG's own good practice), a synthetic HPCG-style 3D-stencil-generator +
+  AMG-preconditioned distributed/weak-scaling variant (BootCMatchGX,
+  Graphene, and CLAIRE all use a generator instead of a downloaded matrix),
+  and a reduced-precision cascade variant (F3R, Mille-feuille) that
+  requires an independent fp64-accuracy gate rather than trusting the
+  low-precision recurrence's own residual.
+operation: >
+  solve A x = b (A sparse, real, symmetric positive-definite, N x N) via
+  (preconditioned) Conjugate Gradient. One PCG iteration =
+  1 SpMV (q = A*p) + optional preconditioner apply (z = M^-1*r) +
+  2 dot-product reductions + 3 AXPY-family vector updates
+  (p = z + beta*p; x = x + alpha*p; r = r - alpha*q).
+
+variants:
+  - id: cg-kernel-fixed-iter
+    claim: >
+      steady-state per-iteration cost of the UNPRECONDITIONED CG kernel
+      (SpMV + 2 dots + 3 axpys), fixed iteration count, preconditioner
+      excluded entirely — isolates the CG kernel itself from any
+      preconditioner-specific behavior, matching PERKS's explicit research
+      question (persistent-kernel throughput for iterative memory-bound
+      solvers). Fixes two things found in this track's own artifacts: (1)
+      PERKS's own single CUDA-event bracket spanning ALL iterations
+      (divided by iteration count afterward) is replaced with genuine
+      per-iteration timestamps, and (2) the iteration count used in any
+      derived per-iteration number must be read back from the actual loop
+      counter, not a hardcoded literal — the exact bug found in
+      Mille-feuille's public artifact (loop always runs a hardcoded 10000
+      iterations regardless of the `maxiter` argument, and the reported
+      time is divided by a literal 100, not the true iteration count or a
+      variable).
+    inputs:
+      suite: "SuiteSparse Matrix Collection"
+      selection: >
+        real, symmetric positive-definite (or numerically-SPD-verified)
+        matrices; nnz in [1e4, 4e8]; square. Matches SPCG's own
+        ILU-preconditioned-SPD selection intent and F3R's "symmetric" list;
+        explicitly excludes F3R's own "general" nonsymmetric/BiCGSTAB list
+        (out of scope for a CG-specific track — see open_questions for a
+        possible future BiCGSTAB track).
+      recommended_subset:
+        [bcsstk17, bcsstk18, bcsstk25, bcsstk36, ct20stif, nasasrb, olafu,
+         gyro, cfd1, thermal1, crystm03, nd3k, cant, apache1, apache2,
+         audikw_1, Bump_2911, ecology2, Emilia_923, G3_circuit, ldoor,
+         Queen_4147, Serena, thermal2, tmt_sym]
+      vector_operand: >
+        b: dense, U(-1,1), fixed seed=42; x0 = 0 (matches the zero
+        initial-guess convention used by SPCG, Mille-feuille, and
+        BootCMatchGX).
+    protocol:
+      format: >
+        CSR (given). If the technique requires a different internal layout
+        (e.g. Mille-feuille's tiled sparse format), the one-time
+        conversion is performed once before timing, measured, and reported
+        separately (see preprocessing_reported) — never folded into the
+        per-iteration number.
+      warmup: "5 full iterations (untimed) before the timed block"
+      reps: >
+        k=50 CG iterations per trial, 20 trials (1000 individual
+        per-iteration timestamps total)
+      statistic: "median per-iteration time (report min/max/stdev alongside)"
+      timer: >
+        ONE timestamp pair PER ITERATION (not a single bracket spanning all
+        k iterations, which is what PERKS's own public artifact does):
+        GPU = CUDA/HIP event pair per iteration; CPU = std::chrono or
+        omp_get_wtime per iteration; IPU = Poplar profiler region marker
+        per iteration (reported as its own platform-labeled row, not
+        pooled with CUDA/CPU numbers — see notes_on_fairness).
+      timing_scope: >
+        kernel only: SpMV + 2 dot-product reductions + 3 AXPY-family
+        updates per iteration, NO preconditioner apply. H2D/D2H excluded
+        (operands device-resident before timing starts).
+      preprocessing_reported: >
+        format conversion (if any), separately, once — never silently
+        excluded (this is what Mille-feuille's own artifact does correctly
+        for its tile format, via a `time_format` gettimeofday bracket) and
+        never silently included in the per-iteration number.
+      precision: "fp64 (primary); fp32 (secondary) — matches PERKS's own --fp32 flag and SPCG's fp32-only default"
+    metric:
+      primary: "ms/iteration (median across all per-iteration timestamps)"
+      secondary: >
+        GFLOP/s using the per-iteration flop count
+        2*nnz (SpMV) + 10*N (2 dot products @ 2N flops + 3 AXPYs @ 2N
+        flops each ≈ 10N vector-op flops), NOT PERKS's own hand-rolled
+        memory-traffic-only GB/s formula (kept as an optional tertiary
+        metric alongside, since bandwidth-boundedness is PERKS's own
+        stated design assumption).
+    correctness: >
+      residual must be monitored EVERY iteration even though it is not
+      used for termination (fixes Mille-feuille's practice of shipping a
+      commented-out residual check) — reject the run if the tracked
+      residual is non-finite or non-decreasing over a 10-iteration trailing
+      window at any point. After k iterations, independently recompute
+      r = b - A*x directly (not via the recurrence) and compare against
+      the recurrence-tracked residual: relative difference < 1e-6 (fp64) /
+      1e-3 (fp32) — catches recurrence-vs-true-residual drift silently.
+
+  - id: cg-e2e-ilu0-to-convergence
+    claim: >
+      end-to-end time-to-solution for ILU(0)-preconditioned CG run to a
+      relative-residual convergence gate, with preconditioner
+      analysis+factorization ALWAYS measured and reported separately from
+      the PCG loop — generalizes SPCG's own artifact discipline (which
+      gets this right in the one file surveyed) into a mandatory
+      requirement for every submission, since no other surveyed paper in
+      this track implements this exact ILU(0)+CG configuration to compare
+      against directly.
+    inputs:
+      suite: "same as cg-kernel-fixed-iter"
+      selection: "same as cg-kernel-fixed-iter"
+      recommended_subset: "same as cg-kernel-fixed-iter"
+      vector_operand: "same as cg-kernel-fixed-iter"
+    protocol:
+      format: >
+        CSR (given); ILU(0) analysis+factorization computed once per run,
+        timed, and reported separately — never silently folded into the
+        per-iteration or total-solve number.
+      warmup: none (a to-convergence solve is inherently single-use; see reps)
+      reps: >
+        5 independent runs (fresh factorization each run, to capture any
+        nondeterminism in parallel ILU factorization ordering on GPU)
+      statistic: "median total time-to-solution (report min/max)"
+      timer: >
+        one bracket for factorization/analysis (separate), one for the PCG
+        loop (separate) — CUDA events (GPU) or std::chrono/MPI_Wtime
+        (CPU/distributed) — PLUS per-iteration timestamps within the loop
+        (matching SPCG's own per-iteration CSV granularity) so a
+        residual-vs-time curve can be reported, not just a final number.
+      timing_scope: >
+        factorization+analysis (reported separately, once per run) + PCG
+        loop to convergence (this variant's headline number). H2D of the
+        original matrix included once in the factorization-phase timing;
+        D2H of the final solution excluded.
+      preprocessing_reported: >
+        ILU(0) setup time (ms, standalone, once per run) — mandatory in
+        every submission, not merely "if measured" (SPCG's own artifact
+        happens to do this; this spec makes it a requirement rather than a
+        lucky default).
+      precision: >
+        fp32 (primary — matches SPCG, the only surveyed paper that
+        implements and times this exact ILU(0)+CG configuration); fp64
+        (secondary — matches BootCMatchGX's preconditioned-CG convention,
+        generalized from AMG/AFSAI/l1Jacobi to ILU(0) for this variant).
+    metric:
+      primary: "time-to-solution (ms), median across 5 runs, factorization+solve"
+      secondary: >
+        iterations-to-converge (median); ILU(0) setup time (ms, standalone);
+        PCG-loop-only time (ms); GFLOP/s = iterations *
+        (2*nnz + 10*N + 2*nnz [triangular-solve preconditioner apply,
+        lower+upper]) / pcg_loop_time.
+    correctness: >
+      RELATIVE residual ||r_k|| / ||r_0|| < rtol, rtol = 1e-6 (BootCMatchGX's
+      own convention) — deliberately NOT SPCG's own absolute threshold
+      (tol=1e-12 on the squared, unnormalized residual dot(r,r)), which is
+      not scale-invariant across matrices/right-hand-sides of different
+      norm (see notes_on_fairness). max_iter = 2000 cap; a run that hits
+      the cap without meeting rtol is reported as non-converged, not
+      silently truncated into a "time" number.
+
+  - id: cg-hpcg-generator-amg
+    claim: >
+      to-convergence throughput on synthetic HPCG-style 3D-stencil SPD
+      systems (generated in-memory, not downloaded), AMG-preconditioned,
+      reported as weak- and strong-scaling curves — targets the
+      distributed/multi-node usage pattern that a fixed downloaded matrix
+      cannot represent, and which THREE independently-surveyed papers on
+      three different platforms actually use (BootCMatchGX's
+      `--laplacian-3d SIZE --laplacian-3d-generator 7p|27p` on multi-GPU
+      MPI, F3R's locally-generated `hpcg_<nx>_<ny>_<nz>.mtx`, and
+      Graphene's `-p/--poisson nx,ny,nz` on IPU) — confirming this is a
+      real methodological split in the track's own literature, not a
+      spec-author invention.
+    inputs:
+      suite: "synthetic 3D Laplacian / Poisson stencil generator (not SuiteSparse)"
+      selection: >
+        both 7-point and 27-point stencil variants (BootCMatchGX ships
+        both; they differ in nnz/row and therefore in arithmetic
+        intensity); local subdomain sizes and rank counts chosen to cover
+        both a strong-scaling series (fixed global problem, increasing
+        rank count) and a weak-scaling series (fixed per-rank local
+        problem, growing global problem with rank count).
+      recommended_subset: >
+        weak scaling: local subdomain 50^3 per rank (matches
+        BootCMatchGX's own regressionTest config
+        lap3d_27p_50x50x50_{1x1x1,2x1x1,2x2x2}) and 128^3 per rank, at
+        rank counts {1, 2, 4, 8, 16, 32, 64}; strong scaling: fixed global
+        256^3 grid at the same rank-count series.
+      vector_operand: "b = A * ones(N) (standard Poisson-generator convention); x0 = 0"
+    protocol:
+      format: >
+        given directly in the solver's native distributed CSR by the
+        generator itself — no format-conversion phase applies here (this
+        variant explicitly sidesteps the format-conversion discipline used
+        in the other three variants, since there is no "given" matrix to
+        convert from).
+      warmup: "none (each (grid size, rank count) point is inherently a single scaling-study run)"
+      reps: "3 independent runs per (grid size, rank count) point"
+      statistic: "median wall time (report min/max — important at high rank counts as a scaling-noise indicator)"
+      timer: >
+        MPI_Wtime (distributed CPU/GPU) or platform-native equivalent
+        (Poplar profiler region for IPU — reported as its OWN
+        platform-labeled row, explicitly NOT pooled with MPI_Wtime/CUDA-
+        event numbers from other platforms, since the instrumentation
+        mechanisms are not equivalent). One bracket for AMG
+        bootstrap/hierarchy setup (reported separately, once per run) plus
+        one for the PCG-with-AMG-preconditioner loop.
+      timing_scope: >
+        AMG setup timed and reported separately, never folded into
+        per-iteration time. Solve loop timed to convergence.
+        Halo-exchange/communication cost is NOT separated out as its own
+        line item in this variant (unlike the one-shot format-conversion
+        discipline elsewhere) because it is inherent to the distributed
+        SpMV/AMG-apply kernel itself at every iteration, not a one-time
+        preprocessing cost.
+      preprocessing_reported: >
+        AMG hierarchy setup time (ms, standalone) + grid-generation time
+        (ms, standalone) — both are one-time per-run costs distinct from
+        the iterative solve.
+      precision: >
+        fp64 (primary, matches BootCMatchGX and CLAIRE's presumed
+        convention). Graphene's software-emulated fp64 / `twofloat`
+        double-word arithmetic (required since the IPU lacks native fp64)
+        is reported as its OWN separately-labeled precision row, never
+        silently pooled with true hardware-fp64 numbers from GPU/CPU runs,
+        since the cost models are not comparable (see notes_on_fairness).
+    metric:
+      primary: "time-to-solution (ms) vs. rank count — weak- and strong-scaling curves"
+      secondary: >
+        parallel efficiency (%) = T(1 rank) / T(N ranks) at fixed
+        per-rank work (weak scaling); AMG setup time (ms, standalone);
+        iterations-to-converge.
+    correctness: >
+      same relative-residual gate as cg-e2e-ilu0-to-convergence
+      (rtol = 1e-6, max_iter = 2000), applied to the AMG-preconditioned
+      loop.
+
+  - id: cg-mixed-precision-cascade
+    claim: >
+      to-convergence solve using a reduced-precision cascade (fp64 outer /
+      fp32-or-fp16 inner), reporting speedup vs. a matched fp64-only
+      baseline WITHOUT silently trading away final accuracy — targets
+      F3R's nested FGMRES/Richardson fp16-inner design and Mille-feuille's
+      tile-grained on-chip dynamic precision conversion, the two papers in
+      this track that build reduced-precision Krylov solvers as their
+      central contribution.
+    inputs:
+      suite: "same as cg-kernel-fixed-iter, restricted to the symmetric/SPD recommended_subset (F3R's own symmetric list already overlaps heavily with it)"
+      selection: "same as cg-kernel-fixed-iter"
+      recommended_subset: "same as cg-kernel-fixed-iter"
+      vector_operand: "same as cg-kernel-fixed-iter"
+    protocol:
+      format: >
+        given as CSR at fp64; technique-specific reduced-precision copies
+        (tile-grained fp32 companions, or fp16 inner-solver arrays)
+        constructed once, timed, and reported separately — same discipline
+        as every other variant.
+      warmup: none beyond cg-e2e-ilu0-to-convergence's
+      reps: >
+        5 independent full to-convergence runs (matches F3R's own
+        `<average>` repeated-full-solve pattern), report median
+      statistic: "median total time-to-solution (report min/max)"
+      timer: >
+        same as cg-e2e-ilu0-to-convergence, PLUS a mandatory breakdown of
+        time spent at EACH precision level (fp64 outer iterations vs.
+        fp32/fp16 inner iterations) — required because neither F3R's plain
+        CSV output nor Mille-feuille's (broken) loop currently surfaces
+        this breakdown cleanly.
+      timing_scope: "to-convergence, full solve, same H2D/D2H discipline as cg-e2e-ilu0-to-convergence"
+      preprocessing_reported: "reduced-precision copy construction, standalone, once per run"
+      precision: >
+        fp64 outer/reference; fp32 AND fp16 inner-solve configurations BOTH
+        run and reported as SEPARATE rows (matches F3R's actual 3-way
+        sweep: cg64/cg32/cg16 etc.) — never averaged together into one
+        number.
+    metric:
+      primary: >
+        speedup = T(fp64-only baseline, this same matrix run through
+        cg-e2e-ilu0-to-convergence's unpreconditioned-CG-equivalent
+        config) / T(mixed-precision cascade)
+      secondary: >
+        fraction of total iterations spent at each precision level; final
+        relative accuracy vs. the fp64 reference solution.
+    correctness: >
+      TWO mandatory gates, not one: (a) the OUTER fp64-tracked relative
+      residual must still satisfy < 1e-6 (same as
+      cg-e2e-ilu0-to-convergence) — the inner reduced-precision iterations
+      are never allowed to relax the outer convergence criterion just
+      because they are cheaper; AND (b) the final solution x is compared
+      against an INDEPENDENTLY-computed fp64-only reference solve,
+      relative error < 1e-8. Gate (b) is the explicit fix for the failure
+      mode Mille-feuille's own artifact exhibits: a post-hoc correctness
+      check computed AFTER the (mis-terminated) loop that never actually
+      gates whether the reported time counts.
+
+notes_on_fairness:
+  - >
+    cg-kernel-fixed-iter requires genuine per-iteration timestamps and a
+    true iteration-counter readback, fixing two independent issues found
+    by reading this track's own artifacts: PERKS's single CUDA-event
+    bracket spanning all `max_iter` iterations (divided by iteration count
+    only after the fact, which can hide per-iteration variance or
+    GPU-clock-ramp effects during the run) and Mille-feuille's hardcoded
+    `while (iterations < 10000)` loop that ignores its own `maxiter=10`
+    argument, combined with a reported time divided by a literal `100`
+    rather than the true iteration count — an artifact bug that would
+    silently misreport per-iteration cost by roughly 100x if taken at face
+    value.
+  - >
+    cg-e2e-ilu0-to-convergence and cg-hpcg-generator-amg both mandate that
+    preconditioner-setup time (ILU(0) factorization, or AMG hierarchy
+    bootstrap) be measured and reported separately in EVERY submission.
+    SPCG's own artifact already does this correctly via distinct CUDA-event
+    brackets for "Preconditioning Time" vs. "PCG Time" — this spec
+    generalizes that into a requirement rather than treating it as one
+    paper's lucky default (contrast Mille-feuille and PERKS, both
+    unpreconditioned, where the question does not even arise in their own
+    artifacts).
+  - >
+    cg-e2e-ilu0-to-convergence and cg-hpcg-generator-amg both use a
+    RELATIVE residual normalized by the initial residual norm
+    (BootCMatchGX's convention: `l2_norm < rtol * delta0`), not SPCG's own
+    absolute/unnormalized threshold (`r1 > tol*tol` with `tol=1e-12` and no
+    normalization by the initial residual). An absolute threshold is not
+    comparable across matrices or right-hand-sides of different scale;
+    this spec fixes one relative-tolerance convention across every
+    to-convergence variant instead of adopting either paper's own choice
+    as-is.
+  - >
+    cg-mixed-precision-cascade requires BOTH an outer fp64 relative-
+    residual gate AND an independent fp64-reference-solution accuracy
+    check, specifically because reduced-precision Krylov recurrences can
+    report a residual that "looks converged" via the low-precision
+    recurrence while the true error is larger. Mille-feuille's own public
+    artifact only checks correctness AFTER its (already mis-terminated)
+    loop finishes, via a CPU-recomputed `l2_norm`, and that check never
+    actually gates whether the loop's reported time is accepted — this
+    spec makes an equivalent check load-bearing rather than informational.
+  - >
+    cg-hpcg-generator-amg reports IPU (Poplar-profiler) numbers as their
+    own explicitly platform-labeled row rather than pooling them with
+    CUDA-event/MPI_Wtime numbers from GPU/CPU platforms, and similarly
+    keeps Graphene's software-emulated-fp64/`twofloat` numbers in a
+    separate row from true hardware-fp64 numbers — both instrumentation
+    mechanism and underlying precision implementation differ enough that
+    pooling them would be an apples-to-oranges comparison, not a fairness
+    fix per se but a labeling requirement to prevent one.
+
+open_questions:
+  - >
+    CLAIRE's PCG solve is nested inside a much larger nonlinear Gauss-
+    Newton image-registration optimization, with an inner-preconditioner
+    tolerance (1e-3 for NIREP, 1e-2 for CLARITY datasets) chosen for the
+    OUTER optimization's convergence behavior rather than the CG kernel's
+    own standalone accuracy. Both WebFetch attempts at the arXiv fulltext
+    (PDF and ar5iv HTML) truncated before reaching the paper's Section 4
+    (Numerical Experiments), so its exact timing protocol, precision, and
+    baseline comparisons could not be confirmed. It cannot be cleanly
+    reduced to any of the four variants above without stripping away the
+    surrounding registration pipeline; whether a fifth
+    "PCG-as-a-nested-component" variant is worth adding is left open,
+    contingent on obtaining the full paper text.
+  - >
+    BootCMatchGX's exact AMG-setup-vs-solve-time output field (the
+    specific CSV/log column the `-M`/`-P`/`-p` profiling flags actually
+    produce) was inferred from the existence of those CLI flags and the
+    `BEGIN_PROF`/`END_PROF` macro infrastructure, not confirmed by reading
+    the profiling-output-writing code itself. cg-hpcg-generator-amg's "AMG
+    setup time reported separately" requirement should be checked against
+    a real run's output before being treated as load-bearing.
+  - >
+    Graphene's JSON solver-configuration schema (default relative
+    tolerance / max-iteration values, and whether they differ per solver
+    type — PBiCGStab vs. Mixed-Precision Iterative Refinement vs. Gauss-
+    Seidel) was not fetched (would require reading
+    `Configuration::fromJSON` plus a sample config file, not pursued
+    within the survey's time budget). cg-hpcg-generator-amg's IPU row
+    currently assumes BootCMatchGX's rtol=1e-6/itnlim=2000 defaults by
+    analogy; this is unconfirmed for Graphene specifically.
+  - >
+    Extended precision (Graphene's software-emulated fp64 and `twofloat`
+    double-word arithmetic) runs in the OPPOSITE direction from this
+    spec's precision-cascade variant (which is scoped to reduced
+    precision, fp32/fp16, matching F3R and Mille-feuille — the two papers
+    where concrete, comparable reduced-precision numbers actually exist).
+    Whether extended precision deserves its own fifth variant, or is
+    better left as a platform-specific footnote on the fp64 rows of the
+    other variants, is unresolved.
+  - >
+    PERKS's and Mille-feuille's actual paper-reported matrix suites (as
+    opposed to the single smoke-test matrix each public artifact ships —
+    `add20.mtx` for Mille-feuille, a synthetic tridiagonal matrix or an
+    unspecified user-supplied `--mtx` for PERKS) could not be recovered
+    from the public artifacts within the survey's time budget. Every
+    variant's `recommended_subset` above is therefore drawn only from
+    SPCG's (code-confirmed, 114-matrix) and F3R's (code-confirmed,
+    15-matrix symmetric) lists, and has not been independently
+    cross-checked against PERKS's or Mille-feuille's own paper tables.
+
+evidence:
+  conf/sc/MaACSH25: "114 named real SuiteSparse SPD matrices (ssgetpy list); fp32; to-convergence tol=1e-12 (absolute, unnormalized),max_iter=1000; ILU(0) setup timed separately via CUDA events (Preconditioning Time vs PCG Time), per-iteration CUDA-event CSV; 1.23x/1.65x iterative-phase, 1.68x/3.73x e2e vs non-sparsified."
+  conf/sc/YangZNJS0T024: "SuiteSparse mtx (no fixed list in public artifact); tile-grained mixed precision (fp64 base + fp32 Val_Low); loop hardcoded to 10000 iters ignoring passed maxiter=10, residual-stop line commented out; reported time divided by literal 100, not real iter count; format-conversion timed separately (correct); claims 3-5x vs cuSPARSE."
+  conf/ics/ZhangWCMWEM23: "user mtx or synthetic tridiag (no fixed evaluation list in driver); fixed --iters (isStaticIter), single CUDA-event bracket over all iterations / total_iter; adaptive warmup calibrates max_iter to hit ~350ms wall time; default fp64, --fp32 flag; no residual-based stopping in this driver; hand-rolled GB/s traffic model."
+  conf/sc/SuzukiI25: "15 symmetric SuiteSparse + 4 synthetic hpcg_*.mtx grids (+16 nonsymmetric/BiCGSTAB, out of scope); fp64/fp32/fp16 explicit 3-way sweep per solver family (cgNN/gmNN/f3rNN); <average> repeated full to-convergence solves, not fixed-iter calls; implicit+explicit residual both checked; icpx -mavx512fp16 on CPU, A100 on GPU; up to 1.65x/2.42x vs fp64."
+  journals/tpds/BernaschiCVD23: "user mtx or synthetic 3D Laplacian generator (7p/27p, weak-scaling regression configs); fp64; to-convergence itnlim=2000,rtol=1e-6 RELATIVE-residual stop (normalized by initial residual); std::chrono/gettimeofday profiling with min/max/avg across MPI ranks; 24 solver x preconditioner (AFSAI/BCMG-AMG/l1Jacobi/none) config combinations; up to 2x vs AmgX."
+  conf/ipps/NoackKK25: "user matrix or synthetic 3D Poisson generator; JSON-configured solve-vs-spmv benchmark modes (own harness already splits kernel-only from to-convergence); fp32 default + software-emulated fp64/twofloat extended precision (IPU has no native fp64); timing delegated to Poplar's own IPU profiler, not app-level wall clock; up to 150x vs CPU/GPU."
+  conf/sc/BrunnHBMM20: "weak/strong scaling 256^3 to 2048^3 (up to 256 GPUs); inner preconditioner PCG tolerance dataset-dependent (1e-3 NIREP, 1e-2 CLARITY); PCG solve nested inside nonlinear Gauss-Newton registration loop, not a standalone kernel; full timing-protocol/precision details unconfirmed (arXiv fulltext render truncated before Section 4)."

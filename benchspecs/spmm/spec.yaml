@@ -1,0 +1,281 @@
+kernel: spmm
+summary: >
+  Sparse matrix times dense matrix (SpMM), the dominant kernel behind GNN
+  message passing, pruned/quantized DNN inference, and iterative sparse
+  solvers; measured as steady-state throughput with preprocessing reported
+  separately, across GPU tensor-core, GPU CUDA-core, CPU, and quantized
+  variants that the surveyed literature treats as genuinely different claims.
+operation: "C[M,N] = A[M,K](sparse) * B[K,N](dense row-major)"
+
+variants:
+  - id: spmm-gpu-kernel-f32
+    claim: >
+      steady-state GPU kernel throughput, sparse format given (no runtime
+      conversion), fp32. The common denominator most GPU SpMM papers
+      (RoDe, GE-SpMM, SMaT, DTC-SpMM's inner kernel) actually report.
+    inputs:
+      suite: "SuiteSparse Matrix Collection ∪ standard GNN-benchmark graphs"
+      selection: >
+        real (non-synthetic) matrices, 1e4 <= nnz <= 2e8, square or
+        rectangular; union of (a) matrices explicitly named in ≥1
+        code-verified surveyed artifact and (b) the recurring 8-graph GNN
+        suite that traces to the TC-GNN/GNNAdvisor lineage and reappears in
+        DTC-SpMM. Excludes matrices used by only one paper's abstract with no
+        code confirmation (avoids silent cherry-picking).
+      recommended_subset:
+        [mip1, shipsec1, pdb1HYS, consph, cant, cop20k_A, dc2, rma10,
+         "conf5_4-8x8-10", circuit5M, YeastH, "OVCAR-8H", Yeast, DD,
+         web-BerkStan, reddit, ddi, protein, cora, citeseer, pubmed,
+         amazon, youtube, orkut]
+      dense_operand: "N in {32, 128, 256, 512}, fp32, initialized U(-1,1)"
+    protocol:
+      format: "CSR (given, conversion not timed; matches all GPU papers surveyed)"
+      warmup: 10
+      reps: 100
+      statistic: "median (report min/max alongside)"
+      timer: "device-side events (CUDA events / equivalent), ONE event pair per iteration"
+      timing_scope: "kernel only; H2D/D2H and format conversion excluded"
+      preprocessing_reported: "separately, once, following RoDe's csv-per-baseline practice"
+      deviation_from_surveyed_practice: >
+        RoDe/GE-SpMM/SMaT each wrap a whole 10-200 iteration loop in a single
+        CUDA-event pair and report only the resulting mean; this spec
+        requires Magicube-style per-iteration events instead so median/min/max
+        can be reported, since batched-mean timing hides jitter and cannot be
+        used to detect run-to-run variance or GPU clock throttling.
+    metric: {primary: "GFLOP/s (2*nnz*N flops)", secondary: "ms"}
+    correctness: "max relative error vs. cuSPARSE fp64 (or CPU double) reference < 1e-4"
+
+  - id: spmm-gpu-e2e-preproc-f32
+    claim: >
+      end-to-end throughput including one-shot sparse-format conversion /
+      reordering (e.g. TCA block reordering for tensor-core layouts, ASpT/
+      Sputnik/RoDe's row-decomposition preprocessing), amortized over k=100
+      repeated SpMM calls on the same matrix — the realistic GNN-training
+      usage pattern (EPPGCN benchmarks 100 training epochs; DTC-SpMM's
+      TCA-reordering is a one-time cost paid before an N-sweep of repeated
+      calls).
+    inputs:
+      suite: "same as spmm-gpu-kernel-f32"
+      selection: "same as spmm-gpu-kernel-f32"
+      recommended_subset: "same as spmm-gpu-kernel-f32"
+      dense_operand: "N in {128, 256, 512}, fp32"
+    protocol:
+      format: "input is raw CSR/COO; conversion to the kernel's native format IS timed, once"
+      warmup: 10
+      reps: "k=100 post-conversion SpMM calls; report both amortized (incl. 1/k of conversion) and pure-kernel time"
+      statistic: median
+      timer: "device-side events for the kernel calls; std::chrono/CUDA events for the one-shot conversion"
+      timing_scope: "conversion + k kernel calls; H2D/D2H of the ORIGINAL matrix included, D2H of C excluded (matches RoDe's separate-preprocessing-report intent but forces explicit amortization instead of omitting it)"
+      preprocessing_reported: "both standalone (ms, once) AND amortized-per-call (conversion_ms / k added to each call)"
+    metric: {primary: "GFLOP/s (amortized)", secondary: "ms (conversion, standalone); ms (per-call, pure kernel)"}
+    correctness: "same tolerance as spmm-gpu-kernel-f32, checked post-conversion"
+
+  - id: spmm-cpu-kernel-f32
+    claim: >
+      steady-state CPU kernel throughput, all physical cores, fp32 — the CPU
+      analogue of the GPU kernel variant (FusedMM, SparseLNR, RASSM all
+      target this).
+    inputs:
+      suite: "same suite as GPU variants, restricted to nnz <= 2e7 (CPU-appropriate scale, matches SparseLNR/FusedMM/RASSM's tested range)"
+      selection: "same inclusion rule, size-capped"
+      recommended_subset:
+        [cora, citeseer, pubmed, pdb1HYS, cant, consph, dc2, rma10, amazon, youtube]
+      dense_operand: "N (feature dim) in {32, 128, 256, 512}, fp32"
+    protocol:
+      format: "CSR (given, conversion not timed)"
+      warmup: 5
+      reps: 50
+      statistic: "median (RASSM's own practice — the most rigorous of the surveyed artifacts; adopted as the spec default rather than FusedMM's mean-of-10)"
+      timer: "std::chrono high_resolution_clock or rdtsc, one timestamp pair per repetition"
+      timing_scope: "kernel only; excludes I/O and preprocessing, matching FusedMM's stated practice"
+      threading: "OMP_NUM_THREADS = total physical cores across all sockets, OMP_PROC_BIND=true, pinned (RASSM's protocol)"
+      preprocessing_reported: "separately, once, if the kernel uses a non-CSR internal layout (e.g. tiling metadata)"
+    metric: {primary: "GFLOP/s (2*nnz*N flops)", secondary: "ms"}
+    correctness: "max relative error vs. reference (MKL sparse or naive triple loop, fp64) < 1e-6 (tighter than GPU: no atomics/reduction-order nondeterminism expected on CPU)"
+
+  - id: spmm-gpu-quantized-int
+    claim: >
+      quantized low-precision SpMM throughput on Tensor Cores (int4/int8/
+      mixed, e.g. Magicube's 4b4b/8b4b/8b8b/16b8b configs) — not commensurable
+      with the fp32 GFLOP/s variants above since the arithmetic is exact
+      integer MAC, but a first-class variant because a meaningful cluster of
+      the track's papers (Magicube, InferFast, NM-SpMM, GeneralSparse) target
+      exactly this.
+    inputs:
+      suite: "same suite as spmm-gpu-kernel-f32, restricted to matrices with a documented pruning/quantization provenance (avoids testing quantization on inputs that were never meant to be quantized)"
+      selection: "matrices used to benchmark ≥1 quantized SpMM paper in this track, OR any recommended_subset matrix with values re-quantized per the protocol below"
+      recommended_subset: "same 24-matrix list as spmm-gpu-kernel-f32, values requantized to each precision config"
+      dense_operand: "N in {128, 256, 512}; precision configs: {int4xint4, int8xint4, int8xint8, int16xint8} (Magicube's 4b4b/8b4b/8b8b/16b8b)"
+    protocol:
+      format: "quantized packed layout (given; the packing/quantization step is preprocessing, reported separately, never timed per-call)"
+      warmup: 16
+      reps: 100
+      statistic: "median (per-iteration CUDA events, Magicube's own pattern, extended here to actually report median instead of leaving the statistic unspecified)"
+      timer: "device-side events, one pair per iteration"
+      timing_scope: "kernel only; quantization/packing excluded and reported once"
+      preprocessing_reported: "separately, once (offline quantization + packing cost)"
+    metric: {primary: "GOP/s (2*nnz*N integer ops)", secondary: "ms"}
+    correctness: "EXACT match vs. a CPU integer reference re-implementing the same bit-width mask/shift/MAC arithmetic (Magicube's own compute_ref_integers approach) — no tolerance, since this is integer arithmetic, not floating point"
+
+  - id: spmm-tensorcore-fp16
+    claim: >
+      steady-state Tensor-Core SpMM throughput at fp16 (or tf32) compute with
+      fp32 accumulate — the precision class InferFast/Magicube/FlashSparse-era
+      papers actually target. Added 2026-08-07 after the artifact-integration
+      trial showed fp16 TC kernels are structurally rejected by the fp32
+      variant's 1e-4 gate (their ~5e-4 error is fp16 unit-roundoff, not a bug);
+      this variant gives them the correct, disclosed home instead of a silently
+      loosened fp32 gate. Mirrors sddmm-tensorcore-blocked-fp16's conventions.
+    inputs:
+      suite: same as spmm-gpu-kernel-f32
+      selection: same as spmm-gpu-kernel-f32
+      recommended_subset: same as spmm-gpu-kernel-f32
+      dense_operand: "N in {128, 256, 512}; fp16 primary / tf32 secondary,
+        U(-1,1); precisions reported as separate rows, never averaged"
+    protocol:
+      format: "implementation-native Tensor-Core layout (given; one-shot
+        CSR -> native conversion timed and reported separately, never
+        folded per-call)"
+      warmup: 10
+      reps: 100
+      statistic: median (report min/max alongside)
+      timer: device-side events, one pair per iteration
+      timing_scope: kernel only; conversion, H2D/D2H excluded
+      preprocessing_reported: "separately, once per matrix; report both raw-nnz
+        and any zero-padded nnz introduced by tiling, so padding overhead is
+        visible (same disclosure rule as sddmm-tensorcore-blocked-fp16)"
+    metric:
+      primary: GFLOP/s (2*nnz*N flops, raw nnz)
+      secondary: GFLOP/s over padded nnz, reported alongside; ms
+    correctness: >
+      max scaled error (|out-ref| / (|A|*|B|) elementwise, see the
+      IMPLEMENTATION FINDING note) vs an fp32-operand fp64-accumulate CSR
+      reference < 1e-2 — the standard fp16 Tensor-Core tolerance, matching
+      sddmm-tensorcore-blocked-fp16; gated before timing counts.
+
+  - id: spmm-binary-adjacency-kernel
+    claim: >
+      steady-state GPU SpMM throughput where the sparse operand is a 0/1
+      adjacency pattern (unweighted graph, values identically 1), dense B
+      fp32 or fp16/tf32 with fp32 accumulate — the regime GNN-oriented SpMM
+      kernels are built and evaluated for. Added 2026-09-06 after
+      dtcspmm/flashsparse/generalsparse (see this spec's `evidence` entry
+      below) were each found to hardcode the sparse operand's values to 1.0
+      in their released code: they compute a correct A_pattern @ B, not the
+      real-valued A @ B this track's other variants require, so they can
+      never pass spmm-gpu-kernel-f32 or spmm-tensorcore-fp16 by construction,
+      no matter how correct their kernel is for the input class they actually
+      target. This variant gives that regime a dedicated, honestly-gated
+      home; the kernel MAY exploit that values are 1 (e.g. no value loads,
+      bitmap-only tile encoding) — that is the point of the regime, not a
+      loophole.
+    inputs:
+      suite: >
+        GNN benchmark graphs (Planetoid cora/citeseer/pubmed, Reddit,
+        ogbn-arxiv/products, ...) ∪ SuiteSparse Matrix Collection matrices
+        with their values REPLACED by 1.0 (structure-only)
+      selection: >
+        same size band as spmm-gpu-kernel-f32 (real, non-synthetic matrices,
+        1e4 <= nnz <= 2e8, square or rectangular). Every implementation
+        gated under this variant, INCLUDING the fp64 CSR reference, consumes
+        the same binarized matrix (values forced to 1.0 before any impl or
+        the reference ever sees it — see
+        `kernelbench.domains.sparse.variant_transform`), so weighted kernels
+        (RoDe, cuSPARSE, ...) and pattern-only kernels (DTC-SpMM,
+        FlashSparse, GeneralSparse) compete on the exact same input, on
+        equal terms, here.
+      # same 24-matrix list as spmm-gpu-kernel-f32 — it already is the union
+      # this variant needs: the 8-graph GNN suite the three pattern-only
+      # papers' own evaluations use (YeastH, OVCAR-8H, Yeast, DD,
+      # web-BerkStan, reddit, ddi, protein -- this spec's own `evidence` line
+      # for conf/asplos/Fan0024) plus cora/citeseer/pubmed, union the track's
+      # regular SuiteSparse names -- all binarized uniformly per `selection`
+      # above (values forced to 1.0 before any impl, including the
+      # reference, sees them).
+      recommended_subset:
+        [mip1, shipsec1, pdb1HYS, consph, cant, cop20k_A, dc2, rma10,
+         "conf5_4-8x8-10", circuit5M, YeastH, "OVCAR-8H", Yeast, DD,
+         web-BerkStan, reddit, ddi, protein, cora, citeseer, pubmed,
+         amazon, youtube, orkut]
+      dense_operand: >
+        N in {32, 128, 256, 512} (same sweep as spmm-gpu-kernel-f32; DIM_KEY
+        for this kernel is "N"); fp32 primary, fp16/tf32 secondary with fp32
+        accumulate, U(-1,1), precisions reported as separate rows, never
+        averaged (same convention as spmm-tensorcore-fp16)
+    protocol: >
+      same protocol as spmm-tensorcore-fp16: warmup=10, reps=100, statistic
+      median (report min/max alongside), timer device-side events one pair
+      per iteration, timing_scope kernel only (conversion + H2D/D2H
+      excluded), preprocessing_reported separately once per matrix with both
+      raw-nnz and any zero-padded nnz introduced by tiling disclosed
+    metric:
+      primary: GFLOP/s (2*nnz*N flops, same convention as spmm-gpu-kernel-f32/spmm-tensorcore-fp16)
+      secondary: >
+        GB/s — noting that for a pattern-only kernel, value loads are
+        legitimately absent (the byte-count formula's value-traffic term is
+        a compulsory-traffic LOWER BOUND for a weighted kernel, not a
+        measured or required cost for one that structurally never reads
+        values); ms
+    correctness: >
+      max scaled error (|out-ref| / (|A|*|B|) elementwise) vs an fp64 CSR
+      reference on the SAME binarized A < 1e-4 for fp32, < 1e-2 for fp16,
+      < 1e-2 for tf32; gated before timing counts.
+notes_on_fairness:
+  - >
+    IMPLEMENTATION FINDING (added while building bench/, 2026-08-06): the phrase
+    "max relative error" used by this track's papers and by the variants above is
+    under-specified, and taken literally it fails correct kernels. An output
+    element here is a sum of many signed products; cancellation regularly leaves a
+    true value near zero, and |out-ref|/|ref| then blows up to O(1e-2..1e0) for a
+    perfectly good fp32 kernel (measured: 3.9e-2 on SuiteSparse/cant at N=128 with
+    scipy's own fp32 CSR product). The reference harness therefore gates on
+    |out-ref| / (|A|*|B|) elementwise — the standard componentwise backward-error
+    denominator — and records the naive pointwise-relative, absolute and L2-relative
+    values alongside so the choice stays auditable. Any implementation of this spec
+    must state which denominator it used; "relative error" alone is not a gate.
+  - "GE-SpMM ships a correctness-check macro that is commented out by default, and SMaT's sweep script runs with -enable_check=false: both artifacts' OWN reported numbers come from unverified runs. This spec makes the correctness gate mandatory, not opt-in."
+  - "RoDe, GE-SpMM, and SMaT all time a batch of N iterations with a single CUDA-event pair and report only the resulting mean, which cannot expose run-to-run variance or thermal throttling. This spec requires per-iteration timestamps (Magicube's pattern) and mandates reporting median + min/max, not just mean."
+  - "RoDe cleanly separates preprocessing into its own CSV; DTC-SpMM's driver structurally excludes reordering from the per-call timing loop. Neither, however, states an explicit amortization count k. This spec fixes k=100 explicitly (spmm-gpu-e2e-preproc-f32) instead of leaving preprocessing either silently excluded or silently amortized over an unstated number of calls."
+  - "SparseLNR reports a 1.23-1997x speedup range against baseline TACO, which likely reflects pathological worst-case baselines rather than typical performance; this spec requires reporting the median speedup and IQR across the fixed recommended_subset, not a single headline max."
+  - "Distributed-memory SpMM (Arrow Matrix Decomposition, CAGNET) optimizes communication volume at 100+ node scale, a fundamentally different bottleneck and metric (words moved, not GFLOP/s) than the single-node variants here; folding it into one of the four variants above would compare incomparable things, so it is excluded (see open_questions)."
+  - "Precision families (fp32, fp64, fp16-mixed, int4-int16 quantized) are not pooled into one GFLOP/s ranking: fp64 halves cuSPARSE's fp32 peak, fp16 changes arithmetic intensity, and quantized ops are integer MACs, not FMAs at all. Each stays in its own variant/metric."
+  - "Pattern-only kernels (DTC-SpMM, FlashSparse, GeneralSparse public code — see the `bench_finding_2026-09-06` evidence entry) are commensurable ONLY within spmm-binary-adjacency-kernel; their GFLOP/s numbers must never be placed next to spmm-gpu-kernel-f32 or spmm-tensorcore-fp16 results, since those variants require real-valued A and these kernels structurally cannot compute that. Weighted kernels are welcome to compete in spmm-binary-adjacency-kernel too — a weighted kernel (RoDe, cuSPARSE, ...) that reads values it does not need there is simply slower on that variant, which is a fair outcome, not a mismatch."
+
+open_questions:
+  - "Whether Phase 2 wants a 5th distributed-scaling variant (communication volume + weak/strong scaling vs. node count) to cover Arrow Matrix Decomposition and CAGNET, given the project's Phase 2 machine is not fixed to a single-node target. Left out of this spec since it needs a fundamentally different metric and multi-node access, which most of the track's artifacts (GPU/CPU single-node kernels) don't require."
+  - "Exact warmup/repeat count used INSIDE DTC-SpMM's compiled kernel binding (DTCSpMM.run_DTCSpMM) was not visible from the Python driver script alone — only the fact that preprocessing happens once outside the per-N loop was confirmed from code."
+  - "FusedMM, SparseLNR, and CAGNET fulltext was only available via ar5iv's HTML rendering; some evaluation-section detail (e.g. exact CAGNET dataset list beyond Reddit/protein) was truncated in the fetched content and not independently re-verified against the PDF."
+  - "The 8-graph GNN suite (YeastH, OVCAR-8H, Yeast, DD, web-BerkStan, reddit, ddi, protein) is confirmed code-side only for DTC-SpMM; its reuse by Voltrix/FlashSparse/GeneralSparse/MP-SpMM (all citing RoDe/DTC-SpMM as baselines) is inferred from convention, not independently verified since those 4 papers were only read via abstract for this survey."
+
+evidence:
+  conf/sc/GaleZYE20: "3,012 matrices from 49 real pruned ResNet-50/Transformer models; V100; im2col excluded from timing; cuSPARSE baseline; TFLOP/s + %peak."
+  conf/ipps/RahmanSA21: "named real graphs (Cora..Orkut) + synthetic RMAT; mean-of-10, kernel-only excl. IO/preprocessing; DGL+MKL baselines; 3 CPU archs; GFLOP/s + roofline."
+  conf/ppopp/GianinazziZHLAS24: "13 largest SuiteSparse matrices decomposed into arrow matrices; up to 256 nodes/128 GPUs; communication-volume metric, not GFLOP/s; distributed."
+  journals/tpds/XuSYLJ22: "8 real graphs; 100 epochs GCN training; backward-aggregation time isolated; exact 0.000 accuracy-delta correctness check; GNNAdvisor/DGL baselines."
+  conf/ics/DiasSS022: "SuiteSparse+NetworkRepo+FROSTT+DARPA1998; single-socket 64-core Threadripper; vs TACO-original/separate; 1.23-1997x speedup range (unnormalized)."
+  conf/sc/TripathyYB20: "Reddit + >1B-edge protein network; Summit; >100 GPUs; uses cuSPARSE for local kernel, contribution is comm. schedule; comm-volume metric."
+  conf/sc/HuangD0Y20: "SNAP+misc matrices; ITER=200 batched CUDA-event mean; N in {32..512}; VALIDATE macro disabled by default; cuSPARSE+gunrock baselines; GFLOP/s."
+  conf/ppopp/PangFQZL24: "user .mtx dir; ITER=10 batched CUDA-event mean; N in {32,128}; f32/f64 variants; preprocessing reported in separate CSV; MatrixDiff correctness (no threshold gate); Sputnik+cuSPARSE baselines."
+  conf/asplos/Fan0024: "8-graph GNN suite (origin+TCA-reordered); reordering done once outside N-sweep; N in {128,256,512}; RTX 4090/3090; cuSPARSE/Sputnik/SparseTIR/TC-GNN baselines."
+  conf/sc/OkanovicKLBVH24: "9 curated SuiteSparse matrices in matrix_list.csv; warmup=1, profiling_iterations=10; enable_check=false by default; raw CUDA MMA API; M=N=K=512."
+  conf/sc/LiOH22: "5 quantized precision configs (4b4b..16b8b); 16 warmup + NUM_PROFILES per-iteration CUDA events; exact-match CPU integer reference; A100."
+  conf/asplos/JainGC25: "user .mtx dir; nruns=50, tool-reported Median Time + GFLOPS; OMP pinned to all physical cores; cache-aware Ri/Rj from lscpu; vs ASpT/J-Stream."
+  bench_finding_2026-09-06: >
+    Reason spmm-binary-adjacency-kernel exists: three integrated Tensor-Core
+    SpMM artifacts were found, while gating them under spmm-tensorcore-fp16,
+    to hardcode the sparse operand's values to 1.0 in their released code —
+    bench/artifacts/spmm/dtcspmm/source/DTC-SpMM/DTCSpMM_kernel.cu:844
+    (`auto val = torch::ones({TCblocktile_id.size(0)}, options);`, ASPLOS'24
+    conf/asplos/Fan0024); bench/artifacts/spmm/flashsparse/source/FlashSparse/
+    Block_gpu/block_kernel.cu:566 (`values_[...] = __float2half(1.0);` inside
+    generate_tcoffset_id_atob_fs, PPoPP'25 conf/ppopp/ShiLXFWW25);
+    bench/artifacts/spmm/generalsparse/source/struct.cc:173
+    (`float_val_vec.push_back(1);` in get_matrix_index_and_val_from_file,
+    discarding the `atof`-parsed value on the very same line, ATC'25
+    conf/usenix/WangGXCT25). Full traces in each artifact's STATUS.md
+    ("IMPORTANT FINDING" / "IMPLEMENTATION FINDING"). All three genuinely
+    compute a correct A_pattern @ B and were confirmed to pass the
+    scaled-error gate on a real binary-adjacency graph (cora) — a real,
+    GNN-relevant regime their released code actually implements, just not
+    the general weighted-SpMM regime spmm-gpu-kernel-f32/spmm-tensorcore-fp16
+    require.

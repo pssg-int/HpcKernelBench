@@ -1,0 +1,820 @@
+[
+ {
+  "key": "conf/asplos/GeramiA24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "GUST: Graph Edge-Coloring Utilization for Accelerating Sparse Matrix Vector Multiplication",
+  "abstract": "Sparse matrix-vector multiplication (SpMV) plays a vital role in various scientific and engineering fields, from scientific computing to machine learning. Traditional general-purpose processors often fall short of their peak performance with sparse data, leading to the development of domain-specific architectures to enhance SpMV. Yet, these specialized approaches, whether tailored explicitly for SpMV or adapted from matrix-matrix multiplication accelerators, still face challenges in fully utilizing hardware resources as a result of sparsity. To tackle this problem, we introduce GUST, a hardware/software co-design, the key insight of which lies in separating multipliers and adders in the hardware, thereby enabling resource sharing across multiple rows and columns, leading to efficient hardware utilization and ameliorating negative performance impacts from sparsity. Resource sharing, however, can lead to collisions, a problem we address through a specially devised edge-coloring scheduling algorithm. Our comparisons with various prior domain specific architectures using real-world datasets shows the effectiveness of GUST, with an average hardware utilization of 33.67%. We further evaluate GUST by comparing SpMV execution time and energy consumption of length-256 and -87 GUST with length-256 1-dimensional systolic array (1D), achieving an average speedup of 411× and 108×, and energy efficiency improvement of 137× and 148×, respectively. To asses the implementation aspect, we compare resource consumption of GUST with 1D as a baseline through FPGA synthesis. Length-256 GUST uses the same number of arithmetic units as length-256 1D, while length-87 GUST uses considerably less. We also compare GUST with Serpens, a state-of-the-art FPGA-based SpMV accelerator, with GUST achieving lower execution time on seven out of nine matrices and lower energy consumption on four.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "SpMV accelerator with edge-coloring scheduling; novel circuit architecture, not HLS software kernel"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/asplos/HeoLCCLHK0P24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "NeuPIMs: NPU-PIM Heterogeneous Acceleration for Batched LLM Inferencing",
+  "abstract": "Modern transformer-based Large Language Models (LLMs) are constructed with a series of decoder blocks. Each block comprises three key components: (1) QKV generation, (2) multi-head attention, and (3) feed-forward networks. In batched processing, QKV generation and feed-forward networks involve compute-intensive matrix-matrix multiplications (GEMM), while multi-head attention requires bandwidth-heavy matrix-vector multiplications (GEMV). Machine learning accelerators like TPUs or NPUs are proficient in handling GEMM but are less efficient for GEMV computations. Conversely, Processing-in-Memory (PIM) technology is tailored for efficient GEMV computation, while it lacks the computational power to handle GEMM effectively.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "NPU-PIM heterogeneous accelerator for batched LLM inference"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/asplos/GhodratiKXMKAWK24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Tandem Processor: Grappling with Emerging Operators in Neural Networks",
+  "abstract": "With the ever increasing prevalence of neural networks and the upheaval from the language models, it is time to rethink neural acceleration. Up to this point, the broader research community, including ourselves, has disproportionately focused on GEneral Matrix Multiplication (GEMM) operations. The supporting argument was that the large majority of the neural operations are GEMM. This argument guided the research in Neural Processing Units (NPUs) for the last decade. However, scant attention was paid to non-GEMM operations and they are rather overlooked. As deep learning evolved and progressed, these operations have grown in diversity and also large variety of structural patterns have emerged that interweave them with the GEMM operations. However, conventional NPU designs have taken rather simplistic approaches by supporting these operations through either a number of dedicated blocks or fall back to general-purpose processors.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "NPU processor design for emerging non-GEMM neural operators"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/asplos/DuE025",
+  "venue": "ASPLOS",
+  "year": 2025,
+  "title": "Hopps: Leveraging Sparsity to Accelerate Automata Processing",
+  "abstract": "Automata processing (AP) is a key kernel in data analytics and scientific computing. AP workloads process a stream of symbols with many automata (FSMs) in parallel, e.g., pattern-matching network traffic against many malicious strings.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "unclear",
+   "confidence": "low",
+   "one_liner": "Sparsity-based automata processing acceleration; platform/software-vs-hardware unclear from abstract"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/asplos/KimYYYS25",
+  "venue": "ASPLOS",
+  "year": 2025,
+  "title": "Virgo: Cluster-level Matrix Unit Integration in GPUs for Scalability and Energy Efficiency",
+  "abstract": "Modern GPUs incorporate specialized matrix units such as Tensor Cores to accelerate GEMM operations, which are central to deep learning workloads. However, existing matrix unit designs are tightly coupled to the SIMT core, restricting operation size due to register file capacity and bandwidth constraints. Such a limitation in scalability makes it difficult to simultaneously improve compute throughput and energy efficiency in GPUs. To address this challenge, we propose Virgo, a GPU microarchitecture that integrates dedicated matrix units at the SIMT core cluster level. By decoupling the matrix unit from the SIMT core, Virgo eliminates scalability constraints imposed by the core microarchitecture. Consequently, Virgo increases operation granularity at the hardware level, reducing energy overhead from core instruction processing. Physical disaggregation also enables a unified matrix unit design and offloading both operand and accumulator accesses from the register file, improving data reuse and energy efficiency. Furthermore, this disaggregation supports efficient concurrent execution of the SIMT core and matrix unit, optimizing mapping for fused DNN workloads. Our evaluations using synthesizable RTL demonstrate that Virgo achieves 67.3% and 24.2% reduction in on-chip active power consumption, compared to the baseline Ampere-style and Hopper-style core-coupled designs.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "GPU microarchitecture integrating matrix units at cluster level; RTL/power evaluation, hardware proposal."
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/asplos/Biberstein0DN26",
+  "venue": "ASPLOS",
+  "year": 2026,
+  "title": "Lobster: A GPU-Accelerated Framework for Neurosymbolic Programming",
+  "abstract": "Neurosymbolic programs combine deep learning with symbolic reasoning to achieve better data efficiency, interpretability, and generalizability compared to standalone deep learning approaches. However, existing neurosymbolic learning frameworks implement an uneasy marriage between a highly scalable, GPU-accelerated neural component and a slower symbolic component that runs on CPUs.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "other",
+   "confidence": "low",
+   "one_liner": "GPU-accelerated framework for neurosymbolic (Datalog-style) programs; framework contribution, kernels unclear."
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/asplos/PriceVS026",
+  "venue": "ASPLOS",
+  "year": 2026,
+  "title": "Mugi: Value Level Parallelism For Efficient LLMs",
+  "abstract": "Value level parallelism (VLP) has been proposed to improve the efficiency of large-batch, low-precision general matrix multiply (GEMM) between symmetric activations and weights. In transformer based large language models (LLMs), there exist more sophisticated operations beyond activation-weight GEMM. In this paper, we explore how VLP benefits LLMs. First, we generalize VLP for nonlinear approximations, outperforming existing nonlinear approximations in end-to-end LLM accuracy, performance, and efficiency. Our VLP approximation follows a value-centric approach, where important values are assigned with greater accuracy. Second, we optimize VLP for small-batch GEMMs with asymmetric inputs efficiently, which leverages timely LLM optimizations, including weight-only quantization, key-value (KV) cache quantization, and group query attention. Finally, we design a new VLP architecture, Mugi, to encapsulate the innovations above and support full LLM workloads, while providing better performance, efficiency and sustainability. Our experimental results show that Mugi can offer significant improvements on throughput and energy efficiency, up to $45\\times$ and $668\\times$ for nonlinear softmax operations, and $2.07\\times$ and $3.11\\times$ for LLMs, and also decrease operational carbon for LLM operation by $1.45\\times$ and embodied carbon by $1.48\\times$.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "Value-level-parallelism accelerator architecture for LLM GEMM and nonlinear ops; hardware proposal."
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/asplos/PanYYM26",
+  "venue": "ASPLOS",
+  "year": 2026,
+  "title": "SNIP: An Adaptive Mixed Precision Framework for Subbyte Large Language Model Training",
+  "abstract": "Training large language models (LLMs) efficiently while preserving model quality poses significant challenges, particularly with subbyte precision supported by state-of-the-art GPUs. Current mixed-precision training approaches either apply uniform precision to all GEMM operations or rely on heuristic-based methods that fail to generalize during training, leading to suboptimal convergence and instability.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "pure-ml-serving",
+   "confidence": "low",
+   "one_liner": "Adaptive per-GEMM subbyte mixed-precision selection for LLM training; training recipe, not kernel implementation."
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/asplos/LiYM26",
+  "venue": "ASPLOS",
+  "year": 2026,
+  "title": "Static Analysis for Efficient Streaming Tokenization",
+  "abstract": "Tokenization, also referred to as lexing or scanning, is the computational task of partitioning an input text into a sequence of substrings called tokens. Tokenization is one of the first stages of program compilation, it is used in natural language processing, and it is also useful for processing unstructured text or semi-structured data such as JSON, CSV, and XML. A tokenizer is typically specified as a list of regular expressions, which is called a tokenization grammar. Each regular expression describes a class of tokens (e.g., integer, floating-point number, variable identifier, string literal). The semantics of tokenization employs the longest match policy to disambiguate among the possible choices. This policy says that we should prefer a longer token over a shorter one. It is also known as the maximal munch policy.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "other",
+   "confidence": "low",
+   "one_liner": "Static analysis of tokenization grammars to enable streaming lexing; PL contribution, not a HW kernel"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/asplos/SongYY26",
+  "venue": "ASPLOS",
+  "year": 2026,
+  "title": "oFFN: Outlier and Neuron-aware Structured FFN for Fast yet Accurate LLM Inference",
+  "abstract": "With the advent of large-scale language models (LLMs), various optimization techniques have been proposed to enable efficient inference. Among these, methods that aggressively exploit output activation sparsity have attracted significant attention, which leverage ReLU-fied LLMs and skip the entire memory accesses as well as the computation for the output element if it was predicted as sparse. Achieving fast and accurate prediction of output activation sparsity is crucial to enhancing inference efficiency. However, in practice, phenomena such as activation outliers and hot and cold neurons, which significantly affect the exploitation of sparsity during LLM inference, have either been addressed individually or not structurally integrated in existing work.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "pure-ml-serving",
+   "confidence": "low",
+   "one_liner": "Structured activation-sparsity prediction (outliers, hot/cold neurons) for FFN in LLM inference"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/cgo/TavakkoliOH26",
+  "venue": "CGO",
+  "year": 2026,
+  "title": "LEGO: A Layout Expression Language for Code Generation of Hierarchical Mapping",
+  "abstract": "We describe LEGO, a new approach to optimizing data movement whereby code is expressed as a layout-independent computation and composed with layouts for data and computation. This code generator organization derives complex indexing expressions associated with hierarchical parallel code and data movement for GPUs. LEGO maps from layout specification to indexing expressions, and can be integrated into existing compilers and code templates. It facilitates the explo-ration of data layouts in combination with other optimizations. We demonstrate LEGO’s integration with the Triton and MLIR compilers, and with CUDA templates. We show that LEGO is capable of deriving performance competitive with Triton, and shows broad applicability for data and thread layout mapping optimizations in its integration with CUDA and MLIR.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "unclear",
+   "confidence": "low",
+   "one_liner": "LEGO: layout expression language for GPU codegen, no specific kernel benchmark reported"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/CilasunRCOZZPWS20",
+  "venue": "DAC",
+  "year": 2020,
+  "title": "CRAFFT: High Resolution FFT Accelerator In Spintronic Computational RAM",
+  "abstract": "High resolution Fast Fourier Transform (FFT) is important for various applications while increased memory access and parallelism requirement limits the traditional hardware. In this work, we explore acceleration opportunities for high resolution FFTs in spintronic computational RAM (CRAM) which supports true in-memory processing semantics. We experiment with Spin-Torque-Transfer (STT) and Spin-Hall-Effect (SHE) based CRAMs in implementing CRAFFT, a high resolution FFT accelerator in memory. For one million point fixed-point FFT, we demonstrate that CRAFFT can provide up to 2.57× speedup and 673× energy reduction. We also provide a proof-of-concept extension to floating-point FFT.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "Spintronic computational-RAM in-memory FFT accelerator hardware"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/NejatollahiGIRC20",
+  "venue": "DAC",
+  "year": 2020,
+  "title": "CryptoPIM: In-memory Acceleration for Lattice-based Cryptographic Hardware",
+  "abstract": "Quantum computers promise to solve hard mathematical problems such as integer factorization and discrete logarithms in polynomial time, making standardized public-key cryptosystems insecure. Lattice-Based Cryptography (LBC) is a promising post-quantum public key cryptographic protocol that could replace standardized public key cryptography, thanks to the inherent post-quantum resistant properties, efficiency, and versatility. A key mathematical tool in LBC is the Number Theoretic Transform (NTT), a common method to compute polynomial multiplication. It is the most compute-intensive routine and requires acceleration for practical deployment of LBC protocols. In this paper, we propose CryptoPIM, a high-throughput Processing In-Memory (PIM) accelerator for NTT-based polynomial multiplier with the support of polynomials with degrees up to 32k. Compared to the fastest FPGA implementation of an NTT-based multiplier, CryptoPIM achieves on average 31x throughput improvement with the same energy and only 28% performance reduction, thereby showing promise for practical deployment of LBC.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "Processing-in-memory NTT polynomial-multiplier hardware for lattice cryptography"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/SongWLJKLJ20",
+  "venue": "DAC",
+  "year": 2020,
+  "title": "GPNPU: Enabling Efficient Hardware-Based Direct Convolution with Multi-Precision Support in GPU Tensor Cores",
+  "abstract": "To tailor for DNN (Deep Neural Network) acceleration, GPU has migrated to new architectures such as NVIDIA Volta and Turing that incorporate dedicated Tensor Cores. Although good at GEMM (generic matrix-matrix multiplication), Tensor Cores still have inefficiency facing convolutions with certain layer structures. This paper proposes a GPNPU (General-Purpose Neural-network Processing Unit) architecture, which offers another option of direct convolution in GPU. It stitches the direct convolution dataflow into the Tensor Cores with little hardware support, and resorts to regulated data layout with stripe-mined convolution execution to achieve higher performance and power efficiency, while retaining the general programability as GPU. We further apply a unified core design to support varied operand types and precision for higher computing throughput. The evaluation shows that GPNPU can outperform Tensor Cores on typical DNNs by 1.4X for inference (FP16) and 1.2X for training with much reduced power. The INT8 performance even increases to 2.4X. Our study demonstrates that it is possible and appealing to refine the Tensor Cores for greater DNN acceleration, while conforming to GPU architecture for the programmability necessary in future DNN evolution.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "GPU architecture proposal adding direct-convolution dataflow to Tensor Cores; hardware, not software kernel"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/LiuCMBNSCH21",
+  "venue": "DAC",
+  "year": 2021,
+  "title": "Bitwidth-Optimized Energy-Efficient FFT Design via Scaling Information Propagation",
+  "abstract": "The Fast Fourier Transform (FFT) is an efficient algorithm widely used in digital signal processing to transform between the time domain and the frequency domain. For fixed-point VLSI implementations, dynamic range growth inevitably occurs at each stage of the FFT operation. However, current methods either waste bitwidth or consume excessive resources when dealing with the dynamic range growth issue. To address this issue, we propose an efficient scaling method called Scaling Information Propagation (SIP) to alleviate the problem of dynamic range growth, which makes full use of bitwidth with much less extra area consumed than the state-of-the-art solutions. In two consecutive transform operations, the SIP method extracts scaling information and makes scaling decisions in the former transform, then executes those in the latter one. We implement the FFT’s VLSI architecture in the orthogonal frequency division multiplexing (OFDM) and the holographic video compression (HVC) systems to verify the SIP method. Compared to the state-of-the-art, experimental results after VLSI synthesis show that our method achieves 9.38% energy reduction and 8.36% area savings when requiring 1.02 × 10 <sup xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">-7</sup> bit error ratio (BER) of the OFDM system, and 33.47% energy reduction and 30.98% area savings when requiring 20dB signal-to-noise ratio (SNR) of the HVC system, respectively.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "Bitwidth-scaling method for fixed-point FFT VLSI designs; energy/area savings after synthesis."
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/FengSPHKPMMCOCD21",
+  "venue": "DAC",
+  "year": 2021,
+  "title": "CoSPARSE: A Software and Hardware Reconfigurable SpMV Framework for Graph Analytics",
+  "abstract": "Sparse matrix-vector multiplication (SpMV) is a critical building block for iterative graph analytics algorithms. Typically, such algorithms have a varying active vertex set across iterations. This variability has been used to improve performance by either dynamically switching algorithms between iterations (software) or designing custom accelerators (hardware) for graph analytics algorithms. In this work, we propose a novel framework, CoSPARSE, that employs hardware and software reconfiguration as a synergistic solution to accelerate SpMV-based graph analytics algorithms. Building on previously proposed general-purpose reconfigurable hardware, we implement CoSPARSE as a software layer, abstracting the hardware as a specialized SpMV accelerator. CoSPARSE dynamically selects software and hardware configurations for each iteration and achieves a maximum speedup of 2.0 × compared to the naïve implementation with no reconfiguration. Across a suite of graph algorithms, CoSPARSE outperforms a state-of-the-art shared memory framework, Ligra, on a Xeon CPU with up to 3.51 × better performance and 877 × better energy efficiency.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "medium",
+   "one_liner": "SW/HW reconfigurable SpMV graph-analytics framework atop custom reconfigurable accelerator hardware."
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/LiMP22",
+  "venue": "DAC",
+  "year": 2022,
+  "title": "A scalable SIMD RISC-V based processor with customized vector extensions for CRYSTALS-kyber",
+  "abstract": "This paper uses RISC-V vector extensions to speed up lattice-based operations in architectures based on HW/SW co-design. We analyze the structure of the number-theoretic transform (NTT), inverse NTT (INTT), and coefficient-wise multiplication (CWM) in CRYSTALS-Kyber, a lattice-based key encapsulation mechanism. We propose 12 vector extensions for CRYSTALS-Kyber multiplication and four for finite field operations in combination with two optimizations of the HW/SW interface. This results in a speed-up of 141.7, 168.7, and 245.5 times for NTT, INTT, and CWM, respectively, compared with the baseline implementation, and a speed-up of over four times compared with the state-of-the-art HW/SW co-design using RV32IMC.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "medium",
+   "one_liner": "Custom RISC-V vector ISA extensions for Kyber NTT/INTT/CWM; contribution is hardware, not a kernel"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/Chen0LYWL22",
+  "venue": "DAC",
+  "year": 2022,
+  "title": "Efficient access scheme for multi-bank based NTT architecture through conflict graph",
+  "abstract": "Number Theoretical Transform (NTT) hardware accelerator becomes crucial building block in many cryptosystems like post-quantum cryptography. In this paper, we provide new insights into the construction of conflict-free memory mapping scheme (CFMMS) for multi-bank NTT architecture. Firstly, we offer parallel loop structure of arbitrary-radix NTT and propose two point-fetching modes. Afterwards, we transform the conflict-free mapping problem into conflict graph and develop novel heuristic to explore the design space of CFMMS, which turns out more efficient access scheme than classic works. To further verify the methodology, we design high-performance NTT/INTT kernels for Dilithium, whose area-time efficiency significantly outperforms state-of-the-art works on the similar FPGA platform.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "medium",
+   "one_liner": "Conflict-free memory mapping for multi-bank hardware NTT accelerator on FPGA (RTL, not HLS kernel)"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/0005YWYJW0S22",
+  "venue": "DAC",
+  "year": 2022,
+  "title": "HCG: optimizing embedded code generation of simulink with SIMD instruction synthesis",
+  "abstract": "Simulink is widely used for the model-driven design of embedded systems. It is able to generate optimized embedded control software code through expression folding, variable reuse, etc. However, for some commonly used computing-sensitive models, such as the models for signal processing applications, the efficiency of the generated code is still limited.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "other",
+   "confidence": "low",
+   "one_liner": "SIMD instruction synthesis for Simulink embedded control code generation"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/0001LJ22",
+  "venue": "DAC",
+  "year": 2022,
+  "title": "MATCHA: a fast and energy-efficient accelerator for fully homomorphic encryption over the torus",
+  "abstract": "Fully Homomorphic Encryption over the Torus (TFHE) allows arbitrary computations to happen directly on ciphertexts using homomorphic logic gates. However, each TFHE gate on state-of-the-art hardware platforms such as GPUs and FPGAs is extremely slow (> 0.2ms). Moreover, even the latest FPGA-based TFHE accelerator cannot achieve high energy efficiency, since it frequently invokes expensive double-precision floating point FFT and IFFT kernels. In this paper, we propose a fast and energy-efficient accelerator, MATCHA, to process TFHE gates. MATCHA supports aggressive bootstrapping key unrolling to accelerate TFHE gates without decryption errors by approximate multiplication-less integer FFTs and IFFTs, and a pipelined datapath. Compared to prior accelerators, MATCHA improves the TFHE gate processing throughput by 2.3x, and the throughput per Watt by 6.3x.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "FPGA/ASIC accelerator architecture for TFHE homomorphic-encryption gates"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/GuP22",
+  "venue": "DAC",
+  "year": 2022,
+  "title": "Optimizing parallel PREM compilation over nested loop structures",
+  "abstract": "We consider automatic parallelization of a computational kernel executed according to the PRedictable Execution Model (PREM), where each thread is divided into execution and memory phases. We target a scratchpad-based architecture, where memory phases are executed by a dedicated DMA component. We employ data analysis and loop tiling to split the kernel execution into segments, and schedule them based on a DAG representation of data and execution dependencies. Our main observation is that properly selecting tile sizes is key to optimize the makespan of the kernel. We thus propose a heuristic that efficiently searches for optimized tile size and core assignments over deeply nested loops, and demonstrate its applicability and performance compared to the state-of-the-art in PREM compilation using the PolyBench-NN benchmark suite.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "runtime-sched",
+   "confidence": "low",
+   "one_liner": "Tile-size/core-assignment scheduling heuristic for PREM-based predictable kernel execution"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/Samajdar0PK22",
+  "venue": "DAC",
+  "year": 2022,
+  "title": "Self adaptive reconfigurable arrays (SARA): learning flexible GEMM accelerator configuration and mapping-space using ML",
+  "abstract": "This work demonstrates a scalable reconfigurable accelerator (RA) architecture designed to extract maximum performance and energy efficiency for GEMM workloads. We also present a self-adaptive (SA) unit, which runs a learnt model for one-shot configuration optimization in hardware offloading the software stack thus easing the deployment of the proposed design. We evaluate an instance of the proposed methodology with a 32.768 TOPS reference implementation called SAGAR, that can provide the same mapping flexibility as a compute equivalent distributed system while achieving 3.5X more power efficiency and 3.2X higher compute density demonstrated via architectural and post-layout simulation.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "Reconfigurable-array GEMM accelerator with ML-learned configuration (architecture/simulation)"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/DenkingerQKAC22",
+  "venue": "DAC",
+  "year": 2022,
+  "title": "VWR2A: a very-wide-register reconfigurable-array architecture for low-power embedded devices",
+  "abstract": "Edge-computing requires high-performance energy-efficient embedded systems. Fixed-function or custom accelerators, such as FFT or FIR filter engines, are very efficient at implementing a particular functionality for a given set of constraints. However, they are inflexible when facing application-wide optimizations or functionality upgrades. Conversely, programmable cores offer higher flexibility, but often with a penalty in area, performance, and, above all, energy consumption. In this paper, we propose VWR2A, an architecture that integrates high computational density and low power memory structures (i.e., very-wide registers and scratchpad memories). VWR2A narrows the energy gap with similar or better performance on FFT kernels with respect to an FFT accelerator. Moreover, VWR2A flexibility allows to accelerate multiple kernels, resulting in significant energy savings at the application level.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "Reconfigurable-array embedded architecture with wide registers, FFT among target kernels"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/FanTHLDHWJL23",
+  "venue": "DAC",
+  "year": 2023,
+  "title": "AmgR: Algebraic Multigrid Accelerated on ReRAM",
+  "abstract": "Solving systems of linear equations is a fundamental problem in scientific computing, which has been extensively researched for decades. One of the most well-known solvers is Algebraic Multigrid (AMG), which is widely used in high performance computing due to its good scalability. But currently accelerating AMG relies on the traditional von Neumann architecture of storage and computation separation, which leads to a large data transmission overhead. In this work, we propose a ReRAM-based processing-in-memory (PIM) architecture named AmgR, which overcomes the limitations of the traditional von Neumann architecture for AMG acceleration.However, accelerating AMG on ReRAM is non-trivial, because (1) AMG has many computing kernels of various types; (2) there are irregular operations that cannot be directly performed using matrix-vector multiplication suitable for ReRAM, i.e., aggregation operation; (3) ReRAM has poor write endurance, and a lot of data during AMG acceleration needs to be rewritten into ReRAM, resulting in high write cost. To address these issues, firstly, we propose a flexible architecture, which can realize each kernel of AMG and is reused by many kernels to improve resource utilization. Secondly, we propose a dedicated unit to realize the aggregation operation. Finally, we present a new mapping strategy to greatly reduce the number of data handling and writes. The experimental results show that the performance of AmgR is improved by an average of one and two orders of magnitude compared to HYPRE on the CPU and AmgX on the GPU, respectively, while the energy consumption is reduced by an average of two and three orders of magnitude.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "ReRAM PIM architecture accelerating Algebraic Multigrid solves"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/ZhangIS23",
+  "venue": "DAC",
+  "year": 2023,
+  "title": "BP-NTT: Fast and Compact in-SRAM Number Theoretic Transform with Bit-Parallel Modular Multiplication",
+  "abstract": "Number Theoretic Transform (NTT) is an essential mathematical tool for computing polynomial multiplication in promising lattice-based cryptography. However, costly division operations and complex data dependencies make efficient and flexible hardware design to be challenging, especially on resource-constrained edge devices. Existing approaches either focus on only limited parameter settings or impose substantial hardware overhead. In this paper, we introduce a hardware-algorithm methodology to efficiently accelerate NTT in various settings using in-cache computing. By leveraging an optimized bit-parallel modular multiplication and introducing costless shift operations, our proposed solution provides up to 29× higher throughput-per-area and 10-138× better throughput-per-power compared to the state-of-the-art.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "In-SRAM (in-cache computing) NTT hardware with bit-parallel modular multiplication"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/ZhangLLCH23",
+  "venue": "DAC",
+  "year": 2023,
+  "title": "FSPA: An FeFET-based Sparse Matrix-Dense Vector Multiplication Accelerator",
+  "abstract": "Sparse matrix-dense vector multiplication (SpMV) is widely used in various applications. The performance of traditional SpMV accelerators is bounded by memory. In-memory computing (IMC) is a promising technique to alleviate the memory bottleneck. The current IMC accelerator cannot support sparse storage format and in-situ floating-point multiplication at the same time. In this paper, we propose FSPA, an ferroelectric field-effect transistor (FeFET) based SpMV accelerator. FSPA integrates novel content-addressable memory (CAM) arrays and multiply-add computation (MAC) arrays to support sparse matrices represented in the floating-point format. FSPA achieves significant speedups and energy savings over CPU, GPU and two state-of-the-art IMC accelerators.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "FeFET in-memory-computing SpMV accelerator combining CAM and MAC arrays."
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/LuY000F24",
+  "venue": "DAC",
+  "year": 2024,
+  "title": "An NTT/INTT Accelerator with Ultra-High Throughput and Area Efficiency for FHE",
+  "abstract": "As a core arithmetic operation and security guarantee of Fully Homomorphic Encryption (FHE), Number Theoretic Transform (NTT) of a large degree is the primary source of computational and time overhead. In this paper, we propose a scalable and conflict-free memory mapping algorithm that breaks the memory bound and releases a large amount of on-chip resources. A flexible and no-stall hardware/software pipeline architecture is designed to boost the throughput of NTT/INTT of N = 216 to over 48,543 operations per second with area efficiency, which 4× and 10× speed up the FPGA-based (HPCA'23) and GPU-based (HPCA'23) schemes.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "medium",
+   "one_liner": "Custom NTT/INTT accelerator architecture (conflict-free memory mapping) for FHE"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/WangZZZZYWDY024",
+  "venue": "DAC",
+  "year": 2024,
+  "title": "DySpMM: From Fix to Dynamic for Sparse Matrix-Matrix Multiplication Accelerators",
+  "abstract": "Sparse Matrix-Matrix Multiplication (SpMM) is one of the key operators in many fields, showing dynamic features in terms of sparsity, element distribution, and data dependency. Previous studies have proposed FPGA-based SpMM accelerators with fixed configurations of on-chip dataflow, leaving three major challenges unsolved: 1) Partitioning matrices with the fixed sub-matrix size to fit limited on-chip buffer on FPGA leads to performance loss because the optimal sub-matrix size to minimize memory access varies with dynamic sparsity. 2) The fixed row-wise allocation scheme of sparse elements in streaming architecture leads to unbalanced workloads because of dynamic element distribution across sparse matrix rows. 3) Read-after-write (RAW) hazard caused by floating-point adder makes the elements in one row cannot be processed consecutively. Architectures with fixed execution order rely on time-consuming pre-processing to deal with dynamic data dependency. Motivated by the observation that fixed configurations lead to performance loss, we propose DySpMM by introducing the dynamic design methodology to SpMM architectures. The configurable data distributor is introduced to enable dynamic sub-matrix size, achieving up to 3.79× less memory access amount. The element-wise allocator is designed for dynamic workload balance, improving utilization up to 3.74×. The interleaved reorder unit is proposed to reorder the elements and dynamically avoid RAW hazards at runtime, avoiding time-consuming pre-processing. We implement DySpMM on U280 FPGA, and the evaluation shows that it achieves 1.42× geomean throughput compared with the state-of-the-art accelerator Sextans and 1.78× energy efficiency compared with V100S GPU.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "medium",
+   "one_liner": "DySpMM: dynamic-configuration FPGA dataflow architecture for sparse matrix-matrix multiplication"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/SunY0SZ024",
+  "venue": "DAC",
+  "year": 2024,
+  "title": "Efficient ILT via Multigrid-Schwartz Method",
+  "abstract": "Inverse Lithography Technology (ILT) is an important Resolution Enhancement Technology (RET) in chip manufacturing. Due to the high computational demands of ILT, large-scale layouts are typically partitioned into smaller tiles for independent processing. In this paper, we propose a multigrid-Schwarz method to overcome challenges in tile assembly. Experimental results show that our approach achieves comparable performance to the full-chip ILT, offering increased parallelizability and speedup in parallel mode. Unlike the traditional divide-and-conquer algorithm, it effectively alleviates discontinuities of tile stitching, preventing manufacturing failures.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "other",
+   "confidence": "high",
+   "one_liner": "Multigrid-Schwarz tile-stitching method for inverse lithography technology (EDA)"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/LiuPXSY24",
+  "venue": "DAC",
+  "year": 2024,
+  "title": "PMP: Pattern Morphing-based Memory Partitioning in High-Level Synthesis",
+  "abstract": "Memory partitioning is a widely used technique to reduce access conflicts on multi-bank memory in high-level synthesis. Previous memory partitioning methods mainly focus on a given access pattern extracted from stencil applications. Restricted by the pattern shape, these methods are prone to sub-optimal bank numbers or large overhead on address generation. In this work, we propose a pattern-morphing-based memory partitioning method, PMP, that only requires reduced hyperplane families to achieve the minimal bank number. To reduce the side effect of extra data padding, an integer linear programming problem is formulated for pattern morphing. Compared to the previous hyperplane-based memory partitioning, the experimental results show that our approach could achieve the optimal partition factor while saving 22% in LUTs, 21% in FlipFlops, 10% in DSPs, and 40% in memory overhead, on average.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "other",
+   "confidence": "medium",
+   "one_liner": "Pattern-morphing memory-bank partitioning method for HLS (resource usage, not kernel throughput)"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/LiuZYFWYLWY25",
+  "venue": "DAC",
+  "year": 2025,
+  "title": "AcclMT: A Highly Resource-Efficient and Flexible Poseidon Hash-Based Merkle Tree Architecture",
+  "abstract": "Merkle Tree is a fundamental cryptographic primitive in Zero-Knowledge Proof (ZKP) protocols, sharing significant computational workloads with the Number Theoretic Transform (NTT) in zkSTARK schemes. Merkle Tree is a tree structure where nodes are primarily generated through hash computations. Among them, Poseidon Hash, as a ZK-friendly hash function, has emerged as one of the most widely adopted choices. Therefore, hardware acceleration of building Merkle Tree based on Poseidon Hash can significantly enhance the performance of ZKP protocols. We propose AcclMT, a highly resourceefficient and flexible Poseidon Hash-based Merkle Tree architecture. Our design employs hardware-software co-design and optimizes the hashing data flow, resulting in an area-efficient Poseidon Hash engine that improves modular multiplication resource utilization. Furthermore, AcclMT uses these engines alongside hierarchical on-chip cache and optimized task scheduling for building large Merkle Trees. It also supports flexible parameter configurations for various requirements. Experimental results show that our proposed Poseidon Hash engine achieves a $14.3 \\times$ speedup compared to the latest FPGA-based work. By improving resource utilization, it also reduces area usage by 14.8% compared to unoptimized design. AcclMT achieves up to $1665 \\times$ speedup over software implementations in building Merkle tree, with average utilization of 95.9% and 99.2% for the two hash engines.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "Poseidon-hash Merkle-tree FPGA accelerator for zkSTARK, 1665x over software"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/MengTJL25",
+  "venue": "DAC",
+  "year": 2025,
+  "title": "An Enhanced Data Packing Method for General Matrix Multiplication in Brakerski/Fan-Vercauteren Scheme",
+  "abstract": "General Matrix-Matrix Multiplication (GEMM) stands as the most ubiquitous operation in machine learning applications. However, performing GEMM within Fully Homomorphic Encryption (FHE) is inefficient due to high computational demands and significant data migration constrained by limited bandwidth. Additionally, the inherent limitations of FHE schemes restrict the widespread application of machine learning, as standard activation functions are incompatible. This incompatibility necessitates alternative nonlinear functions, which lead to notable accuracy reductions. To address these challenges, we introduce a polynomial encoding methodology for GEMM under the Brakerski/Fan-Vercauteren (BFV) scheme and extend the method to inference with packing inputs and weights for different sizes. Furthermore, we design specialized hardware to accelerate the inference process through optimized scheduling between the hardware and the host system. In experiments, we implemented our hardware on an FPGA U250 platform. Compared to existing solutions, our method achieves superior performance, achieving the highest $4.22 \\times$ and $3.99 \\times$ speedups on MNIST and CIFAR-10.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "medium",
+   "one_liner": "Data packing + FPGA accelerator for GEMM under BFV homomorphic encryption"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/XuYS25",
+  "venue": "DAC",
+  "year": 2025,
+  "title": "Efficient Recycling Subspace Truncation Method for Periodic Small-Signal Analysis",
+  "abstract": "Periodic small-signal analysis is crucial but timeconsuming in RF simulation, since it may deal with many frequency points. While the Krylov subspace recycling method has greatly accelerated the simulation, the increasing memory cost in large-scale RF simulation has become a new bottleneck. A remedy for memory shortage is to restart the recycling algorithm, but may cause excessive extra iterations. To address this issue, this paper outlines a framework of recycling subspace truncation method for periodic small-signal analysis, provided with an efficient initial guess choice method and a Floquet-based subspace truncation strategy. Numerical results show that compared to the existing methods, the proposed method achieves up to $2.5 \\times$ speedup in the same memory cost.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "application",
+   "confidence": "medium",
+   "one_liner": "Krylov subspace recycling/truncation algorithm for periodic small-signal RF circuit simulation"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/dac/TanSYZ25",
+  "venue": "DAC",
+  "year": 2025,
+  "title": "New Time-Domain Preconditioners for HB Jacobian of RF Circuits",
+  "abstract": "Harmonic balance (HB) method is a powerful frequency-domain method used in RF circuit simulations. The key point of HB method is efficiently solving the Jacobian system in Newton’s method. In this paper, we first introduce a new time-domain preconditioner for HB Jacobian. Unlike existing time-domain preconditioners, which cannot balance the efficiency of solving the linear system corresponding to the preconditioner with the reduction in iteration step for strongly nonlinear circuit, the proposed preconditioner successfully addresses both aspects. We also present a new preconditioning method that extends time-domain preconditioners to circuit with distributed devices, which was previously unattainable. Finally, a matrix norm-based metric is proposed to measure the strength of circuit nonlinearity, which can help us a priori choose the appropriate preconditioner.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "application",
+   "confidence": "medium",
+   "one_liner": "New time-domain preconditioners for harmonic-balance Jacobian in RF circuit simulators (application)"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/hpdc/WangWZLBHF20",
+  "venue": "HPDC",
+  "year": 2020,
+  "title": "FFT-based Gradient Sparsification for the Distributed Training of Deep Neural Networks",
+  "abstract": "The performance and efficiency of distributed training of Deep Neural Networks (DNN) highly depend on the performance of gradient averaging among participating processes, a step bound by communication costs. There are two major approaches to reduce communication overhead: overlap communications with computations (lossless), or reduce communications (lossy). The lossless solution works well for linear neural architectures, e.g. VGG, AlexNet, but more recent networks such as ResNet and Inception limit the opportunity for such overlapping. Therefore, approaches that reduce the amount of data (lossy) become more suitable. In this paper, we present a novel, explainable lossy method that sparsifies gradients in the frequency domain, in addition to a new range-based float point representation to quantize and further compress gradients. These dynamic techniques strike a balance between compression ratio, accuracy, and computational overhead, and are optimized to maximize performance in heterogeneous environments.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "communication",
+   "confidence": "medium",
+   "one_liner": "FFT-domain gradient sparsification to cut distributed DNN-training communication"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/hpdc/LuczynskiGIWSH24",
+  "venue": "HPDC",
+  "year": 2024,
+  "title": "Near-Optimal Wafer-Scale Reduce",
+  "abstract": "Efficient Reduce and AllReduce communication collectives are a critical cornerstone of high-performance computing (HPC) applications. We present the first systematic investigation of Reduce and AllReduce on the Cerebras Wafer-Scale Engine (WSE). This architecture has been shown to achieve unprecedented performance both for machine learning workloads and other computational problems like FFT. We introduce a performance model to estimate the execution time of algorithms on the WSE and validate our predictions experimentally for a wide range of input sizes. In addition to existing implementations, we design and implement several new algorithms specifically tailored to the architecture. Moreover, we establish a lower bound for the runtime of a Reduce operation on the WSE. Based on our model, we automatically generate code that achieves near-optimal performance across the whole range of input sizes. Experiments demonstrate that our new Reduce and AllReduce algorithms outperform the current vendor solution by up to 3.27×. Additionally, our model predicts performance with less than 4% error. The proposed communication collectives increase the range of HPC applications that can benefit from the high throughput of the WSE. Our model-driven methodology demonstrates a disciplined approach that can lead the way to further algorithmic advancements on wafer-scale architectures.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [
+    "other"
+   ],
+   "approach": null,
+   "excluded_reason": "communication",
+   "confidence": "high",
+   "one_liner": "Near-optimal Reduce/AllReduce collectives on Cerebras wafer-scale engine"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/hpdc/ParkSLLKKS25",
+  "venue": "HPDC",
+  "year": 2025,
+  "title": "HYPERF: End-to-End Autotuning Framework for High-Performance Computing",
+  "abstract": "",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [
+    "other"
+   ],
+   "approach": null,
+   "excluded_reason": "unclear",
+   "confidence": "low",
+   "one_liner": "End-to-end HPC autotuning framework (no abstract available to judge scope)"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/hpdc/FanDBK25",
+  "venue": "HPDC",
+  "year": 2025,
+  "title": "Parameterized Algorithms for Non-uniform All-to-all",
+  "abstract": "MPI_Alltoallv generalizes the uniform all-to-all communication (MPI_Alltoall) by enabling the exchange of data-blocks of varied sizes among processes. This function plays a crucial role in facilitating many computational tasks, such as FFT calculations and graph mining operations. Popular MPI libraries, such as MPICH and OpenMPI, implement MPI_Alltoall using a combination of linear and logarithmic algorithms. However, MPI_Alltoallv typically relies only on variations of linear algorithms, missing the benefits of logarithmic approaches. Furthermore, current algorithms also overlook the intricacies of modern HPC system architectures, such as the significant performance gap between intra-node (local) and inter-node (global) communication. To address these problems, this paper presents two novel algorithms: Parameterized Logarithmic non-uniform All-to-all (ParLogNa) and Parameterized Linear nonuniform All-to-all (ParLinNa). ParLogNa is a tunable logarithmic time algorithm for non-uniform all-to-all, and ParLinNa is a hierarchical and tunable near-linear-time algorithm for non-uniform all-to-all. These algorithms efficiently address the trade-off between bandwidth maximization and latency minimization that existing implementations struggle to optimize. We show a performance improvement over the state-of-the-art implementations by factors of 42x and 138x on Polaris and Fugaku, respectively.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [
+    "distributed"
+   ],
+   "approach": null,
+   "excluded_reason": "communication",
+   "confidence": "high",
+   "one_liner": "Parameterized logarithmic/linear algorithms for non-uniform MPI_Alltoallv"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/hpdc/AbillamaLDBSK26",
+  "venue": "HPDC",
+  "year": 2026,
+  "title": "Accelerating Block Low-Rank Foundation Model Inference on Memory-Constrained GPUs",
+  "abstract": "",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": null,
+   "excluded_reason": "unclear",
+   "confidence": "low",
+   "one_liner": "Block-low-rank foundation-model inference on memory-constrained GPUs (no abstract)"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/hpdc/YuanMT26",
+  "venue": "HPDC",
+  "year": 2026,
+  "title": "MoE-Lens: Towards the Hardware Limit of High-Throughput MoE LLM Serving Under Resource Constraints",
+  "abstract": "Mixture of Experts (MoE) LLMs, with sparse activation patterns, offer a promising approach to scaling language models while avoiding proportional cost increases. However, their large parameter sizes pose deployment challenges in resource-constrained environments with limited GPU memory. Typical deployments use CPU-GPU hybrid execution, where the GPU handles compute-intensive GEMM operations and the CPU processes the attention mechanism. This setup introduces a challenge: optimizing resource utilization across CPU and GPU. Prior work designs system optimizations based on performance models with a limited scope that don’t capture complex hardware-system interactions. Therefore, they neither identify nor achieve hardware limits.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "pure-ml-serving",
+   "confidence": "high",
+   "one_liner": "MoE LLM serving system optimizing CPU-GPU hybrid execution and resource utilization"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/hpdc/ShenJLMWWZCWZWL26",
+  "venue": "HPDC",
+  "year": 2026,
+  "title": "SYCL++: A Unified Programming Framework for Heterogeneous Supercomputers at Scale",
+  "abstract": "",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "other",
+   "confidence": "low",
+   "one_liner": "Unified programming framework for heterogeneous supercomputers (no abstract)"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/CarlsonKS20",
+  "venue": "ICS",
+  "year": 2020,
+  "title": "A scalable framework for solving fractional diffusion equations",
+  "abstract": "The study of fractional order differential operators (involving non-integer derivative terms) is receiving renewed attention in many scientific fields from photonics to speech modeling. While numerous scalable codes exist for solving integer-order partial differential equations (PDEs), the same is not true for fractional order PDEs. Therefore, there is a need for highly scalable numerical methods and codes for solving fractional order PDEs on complex geometries. The key challenge is that most approaches for fractional PDEs have at least quadratic complexity in both storage and compute, and are challenging to scale. We present a scalable framework for solving fractional diffusion equations using the method of eigen-function expansion. This includes a scalable parallel algorithm to efficiently compute the full set of eigenvalues and eigenvectors for a discretized Laplace eigenvalue problem and apply them to construct approximate solutions to fractional order model problems. We demonstrate the efficacy of our methods by performing strong and weak scalability tests using complex geometries on TACC's Frontera compute cluster. We also show that our approach compares favorably against existing dense and sparse solvers. In our largest solve, we estimated half a million eigenpairs using 28,672 cores.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "application",
+   "confidence": "low",
+   "one_liner": "Scalable eigen-expansion framework for fractional diffusion PDEs"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/WangJBBMG20",
+  "venue": "ICS",
+  "year": 2020,
+  "title": "CodeSeer: input-dependent code variants selection via machine learning",
+  "abstract": "In high performance computing (HPC), scientific simulation codes are executed repeatedly with different inputs. The peak performance of these programs heavily depends on various compiler optimizations, which are often selected agnostically on program input or may be selected with sensitivity to just a single input. When subsequently executed, often with different inputs, performance may suffer for all or all but the one input tested, and for the latter potentially even compared to the O3 baseline.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "other",
+   "confidence": "low",
+   "one_liner": "ML-based input-dependent selection of compiler code variants"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/LiuKSZ20",
+  "venue": "ICS",
+  "year": 2020,
+  "title": "MKPipe: a compiler framework for optimizing multi-kernel workloads in OpenCL for FPGA",
+  "abstract": "OpenCL for FPGA enables developers to design FPGAs using a programming model similar for processors. Recent works have shown that code optimization at the OpenCL level is important to achieve high computational efficiency. However, existing works either focus primarily on optimizing single kernels or solely depend on channels to design multi-kernel pipelines. In this paper, we propose a source-to-source compiler framework, MKPipe, for optimizing multi-kernel workloads in OpenCL for FPGA. Besides channels, we propose new schemes to enable multi-kernel pipelines. Our optimizing compiler employs a systematic approach to explore the tradeoffs of these optimizations methods. To enable more efficient overlapping between kernel execution, we also propose a novel workitem/workgroup-id remapping technique. Furthermore, we propose new algorithms for throughput balancing and resource balancing to tune the optimizations upon individual kernels in the multi-kernel workloads. Our results show that our compiler-optimized multi-kernels achieve up to 3.6x (1.4x on average) speedup over the baseline, in which the kernels have already been optimized individually.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "other",
+   "confidence": "low",
+   "one_liner": "Source-to-source compiler framework optimizing multi-kernel OpenCL pipelines on FPGA"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/DimicMCCV20",
+  "venue": "ICS",
+  "year": 2020,
+  "title": "RICH: implementing reductions in the cache hierarchy",
+  "abstract": "Reductions constitute a frequent algorithmic pattern in high-performance and scientific computing. Sophisticated techniques are needed to ensure their correct and scalable concurrent execution on modern processors. Reductions on large arrays represent the most demanding case where traditional approaches are not always applicable due to low performance scalability.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "low",
+   "one_liner": "RICH: cache-hierarchy architectural support for reductions"
+  },
+  "mode": "confirm-exclude"
+ }
+]

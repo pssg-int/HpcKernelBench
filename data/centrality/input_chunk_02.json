@@ -1,0 +1,2358 @@
+{
+ "chunk": 2,
+ "groups": [
+  {
+   "group": "stencil",
+   "slug": "stencil",
+   "spec": {
+    "summary": "Throughput of an iterative structured-grid stencil sweep — a fixed weighted sum over a small neighborhood (star or box support) applied to every point of a dense D-dimensional grid, repeated for T time steps with double-buffered (ping-pong) storage — across three hardware/implementation classes the track's papers actually target: general-purpose CPU/GPU compute (spatial and temporal blocking), Tensor-Core matmul reformulations (fp16), and full domain-application solvers.\n",
+    "operation": "U_out[p] = sum_{d in support(shape, radius r)} w_d * U_in[p + d]  for every interior grid point p, applied for T sequential time steps via double buffering (U_in/U_out swap each step); shape in {star, box}, dims in {1D, 2D, 3D}; star-r has 2*dims*r+1 support points, box-r has (2r+1)^dims support poi",
+    "variants": [
+     {
+      "id": "stencil-cpu-gpu-kernel-fp64",
+      "claim": "Steady-state per-time-step throughput of an iterative structured-grid stencil sweep on general-purpose CPU/GPU compute (SIMD/CUDA-core vectorized kernels with spatial and/or temporal blocking), independent of any Tensor-Core matmul reformulation. This is the common denominator across AN5D, PERKS, K-Athena's core update kernel, Devito's generated code, AOStencil, and StencilsOnFPGA.\n",
+      "inputs": {
+       "suite": "Synthetic star/box stencils named with AN5D's radius convention (star{2d,3d}{1..4}r, box{2d,3d}{1..4}r), which the 2024-2026 Tensor-Core lineage below reuses verbatim, plus named application-derived i",
+       "selection": "The 6 shapes shared by AN5D and the whole Tensor-Core lineage's public CLI (union, so variant 1 and variant 2 stay directly comparable on the overlap): star2d1r, box2d1r, star2d3r, box2d3r, star3d1r, box3d1r.\n",
+       "recommended_subset": [
+        "star2d1r",
+        "box2d1r",
+        "star2d3r",
+        "box2d3r",
+        "star3d1r",
+        "box3d1r",
+        "j3d27pt",
+        "rtm3d25p8th"
+       ],
+       "dense_operand": "single scalar field per grid point, fp64 (fp32 as a secondary pass at the same tolerance), initialized U(0,1) random or index-fill (no cherry-picked \"nice\" data — both AN5D and ConvStencil's harnesses"
+      }
+     },
+     {
+      "id": "stencil-tcu-matmul-kernel-fp16",
+      "claim": "Throughput of stencil-as-(sparse)-matrix-multiplication reformulations executing on Tensor Cores / Sparse Tensor Cores at fp16, with the one-shot layout/format-construction preprocessing excluded from the timed sweep loop but measured once and reported separately (not merely excluded and left unquantified, as SPIDER's own artifact does).\n",
+      "inputs": {
+       "suite": "The shape/CLI catalog literally shared by ConvStencil, LoRAStencil, FlashFFTStencil, and SPIDER (`{program} shape input_size time_iteration_size [options]`): {1d1r,1d2r} (1D); {star2d1r,box2d1r,star2d",
+       "selection": "Every shape all 4 baseline-cluster papers implement in common (the 7 listed above/below); 3D shapes are included for CLI completeness but their grid size is flagged open (see open_questions — no surveyed paper's own reported numbers, as opposed to CLI support, could be confirmed for 3D).\n",
+       "recommended_subset": [
+        "1d1r",
+        "1d2r",
+        "star2d1r",
+        "box2d1r",
+        "star2d3r",
+        "box2d3r",
+        "star3d1r",
+        "box3d1r"
+       ],
+       "dense_operand": "fp16 grid values (TF32/mixed-precision accumulation as the kernel dictates), random-initialized."
+      }
+     },
+     {
+      "id": "stencil-e2e-application",
+      "claim": "End-to-end wall-clock speedup of a full domain-application solver (whole program: boundary handling, multi-kernel physics, no I/O) over its own unoptimized/decomposed baseline, for a domain-realistic, CFL- or convergence-order-determined number of steps — reported ALONGSIDE, never substituted for, a kernel-only number from variant 1/2 when both exist for the same code (WindStencil's own README alr",
+      "inputs": {
+       "suite": "Domain-standard test problems rather than a synthetic grid sweep, because grid shape and physics genuinely differ per code and forcing a common synthetic grid onto them would misrepresent what the pap",
+       "selection": "one problem per paper's own primary evaluation case, at the paper's own default resolution; no cross-paper size unification (see survey.md Divergence 6).",
+       "recommended_subset": [
+        "K-Athena: linear fast magnetosonic wave, 256^3, fp64",
+        "Devito/Bisbas: isotropic acoustic, space order 4, 512^3, 228 CFL-determined time steps, fp32",
+        "WindStencil: 480x512x64 (single-MI60 case) and the 9600x256x256 strong-scaling case, 1000 iterations, fp64",
+        "ozHOPE: Williamson steady-state geostrophic flow, HOPE's default resolution, Ozaki fp16-emulated-fp64"
+       ],
+       "dense_operand": ""
+      }
+     }
+    ]
+   },
+   "papers": [
+    {
+     "key": "conf/ics/ZhangZLLJZYLL26",
+     "title": "WindStencil: Unleashing GPU Potential for High-Order Stencil Computation in High-Performance Inviscid CFD Simulations",
+     "venue": "ICS",
+     "year": 2026,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/BabyXPrince/WindStencil",
+     "one_liner": "GPU-optimized high-order stencil kernels for inviscid CFD (title-only, no abstract)",
+     "kernels_assigned": [
+      "high-order stencil"
+     ],
+     "categories": [
+      "stencil_pde"
+     ],
+     "abstract": ""
+    },
+    {
+     "key": "conf/ipps/YaoZLX26",
+     "title": "High-Order-Preserving Acceleration of a Shallow-Water Dynamical Core Using Tensor Units",
+     "venue": "IPDPS",
+     "year": 2026,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/jnyao/ozHOPE",
+     "one_liner": "Ozaki-scheme FP16 Tensor Cores accelerate high-order shallow-water stencil dynamical core, up to 4.34x speedup.",
+     "kernels_assigned": [
+      "3D stencil (shallow-water dynamical core)",
+      "Tensor Core GEMM"
+     ],
+     "categories": [
+      "stencil_pde",
+      "dense_la",
+      "ml_kernels"
+     ],
+     "abstract": "Recent advances in low-precision computing units such as Tensor Cores offer enormous performance opportunities for scientific computing beyond machine learning workloads. High-order numerical methods feature rapid convergence and enhanced approximation capability, but a direct application of low precision often degrades numerical accuracy, preventing these methods from achieving their expected order of convergence. This work addresses the challenge by restoring the effective working precision, tunable up to FP64, using FP16 Tensor Cores in the convolution-reformulated stencil computations of a high-order shallow-water dynamical core, HOPE, through the Ozaki scheme combined with an efficient memory layout to optimize Tensor Core utilization. The proposed approach achieves an end-to-end speedup of 1.82× on average and up to 4.34× while maintaining the required accuracy across numerical algorithms of different orders and various resolutions, demonstrating the viability of leveraging low-precision hardware even in accuracy-sensitive high-order PDE solvers."
+    },
+    {
+     "key": "conf/ppopp/GuW0Y26",
+     "title": "SPIDER: Unleashing Sparse Tensor Cores for Stencil Computation via Strided Swapping",
+     "venue": "PPoPP",
+     "year": 2026,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/KevinWu2017/SPIDER",
+     "one_liner": "SPIDER: strided swapping reduces sparsity overhead of stencil-as-matmul on sparse tensor cores",
+     "kernels_assigned": [
+      "stencil computation"
+     ],
+     "categories": [
+      "stencil_pde",
+      "sparse_la"
+     ],
+     "abstract": "Recent research has focused on accelerating stencil computations by exploiting emerging hardware like Tensor Cores. To leverage these accelerators, the stencil operation must be transformed to matrix multiplications. However, this transformation introduces undesired sparsity into the kernel matrix, leading to significant redundant computation."
+    },
+    {
+     "key": "conf/ics/LiuYYLLQ25",
+     "title": "Efficient Locality-aware Instruction Stream Scheduling for Stencil Computation on ARM Processors",
+     "venue": "ICS",
+     "year": 2025,
+     "platform": [
+      "arm-cpu"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/buaa-hipo/AOStencil",
+     "one_liner": "AOStencil compiler: instruction-stream scheduling + GA tuning for stencils on ARM many-core, up to 4.4x",
+     "kernels_assigned": [
+      "3D stencil"
+     ],
+     "categories": [
+      "stencil_pde"
+     ],
+     "abstract": "Stencil computation is one of the fundamental computational patterns in scientific computing, commonly adopted in solving partial differential equations (PDEs) and a wide range of application fields. However, due to the memory-bound nature, it is challenging to achieve satisfactory performance on the ARM many-core processors with complex computation and memory hierarchies. In this study, we propose independent instruction stream scheduling with the Serial-FMA to Tree-Based Reduction (SFTBR) technique to decompose the stencil computation into multiple independent instruction streams for improved instruction-level parallelism. Furthermore, we propose a locality-aware block scheduling technique for locality-aware multi-level thread parallelism to address the complexities of cache and memory hierarchies on modern ARM many-core processors. Based on the above techniques, we implement a domain-specific compiler, AOStencil, to automatically generate optimized stencil codes on ARM many-core processors with genetic-algorithm-driven parameter tuning. Our evaluation results demonstrate that AOStencil achieves up to 4.39 × speedup over the state-of-the-art domain-specific compilers on Kunpeng and Phytium platforms."
+    },
+    {
+     "key": "conf/ppopp/HanLCBZYCZCY25",
+     "title": "FlashFFTStencil: Bridging Fast Fourier Transforms to Memory-Efficient Stencil Computations on Tensor Core Units",
+     "venue": "PPoPP",
+     "year": 2025,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/KevinWu2017/FlashFFTStencil",
+     "one_liner": "Bridges FFT to dense stencil computation on Tensor Core Units, 2.57x avg speedup",
+     "kernels_assigned": [
+      "FFT",
+      "3D stencil"
+     ],
+     "categories": [
+      "stencil_pde",
+      "fft_spectral",
+      "dense_la"
+     ],
+     "abstract": "While Tensor Core Units (TCUs) excel in AI tasks, their application to HPC algorithms like stencil computations faces significant challenges due to sparsity, which leads to underutilization and exacerbates memory-bound limitations. This paper introduces FlashFFTStencil1, a memory-efficient stencil computing system designed to bridge FFT to fully-dense stencil computations on TCUs. Aimed at bound shifting, FlashFFTStencil comprises three key techniques: Kernel Tailoring on HBM fuses distinct kernels to enhance parallelism while reducing memory transfer and footprint; Architecture Aligning on SMEM restructures FFT-based stencil computations into dense matrix multiplications tailored for shared memory architecture; Computation Streamlining on TCU optimizes TCU utilization and thread parallelism by minimizing pipeline stalls and maximizing register reuse. Notably, a distinctive extension is FlashFFTStencil's ability to enable theoretically unrestricted temporal fusion by FFT. Results show that FlashFFTStencil achieves effective sparsity-free bound shifting, with an average speedup of 2.57x over the state-of-the-art. FlashFFTStencil pioneers a new era in unifying computational patterns within the HPC landscape and bridges them with cutting-edge AI-driven hardware innovations like TCUs."
+    },
+    {
+     "key": "conf/dac/SchefflerCB24",
+     "title": "SARIS: Accelerating Stencil Computations on Energy-Efficient RISC-V Compute Clusters with Indirect Stream Registers",
+     "venue": "DAC",
+     "year": 2024,
+     "platform": [
+      "cpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/pulp-platform/snitch_cluster",
+     "one_liner": "Indirect stream registers on RISC-V compute clusters accelerate stencils 2.72x with 81% FPU utilization",
+     "kernels_assigned": [
+      "stencil computation"
+     ],
+     "categories": [
+      "stencil_pde"
+     ],
+     "abstract": "Stencil codes are performance-critical in many compute-intensive applications, but suffer from significant address calculation and irregular memory access overheads. This work presents SARIS, a general and highly flexible methodology for stencil acceleration using register-mapped indirect streams. We demonstrate SARIS for various stencil codes on an eight-core RISC-V compute cluster with indirect stream registers, achieving significant speedups of 2.72x, near-ideal FPU utilizations of 81%, and energy efficiency improvements of 1.58x over an RV32G baseline on average. Scaling out to a 256-core manycore system, we estimate an average FPU utilization of 64%, an average speedup of 2.14x, and up to 15% higher fractions of peak compute than a leading GPU code generator."
+    },
+    {
+     "key": "conf/ppopp/XuSZLH024",
+     "title": "A Holistic Approach to Automatic Mixed-Precision Code Generation and Tuning for Affine Programs",
+     "venue": "PPoPP",
+     "year": 2024,
+     "platform": [
+      "cpu",
+      "nvidia-gpu"
+     ],
+     "approach": "autotuning",
+     "artifact_url": "https://github.com/sheenisme/lnlamp",
+     "one_liner": "PrecTuner: unified mixed-precision code generator + autotuner for affine programs, up to 3.28x over LuIs",
+     "kernels_assigned": [
+      "PolyBench affine kernels",
+      "mixed-precision GEMM/stencil"
+     ],
+     "categories": [
+      "dense_la",
+      "stencil_pde"
+     ],
+     "abstract": "Reducing floating-point (FP) precision is used to trade the quality degradation of a numerical program's output for performance, but this optimization coincides with type casting, whose overhead is undisclosed until a mixed-precision code version is generated. This uncertainty enforces the decoupled implementation of mixed-precision code generation and autotuning in prior work. In this paper, we present a holistic approach called PrecTuner that consolidates the mixed-precision code generator and the autotuner by defining one parameter. This parameter is first initialized by some automatically sampled values and used to generate several code variants, with various loop transformations also taken into account. The generated code variants are next profiled to solve a performance model formulated using the aforementioned parameter, possibly under a pre-defined quality degradation budget. The best-performing value of the defined parameter is finally predicted without evaluating all code variants. Experimental results of the PolyBench benchmarks on CPU demonstrate that PrecTuner outperforms LuIs by 3.28× while achieving smaller errors, and we also validate its effectiveness in optimizing a real-life large-scale application. In addition, PrecTuner also obtains a mean speedup of 1.81× and 1.52×-1.73× over Pluto on single- and multi-core CPU, respectively, and 1.71× over PPCG on GPU."
+    },
+    {
+     "key": "conf/ppopp/ChenLWBWMYZCY24",
+     "title": "ConvStencil: Transform Stencil Computation to Matrix Multiplication on Tensor Cores",
+     "venue": "PPoPP",
+     "year": 2024,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/microsoft/ConvStencil",
+     "one_liner": "Transforms stencil computation into matmul on Tensor Cores for large speedups",
+     "kernels_assigned": [
+      "3D stencil",
+      "GEMM"
+     ],
+     "categories": [
+      "stencil_pde",
+      "dense_la"
+     ],
+     "abstract": "Tensor Core Unit (TCU) is increasingly integrated into modern high-performance processors to enhance matrix multiplication performance. However, constrained to its over-specification, its potential for improving other critical scientific operations like stencil computations remains untapped."
+    },
+    {
+     "key": "conf/sc/ZhangLYCZCY24",
+     "title": "LoRAStencil: Low-Rank Adaptation of Stencil Computation on Tensor Cores",
+     "venue": "SC",
+     "year": 2024,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "algorithmic",
+     "artifact_url": "https://github.com/HPHEX/LoRAStencil",
+     "one_liner": "LoRAStencil: low-rank decomposition of stencil weights removes redundancy on Tensor Cores, 2.16x",
+     "kernels_assigned": [
+      "stencil computation",
+      "tensor-core matmul"
+     ],
+     "categories": [
+      "stencil_pde",
+      "dense_la"
+     ],
+     "abstract": "Stencil computations play a pivotal role in numerous scientific and industrial applications, yet their efficient execution on specialized hardware accelerators like Tensor Core Units (TCUs) remains a challenge. This paper introduces LoRAStencil<sup xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">1</sup>, a novel stencil computing system designed to mitigate memory access redundancies on TCUs through low-rank adaptation. We first identify a nuanced form of this redundancy, dimension residue, specific to TCUs. Then LoRAStencil leverages orchestrated mathematical transformations to decompose stencil weight matrices into smaller rank-1 matrices, facilitating efficient data gathering along residual dimensions. It comprises three key components: memory-efficient Residual Dimension Gathering to facilitate more data reuse, compute-saving Pyramidal Matrix Adaptation to exploit the inherent low-rank characteristics, and performance-boosting Butterfly Vector Swapping to circumvent all data shuffles. Comprehensive evaluations demonstrate that LoRAStencil address dimension residues effectively, which outperforms state-of-the-arts with up to a 2.16x speedup, offering promising advancements for efficient tensorized stencil computation on TCUs by Low-Rank Adaptation."
+    },
+    {
+     "key": "conf/ics/ZhangWCMWEM23",
+     "title": "PERKS: a Locality-Optimized Execution Model for Iterative Memory-bound GPU Applications",
+     "venue": "ICS",
+     "year": 2023,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/neozhang307/PERKS",
+     "one_liner": "Persistent-kernel locality optimization for iterative stencil/CG GPU kernels",
+     "kernels_assigned": [
+      "2D/3D stencil",
+      "conjugate gradient",
+      "SpMV"
+     ],
+     "categories": [
+      "stencil_pde",
+      "solver_components"
+     ],
+     "abstract": "Iterative memory-bound solvers commonly occur in HPC codes. Typical GPU implementations have a loop on the host side that invokes the GPU kernel as much as time/algorithm steps there are. The termination of each kernel implicitly acts the barrier required after advancing the solution every time step. We propose an execution model for running memory-bound iterative GPU kernels: PERsistent KernelS (PERKS). In this model, the time loop is moved inside persistent kernel, and device-wide barriers are used for synchronization. We then reduce the traffic to device memory by caching subset of the output in each time step in the unused registers and shared memory. PERKS can be generalized to any iterative solver: they largely independent of the solver's implementation. We explain the design principle of PERKS and demonstrate effectiveness of PERKS for a wide range of iterative 2D/3D stencil benchmarks (geomean speedup of 2.12x for 2D stencils and 1.24x for 3D stencils over state-of-art libraries), and a Krylov subspace conjugate gradient solver (geomean speedup of 4.86x in smaller SpMV datasets from SuiteSparse and 1.43x in larger SpMV datasets over a state-of-art library). All PERKS-based implementations available at: https://github.com/neozhang307/PERKS."
+    },
+    {
+     "key": "conf/sc/FernandoNHZSGB22",
+     "title": "A GPU-Accelerated AMR Solver for Gravitational Wave Propagation",
+     "venue": "SC",
+     "year": 2022,
+     "platform": [
+      "nvidia-gpu",
+      "cpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/paralab/Dendro-GR",
+     "one_liner": "GPU-accelerated adaptive-mesh numerical-relativity solver: 6x over SOTA, 800 GFlops/s on an A100",
+     "kernels_assigned": [
+      "AMR finite-difference update"
+     ],
+     "categories": [
+      "unstructured_amr",
+      "stencil_pde"
+     ],
+     "abstract": "Simulations to calculate a single gravitational waveform (GW) can take several weeks. Yet, thousands of such simulations are needed for the detection and interpretation of gravitational waves. Future detectors will require even more accurate waveforms than those currently used. We present here the first large scale, adaptive mesh, multi-GPU numerical relativity (NR) code together with performance analysis and benchmarking. While comparisons are difficult to make, our GPU extension of the Dendro-grNr code achieves a 6x speedup over existing state-of-the-art codes. We achieve 800 GFlops/s on a single NVIDIA A100 GPU with an overall 2.5x speedup over a two-socket, 128-core AMD EPYC 7763 CPU node with an equivalent CPU implementation. We present detailed performance analyses, parallel scalability results, and accuracy assessments for GWs computed for mass ratios <tex xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">$\\mathrm{q}=1,2,4$</tex> ., We also present strong scalability up to 8 A100s and weak scaling up to 229,376 x86 cores on the Texas Advanced Computing Center's Frontera system."
+    },
+    {
+     "key": "conf/sc/MunksgaardHSO22",
+     "title": "Memory Optimizations in an Array Language",
+     "venue": "SC",
+     "year": 2022,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/diku-dk/futhark-mem-sc22",
+     "one_liner": "Functional array-language compiler with cost-free layout memory optimizations for GPU kernels",
+     "kernels_assigned": [
+      "LUD",
+      "Hotspot stencil",
+      "Needleman-Wunsch"
+     ],
+     "categories": [
+      "dense_la",
+      "stencil_pde",
+      "primitives"
+     ],
+     "abstract": "We present a technique for introducing and op-timizing the use of memory in a functional array language, aimed at GPU execution, that supports correct-by-construction parallelism. Using linear memory access descriptors as building blocks, we define a notion of memory in the compiler IR that enables cost-free change-of-layout transformations (e.g., slicing, transposition), whose results can even be carried across control flow such as ifs/loops without manifestation in memory. The memory notion allows a graceful transition to an unsafe IR that is automatically optimized (1) to mix reads and writes to the same array inside a parallel construct, and (2) to map semantically different arrays to the same memory block. The result is code similar to what imperative users would write. Our evaluation shows that our optimizations have significant impact (1.1 x -2 x) and result in performance competitive to hand-written code from challenging benchmarks, such as Rodinia's NW, LUD, Hotspot."
+    },
+    {
+     "key": "conf/cgo/LichtKMBHH21",
+     "title": "StencilFlow: Mapping Large Stencil Programs to Distributed Spatial Computing Systems",
+     "venue": "CGO",
+     "year": 2021,
+     "platform": [
+      "fpga",
+      "distributed"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/spcl/stencilflow",
+     "one_liner": "StencilFlow maps stencil DAGs to FPGAs: 1.31/4.18 TOp/s single/multi-device, record FPGA stencil performance",
+     "kernels_assigned": [
+      "stencil"
+     ],
+     "categories": [
+      "stencil_pde"
+     ],
+     "abstract": "Spatial computing devices have been shown to significantly accelerate stencil computations, but have so far relied on unrolling the iterative dimension of a single stencil operation to increase temporal locality. This work considers the general case of mapping directed acyclic graphs of heterogeneous stencil computations to spatial computing systems, assuming large input programs without an iterative component. StencilFlow maximizes temporal locality and ensures deadlock freedom in this setting, providing end-to-end analysis and mapping from a high-level program description to distributed hardware. We evaluate our generated architectures on a Stratix 10 FPGA testbed, yielding 1.31 TOp/s and 4.18 TOp/s on single-device and multi-device, respectively, demonstrating the highest performance recorded for stencil programs on FPGAs to date. We then leverage the framework to study a complex stencil program from a production weather simulation application. Our work enables productively targeting distributed spatial computing systems with large stencil programs, and offers insight into architecture characteristics required for their efficient execution in practice."
+    },
+    {
+     "key": "conf/cgo/KoehlerS21",
+     "title": "Towards a Domain-Extensible Compiler: Optimizing an Image Processing Pipeline on Mobile CPUs",
+     "venue": "CGO",
+     "year": 2021,
+     "platform": [
+      "arm-cpu"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/rise-lang/2021-CGO-artifact",
+     "one_liner": "Rewrite-based extensible compiler generates Harris kernels up to 16x over OpenCV, up to 1.4x over Halide on ARM",
+     "kernels_assigned": [
+      "Harris corner detection",
+      "image processing pipeline"
+     ],
+     "categories": [
+      "stencil_pde"
+     ],
+     "abstract": "Halide and many similar projects have demonstrated the great potential of domain specific optimizing compilers. They enable programs to be expressed at a convenient high-level, while generating high-performance code for parallel architectures. As domains of interest expand towards deep learning, probabilistic programming and beyond, it becomes increasingly clear that it is unsustainable to redesign domain specific compilers for each new domain. In addition, the rapid growth of hardware architectures to optimize for poses great challenges for designing these compilers. In this paper, we show how to extend a unifying domain-extensible compiler with domain-specific as well as hardware-specific optimizations. The compiler operates on generic patterns that have proven flexible enough to express a wide range of computations. Optimizations are not hard-coded into the compiler but are expressed as user-defined rewrite rules that are composed into strategies controlling the optimization process. Crucially, both computational patterns and optimization strategies are extensible without modifying the core compiler implementation. We demonstrate that this domain-extensible compiler design is capable of expressing image processing pipelines and well-known image processing optimizations. Our results on four mobile ARM multi-core CPUs, often used for image processing tasks, show that the code generated for the Harris operator outperforms the image processing library OpenCV by up to 16× and achieves performance close to - or even up to 1.4 × better than - the state-of-the-art image processing compiler Halide."
+    },
+    {
+     "key": "conf/cgo/AlappatSHKRW21",
+     "title": "YaskSite: Stencil Optimization Techniques Applied to Explicit ODE Methods on Modern Architectures",
+     "venue": "CGO",
+     "year": 2021,
+     "platform": [
+      "cpu"
+     ],
+     "approach": "autotuning",
+     "artifact_url": "https://github.com/seasite-project/YaskSite",
+     "one_liner": "YaskSite: ECM-model-guided stencil tuning for explicit ODE methods on Cascade Lake and Rome CPUs",
+     "kernels_assigned": [
+      "stencil"
+     ],
+     "categories": [
+      "stencil_pde"
+     ],
+     "abstract": "The landscape of multi-core architectures is growing more complex and diverse. Optimal application performance tuning parameters can vary widely across CPUs, and finding them in a possibly multidimensional parameter search space can be time consuming, expensive and potentially infeasible. In this work, we introduce YaskSite, a tool capable of tackling these challenges for stencil computations. YaskSite is built upon Intel's YASK framework. It combines YASK's flexibility to deal with different target architectures with the Execution-Cache-Memory performance model, which enables identifying optimal performance parameters analytically without the need to run the code. Further we show that YaskSite's features can be exploited by external tuning frameworks to reliably select the most efficient kernel(s) for the application at hand. To demonstrate this, we integrate YaskSite into Offsite, an offline tuner for explicit ordinary differential equation methods, and show that the generated performance predictions are reliable and accurate, leading to considerable performance gains at minimal code generation time and autotuning costs on the latest Intel Cascade Lake and AMD Rome CPUs."
+    },
+    {
+     "key": "conf/ipps/KamalavasanMRF21",
+     "title": "High-Level FPGA Accelerator Design for Structured-Mesh-Based Explicit Numerical Solvers",
+     "venue": "IPDPS",
+     "year": 2021,
+     "platform": [
+      "fpga"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/Kamalavasan/StencilsOnFPGA",
+     "one_liner": "FPGA HLS design workflow with batching/tiling for structured-mesh explicit stencil solvers, near-GPU performance.",
+     "kernels_assigned": [
+      "structured-mesh stencil"
+     ],
+     "categories": [
+      "stencil_pde"
+     ],
+     "abstract": "This paper presents a workflow for synthesizing near-optimal FPGA implementations of structured-mesh based stencil applications for explicit solvers. It leverages key characteristics of the application class and its computation-communication pattern and the architectural capabilities of the FPGA to accelerate solvers for high-performance computing applications. Key new features of the workflow are (1) the unification of standard state-of-the-art techniques with a number of high-gain optimizations such as batching and spatial blocking/tiling, motivated by increasing throughput for real-world workloads and (2) the development and use of a predictive analytical model to explore the design space, and obtain resource and performance estimates. Three representative applications are implemented using the design workflow on a Xilinx Alveo U280 FPGA, demonstrating near-optimal performance and over 85% predictive model accuracy. These are compared with equivalent highly-optimized implementations of the same applications on modern HPC-grade GPUs (Nvidia V100), analyzing time to solution, bandwidth, and energy consumption. Performance results indicate comparable runtimes with the V100 GPU, with over 2× energy savings for the largest non-trivial application on the FPGA. Our investigation shows the challenges of achieving high performance on current generation FPGAs compared to traditional architectures. We discuss determinants for a given stencil code to be amenable to FPGA implementation, providing insights into the feasibility and profitability of a design and its resulting performance."
+    },
+    {
+     "key": "conf/ipps/BisbasLLNGK21",
+     "title": "Temporal blocking of finite-difference stencil operators with sparse \"off-the-grid\" sources",
+     "venue": "IPDPS",
+     "year": 2021,
+     "platform": [
+      "cpu"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/georgebisbas/devito",
+     "one_liner": "Devito-generated temporal blocking for FD stencils with sparse off-the-grid sources, up to 1.6x over spatial blocking.",
+     "kernels_assigned": [
+      "finite-difference stencil",
+      "temporal blocking"
+     ],
+     "categories": [
+      "stencil_pde"
+     ],
+     "abstract": "Stencil kernels dominate a range of scientific applications, including seismic and medical imaging, image processing, and neural networks. Temporal blocking is a performance optimization that aims to reduce the required memory bandwidth of stencil computations by re-using data from the cache for multiple time steps. It has already been shown to be beneficial for this class of algorithms. However, applying temporal blocking to practical applications' stencils remains challenging. These computations often consist of sparsely located operators not aligned with the computational grid (“off-the-grid”). Our work is motivated by modelling problems in which source injections result in wavefields that must then be measured at receivers by interpolation from the grided wavefield. The resulting data dependencies make the adoption of temporal blocking much more challenging. We propose a methodology to inspect these data dependencies and reorder the computation, leading to performance gains in stencil codes where temporal blocking has not been applicable. We implement this novel scheme in the Devito domain-specific compiler toolchain. Devito implements a domain-specific language embedded in Python to generate optimized partial differential equation solvers using the finite-difference method from high-level symbolic problem definitions. We evaluate our scheme using isotropic acoustic, anisotropic acoustic, and isotropic elastic wave propagators of industrial significance. After auto-tuning, performance evaluation shows that this enables substantial performance improvement through temporal blocking over highly-optimized vectorized spatially-blocked code of up to 1.6x."
+    },
+    {
+     "key": "journals/tpds/GreteGO21",
+     "title": "K-Athena: A Performance Portable Structured Grid Finite Volume Magnetohydrodynamics Code",
+     "venue": "TPDS",
+     "year": 2021,
+     "platform": [
+      "nvidia-gpu",
+      "cpu",
+      "distributed"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://gitlab.com/pgrete/kathena",
+     "one_liner": "K-Athena: Kokkos-ported MHD finite-volume stencil kernel, >10^8 cell-updates/s on V100, scales to 24576 GPUs",
+     "kernels_assigned": [
+      "Structured-grid finite-volume MHD update"
+     ],
+     "categories": [
+      "stencil_pde"
+     ],
+     "abstract": "Large scale simulations are a key pillar of modern research and require ever-increasing computational resources. Different novel manycore architectures have emerged in recent years on the way towards the exascale era. Performance portability is required to prevent repeated non-trivial refactoring of a code for different architectures. We combine ATHENA++, an existing magnetohydrodynamics (MHD) CPU code, with KOKKOS, a performance portable on-node parallel programming paradigm, into K-ATHENA to allow efficient simulations on multiple architectures using a single codebase. We present profiling and scaling results for different platforms including Intel Skylake CPUs, Intel Xeon Phis, and NVIDIA GPUs. K-ATHENA achieves > 10 <sup xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">8</sup> cell-updates/s on a single V100 GPU for second-order double precision MHD calculations, and a speedup of 30 on up to 24 576 GPUs on Summit (compared to 172,032 CPU cores), reaching 1:94 × 10 <sup xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">12</sup> total cell-updates/s at 76 percent parallel efficiency. Using a roofline analysis we demonstrate that the overall performance is currently limited by DRAM bandwidth and calculate a performance portability metric of 62.8 percent. Finally, we present the implementation strategies used and the challenges encountered in maximizing performance. This will provide other research groups with a straightforward approach to prepare their own codes for the exascale era. K-ATHENA is available at https://gitlab.com/pgrete/kathena."
+    },
+    {
+     "key": "journals/tpds/LichtBMH21",
+     "title": "Transformations of High-Level Synthesis Codes for High-Performance Computing",
+     "venue": "TPDS",
+     "year": 2021,
+     "platform": [
+      "fpga"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/spcl/hls_tutorial_examples",
+     "one_liner": "Catalog of HLS source-to-source optimizing transformations for HPC kernels on FPGA.",
+     "kernels_assigned": [
+      "GEMM",
+      "stencil"
+     ],
+     "categories": [
+      "dense_la",
+      "stencil_pde"
+     ],
+     "abstract": "Spatial computing architectures promise a major stride in performance and energy efficiency over the traditional load/store devices currently employed in large scale computing systems. The adoption of high-level synthesis (HLS) from languages such as C++ and OpenCL has greatly increased programmer productivity when designing for such platforms. While this has enabled a wider audience to target spatial computing architectures, the optimization principles known from traditional software design are no longer sufficient to implement high-performance codes, due to fundamentally distinct aspects of hardware design, such as programming for deep pipelines, distributed memory resources, and scalable routing. To alleviate this, we present a collection of optimizing transformations for HLS, targeting scalable and efficient architectures for high-performance computing (HPC) applications. We systematically identify classes of transformations (pipelining, scalability, and memory), the characteristics of their effect on the HLS code and the resulting hardware (e.g., increasing data reuse or resource consumption), and the objectives that each transformation can target (e.g., resolve interface contention, or increase parallelism). We show how these can be used to efficiently exploit pipelining, on-chip distributed fast memory, and on-chip dataflow, allowing for massively parallel architectures. To quantify the effect of various transformations, we cover the optimization process of a sample set of HPC kernels, provided as open source reference codes. We aim to establish a common toolbox to guide both performance engineers and compiler engineers in tapping into the performance potential offered by spatial computing architectures using HLS."
+    },
+    {
+     "key": "conf/cgo/MatsumuraZWEM20",
+     "title": "AN5D: automated stencil framework for high-degree temporal blocking on GPUs",
+     "venue": "CGO",
+     "year": 2020,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/khaki3/AN5D-Artifact",
+     "one_liner": "Stencil CUDA code generator with degree-10 temporal blocking; best reported perf on V100",
+     "kernels_assigned": [
+      "stencil"
+     ],
+     "categories": [
+      "stencil_pde"
+     ],
+     "abstract": "Stencil computation is one of the most widely-used compute patterns in high performance computing applications. Spatial and temporal blocking have been proposed to overcome the memory-bound nature of this type of computation by moving memory pressure from external memory to on-chip memory on GPUs. However, correctly implementing those optimizations while considering the complexity of the architecture and memory hierarchy of GPUs to achieve high performance is difficult. We propose AN5D, an automated stencil framework which is capable of automatically transforming and optimizing stencil patterns in a given C source code, and generating corresponding CUDA code. Parameter tuning in our framework is guided by our performance model. Our novel optimization strategy reduces shared memory and register pressure in comparison to existing implementations, allowing performance scaling up to a temporal blocking degree of 10. We achieve the highest performance reported so far for all evaluated stencil benchmarks on the state-of-the-art Tesla V100 GPU."
+    },
+    {
+     "key": "conf/sc/BrunnHBMM20",
+     "title": "Multi-node multi-GPU diffeomorphic image registration for large-scale imaging problems",
+     "venue": "SC",
+     "year": 2020,
+     "platform": [
+      "nvidia-gpu",
+      "distributed"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/andreasmang/claire",
+     "one_liner": "Multi-GPU CLAIRE: optimized interpolation/FD/FFT kernels + preconditioner for image registration.",
+     "kernels_assigned": [
+      "interpolation",
+      "finite-difference operators",
+      "FFT",
+      "Gauss-Newton-Krylov solve"
+     ],
+     "categories": [
+      "stencil_pde",
+      "fft_spectral",
+      "solver_components"
+     ],
+     "abstract": "We present a Gauss-Newton-Krylov solver for large deformation diffeomorphic image registration. We extend the publicly available CLAIRE library to multi-node multi-graphics processing unit (GPUs) systems and introduce novel algorithmic modifications that significantly improve performance. Our contributions comprise (i) a new preconditioner for the reduced-space Gauss-Newton Hessian system, (ii) a highly-optimized multi-node multi-GPU implementation exploiting device direct communication for the main computational kernels (interpolation, high-order finite difference operators and Fast-Fourier-Transform), and (iii) a comparison with state-of-the-art CPU and GPU implementations. We solve a 256 <sup xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">3</sup> -resolution image registration problem in five seconds on a single NVIDIA Tesla V100, with a performance speedup of 70% compared to the state-of-the-art. In our largest run, we register 20483 resolution images (25B unknowns; approximately 152$\\times$ larger than the largest problem solved in state-of-the-art GPU implementations) on 64 nodes with 256 GPUs on TACC’s Longhorn system."
+    }
+   ]
+  },
+  {
+   "group": "gnn-aggregation",
+   "slug": "gnn-aggregation",
+   "spec": {
+    "summary": "Sparse-times-dense-matrix neighbor aggregation as used in GNN message passing (C = A_sparse @ X_dense, optionally symmetrically normalized by degree), measured at three DIFFERENT scopes the surveyed literature conflates under one \"SpMM\"/\"aggregation\" label — isolated kernel, single-layer forward with real feature dims, and full training epoch — plus an explicit preprocessing-amortization split, since several artifacts' headline numbers move visibly (EPPGCN: 1.48-5.65x kernel-only vs 1.03-1.37x end-to-end) depending on which scope and preprocessing treatment is chosen.\n",
+    "operation": "Forward: H'[V,F] = A_hat[V,V](sparse, given CSR) @ H[V,F](dense row-major), where A_hat is either the raw binary/weighted adjacency or its symmetric degree-normalization D^-1/2 A D^-1/2 (both appear as first-class targets in the surveyed papers, e.g. CBM benchmarks all three of A@X, A@D^-1/2@X, D^-1",
+    "variants": [
+     {
+      "id": "gnn-agg-kernel-f32",
+      "claim": "steady-state isolated-kernel throughput of one aggregation call, given CSR (no format conversion timed), synthetic dense features swept over N — the common denominator of GE-SpMM, MaxK-GNN's kernel benchmark, TLPGNN, and CBM's benchmark_matmul.py. THIS variant intentionally does NOT include any Python/framework dispatch overhead, backward pass, or other GCN layers (unlike TC-GNN/QGTC/EPPGCN's epoc",
+      "inputs": {
+       "suite": "SuiteSparse/SNAP general-graph collection ∪ the recurring \"GNNAdvisor-lineage\" GNN benchmark suite (the set shared, with partial overlap, by TC-GNN/EPPGCN/QGTC)\n",
+       "selection": "real (non-synthetic) adjacency matrices, 1e4 <= nnz <= 2e8, treated as square (self-loops added if not already present); union of (a) every graph named in >=2 of the surveyed papers' code-verified benchmark suites (closes the \"no paper states a criterion\" gap noted in survey.md Divergence 5) and (b) the SNAP category GE-SpMM mirrors in full, capped to the same nnz range for comparability across th",
+       "recommended_subset": [
+        "cora",
+        "citeseer",
+        "pubmed",
+        "ppi",
+        "artist",
+        "soc-BlogCatalog",
+        "com-amazon",
+        "amazon0505",
+        "amazon0601",
+        "OVCAR-8H",
+        "Yeast",
+        "YeastH"
+       ],
+       "dense_operand": "N in {32, 128, 256, 512}, fp32, initialized U(-1,1)"
+      }
+     },
+     {
+      "id": "gnn-agg-e2e-preproc-f32",
+      "claim": "end-to-end throughput including one-shot preprocessing (sparse-format conversion to the kernel's native layout, e.g. CBM's compression, MaxK-GNN's CBSR meta-data generation, TC-GNN's dense-tile graph translation), amortized over k=200 repeated aggregation calls — 200 matches TC-GNN's own full-training epoch count, the most common \"realistic reuse count\" a GNN aggregation kernel actually sees befor",
+      "inputs": {
+       "suite": "same as gnn-agg-kernel-f32",
+       "selection": "same as gnn-agg-kernel-f32",
+       "recommended_subset": "same as gnn-agg-kernel-f32",
+       "dense_operand": "N in {128, 256, 512}, fp32"
+      }
+     },
+     {
+      "id": "gnn-agg-layer-forward-real-features",
+      "claim": "one GCN-layer forward pass (aggregation immediately followed by the dense weight GEMM) on STANDARD datasets using each dataset's REAL input/hidden feature width, not a synthetic N sweep — isolates what TLPGNN/FeatGraph measure (a single aggregation call inside a real model configuration) from the raw kernel-only variant above, and reports the aggregation-kernel fraction of the layer separately fro",
+      "inputs": {
+       "suite": "standard node-classification GNN benchmark datasets (fixed list, not swept by paper convenience)",
+       "selection": "",
+       "recommended_subset": [
+        {
+         "name": "Cora",
+         "nodes": 2708,
+         "edges": 10556,
+         "features": 1433,
+         "classes": 7
+        },
+        {
+         "name": "Citeseer",
+         "nodes": 3327,
+         "edges": 9104,
+         "features": 3703,
+         "classes": 6
+        },
+        {
+         "name": "PubMed",
+         "nodes": 19717,
+         "edges": 88648,
+         "features": 500,
+         "classes": 3
+        },
+        {
+         "name": "Reddit",
+         "nodes": 232965,
+         "edges": 114615892,
+         "features": 602,
+         "classes": 41
+        },
+        {
+         "name": "ogbn-arxiv",
+         "nodes": 169343,
+         "edges": 1166243,
+         "features": 128,
+         "classes": 40
+        },
+        {
+         "name": "ogbn-products",
+         "nodes": 2449029,
+         "edges": 61859140,
+         "features": 100,
+         "classes": 47
+        },
+        {
+         "name": "Flickr",
+         "nodes": 89250,
+         "edges": 899756,
+         "features": 500,
+         "classes": 7
+        },
+        {
+         "name": "Yelp",
+         "nodes": 716847,
+         "edges": 6977410,
+         "features": 300,
+         "classes": 100
+        }
+       ],
+       "dense_operand": ""
+      }
+     },
+     {
+      "id": "gnn-agg-epoch-training-e2e",
+      "claim": "full training-epoch time (forward + backward + optimizer step) for a standard 2-layer GCN — the headline number TC-GNN, QGTC, and the EPPGCN/GNNAdvisor lineage actually report and compare against. Kept as its own variant, explicitly labeled as NOT kernel-isolated, because most of this track's papers report exactly this number and a fair benchmark spec must let their claims be reproduced on the SAM",
+      "inputs": {
+       "suite": "same recommended_subset as gnn-agg-layer-forward-real-features, plus the amazon0601/artist/soc-BlogCatalog/com-amazon large-graph cluster common to TC-GNN/EPPGCN",
+       "selection": "",
+       "recommended_subset": "",
+       "dense_operand": "real per-dataset feature width (no synthetic N)"
+      }
+     }
+    ]
+   },
+   "papers": [
+    {
+     "key": "conf/ipps/AlvesMBFGR25",
+     "title": "Accelerating Graph Neural Networks Using a Novel Computation-Friendly Matrix Compression Format",
+     "venue": "IPDPS",
+     "year": 2025,
+     "platform": [
+      "cpu"
+     ],
+     "approach": "algorithmic",
+     "artifact_url": "https://github.com/cbm4scale/CBM-IPDPS25",
+     "one_liner": "CBM: compressed binary-matrix format, >5x faster GNN sparse-dense matmul than SOTA kernels.",
+     "kernels_assigned": [
+      "binary matrix multiplication",
+      "GCN aggregation"
+     ],
+     "categories": [
+      "sparse_la",
+      "dense_la",
+      "ml_kernels"
+     ],
+     "abstract": "This paper proposes the Compressed Binary Matrix (CBM) format, a novel, computation-friendly compression scheme for binary matrices. CBM not only reduces the memory footprint of the matrix but also enables faster matrix multiplication between binary and dense, real-valued matrices. The CBM format can be applied to accelerate various graph-related tasks, where the (binary) adjacency matrix of the graph is repeatedly multiplied by another matrix, such as during inference and training of various types of Graph Neural Networks (GNNs). The format is evaluated on a shared-memory architecture in both serial and parallel settings. Experimental results show that CBM can reduce the memory footprint of real-world graphs up to <tex xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">$11 \\times$</tex>, and that the parallel matrix multiplication using CBM is more than <tex xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">$5 \\times$</tex> faster than state-of-the-art sparse-dense matrix multiplication kernels. Furthermore, when applied to the inference stage of Graph Convolutional Networks (GCNs), the CBM format achieves speedups close to <tex xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">$2.5 \\times$</tex> compared to inference using other parallel matrix multiplication kernels."
+    },
+    {
+     "key": "conf/sc/HeLDL0M025",
+     "title": "StraGCN: GPU-Accelerated Strassen's Sparse-Dense Matrix Multiplication for Graph Convolutional Network Training",
+     "venue": "SC",
+     "year": 2025,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "algorithmic",
+     "artifact_url": "https://github.com/CGCL-codes/StraGCN",
+     "one_liner": "GPU Strassen's-algorithm SpMM for GCN training, 2-3.3x faster than GNNA/PyG/DGL",
+     "kernels_assigned": [
+      "SpMM",
+      "Strassen matrix multiplication"
+     ],
+     "categories": [
+      "sparse_la",
+      "dense_la",
+      "ml_kernels"
+     ],
+     "abstract": "Graph Convolutional Networks (GCNs) are a fundamental approach to deep learning on graph-structured data. However, they face a significant challenge in training efficiency due to the high computational cost of Sparse-Dense Matrix Multiplication (SpMM). This paper presents StraGCN, the first GPU-accelerated SpMM implementation based on Strassen’s algorithm particularly designed for GCN training. First, we propose a horizontal fusion model for GPU kernels as an alternative to the commonly used multi-stream CUDA model, significantly improving data locality of on-chip shared memory for Strassen’s SpMM. Second, StraGCN exploits the immutability of the adjacency matrix in GCNs to reuse intermediate results from submatrix operations, substantially reducing redundant computations. Third, we propose a two-stage matrix partitioning scheme to mitigate load imbalance caused by the irregular distribution of non-zero elements. We evaluate StraGCN with fifteen benchmark datasets. Experimental results show that StraGCN achieves performance speedups of 2.1 ×, 2.6 ×, and 3.3 × compared with state-of-the-art GCN frameworks–GNNA, PyG, and DGL, respectively."
+    },
+    {
+     "key": "conf/asplos/PengXSHZHKKD24",
+     "title": "MaxK-GNN: Extremely Fast GPU Kernel Design for Accelerating Graph Neural Networks Training",
+     "venue": "ASPLOS",
+     "year": 2024,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/xiexi51/MaxK-GNN",
+     "one_liner": "MaxK nonlinearity + fast GPU SpMM/SSpMM kernels cutting SpMM memory traffic in GNN training",
+     "kernels_assigned": [
+      "SpMM"
+     ],
+     "categories": [
+      "sparse_la",
+      "ml_kernels"
+     ],
+     "abstract": "In the acceleration of deep neural network training, the graphics processing unit (GPU) has become the mainstream platform. GPUs face substantial challenges on Graph Neural Networks (GNNs), such as workload imbalance and memory access irregularities, leading to underutilized hardware. Existing solutions such as PyG, DGL with cuSPARSE, and GNNAdvisor frameworks partially address these challenges. However, the memory traffic involved with Sparse-Dense Matrix Matrix Multiplication (SpMM) is still significant."
+    },
+    {
+     "key": "conf/ics/0001SLFY024",
+     "title": "FASTEN: Fast GPU-accelerated Segmented Matrix Multiplication for Heterogenous Graph Neural Networks",
+     "venue": "ICS",
+     "year": 2024,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "autotuning",
+     "artifact_url": "https://github.com/Deep-Learning-Profiling-Tools/fasten",
+     "one_liner": "Autotuned GPU segmented matrix multiplication for heterogeneous GNNs",
+     "kernels_assigned": [
+      "segmented GEMM"
+     ],
+     "categories": [
+      "dense_la",
+      "ml_kernels"
+     ],
+     "abstract": "This paper introduces FASTEN, a cutting-edge library developed to address the computational challenges inherent in Heterogeneous Graph Neural Networks (HGNNs). The key focus of FASTEN is the optimization of segmented matrix multiplication, a critical operator where existing GNN frameworks and linear algebra libraries often fall short. FASTEN offers an array of solutions to these challenges, including a routing table designed for efficient workload scheduling, adaptive algorithms tailored for handling segments of different shapes and segmented dimensions, and a performance model-guided autotuner to select the best configurations. Furthermore, FASTEN implements interfaces to integrate with widely-used frameworks like PyG, ensuring straightforward adoption in existing HGNN models with minimal adjustments. We have performed comprehensive benchmarks on advanced GPU architectures, including NVIDIA H100, A100, and RTX4090, to demonstrate that FASTEN significantly improves both operator-wise and end-to-end performance across various datasets and HGNNs."
+    },
+    {
+     "key": "conf/usenix/WangFWHD23",
+     "title": "TC-GNN: Bridging Sparse GNN Computation and Dense Tensor Cores on GPUs",
+     "venue": "ATC",
+     "year": 2023,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/YukeWang96/TC-GNN_ATC23",
+     "one_liner": "Sparse-graph translation maps GNN SpMM/SDDMM onto GPU tensor cores; 1.70x avg over DGL",
+     "kernels_assigned": [
+      "SpMM",
+      "SDDMM"
+     ],
+     "categories": [
+      "sparse_la",
+      "ml_kernels"
+     ],
+     "abstract": "Recently, graph neural networks (GNNs), as the backbone of graph-based machine learning, demonstrate great success in various domains (e.g., e-commerce). However, the performance of GNNs is usually unsatisfactory due to the highly sparse and irregular graph-based operations. To this end, we propose TC-GNN, the first GNN acceleration framework based on GPU Tensor Core Units (TCUs). The core idea is to reconcile the\"Sparse\"GNN computation with the high-performance\"Dense\"TCUs. Specifically, we conduct an in-depth analysis of the sparse operations in mainstream GNN computing frameworks. We introduce a novel sparse graph translation technique to facilitate TCU processing of the sparse GNN workload. We implement an effective CUDA core and TCU collaboration design to fully utilize GPU resources. We integrate TC-GNN with the PyTorch framework for high programmability. Rigorous experiments show an average of 1.70X speedup over the state-of-the-art DGL framework across various models and datasets."
+    },
+    {
+     "key": "conf/hpdc/FuJH22",
+     "title": "TLPGNN: A Lightweight Two-Level Parallelism Paradigm for Graph Neural Network Computation on GPU",
+     "venue": "HPDC",
+     "year": 2022,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/charlifu/TLPGNN",
+     "one_liner": "Two-level (vertex/feature) parallel GNN kernels beating DGL/GNNAdvisor/FeatGraph 3-8x",
+     "kernels_assigned": [
+      "GNN aggregation",
+      "SpMM"
+     ],
+     "categories": [
+      "ml_kernels",
+      "sparse_la"
+     ],
+     "abstract": "Graph Neural Networks (GNNs) are an emerging class of deep learning models on graphs, with many successful applications, such as, recommendation systems, drug discovery, and social network analysis. The GNN computation includes both regular neural network operations and general graph convolution operations, which take the majority of the total computation time. Though several recent works have been proposed to accelerate the computation for GNNs, they face the limitations of heavy pre-processing, low efficient atomic operations, and unnecessary kernel launches. In this paper, we design TLPGNN, a lightweight two-level parallelism paradigm for GNN computation. First, we conduct a systematic analysis on the hardware resource usage of GNN workloads to deeply understand the specialties of GNN workloads. With the insightful observations, we then divide the GNN computation into two levels, i.e., vertex parallelism for the first level and feature par- allelism for the second. Next, we employ a novel hybrid dynamic workload assignment to address the imbalanced workload distribution. Furthermore, we fuse the kernels to reduce the number of kernel launches and cache the frequently accessed data into registers to avoid unnecessary memory traffics. Together, TLPGNN is able to significantly outperform existing GNN computation systems, such as DGL, GNNAdivsor, and FeatGraph, by 5.6×, 7.7×, and 3.3×, respectively, on the average."
+    },
+    {
+     "key": "conf/ppopp/WangFD22",
+     "title": "QGTC: accelerating quantized graph neural networks via GPU tensor core",
+     "venue": "PPoPP",
+     "year": 2022,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/YukeWang96/QGTC_PPoPP22",
+     "one_liner": "QGTC: Tensor-Core CUDA kernels for any-bitwidth quantized GNN computation, 2.7x over DGL",
+     "kernels_assigned": [
+      "quantized GEMM",
+      "bit-decomposed sparse matmul"
+     ],
+     "categories": [
+      "dense_la",
+      "graph",
+      "ml_kernels"
+     ],
+     "abstract": "Over the most recent years, quantized graph neural network (QGNN) attracts lots of research and industry attention due to its high robustness and low computation and memory overhead. Unfortunately, the performance gains of QGNN have never been realized on modern GPU platforms. To this end, we propose the first Tensor Core (TC) based computing framework, QGTC, to support any-bitwidth computation for QGNNs on GPUs. We introduce a novel quantized low-bit arithmetic design based on the low-bit data representation and bit-decomposed computation. We craft a novel TC-tailored CUDA kernel design by incorporating 3D-stacked bit compression, zero-tile jumping, and non-zero tile reuse technique to improve the performance systematically. We incorporate an effective bandwidth-optimized subgraph packing strategy to maximize the transferring efficiency between CPU host and GPU device. We integrate QGTC with Pytorch for better programmability and extensibility. Extensive experiments demonstrate that QGTC can achieve evident inference speedup (on average 2.7X) compared with the state-of-the-art DGL framework across diverse settings."
+    },
+    {
+     "key": "journals/tpds/XuSYLJ22",
+     "title": "Accelerating Backward Aggregation in GCN Training With Execution Path Preparing on GPUs",
+     "venue": "TPDS",
+     "year": 2022,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "algorithmic",
+     "artifact_url": "https://github.com/Catriminal/EPPGCN",
+     "one_liner": "Execution-path preparation turns GCN backward aggregation into partial-vertex GPU kernel, up to 6.6x",
+     "kernels_assigned": [
+      "GCN backward aggregation (SpMM-like)"
+     ],
+     "categories": [
+      "ml_kernels",
+      "graph"
+     ],
+     "abstract": "The emerging <italic xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">Graph Convolutional Network</i> (GCN) has been widely used in many domains, where it is important to improve the efficiencies of applications by accelerating GCN trainings. Due to the sparsity nature and exploding scales of input real-world graphs, state-of-the-art GCN training systems (e.g., GNNAdvisor) employ graph processing techniques to accelerate the message exchanging (i.e., aggregations) among the graph vertices. Nevertheless, these systems treat both the aggregation stages of forward and backward propagation phases as all-active graph processing procedures that indiscriminately conduct computations on all vertices of an input graph. In this article, we first point out that in a GCN training problem with a given training set on an input graph, its aggregation stages of backward propagation phases (called as <italic xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">backward aggregations</i> in this article) can be equivalently converted to partially-active graph processing procedures, which conduct computations on only partial vertices of the input graph. By leveraging such a finding, we propose an execution path preparing method that collects and coalesces the graph data used during different training layers of backward aggregations, and constructs their corresponding sub-graphs (called as <italic xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">execution paths</i> in this article) as inputs to conduct the backward training on GPUs. Further, we propose a structural-aware strategy for the execution paths to compute their optimal group sizes, so as to gain as high as possible"
+    },
+    {
+     "key": "conf/sc/HuYWYZL0ZW20",
+     "title": "FeatGraph: a flexible and efficient backend for graph neural network systems",
+     "venue": "SC",
+     "year": 2020,
+     "platform": [
+      "cpu",
+      "nvidia-gpu"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/amazon-science/FeatGraph",
+     "one_liner": "FeatGraph: co-optimized sparse templates + UDFs for GNN aggregation kernels, up to 32x speedup.",
+     "kernels_assigned": [
+      "SpMM (GNN aggregation)",
+      "graph traversal fusion"
+     ],
+     "categories": [
+      "graph",
+      "sparse_la",
+      "ml_kernels"
+     ],
+     "abstract": "Graph neural networks (GNNs) are gaining popularity as a promising approach to machine learning on graphs. Unlike traditional graph workloads where each vertex/edge is associated with a scalar, GNNs attach a feature tensor to each vertex/edge. This additional feature dimension, along with consequently more complex vertex- and edge-wise computations, has enormous implications on locality and parallelism, which existing graph processing systems fail to exploit. This paper proposes FeatGraph to accelerate GNN workloads by co-optimizing graph traversal and feature dimension computation. FeatGraph provides a flexible programming interface to express diverse GNN models by composing coarse-grained sparse templates with fine-grained user-defined functions (UDFs) on each vertex/edge. FeatGraph incorporates optimizations for graph traversal into the sparse templates and allows users to specify optimizations for UDFs with a feature dimension schedule (FDS). FeatGraph speeds up end-to-end GNN training and inference by up to 32× on CPU and 7× on GPU."
+    },
+    {
+     "key": "conf/sc/HuangD0Y20",
+     "title": "GE-SpMM: general-purpose sparse matrix-matrix multiplication on GPUs for graph neural networks",
+     "venue": "SC",
+     "year": 2020,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/hgyhungry/ge-spmm",
+     "one_liner": "GE-SpMM: CSR-native GNN SpMM with coalesced row caching and warp merging, beats cuSPARSE 1.41x.",
+     "kernels_assigned": [
+      "SpMM"
+     ],
+     "categories": [
+      "sparse_la",
+      "ml_kernels"
+     ],
+     "abstract": "The acceleration of Graph Neural Networks (GNNs) requires efficient and framework-compatible Sparse-Dense Matrix-Matrix Multiplication (SpMM). From the compatibility perspective, the sophisticated sparse matrix representations in state-of-the-art SpMM designs cause heavy preprocessing overhead for the framework. From the efficiency perspective, optimizations for SpMV (Sparse Matrix-Vector) do not apply well to SpMM, leading to redundant and uncoalesced global memory access. We propose GE-SpMM1, which takes the CSR format consistent with GNN frameworks to enable integration without the format transformation overhead. We use Coalesced Row Caching to ensure coalesced access to both sparse and dense data in the global memory. We use Coarse-grained Warp Merging to reduce redundant data loading among GPU warps. Experiments on a real-world graph dataset demonstrate up to 1.41× speedup over Nvidia cuSPARSE [1] and up to 1.81× over GraphBLAST [2]. We embed GE-SpMM in GNN frameworks and get up to 3.67× speedup on popular GNN models like GCN [3] and GraphSAGE [4]."
+    },
+    {
+     "key": "conf/sc/TripathyYB20",
+     "title": "Reducing communication in graph neural network training",
+     "venue": "SC",
+     "year": 2020,
+     "platform": [
+      "nvidia-gpu",
+      "distributed"
+     ],
+     "approach": "algorithmic",
+     "artifact_url": "https://github.com/PASSIONLab/CAGNET",
+     "one_liner": "1D/1.5D/2D/3D sparse-dense matmul parallel algorithms cutting communication in GNN training.",
+     "kernels_assigned": [
+      "sparse-dense matmul (GNN aggregation)"
+     ],
+     "categories": [
+      "sparse_la",
+      "dense_la",
+      "ml_kernels"
+     ],
+     "abstract": "Graph Neural Networks (GNNs) are powerful and flexible neural networks that use the naturally sparse connectivity information of the data. GNNs represent this connectivity as sparse matrices, which have lower arithmetic intensity and thus higher communication costs compared to dense matrices, making GNNs harder to scale to high concurrencies than convolutional or fully-connected neural networks. We introduce a family of parallel algorithms for training GNNs and show that they can asymptotically reduce communication compared to previous parallel GNN training methods. We implement these algorithms, which are based on 1D, 1. 5D, 2D, and 3D sparse-dense matrix multiplication, using torch.distributed on GPU-equipped clusters. Our algorithms optimize communication across the full GNN training pipeline. We train GNNs on over a hundred GPUs on multiple datasets, including a protein network with over a billion edges."
+    }
+   ]
+  },
+  {
+   "group": "convolution",
+   "slug": "convolution",
+   "spec": {
+    "summary": "Forward 2D convolution (NCHW) for CNN-inference-shaped workloads, covering four legitimately different algorithm classes found in the surveyed literature — dense direct/im2col-implicit-GEMM, sparse structured-pruned, sub-8-bit/binary quantized, and autotuning-search cost — each measured with a fixed protocol so GFLOP/s numbers across algorithm classes stay comparable rather than being inflated by a smaller executed-op count.\n",
+    "operation": "Y[N,Cout,Hout,Wout] = conv2d(X[N,Cin,Hin,Win], W[Cout,Cin/groups,Kh,Kw], stride=(Sh,Sw), pad=(Ph,Pw), groups=g); groups=1 for standard conv, groups=Cin=Cout for depthwise. Reference (algorithm-invariant) FLOP count used for the primary GFLOP/s metric in every variant: flops_ref = 2 * N * Cout * (Cin",
+    "variants": [
+     {
+      "id": "conv-dense-kernel-fp32",
+      "claim": "Steady-state kernel throughput of a dense conv (direct, im2col-implicit-GEMM, Winograd, or FFT-conv — algorithm class must be disclosed), fp32, single layer, preprocessing (schedule search / weight-layout transform) excluded from timed calls and reported separately, once.\n",
+      "inputs": {
+       "suite": "layer_shape_suite (see above; 30 named instances)",
+       "selection": "union of ResNet-18 (ASPLOS_artifact resnet.txt), YOLO/Darknet (ASPLOS_artifact yolo.txt, subset), MobileNet-depthwise (ASPLOS_artifact deepwise.txt), VGG16 (Odyssey conv_all.json) — the only two artifact repos in the track survey that publish an explicit, machine-readable layer-shape list.\n",
+       "recommended_subset": [
+        "resnet18_1..resnet18_11",
+        "yolo_1",
+        "yolo_3",
+        "yolo_5",
+        "yolo_7",
+        "yolo_9",
+        "yolo_11_head_stress",
+        "mbnet_dw_1..mbnet_dw_9",
+        "vgg16_1..vgg16_4"
+       ],
+       "dense_operand": ""
+      }
+     },
+     {
+      "id": "conv-sparse-pruned-kernel-fp32",
+      "claim": "Steady-state kernel throughput of a structured/unstructured-pruned sparse conv, fp32, reported both as a same-shape apples-to-apples comparison against dense baselines run on the identical pruned shape, AND as an end-user speedup against the dense baseline run on the ORIGINAL unpruned shape (these are different questions and both are needed — see notes_on_fairness).\n",
+      "inputs": {
+       "suite": "layer_shape_suite base shapes (conv-dense-kernel-fp32's 30 instances) as the pre-pruning/original shape, with the Cout dimension reduced by a fixed sparsity fraction to obtain the pruned shape actuall",
+       "selection": "reuses the dense suite rather than inventing a new one, since Tetris's own benchmark methodology (README + conv2d_timing.py) is: take a base dense CNN layer (from VGG19/ResNet50/YOLOv3/MobileNet checkpoints), prune it, and time the pruned shape",
+       "recommended_subset": "",
+       "dense_operand": ""
+      }
+     },
+     {
+      "id": "conv-quantized-kernel",
+      "claim": "Steady-state kernel throughput of a sub-8-bit or binary/XNOR quantized conv, reported per (weight_bits, activation_bits) precision class; correctness is defined against a reference computation AT THE SAME PRECISION (quantization is intentionally lossy vs. fp32, so an fp32-relative tolerance is the wrong gate).\n",
+      "inputs": {
+       "suite": "resnet18_1..resnet18_11 from layer_shape_suite (cgo's own artifact already benchmarks ResNet-18 layer-by-layer at this precision; reused rather than inventing a new list)",
+       "selection": "",
+       "recommended_subset": "",
+       "dense_operand": ""
+      }
+     },
+     {
+      "id": "conv-tuning-cost",
+      "claim": "Time-to-reach-target-performance from a cold start (no cached schedule/tuning database) — a distinct, non-per-call metric that is the actual subject of Ansor-AF-DS's contribution and is implicitly claimed to be near-zero by the analytical-tiling paper (ASPLOS'21); NOT blended into the steady-state GFLOP/s of conv-dense-kernel-fp32.\n",
+      "inputs": {
+       "suite": "resnet18_1..resnet18_11 and yolo_1/yolo_3/yolo_5/yolo_7/yolo_9 from layer_shape_suite (matches Ansor-AF-DS's own ResNet/YOLO network task sets)",
+       "selection": "",
+       "recommended_subset": "",
+       "dense_operand": ""
+      }
+     }
+    ]
+   },
+   "papers": [
+    {
+     "key": "conf/ics/LiXSS24",
+     "title": "Accelerated Auto-Tuning of GPU Kernels for Tensor Computations",
+     "venue": "ICS",
+     "year": 2024,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "autotuning",
+     "artifact_url": "https://github.com/HPCRL/Ansor-AF-DS",
+     "one_liner": "Faster TVM auto-tuning of GPU GEMM/convolution tensor kernels",
+     "kernels_assigned": [
+      "GEMM",
+      "2D convolution"
+     ],
+     "categories": [
+      "dense_la",
+      "ml_kernels"
+     ],
+     "abstract": "TVM is a state-of-the-art auto-tuning compiler for the synthesis of high-performance implementations of tensor computations. However, an extensive search in the vast design space via thousands of compile-execute trials is often needed to identify high-performance code versions, leading to high auto-tuning time. This paper develops new performance modeling and design space exploration strategies to accelerate the code optimization process within TVM. Experimental evaluation on a number of matrix-matrix multiplication and 2D convolution kernels demonstrates about an order-of-magnitude improvement in auto-tuning time to achieve the same level of code performance."
+    },
+    {
+     "key": "conf/ppopp/LiuZYLQ24",
+     "title": "Tetris: Accelerating Sparse Convolution by Exploiting Memory Reuse on GPU",
+     "venue": "PPoPP",
+     "year": 2024,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/XG-zheng/Tetris-artifact-evalution",
+     "one_liner": "Memory-reuse-optimized sparse convolution kernel for GPU inference of pruned CNNs",
+     "kernels_assigned": [
+      "sparse convolution"
+     ],
+     "categories": [
+      "ml_kernels",
+      "sparse_la"
+     ],
+     "abstract": "Convolutional neural networks (CNNs) have achieved remarkable success in various application fields. Although model compression techniques mitigate the ever-increasing resource demands of large CNN models, the compressed models usually exhibit irregular memory access and unstructured sparsity, which are difficult for dominant operators such as sparse convolution to achieve expected performance speedup on popular inference platforms such as GPU. In this paper, we propose Tetris, an efficient sparse convolution approach optimized for GPU. Tetris first fully exploits the input reuse opportunity of sparse convolution to reduce the memory accesses to global memory. It then adopts a stride packed filter (SPF) format and a bank-sensing reorganization scheme to eliminate the irregular memory accesses caused by unstructured sparsity. It also leverages a filter group reorder technique to address load imbalance among threads, and a parameter tuning method to determine the optimal parameters of the sparse convolution implementation. The experiment results show that Tetris outperforms dense/sparse convolution libraries and cutting-edge implementations with promising performance speedup."
+    },
+    {
+     "key": "conf/asplos/DingYZLWP23",
+     "title": "Hidet: Task-Mapping Programming Paradigm for Deep Learning Tensor Programs",
+     "venue": "ASPLOS",
+     "year": 2023,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/hidet-org/hidet",
+     "one_liner": "Task-mapping paradigm compiles DL tensor programs into fast GPU kernels rivaling hand-optimized libraries.",
+     "kernels_assigned": [
+      "GEMM",
+      "conv2d"
+     ],
+     "categories": [
+      "ml_kernels",
+      "dense_la"
+     ],
+     "abstract": "As deep learning models nowadays are widely adopted by both cloud services and edge devices, reducing the latency of deep learning model inferences becomes crucial to provide efficient model serving. However, it is challenging to develop efficient tensor programs for deep learning operators due to the high complexity of modern accelerators (e.g., NVIDIA GPUs and Google TPUs) and the rapidly growing number of operators."
+    },
+    {
+     "key": "conf/dac/BasalamaWC23",
+     "title": "A Comprehensive Automated Exploration Framework for Systolic Array Designs",
+     "venue": "DAC",
+     "year": 2023,
+     "platform": [
+      "fpga"
+     ],
+     "approach": "autotuning",
+     "artifact_url": "https://github.com/UCLA-VAST/Odyssey",
+     "one_liner": "Odyssey DSE tool explores tiling/dataflow for systolic-array matmul and conv kernels on FPGA",
+     "kernels_assigned": [
+      "GEMM",
+      "convolution"
+     ],
+     "categories": [
+      "dense_la",
+      "ml_kernels"
+     ],
+     "abstract": "Many researchers studying the performance tuning of systolic arrays have based their works on oversimplified assumptions like considering only divisors for loop tiling or pruning based on off-chip data communication to reduce the design space. In this paper, we present a comprehensive design space exploration tool named Odyssey for systolic array optimization. Odyssey results show that limiting tiling factors to only divisors of the problem size can cause up to 39% performance loss, and pruning the design space based on off-chip data movement can miss optimal designs. We tested Odyssey using various matrix multiplication and convolution kernels and validated the results with FPGA implementations."
+    },
+    {
+     "key": "conf/asplos/0033XSRS21",
+     "title": "Analytical characterization and design space exploration for optimization of CNNs",
+     "venue": "ASPLOS",
+     "year": 2021,
+     "platform": [
+      "cpu"
+     ],
+     "approach": "autotuning",
+     "artifact_url": "https://github.com/HPCRL/ASPLOS_artifact",
+     "one_liner": "Analytical model finds optimal CNN loop tiling/permutation on multicore CPUs, matching or beating autotuners",
+     "kernels_assigned": [
+      "conv"
+     ],
+     "categories": [
+      "ml_kernels"
+     ],
+     "abstract": "Moving data through the memory hierarchy is a fundamental bottleneck that can limit the performance of core algorithms of machine learning, such as convolutional neural networks (CNNs). Loop-level optimization, including loop tiling and loop permutation, are fundamental transformations to reduce data movement. However, the search space for finding the best loop-level optimization configuration is explosively large. This paper develops an analytical modeling approach for finding the best loop-level optimization configuration for CNNs on multi-core CPUs. Experimental evaluation shows that this approach achieves comparable or better performance than state-of-the-art libraries and auto-tuning based optimizers for CNNs."
+    },
+    {
+     "key": "conf/asplos/ChenMCA21",
+     "title": "VeGen: a vectorizer generator for SIMD and beyond",
+     "venue": "ASPLOS",
+     "year": 2021,
+     "platform": [
+      "cpu"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/ychen306/vegen",
+     "one_liner": "Auto-generates vectorizers for non-SIMD ISAs; speeds up DSP/image/ML kernels over LLVM on CPU",
+     "kernels_assigned": [
+      "dot product",
+      "convolution"
+     ],
+     "categories": [
+      "dense_la",
+      "ml_kernels"
+     ],
+     "abstract": "Vector instructions are ubiquitous in modern processors. Traditional compiler auto-vectorization techniques have focused on targeting single instruction multiple data (SIMD) instructions. However, these auto-vectorization techniques are not sufficiently powerful to model non-SIMD vector instructions, which can accelerate applications in domains such as image processing, digital signal processing, and machine learning. To target non-SIMD instruction, compiler developers have resorted to complicated, ad hoc peephole optimizations, expending significant development time while still coming up short. As vector instruction sets continue to rapidly evolve, compilers cannot keep up with these new hardware capabilities."
+    },
+    {
+     "key": "conf/ipps/WangFD21",
+     "title": "DSXplore: Optimizing Convolutional Neural Networks via Sliding-Channel Convolutions",
+     "venue": "IPDPS",
+     "year": 2021,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/YukeWang96/DSXplore_IPDPS21",
+     "one_liner": "Novel sliding-channel convolution design with optimized GPU backward/channel-cyclic kernels for CNNs",
+     "kernels_assigned": [
+      "depthwise separable / sliding-channel convolution"
+     ],
+     "categories": [
+      "ml_kernels"
+     ],
+     "abstract": "As the key advancement of the convolutional neural networks (CNNs), depthwise separable convolutions (DSCs) are becoming one of the most popular techniques to reduce the computations and parameters size of CNNs meanwhile maintaining the model accuracy. It also brings profound impact to improve the applicability of the compute- and memory-intensive CNNs to a broad range of applications, such as mobile devices, which are generally short of computation power and memory. However, previous research in DSCs are largely focusing on compositing the limited existing DSC designs, thus, missing the opportunities to explore more potential designs that can achieve better accuracy and higher computation/parameter reduction. Besides, the off-the-shelf convolution implementations offer limited computing schemes, therefore, lacking support for DSCs with different convolution patterns.To this end, we introduce, DSXplore, the first optimized design for exploring DSCs on CNNs. Specifically, at the algorithm level, DSXplore incorporates a novel factorized kernel-sliding-channel convolution (SCC), featured with input-channel overlapping to balance the accuracy performance and the reduction of computation and memory cost. SCC also offers enormous space for design exploration by introducing adjustable kernel parameters. Further, at the implementation level, we carry out an optimized GPU-implementation tailored for SCC by leveraging several key techniques, such as the input-centric backward design and the channel-cyclic optimization. Intensive experiments on different datasets across mainstream CNNs show the advantages of DSXplore in balancing accuracy and computation/parameter reduction over the standard convolution and the existing DSCs."
+    },
+    {
+     "key": "journals/tpds/LiS21",
+     "title": "Accelerating Binarized Neural Networks via Bit-Tensor-Cores in Turing GPUs",
+     "venue": "TPDS",
+     "year": 2021,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/pnnl/TCBNN",
+     "one_liner": "Bit-Tensor-Core BNN kernels (bit-GEMM, bit-convolution) on Turing GPUs, 77% faster than prior art",
+     "kernels_assigned": [
+      "bit matrix multiplication",
+      "bit convolution"
+     ],
+     "categories": [
+      "dense_la",
+      "ml_kernels"
+     ],
+     "abstract": "Despite foreseeing tremendous speedups over conventional deep neural networks, the performance advantage of binarized neural networks (BNNs) has merely been showcased on general-purpose processors such as CPUs and GPUs. In fact, due to being unable to leverage bit-level-parallelism with a word-based architecture, GPUs have been criticized for extremely low utilization (1 percent) when executing BNNs. Consequently, the latest tensorcores in NVIDIA Turing GPUs start to experimentally support bit computation. In this article, we look into this brand new bit computation capability and characterize its unique features. We show that the stride of memory access can significantly affect performance delivery and a data-format co-design is highly desired to support the tensorcores for achieving superior performance than existing software solutions without tensorcores. We realize the tensorcore-accelerated BNN design, particularly the major functions for fully-connect and convolution layers - bit matrix multiplication and bit convolution. Evaluations on two NVIDIA Turing GPUs show that, with ResNet-18, our BTC-BNN design can process ImageNet at a rate of 5.6K images per second, 77 percent faster than state-of-the-art. Our BNN approach is released on https://github.com/pnnl/TCBNN."
+    },
+    {
+     "key": "conf/cgo/CowanMCBC20",
+     "title": "Automatic generation of high-performance quantized machine learning kernels",
+     "venue": "CGO",
+     "year": 2020,
+     "platform": [
+      "arm-cpu",
+      "cpu"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/cowanmeg/cgo-artifact-2020",
+     "one_liner": "Automatic generation/tuning of ultra-low-precision quantized ML inference kernels",
+     "kernels_assigned": [
+      "quantized GEMM",
+      "bit-serial convolution"
+     ],
+     "categories": [
+      "ml_kernels",
+      "dense_la"
+     ],
+     "abstract": "Quantization optimizes machine learning inference for resource constrained environments by reducing the precision of its computation. In the extreme, even single-bit computations can produce acceptable results at dramatically lower cost. But this ultra-low-precision quantization is difficult to exploit because extracting optimal performance requires hand-tuning both high-level scheduling decisions and low-level implementations. As a result, practitioners settle for a few predefined quantized kernels, sacrificing optimality and restricting their ability to adapt to new hardware."
+    }
+   ]
+  },
+  {
+   "group": "cg-krylov",
+   "slug": "cg-krylov",
+   "spec": {
+    "summary": "Preconditioned Conjugate Gradient (and closely related nested/mixed- precision Krylov variants) for sparse symmetric positive-definite linear systems A x = b; measured as four distinct claims this track's own artifacts already draw different lines around — a fixed-iteration unpreconditioned kernel-throughput variant (PERKS's own research question), an end-to-end to-convergence ILU(0)-preconditioned variant with mandatory separate preconditioner-setup reporting (generalizing SPCG's own good practice), a synthetic HPCG-style 3D-stencil-generator + AMG-preconditioned distributed/weak-scaling vari",
+    "operation": "solve A x = b (A sparse, real, symmetric positive-definite, N x N) via (preconditioned) Conjugate Gradient. One PCG iteration = 1 SpMV (q = A*p) + optional preconditioner apply (z = M^-1*r) + 2 dot-product reductions + 3 AXPY-family vector updates (p = z + beta*p; x = x + alpha*p; r = r - alpha*q).\n",
+    "variants": [
+     {
+      "id": "cg-kernel-fixed-iter",
+      "claim": "steady-state per-iteration cost of the UNPRECONDITIONED CG kernel (SpMV + 2 dots + 3 axpys), fixed iteration count, preconditioner excluded entirely — isolates the CG kernel itself from any preconditioner-specific behavior, matching PERKS's explicit research question (persistent-kernel throughput for iterative memory-bound solvers). Fixes two things found in this track's own artifacts: (1) PERKS's",
+      "inputs": {
+       "suite": "SuiteSparse Matrix Collection",
+       "selection": "real, symmetric positive-definite (or numerically-SPD-verified) matrices; nnz in [1e4, 4e8]; square. Matches SPCG's own ILU-preconditioned-SPD selection intent and F3R's \"symmetric\" list; explicitly excludes F3R's own \"general\" nonsymmetric/BiCGSTAB list (out of scope for a CG-specific track — see open_questions for a possible future BiCGSTAB track).\n",
+       "recommended_subset": [
+        "bcsstk17",
+        "bcsstk18",
+        "bcsstk25",
+        "bcsstk36",
+        "ct20stif",
+        "nasasrb",
+        "olafu",
+        "gyro",
+        "cfd1",
+        "thermal1",
+        "crystm03",
+        "nd3k"
+       ],
+       "dense_operand": ""
+      }
+     },
+     {
+      "id": "cg-e2e-ilu0-to-convergence",
+      "claim": "end-to-end time-to-solution for ILU(0)-preconditioned CG run to a relative-residual convergence gate, with preconditioner analysis+factorization ALWAYS measured and reported separately from the PCG loop — generalizes SPCG's own artifact discipline (which gets this right in the one file surveyed) into a mandatory requirement for every submission, since no other surveyed paper in this track implemen",
+      "inputs": {
+       "suite": "same as cg-kernel-fixed-iter",
+       "selection": "same as cg-kernel-fixed-iter",
+       "recommended_subset": "same as cg-kernel-fixed-iter",
+       "dense_operand": ""
+      }
+     },
+     {
+      "id": "cg-hpcg-generator-amg",
+      "claim": "to-convergence throughput on synthetic HPCG-style 3D-stencil SPD systems (generated in-memory, not downloaded), AMG-preconditioned, reported as weak- and strong-scaling curves — targets the distributed/multi-node usage pattern that a fixed downloaded matrix cannot represent, and which THREE independently-surveyed papers on three different platforms actually use (BootCMatchGX's `--laplacian-3d SIZE",
+      "inputs": {
+       "suite": "synthetic 3D Laplacian / Poisson stencil generator (not SuiteSparse)",
+       "selection": "both 7-point and 27-point stencil variants (BootCMatchGX ships both; they differ in nnz/row and therefore in arithmetic intensity); local subdomain sizes and rank counts chosen to cover both a strong-scaling series (fixed global problem, increasing rank count) and a weak-scaling series (fixed per-rank local problem, growing global problem with rank count).\n",
+       "recommended_subset": "weak scaling: local subdomain 50^3 per rank (matches BootCMatchGX's own regressionTest config lap3d_27p_50x50x50_{1x1x1,2x1x1,2x2x2}) and 128^3 per rank, at rank counts {1, 2, 4, 8, 16, 32, 64}; stron",
+       "dense_operand": ""
+      }
+     },
+     {
+      "id": "cg-mixed-precision-cascade",
+      "claim": "to-convergence solve using a reduced-precision cascade (fp64 outer / fp32-or-fp16 inner), reporting speedup vs. a matched fp64-only baseline WITHOUT silently trading away final accuracy — targets F3R's nested FGMRES/Richardson fp16-inner design and Mille-feuille's tile-grained on-chip dynamic precision conversion, the two papers in this track that build reduced-precision Krylov solvers as their ce",
+      "inputs": {
+       "suite": "same as cg-kernel-fixed-iter, restricted to the symmetric/SPD recommended_subset (F3R's own symmetric list already overlaps heavily with it)",
+       "selection": "same as cg-kernel-fixed-iter",
+       "recommended_subset": "same as cg-kernel-fixed-iter",
+       "dense_operand": ""
+      }
+     }
+    ]
+   },
+   "papers": [
+    {
+     "key": "conf/ipps/NoackKK25",
+     "title": "Accelerating Sparse Linear Solvers on Intelligence Processing Units",
+     "venue": "IPDPS",
+     "year": 2025,
+     "platform": [
+      "other"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/esa-tu-darmstadt/graphene",
+     "one_liner": "DSL-generated sparse linear solvers (SpMV/ILU/PBiCGStab) on Graphcore IPUs, up to 150x vs CPU/GPU.",
+     "kernels_assigned": [
+      "SpMV",
+      "PBiCGStab",
+      "ILU"
+     ],
+     "categories": [
+      "sparse_la",
+      "solver_components"
+     ],
+     "abstract": "This paper presents an open-source framework for solving large, sparse linear systems on Intelligence Processing Units (IPUs). The IPU is a massively parallel architecture consisting of thousands of independent cores connected by an all-to-all communication fabric. We introduce two Domain-Specific Languages, CodeDSL and TensorDSL, that allow us to express complex algebraic algorithms like solvers and preconditioners close to their mathematical notation. Our framework symbolically executes these DSLs to generate the dataflow graph, execution schedule, and the codelets required by IPU's programming model. The IPU's cacheless design allows us to reorder matrices without performance penalties. We present a novel matrix reordering strategy that enables efficient blockwise halo exchanges with the IPU's all-to-all communication fabric. Our framework implements a suite of parallel linear solvers and preconditioners, including the Preconditioned Bi-Conjugate Gradient Stabilized (PBiCGStab) method and the Incomplete LU Factorization (ILU). The IPU's lack of native double-precision support poses a challenge for solving large, sparse systems. We address this using the novel combination of the MixedPrecision Iterative Refinement (MPIR) method and double-word arithmetics to achieve high-precision solutions without native double-precision support. We evaluate our framework's performance on matrices from the SuiteSparse collection and synthetic Poisson problems, demonstrating near-ideal strong and weak scaling on Sparse Matrix-Vector Multiplications (SpMVs). Comparative benchmarks show that our framework outperforms state-of-the-art CPU and GPU implementations by up to <tex xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">$150 x$</tex> and <tex "
+    },
+    {
+     "key": "conf/sc/SuzukiI25",
+     "title": "A Nested Krylov Method Using Half-Precision Arithmetic",
+     "venue": "SC",
+     "year": 2025,
+     "platform": [
+      "cpu"
+     ],
+     "approach": "algorithmic",
+     "artifact_url": "https://github.com/suzuki-hpc/F3R",
+     "one_liner": "Nested FGMRES/Richardson Krylov solver exploiting fp16 inner iterations, up to 2.42x speedup",
+     "kernels_assigned": [
+      "FGMRES",
+      "Krylov solver",
+      "Richardson iteration"
+     ],
+     "categories": [
+      "solver_components"
+     ],
+     "abstract": "Low-precision computing is essential for efficiently utilizing memory bandwidth and computing cores. While many mixed-precision algorithms have been developed for iterative sparse linear solvers, effectively leveraging half-precision (fp16) arithmetic remains challenging. This study introduces a novel nested Krylov approach that integrates the FGMRES and Richardson methods in a deeply nested structure, progressively reducing precision from double-precision to fp16 toward the innermost solver. To avoid meaningless computations beyond precision limits, the low-precision inner solvers perform only a few iterations per invocation, while the nested structure ensures their frequent execution. Numerical experiments show that incorporating fp16 into the approach directly enhances solver performance without compromising convergence, achieving speedups of up to 1.65 × and 2.42 × over double-precision and double-single mixed-precision implementations, respectively. Furthermore, the proposed method outperforms conventional mixed-precision Krylov solvers, CG, BiCGStab, and restarted FGMRES, by factors of up to 2.47, 2.74, and 69.10, respectively."
+    },
+    {
+     "key": "conf/sc/MaACSH25",
+     "title": "Sparsified Preconditioned Conjugate Gradient Solver on GPUs",
+     "venue": "SC",
+     "year": 2025,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "algorithmic",
+     "artifact_url": "https://github.com/SwiftWare-Lab/SPCG",
+     "one_liner": "Sparsified ILU-preconditioned CG solver increases GPU parallelism, up to 3.73x end-to-end speedup",
+     "kernels_assigned": [
+      "preconditioned conjugate gradient",
+      "ILU preconditioner"
+     ],
+     "categories": [
+      "solver_components",
+      "sparse_la"
+     ],
+     "abstract": "Preconditioned iterative sparse linear solvers are memory-efficient for large scientific simulations, but the dependences between iterations introduced by preconditioners limit parallelization. This issue is exacerbated on GPUs, which feature many parallel cores. We propose a sparsified preconditioned conjugate gradient (SPCG) solver that increases parallelism by reducing dependences through sparsification, while preserving convergence behavior. We evaluate the proposed SPCG using both ILU(0) and ILU(K) preconditioners on a wide range of symmetric positive definite (SPD) matrices. The proposed SPCG improves the performance of the iterative phase of SPCG by a geometric mean speedup of 1.23 × and 1.65 × over the non-sparsified PCG using ILU(0) and ILU(K), respectively on an NVIDIA A100 GPU. SPCG also yields geometric mean end-to-end speedups of 1.68 × and 3.73 × over the non-sparsified versions with ILU(0) and ILU(K), respectively, on the same platform."
+    },
+    {
+     "key": "conf/sc/YangZNJS0T024",
+     "title": "Mille-feuille: A Tile-Grained Mixed Precision Single-Kernel Conjugate Gradient Solver on GPUs",
+     "venue": "SC",
+     "year": 2024,
+     "platform": [
+      "nvidia-gpu",
+      "amd-gpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/SuperScientificSoftwareLaboratory/Mille-feuille",
+     "one_liner": "Mille-feuille: tile-grained mixed-precision single-kernel CG/BiCGSTAB solver, up to 3-5x over cuSPARSE",
+     "kernels_assigned": [
+      "CG",
+      "BiCGSTAB",
+      "PCG",
+      "PBiCGSTAB"
+     ],
+     "categories": [
+      "solver_components",
+      "sparse_la"
+     ],
+     "abstract": "Conjugate gradient (CG) and biconjugate gradient stabilized (BiCGSTAB) are effective methods used for solving sparse linear systems. We in this paper propose Mille-feuille, a new solver for accelerating CG and BiCGSTAB on GPUs. We first analyze the two methods and list three findings related to the use of mixed precision, the reduction of kernel synchronization costs, and the awareness of partial convergence during the iteration steps. Then, (1) to enable tile-grained mixed precision, we develop a tiled sparse format; (2) to reduce synchronization costs, we leverage atomic operations that make the whole solving procedure work within a single GPU kernel; (3) to support a partial convergence-aware mixed precision strategy, we enable tile-wise on-chip dynamic precision conversion within the single kernel at runtime. The experimental results on an NVIDIA A100 and an AMD MI210 show that the Mille-feuille solver outperforms baseline implementations using the vendor-support cuSPARSE/hipSPARSE as well as two state-of-the-art libraries PETSc and Ginkgo by a factor of on average 3.03x/2.68x, 5.37 x, 4.36x (up to $8.77 \\mathrm{x} / 7.14 x$, 16.54x, 15.69x) in CG, on average 2.65x/2.32x, 3.57x, 3.78x (up to 7.51x/6.63x, 16.64x, 11.73x) in BiCGSTAB, on average 3.82x/3.47x (up to 40.38x/47.75x) in preconditioned CG (PCG), on average 1.79x/1.63x (up to 45.63x/44.34x) in preconditioned BiCGSTAB (PBiCGSTAB), respectively."
+    },
+    {
+     "key": "conf/ics/ZhangWCMWEM23",
+     "title": "PERKS: a Locality-Optimized Execution Model for Iterative Memory-bound GPU Applications",
+     "venue": "ICS",
+     "year": 2023,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/neozhang307/PERKS",
+     "one_liner": "Persistent-kernel locality optimization for iterative stencil/CG GPU kernels",
+     "kernels_assigned": [
+      "2D/3D stencil",
+      "conjugate gradient",
+      "SpMV"
+     ],
+     "categories": [
+      "stencil_pde",
+      "solver_components"
+     ],
+     "abstract": "Iterative memory-bound solvers commonly occur in HPC codes. Typical GPU implementations have a loop on the host side that invokes the GPU kernel as much as time/algorithm steps there are. The termination of each kernel implicitly acts the barrier required after advancing the solution every time step. We propose an execution model for running memory-bound iterative GPU kernels: PERsistent KernelS (PERKS). In this model, the time loop is moved inside persistent kernel, and device-wide barriers are used for synchronization. We then reduce the traffic to device memory by caching subset of the output in each time step in the unused registers and shared memory. PERKS can be generalized to any iterative solver: they largely independent of the solver's implementation. We explain the design principle of PERKS and demonstrate effectiveness of PERKS for a wide range of iterative 2D/3D stencil benchmarks (geomean speedup of 2.12x for 2D stencils and 1.24x for 3D stencils over state-of-art libraries), and a Krylov subspace conjugate gradient solver (geomean speedup of 4.86x in smaller SpMV datasets from SuiteSparse and 1.43x in larger SpMV datasets over a state-of-art library). All PERKS-based implementations available at: https://github.com/neozhang307/PERKS."
+    },
+    {
+     "key": "journals/tpds/BernaschiCVD23",
+     "title": "A Multi-GPU Aggregation-Based AMG Preconditioner for Iterative Linear Solvers",
+     "venue": "TPDS",
+     "year": 2023,
+     "platform": [
+      "nvidia-gpu",
+      "distributed"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/bootcmatch/BootCMatchGX",
+     "one_liner": "Multi-GPU MPI-CUDA AMG-preconditioned Krylov solver (BootCMatchG), up to 2x over Nvidia AmgX.",
+     "kernels_assigned": [
+      "AMG preconditioner",
+      "Krylov solver"
+     ],
+     "categories": [
+      "sparse_la",
+      "solver_components"
+     ],
+     "abstract": "We present and release in open source format a sparse linear solver which efficiently exploits heterogeneous parallel computers. The solver can be easily integrated into scientific applications that need to solve large and sparse linear systems on modern parallel computers made of hybrid nodes hosting Nvidia Graphics Processing Unit (GPU) accelerators. The work extends previous efforts of some of the authors in the exploitation of a single GPU accelerator and proposes an implementation, based on the hybrid MPI-CUDA software environment, of a Krylov-type linear solver relying on an efficient Algebraic MultiGrid (AMG) preconditioner already available in the <italic xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">BootCMatchG</i> library. Our design for the hybrid implementation has been driven by the best practices for minimizing data communication overhead when multiple GPUs are employed, yet preserving the efficiency of the GPU kernels. Strong and weak scalability results of the new version of the library on well-known benchmark test cases are discussed. Comparisons with the Nvidia AmgX solution show a speedup, in the solve phase, up to 2.0x."
+    },
+    {
+     "key": "conf/sc/BrunnHBMM20",
+     "title": "Multi-node multi-GPU diffeomorphic image registration for large-scale imaging problems",
+     "venue": "SC",
+     "year": 2020,
+     "platform": [
+      "nvidia-gpu",
+      "distributed"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/andreasmang/claire",
+     "one_liner": "Multi-GPU CLAIRE: optimized interpolation/FD/FFT kernels + preconditioner for image registration.",
+     "kernels_assigned": [
+      "interpolation",
+      "finite-difference operators",
+      "FFT",
+      "Gauss-Newton-Krylov solve"
+     ],
+     "categories": [
+      "stencil_pde",
+      "fft_spectral",
+      "solver_components"
+     ],
+     "abstract": "We present a Gauss-Newton-Krylov solver for large deformation diffeomorphic image registration. We extend the publicly available CLAIRE library to multi-node multi-graphics processing unit (GPUs) systems and introduce novel algorithmic modifications that significantly improve performance. Our contributions comprise (i) a new preconditioner for the reduced-space Gauss-Newton Hessian system, (ii) a highly-optimized multi-node multi-GPU implementation exploiting device direct communication for the main computational kernels (interpolation, high-order finite difference operators and Fast-Fourier-Transform), and (iii) a comparison with state-of-the-art CPU and GPU implementations. We solve a 256 <sup xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">3</sup> -resolution image registration problem in five seconds on a single NVIDIA Tesla V100, with a performance speedup of 70% compared to the state-of-the-art. In our largest run, we register 20483 resolution images (25B unknowns; approximately 152$\\times$ larger than the largest problem solved in state-of-the-art GPU implementations) on 64 nodes with 256 GPUs on TACC’s Longhorn system."
+    }
+   ]
+  },
+  {
+   "group": "multigrid",
+   "slug": "multigrid",
+   "spec": {
+    "summary": "Algebraic/geometric multigrid as a preconditioner or standalone solver for Ax=b, measured with the setup phase (hierarchy construction: coarsening + interpolation + Galerkin SpGEMM triple product) and the solve phase (V-cycle smoothing + SpMV) reported as fully separate numbers — the split every surveyed solver paper's own code enforces internally, even when its headline speedup blends them. GPU/algebraic-AMG variants and a CPU/ geometric-MG variant are kept separate because they have structurally different hierarchies (SpGEMM-coarsened matrix hierarchy vs. a geometrically-refined structured g",
+    "operation": "solve A[N,N](sparse, s.p.d.) x[N] = b[N] via (P)CG with an AMG/MG V-cycle preconditioner; A_k+1 = R_k A_k P_k for the algebraic-setup variants",
+    "variants": [
+     {
+      "id": "mg-gpu-setup-kernel-f64",
+      "claim": "steady-state GPU AMG SETUP-phase throughput (coarsening + interpolation + Galerkin triple-product SpGEMM chain that builds the grid hierarchy), reported ENTIRELY separately from solve-phase time — the axis this track's own instructions call out as the classic AMG split, and one that AmgT's and BootCMatchGX's own code/plots both already keep separate internally (AmgT's `t_start/t_stop` bracket arou",
+      "inputs": {
+       "suite": "two explicitly separate, non-interchangeable input classes (see Divergences in survey.md — no surveyed paper mixes them, and results on one are not comparable to results on the other): (a) \"poisson-3d",
+       "selection": "(a) poisson-3d: cubic grids nd in {64, 128, 192, 300}, i.e. up to 300^3 ~= 27e6 dofs (BootCMatchGX's own strong-scaling size), RHS f=1, unitary right-hand side. (b) suitesparse-real: real, square, s.p.d.-or-near-s.p.d. matrices with 2e4 <= nnz <= 5e7, matching the order-of-magnitude range AmgT's own 16-matrix set spans (229,947-46,522,475 nnz); no cherry-picking beyond that range filter.\n",
+       "recommended_subset": "poisson-3d: [64^3, 128^3, 192^3, 300^3] (192^3 matches MGopt-APP's HPCG grid size for CPU/GPU cross-reference; 300^3 matches BootCMatchGX's strong-scaling size exactly). suitesparse-real (AmgT's own 1",
+       "dense_operand": ""
+      }
+     },
+     {
+      "id": "mg-gpu-solve-kernel-fixed-iter",
+      "claim": "steady-state GPU AMG SOLVE-phase throughput for a FIXED, disconnected- from-convergence iteration count — the protocol AmgT's own driver code actually implements (`HYPRE_BoomerAMGSetMaxIter(precond, 50)` combined with `HYPRE_BoomerAMGSetTol(precond, 1e-20)`, which can never trigger early exit). This variant exists specifically to give every implementation the SAME fixed amount of work (comparable ",
+      "inputs": {
+       "suite": "same two classes as mg-gpu-setup-kernel-f64 (poisson-3d, suitesparse-real)",
+       "selection": "same as mg-gpu-setup-kernel-f64",
+       "recommended_subset": "same as mg-gpu-setup-kernel-f64",
+       "dense_operand": ""
+      }
+     },
+     {
+      "id": "mg-gpu-e2e-pcg",
+      "claim": "end-to-end, CONVERGENCE-GATED preconditioned-CG solve: one-shot AMG setup + PCG iterations to a real stopping tolerance — BootCMatchGX's exact protocol (relative residual < 1e-6 in the l2 norm, capped at 1000 iterations), the honest counterpart to mg-gpu-solve-kernel-fixed-iter's fixed-work number. This is the claim practitioners actually care about (\"how long until I have a usable answer\"), and t",
+      "inputs": {
+       "suite": "same two classes as mg-gpu-setup-kernel-f64",
+       "selection": "same as mg-gpu-setup-kernel-f64, restricted to matrices/grids where the problem is s.p.d. (a PCG requirement both surveyed convergence-gated papers rely on)",
+       "recommended_subset": "same as mg-gpu-setup-kernel-f64",
+       "dense_operand": ""
+      }
+     },
+     {
+      "id": "mg-cpu-geometric-symgs",
+      "claim": "end-to-end CPU multi-core geometric-multigrid throughput (HPCG-style): no separate algebraic setup phase exists for this problem class (the grid hierarchy is defined directly by geometric refinement, factor of 8 per level, not by SpGEMM coarsening from a matrix) — MGopt-APP's exact evaluation shape, kept as its own variant rather than forced into the GPU setup/solve split above, since that split d",
+      "inputs": {
+       "suite": "HPCG v3.1's own synthetic 3D 27-point-stencil-flavored problem generator (structured grid, no external matrix file)",
+       "selection": "cubic local grids per MPI rank; standard HPCG problem-size convention (grid dimensions must be multiples of 8 to support the 4-level V-cycle's factor-of-8-per-level coarsening)",
+       "recommended_subset": "[64^3, 104^3, 144^3, 192^3] per MPI rank (192^3 is MGopt-APP's exact evaluated size); optionally a real-application-embedded validation problem (YHAMG solving Poisson via 7-point or 27-point stencil, ",
+       "dense_operand": ""
+      }
+     }
+    ]
+   },
+   "papers": [
+    {
+     "key": "conf/sc/LuZWFLCY0C024",
+     "title": "AmgT: Algebraic Multigrid Solver on Tensor Cores",
+     "venue": "SC",
+     "year": 2024,
+     "platform": [
+      "nvidia-gpu",
+      "amd-gpu"
+     ],
+     "approach": "library",
+     "artifact_url": "https://github.com/SuperScientificSoftwareLaboratory/AmgT",
+     "one_liner": "AmgT: tensor-core/mixed-precision SpGEMM+SpMV kernels for AMG setup/solve, up to 2.2x over HYPRE",
+     "kernels_assigned": [
+      "SpGEMM",
+      "SpMV"
+     ],
+     "categories": [
+      "sparse_la",
+      "solver_components",
+      "ml_kernels"
+     ],
+     "abstract": "Algebraic multigrid (AMG) methods are particularly efficient to solve a wide range of sparse linear systems, due to their good flexibility and adaptability. Even though modern parallel devices, such as GPUs, brought massive parallelism to AMG, the latest major hardware features, i.e., tensor core units and their low precision compute power, have not been exploited to accelerate AMG. This paper proposes AmgT, a new AMG solver that utilizes the tensor core and mixed precision ability of the latest GPUs during multiple phases of the AMG algorithm. Considering that the sparse general matrix-matrix multiplication (SpGEMM) and sparse matrix-vector multiplication (SpMV) are extensively used in the setup and solve phases, respectively, we propose a novel method based on a new unified sparse storage format that leverages tensor cores and their variable precision. Our method improves both the performance of GPU kernels, and also reduces the cost of format conversion in the whole data flow of AMG. To better utilize the algorithm components in existing libraries, the data format and compute kernels of the AmgT solver are incorporated into the HYPRE library. The experimental results on NVIDIA A100, H100 and AMD MI210 GPUs show that our AmgT outperforms the original GPU version of HYPRE by a factor of on geomean $1.46 \\times, 1.32 \\times$ and $2.24 \\times$ (up to $2.10 \\times, 2.06 \\times$ and $3.67 \\times$), respectively."
+    },
+    {
+     "key": "conf/ics/YangLYDHW23",
+     "title": "Optimizing Multi-grid Computation and Parallelization on Multi-cores",
+     "venue": "ICS",
+     "year": 2023,
+     "platform": [
+      "cpu",
+      "arm-cpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/YXJ-123/MGopt-APP",
+     "one_liner": "Optimized SYMGS/multigrid parallelization on multicore CPUs (HPCG)",
+     "kernels_assigned": [
+      "multigrid",
+      "SYMGS"
+     ],
+     "categories": [
+      "solver_components",
+      "sparse_la"
+     ],
+     "abstract": "Multigrid algorithms are widely used to solve large-scale sparse linear systems, which is essential for many high-performance workloads. The symmetric Gauss-Seidel (SYMGS) method is often responsible for the performance bottleneck of MG. This paper presents new methods to parallelize and enhance the computation and parallelization efficiency of the SYMGS and MG algorithms on multi-core CPUs. Our solution employs a matrix splitting strategy and a revised computation formula to decrease the computation operations and memory accesses in SYMGS. With this new SYMGS strategy, we can then merge the two most time-consuming components of MG. On top of these, we propose a new asynchronous parallelization scheme to reduce the synchronization overhead when parallelizing SYMGS. We demonstrate the benefit of our techniques by integrating them with the HPCG benchmark and two real-life applications. Evaluation conducted on four architectures, including three ARMv8 and one x86, shows that our techniques greatly surpass the performance of engineer- and vendor-tuned implementations across various workloads and platforms."
+    },
+    {
+     "key": "conf/ipps/ChoDKLLL23",
+     "title": "Harnessing the Crowd for Autotuning High-Performance Computing Applications",
+     "venue": "IPDPS",
+     "year": 2023,
+     "platform": [
+      "distributed",
+      "cpu"
+     ],
+     "approach": "autotuning",
+     "artifact_url": "https://github.com/gptune/GPTune",
+     "one_liner": "Crowd-sourced transfer-learning autotuner (GPTuneCrowd) speeds PDGEQRF, SuperLU_DIST, Hypre tuning",
+     "kernels_assigned": [
+      "QR factorization (PDGEQRF)",
+      "SuperLU_DIST",
+      "Hypre AMG"
+     ],
+     "categories": [
+      "dense_la",
+      "solver_components"
+     ],
+     "abstract": "This paper presents GPTuneCrowd, a crowd-based autotuning framework for tuning high-performance computing applications. GPTuneCrowd collects performance data from various users using a user-friendly tuner interface. GPTuneCrowd then presents novel autotuning techniques, based on transfer learning and parameter sensitivity analysis, to maximize tuning quality using collected data from the crowd. This paper shows several real-world case studies of GPTuneCrowd. Our evaluation shows that GPTuneCrowd’s transfer learning improves the tuned performance of ScaLAPACK’s PDGEQRF by 1.57x and a plasma fusion code NIMROD by 2.97x, over a non-transfer learning autotuner. We use GPTuneCrowd’s sensitivity analysis to reduce the search space of SuperLU_DIST and Hypre. Tuning on the reduced search space achieves 1.17x and 1.35x better tuned performance of SuperLU_DIST and Hypre, respectively, compared to the original search space."
+    },
+    {
+     "key": "journals/tpds/BernaschiCVD23",
+     "title": "A Multi-GPU Aggregation-Based AMG Preconditioner for Iterative Linear Solvers",
+     "venue": "TPDS",
+     "year": 2023,
+     "platform": [
+      "nvidia-gpu",
+      "distributed"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/bootcmatch/BootCMatchGX",
+     "one_liner": "Multi-GPU MPI-CUDA AMG-preconditioned Krylov solver (BootCMatchG), up to 2x over Nvidia AmgX.",
+     "kernels_assigned": [
+      "AMG preconditioner",
+      "Krylov solver"
+     ],
+     "categories": [
+      "sparse_la",
+      "solver_components"
+     ],
+     "abstract": "We present and release in open source format a sparse linear solver which efficiently exploits heterogeneous parallel computers. The solver can be easily integrated into scientific applications that need to solve large and sparse linear systems on modern parallel computers made of hybrid nodes hosting Nvidia Graphics Processing Unit (GPU) accelerators. The work extends previous efforts of some of the authors in the exploitation of a single GPU accelerator and proposes an implementation, based on the hybrid MPI-CUDA software environment, of a Krylov-type linear solver relying on an efficient Algebraic MultiGrid (AMG) preconditioner already available in the <italic xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">BootCMatchG</i> library. Our design for the hybrid implementation has been driven by the best practices for minimizing data communication overhead when multiple GPUs are employed, yet preserving the efficiency of the GPU kernels. Strong and weak scalability results of the new version of the library on well-known benchmark test cases are discussed. Comparisons with the Nvidia AmgX solution show a speedup, in the solve phase, up to 2.0x."
+    },
+    {
+     "key": "conf/ipps/ChenW0W0PTCWMFK21",
+     "title": "Accelerating Multigrid-based Hierarchical Scientific Data Refactoring on GPUs",
+     "venue": "IPDPS",
+     "year": 2021,
+     "platform": [
+      "nvidia-gpu",
+      "distributed"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/CODARcode/MGARD",
+     "one_liner": "GPU multigrid-based hierarchical data-refactoring kernels for MGARD, 250TB/s (83% peak) on Summit",
+     "kernels_assigned": [
+      "multigrid data refactoring / decomposition"
+     ],
+     "categories": [
+      "solver_components",
+      "compression"
+     ],
+     "abstract": "Rapid growth in scientific data and a widening gap between computational speed and I/O bandwidth make it increasingly infeasible to store and share all data produced by scientific simulations. Instead, we need methods for reducing data volumes: ideally, methods that can scale data volumes adaptively so as to enable negotiation of performance and fidelity tradeoffs in different situations. Multigrid-based hierarchical data representations hold promise as a solution to this problem, allowing for flexible conversion between different fidelities so that, for example, data can be created at high fidelity and then transferred or stored at lower fidelity via logically simple and mathematically sound operations. However, the effective use of such representations has been hindered until now by the relatively high costs of creating, accessing, reducing, and otherwise operating on such representations. We describe here highly optimized data refactoring kernels for GPU accelerators that enable efficient creation and manipulation of data in multigrid-based hierarchical forms. We demonstrate that our optimized design can achieve up to 250 TB/s aggregated data refactoring throughput-83% of theoretical peak-on 1024 nodes of the Summit supercomputer. We showcase our optimized design by applying it to a large-scale scientific visualization workflow and the MGARD lossy compression software."
+    }
+   ]
+  },
+  {
+   "group": "blas-level1-2",
+   "slug": "blas-level1-2",
+   "spec": {
+    "summary": "Vector-vector (level-1: dot, axpy, nrm2, scal) and matrix-vector (level-2: gemv, symmetric symv, triangular trsv) BLAS operations, as produced by the compiler/DSL/generator systems this track's 4 papers actually are (only 1 of 4, fBLAS, benchmarks named BLAS routines directly against a reference library the other way this spec's other tracks do; the other 3 evaluate a generator whose output includes BLAS-L1/L2-shaped kernels among a broader kernel set — see survey.md Divergences). Overwhelmingly memory-bandwidth-bound at every vector/matrix length large enough to exceed L1 cache, so GB/s is th",
+    "operation": "level-1: r = sum_i(x_i*y_i) [dot], y = a*x+y [axpy], r = ||x||_2 [nrm2], x = a*x [scal]. level-2: y = alpha*A*x + beta*y [gemv, A general MxK]; y = alpha*A*x + beta*y [symv, A symmetric MxM, only the canonical upper- or lower-triangle stored/read — half the memory traffic of a general gemv at the sa",
+    "variants": [
+     {
+      "id": "blas-l1-vector-kernel",
+      "claim": "steady-state bandwidth for level-1 vector ops (dot, axpy, nrm2, scal) across a vector-length sweep spanning L1 through DRAM- resident working sets, with an explicit reduction-accuracy axis for the two reduction ops (dot, nrm2) — the common-denominator variant, grounded directly in fBLAS's own `sdot`/`ddot` evaluation harness (`evaluation/individual_modules/`, `evaluation/cpu_comparison/host_dot.cp",
+      "inputs": {
+       "suite": "synthetic vectors, no external dataset (matches fBLAS's own on-the-fly-generated inputs for its memory-bound DOT/GEMV experiments)",
+       "selection": "vector length n swept across the working-set sizes that cross each cache level's capacity on a representative x86 target (32KB L1, 1MB L2, 30MB L3 — the same rough figures this spec's other tracks assume where a specific target isn't pinned); no surveyed paper states which cache levels its own sweep was designed to cross (fBLAS's `n` is a free CLI parameter with no stated design rationale beyond \"",
+       "recommended_subset": "n (elements, fp32) in {2048 (~8KB/vector, fits L1 alongside the other operand), 8192 (~32KB/vector, at the L1 boundary), 65536 (~256KB/vector, fits L2), 1048576 (~4MB/vector, exceeds typical L2, fits ",
+       "dense_operand": "precision in {fp32, fp64} (fBLAS's own `sdot`/`ddot` split; neither fp16 nor int8/uint8 reduction is evidenced for a \"plain\" level-1 dot/axpy/nrm2/scal in this track's 4 papers — the one mixed-int8/in"
+      }
+     },
+     {
+      "id": "blas-l2-gemv-symv-kernel",
+      "claim": "steady-state bandwidth for level-2 matrix-vector ops, covering both general GEMV (fBLAS's `sgemv`/`dgemv`) and symmetry-exploiting SYMV (SySTeC's `ssymv`, which reads only the canonical triangle) at matched M — the pairing exists specifically to make the symmetric-storage bandwidth *reduction* (not just a different access pattern) a first-class, measured comparison rather than two unrelated number",
+      "inputs": {
+       "suite": "synthetic dense (for gemv) and dense-symmetric (for symv, only the canonical triangle populated/read) matrices",
+       "selection": "M=K square (gemv) and M=M square-symmetric (symv) sweep, sized around fBLAS's own tile configuration (2048x2048 tiles, `sgemv.json`) since that is this track's only concrete GEMV tile-size evidence; SySTeC gives no concrete SYMV problem size in the sources read in this pass (open question)\n",
+       "recommended_subset": "M=K in {512, 1024, 2048, 4096} for both gemv and symv (symv's matrix is square by construction; gemv's is also square here for a matched, apples-to-apples comparison at each M — a rectangular gemv swe",
+       "dense_operand": "precision in {fp32, fp64} (matches fBLAS's own `sgemv`/`dgemv` split; SySTeC/Finch's own precision choice for `ssymv.jl` not confirmed from the ~15-line kernel snippet read in this pass — assume fp64,"
+      }
+     },
+     {
+      "id": "blas-l1-mixed-precision-reduction",
+      "claim": "measured (not merely instruction-count-estimated) runtime throughput of a mixed-precision, integer-accumulated dot-product reduction targeting fused dot-product ISA extensions (AVX512-VNNI and equivalents) — grounded in VeGen's own `dot_16x1x16_uint8_int8_int32` benchmark kernel, but this spec REQUIRES an actual wall-clock/cycle-accurate measurement rather than the static instruction-count compari",
+      "inputs": {
+       "suite": "synthetic uint8 x int8 vector pairs (VeGen's own kernel signature; sourced conceptually from TVM's 2D-convolution inner loop per the paper's own description, though the exact convolution shape that pr",
+       "selection": "vector length n a multiple of the target ISA's dot-product instruction width (16 for AVX512-VNNI's `vpdpbusd`, matching the kernel name's own \"16x1x16\" shape notation)",
+       "recommended_subset": "n in {16, 64, 256, 1024, 4096, 16384} (the native instruction width and small multiples thereof, plus a DRAM-scale point at 16384 for a bandwidth-bound comparison point analogous to blas-l1-vector-ker",
+       "dense_operand": "uint8 x (input 1), int8 (input 2), int32 accumulator (VeGen's own precision combination; exact rationale for the uint8/int8 asymmetry, rather than int8/int8, not recovered — matches the real VNNI inst"
+      }
+     },
+     {
+      "id": "blas-l1l2-generated-kernel-suite",
+      "claim": "aggregate throughput and correctness across a BROAD suite of compiler/DSL-generated level-1/2 (and adjacent) kernels compared against the same vendor-BLAS reference set — the variant this track most needs given that 3 of its 4 papers (Exo 2, SySTeC, and to a lesser extent VeGen) are fundamentally \"benchmark a generator across many kernels\" rather than \"benchmark one named routine\", unlike fBLAS an",
+      "inputs": {
+       "suite": "the union of every level-1/2 kernel each generator in this track actually claims to produce/optimize: from Exo 2 (BLAS level 1, 2 — exact op list not recovered, see open_questions, so use the canonica",
+       "selection": "every op named above, at the vector/matrix-length sweep defined in blas-l1-vector-kernel (level-1 ops) and blas-l2-gemv-symv-kernel (level-2 ops) respectively — this variant does not define a new size sweep, it defines a new AGGREGATION protocol over the other variants' own sweeps, run through whichever generator produced the kernel\n",
+       "recommended_subset": "same recommended_subset lists as blas-l1-vector-kernel and blas-l2-gemv-symv-kernel, run once per generator under test\n",
+       "dense_operand": "precision as each generator's own paper claims support for (report which); no single precision is assumed across generators\n"
+      }
+     }
+    ]
+   },
+   "papers": [
+    {
+     "key": "conf/asplos/IkarashiQDRBR25",
+     "title": "Exo 2: Growing a Scheduling Language",
+     "venue": "ASPLOS",
+     "year": 2025,
+     "platform": [
+      "cpu",
+      "arm-cpu"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/exo-lang/exo",
+     "one_liner": "User-extensible scheduling language; 80+ high-performance kernels competitive with SOTA on 3 platforms",
+     "kernels_assigned": [
+      "GEMM",
+      "BLAS-like kernels"
+     ],
+     "categories": [
+      "dense_la"
+     ],
+     "abstract": "User-schedulable languages (USLs) help programmers productively optimize programs by providing safe means of transforming them. Current USLs are designed to give programmers exactly the control they want, while automating all other concerns. However, there is no universal answer for what performance-conscious programmers want to control, how they want to control it, and what they want to automate, even in relatively narrow domains. We claim that USLs should, instead, be designed to grow. We present Exo 2, a scheduling language that enables users to define new scheduling operations externally to the compiler. By composing a set of trusted, fine-grained primitives, users can safely write their own scheduling library to build up desired automation. We identify actions (ways of modifying code), inspection (ways of interrogating code), and references (ways of pointing to code) as essential for any user-extensible USL. We fuse these ideas into a new mechanism called Cursors that enables the creation of scheduling libraries in user code. We demonstrate libraries that amortize scheduling effort across more than 80 high-performance kernels, reducing total scheduling code by an order of magnitude and delivering performance competitive with state-of-the-art implementations on three different platforms."
+    },
+    {
+     "key": "conf/cgo/PatelAA25",
+     "title": "SySTeC: A Symmetric Sparse Tensor Compiler",
+     "venue": "CGO",
+     "year": 2025,
+     "platform": [
+      "cpu"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/radha-patel/SySTeC",
+     "one_liner": "SySTeC compiler auto-generates symmetry-aware sparse/dense tensor kernels, up to 30.4x on MTTKRP",
+     "kernels_assigned": [
+      "SSYMV",
+      "MTTKRP"
+     ],
+     "categories": [
+      "dense_la",
+      "sparse_la",
+      "tensor"
+     ],
+     "abstract": "Symmetric and sparse tensors arise naturally in many domains including linear algebra, statistics, physics, chemistry, and graph theory. Symmetric tensors are equal to their transposes, so in the n-dimensional case we can save up to a factor of n! by avoiding redundant operations. Sparse tensors, on the other hand, are mostly zero, and we can save asymptotically by processing only nonzeros. Unfortunately, specializing for both symmetry and sparsity at the same time is uniquely challenging. Optimizing for symmetry requires consideration of n! transpositions of a triangular kernel, which can be complex and error prone. Considering multiple transposed iteration orders and triangular loop bounds also complicates iteration through intricate sparse tensor formats. Additionally, since each combination of symmetry and sparse tensor formats requires a specialized implementation, this leads to a combinatorial number of cases. A compiler is needed, but existing compilers cannot take advantage of both symmetry and sparsity within the same kernel. In this paper, we describe the first compiler which can automatically generate symmetry-aware code for sparse or structured tensor kernels. We introduce a taxonomy for symmetry in tensor kernels, and show how to target each kind of symmetry. Our implementation demonstrates significant speedups ranging from 1.36x for SSYMV to 30.4x for a 5-dimensional MTTKRP over the non-symmetric state of the art."
+    },
+    {
+     "key": "conf/asplos/ChenMCA21",
+     "title": "VeGen: a vectorizer generator for SIMD and beyond",
+     "venue": "ASPLOS",
+     "year": 2021,
+     "platform": [
+      "cpu"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/ychen306/vegen",
+     "one_liner": "Auto-generates vectorizers for non-SIMD ISAs; speeds up DSP/image/ML kernels over LLVM on CPU",
+     "kernels_assigned": [
+      "dot product",
+      "convolution"
+     ],
+     "categories": [
+      "dense_la",
+      "ml_kernels"
+     ],
+     "abstract": "Vector instructions are ubiquitous in modern processors. Traditional compiler auto-vectorization techniques have focused on targeting single instruction multiple data (SIMD) instructions. However, these auto-vectorization techniques are not sufficiently powerful to model non-SIMD vector instructions, which can accelerate applications in domains such as image processing, digital signal processing, and machine learning. To target non-SIMD instruction, compiler developers have resorted to complicated, ad hoc peephole optimizations, expending significant development time while still coming up short. As vector instruction sets continue to rapidly evolve, compilers cannot keep up with these new hardware capabilities."
+    },
+    {
+     "key": "conf/sc/MatteisLH20",
+     "title": "fBLAS: streaming linear algebra on FPGA",
+     "venue": "SC",
+     "year": 2020,
+     "platform": [
+      "fpga"
+     ],
+     "approach": "library",
+     "artifact_url": "https://github.com/spcl/FBLAS",
+     "one_liner": "fBLAS: open-source streaming HLS BLAS library for FPGAs",
+     "kernels_assigned": [
+      "BLAS routines (GEMM, TRSM, dot, etc.)"
+     ],
+     "categories": [
+      "dense_la"
+     ],
+     "abstract": "Spatial computing architectures pose an attractive alternative to mitigate control and data movement overheads typical of load-store architectures. In practice, these devices are rarely considered in the HPC community due to the steep learning curve, low productivity, and the lack of available libraries for fundamental operations. High-level synthesis (HLS) tools are facilitating hardware programming, but optimizing for these architectures requires factoring in new transformations and resources/performance trade-offs. We present FBLAS, an open-source HLS implementation of BLAS for FPGAs, that enables reusability, portability and easy integration with existing software and hardware codes. FBLAS' implementation allows scaling hardware modules to exploit on-chip resources, and module interfaces are designed to natively support streaming on-chip communications, allowing them to be composed to reduce off-chip communication. With FBLAS, we set a precedent for FPGA library design, and contribute to the toolbox of customizable hardware components necessary for HPC codes to start productively targeting reconfigurable platforms."
+    }
+   ]
+  },
+  {
+   "group": "embedding-ops",
+   "slug": "embedding-ops",
+   "spec": {
+    "summary": "Embedding-table gather/pooling kernels as used by DLRM-style recommendation models and by single-index gather workloads (knowledge-graph embeddings, word embeddings), measured under both uniform and power-law-skewed row access, with pooling-factor/batch axes matched to production-scale tables.\n",
+    "operation": "DLRM-style pooled: Y[b, :] = Pool_{j in bag(b)}( Table[idx_j, :] )  for b in [0, batch), Pool in {sum, mean}, |bag(b)| = pooling_factor (may be per-batch variable). Single-index (KGE/W2V-style): y[b, :] = f( Table1[i1(b), :], Table2[i2(b), :], ... ) for a fused elementwise/bilinear function f (e.g. ",
+    "variants": [
+     {
+      "id": "embed-dlrm-pooled-kernel-f32",
+      "claim": "steady-state pooled-embedding-gather kernel throughput, index/bag construction excluded (reported separately, see embed-dlrm-e2e-preproc)\n",
+      "inputs": {
+       "suite": "",
+       "selection": "",
+       "recommended_subset": [
+        "synthetic-small: all 6 embed_dim values at rows=1024 (6 tables)",
+        "dlrm-terabyte-scale: full 26-table config (as shipped in RecFlex examples/models/mlperf/table_config.txt)",
+        "dlrm-kaggle-scale: full 26-table config (as shipped in EL-Rec Figure11/ELRec_train.py)"
+       ],
+       "dense_operand": "fp32, table values initialized U(-0.5/dim, 0.5/dim) (standard DLRM embedding init)"
+      }
+     },
+     {
+      "id": "embed-dlrm-e2e-preproc",
+      "claim": "end-to-end pooled-embedding path including one-shot per-batch index/bag construction, amortized over k=128 batches (matches RecFlex examples/end_to_end.py sample_batch_nums default)\n",
+      "inputs": {
+       "suite": "",
+       "selection": "",
+       "recommended_subset": "",
+       "dense_operand": ""
+      }
+     },
+     {
+      "id": "embed-single-index-gather",
+      "claim": "steady-state single-index (non-pooled) embedding gather + fused elementwise/bilinear op, as used by KGE and word-embedding workloads (cuKE, FULL-W2V style); preprocessing (graph/corpus loading, negative sampling) excluded\n",
+      "inputs": {
+       "suite": "",
+       "selection": "",
+       "recommended_subset": [
+        "TransE",
+        "TransH",
+        "TransR",
+        "TransF",
+        "RESCAL",
+        "neg_TransR",
+        "neg_TransF"
+       ],
+       "dense_operand": ""
+      }
+     }
+    ]
+   },
+   "papers": [
+    {
+     "key": "conf/ipps/HuLJ24",
+     "title": "cuKE: An Efficient Code Generator for Score Function Computation in Knowledge Graph Embedding",
+     "venue": "IPDPS",
+     "year": 2024,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/parallel-group/cuke",
+     "one_liner": "cuKE: code generator fusing KGE score-function tensor ops into CUDA, 14.9x over TorchScript.",
+     "kernels_assigned": [
+      "knowledge-graph score function",
+      "fused tensor ops"
+     ],
+     "categories": [
+      "ml_kernels",
+      "graph"
+     ],
+     "abstract": "Knowledge graph embedding (KGE) plays an important role in graph mining and learning applications by converting discrete graph structures to continuous vector representations. While previous systems have focused on scaling KGE onto multiple GPUs, the score function computation on each GPU can be a performance bottleneck. Existing KGE systems implement the score functions with separate tensor operations, leading to large memory consumption and poor memory access efficiency. To overcome the issues, we propose a code generator that automatically translates Python-like definitions of KGE score functions into efficient CUDA code. Our code generator exploits the unique feature of KGE score functions and performs an aggressive fusion of tensor operations. Additionally, our generated code performs a runtime inspection to reduce redundant memory access for edges with identical indices. Experiments show that our generated code uses much less memory than previous systems and achieves an average speedup of 14.9x over TorchScript and 7.8x over TVM."
+    },
+    {
+     "key": "conf/sc/PanZZXWSLR0D24",
+     "title": "RecFlex: Enabling Feature Heterogeneity-Aware Optimization for Deep Recommendation Models with Flexible Schedules",
+     "venue": "SC",
+     "year": 2024,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/PanZaifeng/RecFlex",
+     "one_liner": "RecFlex: per-field schedule tuning + fusion compiler for recsys embedding kernels, up to 20.8x",
+     "kernels_assigned": [
+      "fused embedding operator kernels"
+     ],
+     "categories": [
+      "ml_kernels"
+     ],
+     "abstract": "Industrial recommendation models typically involve numerous feature fields. The embedding computation workloads are heterogeneous across these fields, thus requiring varied optimal code schedules. While existing solutions apply basic fusion optimization for embedding operations, they inefficiently treat all feature fields with identical schedules, leading to suboptimal performance. In this paper, we introduce RecFlex, which generates fused kernels with distinct schedules for different feature fields. RecFlex employs the interference-aware schedule tuner to tune schedules and the heterogeneous schedule fusion compiler to generate fused kernels, addressing two major challenges. To determine optimal schedules of different feature fields within the fused kernel, RecFlex proposes a two-stage interferencesimulated tuning strategy. To handle dynamic workloads that challenge tuning and fusion, RecFlex combines compile-time schedule tuning with runtime kernel thread mapping. RecFlex surpasses state-of-the-art libraries and compilers, achieving average speedups of $2.64 \\times, 20.77 \\times$, and $11.31 \\times$ over TorchRec, HugeCTR, and RECom, respectively. RecFlex is publicly available at https://github.com/PanZaifeng/RecFlex."
+    },
+    {
+     "key": "conf/sc/WangWFMMD22",
+     "title": "EL-Rec: Efficient Large-Scale Recommendation Model Training via Tensor-Train Embedding Table",
+     "venue": "SC",
+     "year": 2022,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/Ash-Zheng/SC_artifacts_eval",
+     "one_liner": "Tensor-train compressed embedding-table kernel (PyTorch drop-in) speeds DLRM training 3x on 1 GPU",
+     "kernels_assigned": [
+      "TT-embedding table lookup"
+     ],
+     "categories": [
+      "tensor",
+      "ml_kernels"
+     ],
+     "abstract": "Deep learning Recommendation Models (DLRMs) plays an important role in various application domains. However, existing DLRM training systems require a large number of GPUs due to the memory-intensive embedding tables. To this end, we propose EL-Rec, an efficient computing framework harnessing the Tensor-train (TT) technique to democratize the training of large-scale DLRMs with limited GPU resources. Specifically, EL-Rec optimizes TT decomposition based on key computation primitives of embedding tables and implements a high-performance compressed embedding table which is a drop-in replacement of Pytorch API. EL-Rec introduces an index reordering technique to harvest the performance gains from both local and global information of training inputs. EL-Rec also highlights a pipeline training paradigm to eliminate the communication overhead between the host memory and the training worker. Comprehensive experiments demonstrate that EL-Rec can handle the largest publicly available DLRM dataset with a single GPU and achieves 3× speedup over the state-of-the-art DLRM frameworks."
+    },
+    {
+     "key": "conf/ics/RandallA021",
+     "title": "FULL-W2V: fully exploiting data reuse for W2V on GPU-accelerated systems",
+     "venue": "ICS",
+     "year": 2021,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/tlranda/FULL-W2V",
+     "one_liner": "FULL-W2V: GPU Word2Vec exploiting data reuse, 5.72x over prior GPU state-of-the-art",
+     "kernels_assigned": [
+      "Word2Vec"
+     ],
+     "categories": [
+      "ml_kernels"
+     ],
+     "abstract": "Word2Vec remains one of the highly-impactful innovations in the field of Natural Language Processing (NLP) that represents latent grammatical and syntactical information in human text with dense vectors in a low dimension. Word2Vec has high computational cost due to the algorithm’s inherent sequentiality, intensive memory accesses, and the large vocabularies it represents. While prior studies have investigated technologies to explore parallelism and improve memory system performance, they struggle to effectively gain throughput on powerful GPUs. We identify memory data access and latency as the primary bottleneck in prior works on GPUs, which prevents highly optimized kernels from attaining the architecture’s peak performance. We present a novel algorithm, FULL-W2V, which maximally exploits the opportunities for data reuse in the W2V algorithm and leverages GPU architecture and resources to reduce access to low memory levels and improve temporal locality. FULL-W2V is capable of reducing accesses to GPU global memory significantly, e.g., by more than 89%, compared to prior state-of-the-art GPU implementations, resulting in significant performance improvement that scales across successive hardware generations. Our prototype implementation achieves 2.97X speedup when ported from Nvidia Pascal P100 to Volta V100 cards, and outperforms the state-of-the-art by 5.72X on V100 cards with the same embedding quality. In-depth analysis indicates that the reduction of memory accesses through register and shared memory caching and high-throughput shared memory reduction leads to a significantly improved arithmetic intensity. FULL-W2V can potentially benefit many applications in NLP and other domains."
+    }
+   ]
+  },
+  {
+   "group": "sparse-tensor-contraction",
+   "slug": "sparse-tensor-contraction",
+   "spec": {
+    "summary": "Contraction of sparse tensors/matrices under an einsum-style index-contraction specification, covering three structurally distinct sub-problems found in this track's literature: sparse(A)-times-dense(B) GPU kernels expressed as indirect einsums over fixed-length sparse formats (Insum), true sparse-tensor x sparse- tensor contraction (SpGETT) over FROSTT N-mode tensors (parTC), and fused multi-kernel composite sparse-tensor-algebra expression chains built by loop-nest restructuring (SparseLNR). No single input suite or reference kernel spans all three, so this spec defines one variant per sub-p",
+    "operation": "General form: given sparse tensor(s)/matrice(s) {A, B, ...} and an einsum-style index-contraction expression, compute the output tensor C by contracting the specified shared indices, where at least one operand is sparse (stored in a compressed format that skips explicit zeros) and the output may its",
+    "variants": [
+     {
+      "id": "sparse-dense-indirect-einsum-gpu-kernel-fp32-fp16",
+      "claim": "steady-state kernel throughput of GPU sparse(-structured or -unstructured) times dense einsum kernels expressed via fixed-length sparse formats (GroupCOO/BlockGroupCOO) and executed as fully-fused gather-matmul-scatter Triton/Tensor-Core kernels, format conversion and compile/autotune time reported separately\n",
+      "inputs": {
+       "suite": "4 named application classes from Insum's own evaluation: structured SpMM (synthetic block-sparse), unstructured SpMM (TC-GNN real-world matrix set), point-cloud sparse convolution (S3DIS indoor scenes",
+       "selection": "structured SpMM: 4096x4096, 90% uniform sparsity, 32x32 dense blocks; unstructured SpMM: all matrices in the TC-GNN benchmark set, output dim N=128; point-cloud convolution: all 7 S3DIS Area-6 indoor scenes at 5cm voxel quantization, headline single-scene comparison uses `conferenceRoom`; equivariant tensor product: batch=10000, l_max swept\n",
+       "recommended_subset": [
+        "structured-spmm-4096x4096-90pct-block32x32",
+        "tcgnn-unstructured-spmm-N128 (all named matrices in the TC-GNN set)",
+        "s3dis-conferenceRoom-5cm-voxel-fp16-ch128",
+        "s3dis-area6-all-7-scenes (full point-cloud set)",
+        "equivariant-tensor-product-batch10000-lmax-sweep"
+       ],
+       "dense_operand": "dense operand shapes as given per application (N=128 for unstructured SpMM; batch=10000 for equivariant tensor product); fp32 primary, fp16 (Tensor-Core path) reported as a labeled secondary result, s"
+      }
+     },
+     {
+      "id": "sparse-sparse-tensor-contraction-frostt-kernel-fp64",
+      "claim": "steady-state kernel throughput of general sparse-tensor x sparse-tensor contraction (SpGETT) on real N-mode sparse tensors from FROSTT, preprocessing (hash-table/index construction) excluded and reported separately once\n",
+      "inputs": {
+       "suite": "FROSTT (Formidable Repository of Open Sparse Tensors and Tools) -- same corpus and named subset as this project's mttkrp track, since this track's one FROSTT-based paper (parTC) uses tensors from the ",
+       "selection": "union of tensors used across the track's real-tensor evaluation, matching the mttkrp track's general-kernel subset (order 3-4, nnz 3.1M-143.6M); for each tensor T, the contraction is evaluated both as a genuine self-contraction case (T contracted against a synthetic tensor B derived from T by index-permutation with sparsification_factor =1, i.e. |B|=|T|, matching parTC's own reference generator) A",
+       "recommended_subset": [
+        "nips (2.5K x 2.9K x 14K x 17, 3.1M nnz) -- parTC's own worked example",
+        "uber (183 x 24 x 1.1K x 1.7K, 3.3M nnz)",
+        "chicago-crime (6.2K x 24 x 77 x 32, 5.3M nnz)",
+        "vast-2015-mc1 (165.4K x 11.4K x 2, 26M nnz)",
+        "darpa (22.5K x 22.5K x 23.8M, 28.4M nnz)",
+        "enron (6K x 5.7K x 244.3K x 1.2K, 54.2M nnz)",
+        "nell-2 (12.1K x 9.2K x 28.8K, 76.9M nnz)"
+       ],
+       "dense_operand": "n/a -- both contraction operands are the sparse tensors themselves; fp64, matching parTC's own `double` value arrays"
+      }
+     },
+     {
+      "id": "composite-fused-sparse-tensor-algebra-kernel",
+      "claim": "steady-state throughput of fused, multi-operator composite sparse-tensor- algebra expressions (e.g. SDDMM->SpMM->GEMM chains) generated via loop-nest restructuring, compared against separately-scheduled and single-perfectly-nested-loop TACO baselines, codegen/compile time reported separately\n",
+      "inputs": {
+       "suite": "14 real sparse 2D matrices (SuiteSparse / Network Repository) + 5 real sparse 3-mode tensors (FROSTT/DARPA), matching the source paper's own evaluation set; the FROSTT tensors overlap this project's m",
+       "selection": "all 14 named matrices (`cora`, `bcsstk17`, `pdb1HYS`, `circuit5M`, `webbase-1M`, `rma10`, `cant`, `consph`, `cop20k_A`, `shipsec1`, `scircuit`, `mac_econ_fwd500`, `amazon`, +1 unnamed in accessible source) and all 5 named tensors (`flickr-3d`, `nell-2`, `nell-1`, `vast-2015-mc1-3d`, `darpa1998`), evaluated across the source paper's own 6 composite kernel expressions: <SDDMM,SpMM>, <SpMMH,GEMM>, <S",
+       "recommended_subset": [
+        "cora (2.7K x 2.7K, 5.4K nnz) -- smallest case",
+        "bcsstk17 (11K x 11K, 429K nnz)",
+        "pdb1HYS (36K x 36K, 4.34M nnz)",
+        "webbase-1M (1M x 1M, 3.11M nnz)",
+        "circuit5M (5.56M x 5.56M, 59.52M nnz) -- largest 2D case",
+        "flickr-3d (320K x 2.82M x 1.60M, 112.89M nnz)",
+        "nell-1 (2.9M x 2.14M x 25.5M, 143.6M nnz) -- largest tensor case"
+       ],
+       "dense_operand": "randomly generated dense operands, inner dimension k,l in {32, 64, 128} (source paper's own default sweep), fp precision unstated by source paper (see open_questions)"
+      }
+     }
+    ]
+   },
+   "papers": [
+    {
+     "key": "conf/asplos/WonAAE26",
+     "title": "Insum: Sparse GPU Kernels Simplified and Optimized with Indirect Einsums",
+     "venue": "ASPLOS",
+     "year": 2026,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/nullplay/IndirectEinsum",
+     "one_liner": "Indirect-Einsum compiler plus GroupCOO formats generating tensor-core sparse GPU kernels; 1.14-3.81x speedups.",
+     "kernels_assigned": [
+      "SpMM",
+      "SDDMM",
+      "sparse einsum"
+     ],
+     "categories": [
+      "sparse_la",
+      "tensor"
+     ],
+     "abstract": "Programming high-performance sparse GPU kernels is notoriously difficult, requiring both substantial effort and deep expertise. Sparse compilers aim to simplify this process, but existing systems fall short in two key ways. First, they are primarily designed for CPUs and rarely produce high-performance GPU code. Second, when computations involve both sparse and dense regions, these compilers often fail to optimize the dense portions effectively. In this paper, we propose a new approach for expressing sparse computations. We start from format-agnostic Einsums over sparse tensors and rewrite them into format-conscious indirect Einsums, which explicitly encode format information by mapping sparse data and metadata onto dense tensor operations through indirect indexing. To execute indirect Einsums, we introduce the Insum compiler, which generates efficient GPU code for these Einsums by lowering to the PyTorch compiler, extended to better support Tensor Core–enabled indirect Einsums. We also present two fixed-length sparse formats, GroupCOO and BlockGroupCOO, designed to fit naturally with indirect Einsums. Our approach achieves 1.14×–3.81× speedups across a range of sparse GPU applications while reducing lines of code by 202×–4491× compared to hand-written implementations. The source code for Insum is publicly available at https://github.com/nullplay/IndirectEinsum."
+    },
+    {
+     "key": "journals/tpds/SinghU25",
+     "title": "Efficient Parallel Sparse Tensor Contraction",
+     "venue": "TPDS",
+     "year": 2025,
+     "platform": [
+      "cpu"
+     ],
+     "approach": "algorithmic",
+     "artifact_url": "https://github.com/ssomesh/parTC",
+     "one_liner": "Hashing-based parallel sparse tensor contraction (SpGETT) beats SpGEMM-based approaches by ~21-25%.",
+     "kernels_assigned": [
+      "SpGETT (sparse tensor contraction)",
+      "SpGEMM"
+     ],
+     "categories": [
+      "sparse_la",
+      "tensor"
+     ],
+     "abstract": "We investigate the performance of algorithms for sparse tensor-sparse tensor multiplication (SpGETT). This operation, also called sparse tensor contraction, is a higher order analogue of the sparse matrix-sparse matrix multiplication (SpGEMM) operation. Therefore, SpGETT can be performed by first converting the input tensors into matrices, then invoking high performance variants of SpGEMM, and finally reconverting the resultant matrix into a tensor. Alternatively, one can carry out the scalar operations underlying SpGETT in the realm of tensors without matrix formulation. We discuss the building blocks in both approaches and formulate a hashing-based method to avoid costly search or redirection operations. We present performance results with the current state-of-the-art SpGEMM-based approaches, existing SpGETT approaches, and a carefully implemented SpGETT approach with a new fine-tuned hashing method, proposed in this paper. We evaluate the methods on real world tensors by contracting a tensor with itself along varying dimensions. Our proposed hashing-based method for SpGETT consistently outperforms the state-of-the-art method, achieving a 25% reduction in sequential execution time on average and a 21% reduction in parallel execution time on average across a variety of input instances."
+    },
+    {
+     "key": "conf/ics/DiasSS022",
+     "title": "SparseLNR: accelerating sparse tensor computations using loop nest restructuring",
+     "venue": "ICS",
+     "year": 2022,
+     "platform": [
+      "cpu"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/adhithadias/SparseLNR",
+     "one_liner": "Loop-nest restructuring codegen for sparse tensor algebra (TACO)",
+     "kernels_assigned": [
+      "sparse tensor algebra",
+      "SDDMM",
+      "SpMM"
+     ],
+     "categories": [
+      "sparse_la",
+      "tensor"
+     ],
+     "abstract": "Sparse tensor algebra computations have become important in many real-world applications like machine learning, scientific simulations, and data mining. Hence, automated code generation and performance optimizations for tensor algebra kernels are paramount. Recent advancements such as the Tensor Algebra Compiler (TACO) greatly generalize and automate the code generation for tensor algebra expressions. However, the code generated by TACO for many important tensor computations remains suboptimal due to the absence of a scheduling directive to support transformations such as distribution/fusion."
+    }
+   ]
+  },
+  {
+   "group": "lu",
+   "slug": "lu",
+   "spec": {
+    "summary": "Dense tile LU factorization of a general (non-symmetric) matrix, spanning three claims this track's own literature treats as genuinely different: single-node/single-GPU blocked LU with the pivoting strategy itself (partial / tournament / none) as a required, disclosed parameter; distributed communication-optimal LU built on 2.5D tournament pivoting; and extreme-scale mixed-precision (FP16/FP32 factorization + FP64 iterative-refinement correction) no-pivoting LU in the HPL-AI benchmark family. Unlike Cholesky, LU's pivoting choice is not a minor implementation detail — it changes both asymptoti",
+    "operation": "A[N,N] (general, non-symmetric) = P[N,N] * L[N,N] * U[N,N], tile-blocked (block size NB, tile count N/NB per dimension), where P is a permutation determined by the run's pivoting strategy: partial pivoting (row-swap, LAPACK/ScaLAPACK-style, P re-derived at every column), tournament pivoting (block-r",
+    "variants": [
+     {
+      "id": "lu-dense-single-node-pivot-kernel",
+      "claim": "steady-state single-node (shared-memory or single-GPU) dense/blocked LU factorization time, with PIVOTING STRATEGY (partial / tournament / none) as a required, per-run-disclosed parameter alongside tile size — the central lesson of this track: KwasniewskiKBZS21's own baselines (MKL, SLATE) use partial pivoting while its own COnfLUX uses tournament pivoting, and MunksgaardHSO22's Rodinia-derived LU",
+      "inputs": {
+       "suite": "two generators, matched to what this track's own no-pivot papers use, since a single arbitrary-random generator would make the no-pivot arm of this variant numerically meaningless: (a) a general rando",
+       "selection": "square general (non-symmetric) matrices, single-node/single-GPU- feasible sizes (fit in one node's RAM or one GPU's HBM at the run's working precision); union of MunksgaardHSO22's three tested sizes and a size matched to KwasniewskiKBZS21's smallest reported point.\n",
+       "recommended_subset": "N in {2048, 8192, 16384, 32768}",
+       "dense_operand": "fp64 for the partial-/tournament-pivoting arms (matches KwasniewskiKBZS21's precision); fp32 for the no-pivoting arm (matches MunksgaardHSO22's LUD case study exactly, so the no-pivot arm is directly "
+      }
+     },
+     {
+      "id": "lu-dense-distributed-tournament-pivot",
+      "claim": "distributed (multi-node) dense tile LU at scale using 2.5D communication-optimal tournament pivoting, reporting time-to-solution, aggregate communication volume, AND the extra communication/ computation cost pivoting itself imposes (separable from the rest of the factorization per KwasniewskiKBZS21's own Table 1 cost model) — this is the variant KwasniewskiKBZS21's COnfLUX is purpose-built for, di",
+      "inputs": {
+       "suite": "same random-dense generator as lu-dense-single-node-pivot-kernel's partial-/tournament-pivoting arm",
+       "selection": "square general matrices, weak-scaling sizes spanning single-node-infeasible up to a multi-node-but-not-full-machine range, matching cholesky-dense-distributed-fp64's own capped range for direct cross-track comparability (deliberately below KwasniewskiKBZS21's own N=524,288/P=512-node ceiling, since this project's Phase 2 does not require full-machine allocations).\n",
+       "recommended_subset": "N in {16384, 65536, 131072, 262144}; process counts P in {2, 4, 8, 16, 32, 64} nodes, 2 MPI ranks/node (identical grid to cholesky-dense-distributed-fp64); a \"large-scale\" tier at N=524288, P up to 51",
+       "dense_operand": "same as lu-dense-single-node-pivot-kernel's partial-/tournament-pivoting arm, fp64"
+      }
+     },
+     {
+      "id": "lu-mixed-precision-nopivot-ir-kernel",
+      "claim": "extreme-scale mixed-precision (FP16 GEMM / FP32 panel-TRSM) no-pivot LU factorization, corrected to FP64 accuracy via iterative refinement (IR) rather than by pivoting — the HPL-AI benchmark family (LuMOEJW22's OpenMxP), a genuinely different claim from either pivoted-LU variant above: correctness here is a POST-HOC convergence property of the IR loop, not an a-priori pivoting-derived bound, and t",
+      "inputs": {
+       "suite": "Higham-generator well-conditioned synthetic dense matrix (matches OpenMxP's higham_mat_impl.cpp exactly) — deliberately NOT the same generator as lu-dense-single-node-pivot-kernel's no-pivoting arm (w",
+       "selection": "multi-node/multi-GPU sizes spanning what fits per-GCD memory up to a tier tractable without a full-machine allocation, with a stretch tier matching the paper's own near-full-machine points.\n",
+       "recommended_subset": "N in {131072, 524288, 1368570 (LuMOEJW22's own headline Summit-partition size)}, with an optional stretch point matching the paper's Frontier-fraction scale.\n",
+       "dense_operand": "three named precisions per algorithmic stage (not a bare fraction): diagonal-block factorization and panel TRSM in FP32; trailing-matrix GEMM in FP16 (accumulate FP32); residual computation and iterat"
+      }
+     }
+    ]
+   },
+   "papers": [
+    {
+     "key": "conf/sc/LuMOEJW22",
+     "title": "Climbing the Summit and Pushing the Frontier of Mixed Precision Benchmarks at Extreme Scale",
+     "venue": "SC",
+     "year": 2022,
+     "platform": [
+      "nvidia-gpu",
+      "amd-gpu",
+      "distributed"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/at-aaims/OpenMxP",
+     "one_liner": "Scaling/optimizing the mixed-precision HPL-AI benchmark on Summit and Frontier across GPU vendors",
+     "kernels_assigned": [
+      "HPL-AI mixed-precision LU/GEMM"
+     ],
+     "categories": [
+      "dense_la"
+     ],
+     "abstract": "The rise of machine learning (ML) applications and their use of mixed precision to perform interesting science are driving forces behind AI for science on HPC. The convergence of ML and HPC with mixed precision offers the possibility of transformational changes in computational science. The HPL-AI benchmark is designed to measure the performance of mixed precision arithmetic as opposed to the HPL benchmark which measures double precision performance. Pushing the limits of systems at extreme scale is nontrivial -little public literature explores optimization of mixed precision computations at this scale. In this work, we demonstrate how to scale up the HPL-AI benchmark on the pre-exascale Summit and exascale Frontier systems at the Oak Ridge Leadership Computing Facility (OLCF) with a cross-platform design. We present the implementation, performance results, and a guideline of optimization strategies employed for delivering portable performance on both AMD and NVIDIA GPUs at extreme scale."
+    },
+    {
+     "key": "conf/sc/MunksgaardHSO22",
+     "title": "Memory Optimizations in an Array Language",
+     "venue": "SC",
+     "year": 2022,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/diku-dk/futhark-mem-sc22",
+     "one_liner": "Functional array-language compiler with cost-free layout memory optimizations for GPU kernels",
+     "kernels_assigned": [
+      "LUD",
+      "Hotspot stencil",
+      "Needleman-Wunsch"
+     ],
+     "categories": [
+      "dense_la",
+      "stencil_pde",
+      "primitives"
+     ],
+     "abstract": "We present a technique for introducing and op-timizing the use of memory in a functional array language, aimed at GPU execution, that supports correct-by-construction parallelism. Using linear memory access descriptors as building blocks, we define a notion of memory in the compiler IR that enables cost-free change-of-layout transformations (e.g., slicing, transposition), whose results can even be carried across control flow such as ifs/loops without manifestation in memory. The memory notion allows a graceful transition to an unsafe IR that is automatically optimized (1) to mix reads and writes to the same array inside a parallel construct, and (2) to map semantically different arrays to the same memory block. The result is code similar to what imperative users would write. Our evaluation shows that our optimizations have significant impact (1.1 x -2 x) and result in performance competitive to hand-written code from challenging benchmarks, such as Rodinia's NW, LUD, Hotspot."
+    },
+    {
+     "key": "conf/sc/KwasniewskiKBZS21",
+     "title": "On the parallel I/O optimality of linear algebra kernels: near-optimal matrix factorizations",
+     "venue": "SC",
+     "year": 2021,
+     "platform": [
+      "cpu",
+      "distributed"
+     ],
+     "approach": "algorithmic",
+     "artifact_url": "https://github.com/anonymousSC21/SC21",
+     "one_liner": "Communication-optimal 2.5D Cholesky/LU factorization schedules, up to 3x faster than MKL/SLATE",
+     "kernels_assigned": [
+      "Cholesky factorization",
+      "LU factorization"
+     ],
+     "categories": [
+      "dense_la"
+     ],
+     "abstract": "Matrix factorizations are among the most important building blocks of scientific computing. However, state-of-the-art libraries are not communication-optimal, underutilizing current parallel architectures. We present novel algorithms for Cholesky and LU factorizations that utilize an asymptotically communication-optimal 2.5D decomposition. We first establish a theoretical framework for deriving parallel I/O lower bounds for linear algebra kernels, and then utilize its insights to derive Cholesky and LU schedules, both communicating $N^{3}/(P\\sqrt{M})$ elements per processor, where M is the local memory size. The empirical results match our theoretical analysis: our implementations communicate significantly less than Intel MKL, SLATE, and the asymptotically communication-optimal CANDMC and CAPITAL libraries. Our code outperforms these state-of-the-art libraries in almost all tested scenarios, with matrix sizes ranging from 2,048 to 524,288 on up to 512 CPU nodes of the Piz Daint supercomputer, decreasing the time-to-solution by up to three times. Our code is ScaLAPAck-compatible and available as an open-source library."
+    }
+   ]
+  },
+  {
+   "group": "morphology-image-kernel",
+   "slug": "morphology-image-kernel",
+   "spec": {
+    "summary": "Generated-code throughput for an image-processing pipeline (Harris corner detector: grayscale -> Sobel gradients -> structure-tensor sum -> corner response) on mobile ARM CPUs, comparing a domain-extensible rewrite-rule compiler (Rise/Shine, and Lift) against Halide (default schedule) and OpenCV, with a mandatory per-pixel-error + PSNR correctness gate before any timing counts.\n",
+    "operation": "Given an RGB image, compute the Harris corner-response map: convert to grayscale, compute Sobel x/y gradients, form the local structure tensor via a windowed (3x3) weighted sum of gradient products, and compute the corner response R = det(M) - k*trace(M)^2 (k=0.04) per pixel.\n",
+    "variants": [
+     {
+      "id": "morph-harris-kernel-throughput",
+      "claim": "steady-state per-image kernel throughput across implementations and target CPUs, matching the artifact's own confirmed protocol (30 timing iterations, median/min/max), with the timer-mechanism asymmetry between implementations (wall-clock vs. OpenCL device-side events) explicitly reported rather than hidden, since it is a real methodological difference found in the source.\n",
+      "inputs": {
+       "suite": "the artifact's own two bundled images: rgb.png (Halide's demo image, 'small') and venice_wikimedia.jpg (PolyMage's demo image, 'big'); exact pixel dimensions not independently re-verified in this surv",
+       "selection": "both images, matching the artifact's own fixed 2-image evaluation set (this is a domain-extensible-compiler paper, not a dataset-breadth paper; the image suite is deliberately small and this spec does not expand it, since doing so would not be reproducing the paper's own claims)",
+       "recommended_subset": "",
+       "dense_operand": ""
+      }
+     }
+    ]
+   },
+   "papers": [
+    {
+     "key": "conf/cgo/KoehlerS21",
+     "title": "Towards a Domain-Extensible Compiler: Optimizing an Image Processing Pipeline on Mobile CPUs",
+     "venue": "CGO",
+     "year": 2021,
+     "platform": [
+      "arm-cpu"
+     ],
+     "approach": "codegen",
+     "artifact_url": "https://github.com/rise-lang/2021-CGO-artifact",
+     "one_liner": "Rewrite-based extensible compiler generates Harris kernels up to 16x over OpenCV, up to 1.4x over Halide on ARM",
+     "kernels_assigned": [
+      "Harris corner detection",
+      "image processing pipeline"
+     ],
+     "categories": [
+      "stencil_pde"
+     ],
+     "abstract": "Halide and many similar projects have demonstrated the great potential of domain specific optimizing compilers. They enable programs to be expressed at a convenient high-level, while generating high-performance code for parallel architectures. As domains of interest expand towards deep learning, probabilistic programming and beyond, it becomes increasingly clear that it is unsustainable to redesign domain specific compilers for each new domain. In addition, the rapid growth of hardware architectures to optimize for poses great challenges for designing these compilers. In this paper, we show how to extend a unifying domain-extensible compiler with domain-specific as well as hardware-specific optimizations. The compiler operates on generic patterns that have proven flexible enough to express a wide range of computations. Optimizations are not hard-coded into the compiler but are expressed as user-defined rewrite rules that are composed into strategies controlling the optimization process. Crucially, both computational patterns and optimization strategies are extensible without modifying the core compiler implementation. We demonstrate that this domain-extensible compiler design is capable of expressing image processing pipelines and well-known image processing optimizations. Our results on four mobile ARM multi-core CPUs, often used for image processing tasks, show that the code generated for the Harris operator outperforms the image processing library OpenCV by up to 16× and achieves performance close to - or even up to 1.4 × better than - the state-of-the-art image processing compiler Halide."
+    }
+   ]
+  },
+  {
+   "group": "sparse-format-conversion",
+   "slug": "sparse-format-conversion",
+   "spec": {
+    "summary": "Converting a sparse matrix from a source storage format (CSR/COO as loaded) to a target format optimized for a downstream sparse kernel (here: SpMM), covering both the pure conversion throughput and the end-to-end, format-selection-amortized usage pattern this track's one surveyed paper (LiteForm) actually implements.\n",
+    "operation": "target_format = convert(source_format, A[M,K]); optionally target_format_selection = select(A) when the target format itself is chosen automatically per-matrix (LiteForm's CELL-vs-BCSR classifier + CELL partition-count regressor + bucket-config search).\n",
+    "variants": [
+     {
+      "id": "sparse-format-conversion-kernel",
+      "claim": "steady-state, format-pair-specific conversion throughput (nnz/s), source format given/loaded, target format's construction timed in isolation from any downstream SpMM call — the \"just the conversion\" number this track's axis list asks for, which LiteForm's own artifact does not report as a standalone metric (it only reports conversion-stage wall time as part of a 3-stage preprocessing breakdown ah",
+      "inputs": {
+       "suite": "real GNN adjacency matrices, reused verbatim from LiteForm's own artifact",
+       "selection": "LiteForm's own NAMES list: cora, citeseer, pubmed, ppi, arxiv, proteins, reddit (7 named matrices; the artifact's SuiteSparse-scale download tooling exists but its own end-to-end driver does not exercise it, so this spec does not claim broader coverage than what was actually run)",
+       "recommended_subset": "all 7 (small enough to run exhaustively)",
+       "dense_operand": ""
+      }
+     },
+     {
+      "id": "sparse-format-conversion-e2e-amortized",
+      "claim": "end-to-end throughput: one-shot format selection + conversion + partition/bucket-config search, amortized over k repeated SpMM calls on the same matrix — this is what LiteForm's own released driver (drive05.spmm.end-to-end.sh -> proc05.spmm.end-to-end.py) actually measures, so k and the pipeline stages are reproduced from it rather than invented.\n",
+      "inputs": {
+       "suite": "same as sparse-format-conversion-kernel",
+       "selection": "same as sparse-format-conversion-kernel",
+       "recommended_subset": "same as sparse-format-conversion-kernel",
+       "dense_operand": "SpMM right-hand-side matrix width N reported per LiteForm's own artifact convention (feature-dimension sweep not fully recoverable from the files read — see open_questions); fp32, U(-1,1)"
+      }
+     }
+    ]
+   },
+   "papers": [
+    {
+     "key": "conf/hpdc/PengTPK25",
+     "title": "LiteForm: Lightweight and Automatic Format Composition for Sparse Matrix-Matrix Multiplication on GPUs",
+     "venue": "HPDC",
+     "year": 2025,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "autotuning",
+     "artifact_url": "https://github.com/johnpzh/liteform_ae",
+     "one_liner": "Automatic composable sparse-format (CELL) selection for GPU SpMM, 2.06x over cuSPARSE",
+     "kernels_assigned": [
+      "SpMM"
+     ],
+     "categories": [
+      "sparse_la"
+     ],
+     "abstract": "Graphics Processing Units (GPUs) have excelled in parallelism and high throughput for dense, regular computations in modern computing. However, sparse computations, such as sparse matrix-matrix multiplication (SpMM), are essential for large-scale, data-intensive applications, where much of the data is inherently sparse. The challenge lies in the sparsity and irregularity of sparse matrices or tensors, which makes achieving high performance on GPU architectures difficult. Consequently, the utilization of suitable sparse data formats is imperative for achieving computational efficiency. Traditional computational libraries often require input in specific formats, which may not accommodate the diversity of matrix characteristics or the varying sparse patterns within a single matrix. While some frameworks support composable formats, they often lack guidance on how to compose these formats effectively or require costly auto-tuning for optimal performance. In this paper, we introduce LiteForm, a novel, lightweight framework designed to automatically compose sparse formats for SpMM computation. We start by presenting CELL, a composable format featuring a three-level blockwise representation that optimizes sparse data for GPUs. LiteForm uses this format and composes it based on the input's characteristics. First, it employs a lightweight model trained to predict whether the CELL format will yield good performance for a given sparse input matrix. Then LiteForm uses a low-overhead predictor and an SpMM cost model to automatically configure the format according to the characteristics of the input matrix. Our experimental evaluation indicates that LiteForm achieves a geometric mean speedup of 2.06×, 1.81×, 1.77×, and 4.18× in comparison to cuSPARSE, Sputnik, dgSPARSE, and TACO, resp"
+    }
+   ]
+  },
+  {
+   "group": "other:astar-search",
+   "slug": "astar-search",
+   "spec": {
+    "summary": "Single-pair shortest-path search (start -> goal) on an 8-connected 2D occupancy grid via GPU-parallel (bidirectional or unidirectional) bucketed A*, measured as search-phase wall time and nodes expanded, with path optimality (not approximation) as the correctness gate.\n",
+    "operation": "path = A*(grid[H,W] occupancy (0=passable,1=obstacle), start, goal, heuristic=octile/Chebyshev-consistent); 8-connected movement, integer- scaled edge costs (straight vs. diagonal); output is the minimum-cost path (or \"unreachable\") plus the parent chain from start to goal.\n",
+    "variants": [
+     {
+      "id": "astar-kernel-movingai-maps",
+      "claim": "steady-state search-phase throughput on the standard MovingAI pathfinding benchmark corpus; grid/scenario loading excluded but reported separately (one-shot, not amortized)\n",
+      "inputs": {
+       "suite": "MovingAI Benchmarks (movingai.com) .map/.map.scen pairs — the de-facto standard pathfinding corpus (game maps, city maps, road networks)",
+       "selection": "union of named map categories used by the track (game maps, city/road maps); at minimum the bundled arena.map plus 2+ additional named MovingAI map families for size/obstacle-structure coverage; each map paired with its official .scen scenario file for reproducible start/goal pairs (not ad hoc random pairs)\n",
+       "recommended_subset": [
+        "arena (bundled sample)",
+        "a maze-type MovingAI map (e.g. from the 'mazes' category)",
+        "a room-type MovingAI map (e.g. from the 'rooms' category)",
+        "a large city/road-network MovingAI map for scale coverage"
+       ],
+       "dense_operand": "N/A (no dense operand; single-bit occupancy grid)"
+      }
+     },
+     {
+      "id": "astar-kernel-procedural-grids",
+      "claim": "steady-state search-phase throughput on the repo's own parameterized procedural-grid generator, sweeping obstacle family and grid size — the axis the paper itself uses to show the bucketed-bidirectional design scaling with grid complexity\n",
+      "inputs": {
+       "suite": "procedural grid generator (5 obstacle families: random, maze, blockCenter, zigzag, rectangle), fixed RNG seed for reproducibility",
+       "selection": "all 5 obstacle families crossed with a fixed size ladder",
+       "recommended_subset": [
+        "256x256",
+        "512x512",
+        "1024x1024",
+        "2048x2048 (large, optional)"
+       ],
+       "dense_operand": "N/A"
+      }
+     }
+    ]
+   },
+   "papers": [
+    {
+     "key": "conf/ics/Al-KhansaGMH26",
+     "title": "Parallel Bidirectional A* Search for GPU-Accelerated Pathfinding",
+     "venue": "ICS",
+     "year": 2026,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "algorithmic",
+     "artifact_url": "https://github.com/HadiKhansaa/BBAStar",
+     "one_liner": "Parallel bidirectional A* for GPU pathfinding overcoming priority-queue serialization",
+     "kernels_assigned": [
+      "A* search",
+      "shortest path"
+     ],
+     "categories": [
+      "graph"
+     ],
+     "abstract": "A* search is an important point-to-point shortest path finding algorithm, with applications in many domains such as navigation services, robotics, gaming, and network routing. However, it is an inherently sequential algorithm due to its reliance on a priority queue, typically implemented as a heap data structure, to perform a best-first search. A few prior works have attempted to parallelize A* search on GPUs either by using many heap-based priority queues or by using a batched heap-based priority queue. However, the latency of heap-based operations remains a fundamental limitation."
+    }
+   ]
+  },
+  {
+   "group": "transformer-inference-fused",
+   "slug": "transformer-inference-fused",
+   "spec": {
+    "summary": "Fully fused transformer encoder layer (QKV projection, multi-head attention, feed-forward network, layer-norm, activation, all in one measured region) for variable-length inputs, executed padding-free so no compute is wasted on pad tokens -- distinct from benchspecs/attention-kernel, which isolates the MHA core alone; this track measures the WHOLE fused layer and requires explicit disclosure of which sub-ops are inside vs. outside the fusion boundary.\n",
+    "operation": "For a variable-length batch of B sequences with per-sequence lengths L_i <= S_max: Encoder(X)[B,S,H] = LayerNorm(X + FFN(LayerNorm(X + MHA(QKV_proj(X))))), where MHA is computed padding-free (each sequence's real L_i tokens only, no wasted work on padding up to S_max), QKV_proj and FFN are dense GEM",
+    "variants": [
+     {
+      "id": "fused-encoder-layer-padfree-fp16",
+      "claim": "steady-state latency of the padding-free fused BERT-base encoder (12 layers, all sub-ops -- QKV, MHA, FFN, LN -- inside one measured forward pass), fp16, swept across the batch x sequence-length grid that separates memory-bound small-batch decode-adjacent regimes from compute-bound large-batch/long-sequence regimes. Matches ByteTransformer's own bert_bench.sh sweep.\n",
+      "inputs": {
+       "suite": "BERT-base encoder shape (head_num=12, head_size=64, hidden=768); same architecture family the paper also validates against (ALBERT, DistilBERT, DeBERTa -- structurally identical encoder layer, differe",
+       "selection": "full batch x seqlen grid from ByteTransformer's own benchmark/bert_bench.sh",
+       "recommended_subset": [
+        {
+         "batch": 1,
+         "seqlen": [
+          32,
+          128,
+          384,
+          1024
+         ]
+        },
+        {
+         "batch": 8,
+         "seqlen": [
+          32,
+          128,
+          384,
+          1024
+         ]
+        },
+        {
+         "batch": 16,
+         "seqlen": [
+          32,
+          128,
+          384,
+          1024
+         ]
+        }
+       ],
+       "dense_operand": "fp16 activations/weights, N(0,1) init"
+      }
+     },
+     {
+      "id": "fused-encoder-single-layer-kernel",
+      "claim": "isolates ONE encoder layer (n_layers=1) rather than the stacked 12-layer forward pass -- lets the per-layer fusion overhead/benefit be measured independent of model depth, and is directly comparable across BERT-base/ALBERT/DistilBERT/DeBERTa-class models of different depths using the same per-layer number.\n",
+      "inputs": {
+       "suite": "same shape grid as fused-encoder-layer-padfree-fp16, but a single layer",
+       "selection": "recommended_subset: {batch: 8, seqlen: [128, 512]} as the minimal required pair; full grid optional",
+       "recommended_subset": "",
+       "dense_operand": ""
+      }
+     }
+    ]
+   },
+   "papers": [
+    {
+     "key": "conf/ipps/ZhaiJWJZCLZ23",
+     "title": "ByteTransformer: A High-Performance Transformer Boosted for Variable-Length Inputs",
+     "venue": "IPDPS",
+     "year": 2023,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/bytedance/ByteTransformer",
+     "one_liner": "Padding-free fused MHA kernel for variable-length transformers, 6.13x over PyTorch on A100",
+     "kernels_assigned": [
+      "fused Multi-Head Attention",
+      "padding-free transformer"
+     ],
+     "categories": [
+      "ml_kernels"
+     ],
+     "abstract": "Transformers have become keystone models in natural language processing over the past decade. They have achieved great popularity in deep learning applications, but the increasing sizes of the parameter spaces required by transformer models generate a commensurate need to accelerate performance. Natural language processing problems are also routinely faced with variable-length sequences, as word counts commonly vary among sentences. Existing deep learning frameworks pad variable-length sequences to a maximal length, which adds significant memory and computational overhead. In this paper, we present ByteTransformer, a high-performance transformer boosted for variable-length inputs. We propose a padding-free algorithm that liberates the entire transformer from redundant computations on zero padded tokens. In addition to algorithmic-level optimization, we provide architecture-aware optimizations for transformer functional modules, especially the performance-critical algorithm Multi-Head Attention (MHA). Experimental results on an NVIDIA A100 GPU with variable-length sequence inputs validate that our fused MHA outperforms PyTorch by 6.13x. The end-to-end performance of ByteTransformer for a forward BERT transformer surpasses state-of-the-art transformer frameworks, such as PyTorch JIT, TensorFlow XLA, Tencent TurboTransformer, Microsoft DeepSpeed-Inference and NVIDIA FasterTransformer, by 87%, 131%, 138%, 74% and 55%, respectively. We also demonstrate the general applicability of our optimization methods to other BERT-like models, including ALBERT, DistilBERT, and DeBERTa."
+    }
+   ]
+  },
+  {
+   "group": "dynamic-graph-kernel",
+   "slug": "dynamic-graph-kernel",
+   "spec": {
+    "summary": "Maintaining or computing a query-able result R over a graph G that evolves through a sequence of timestamped edge batches, covering two distinct problem shapes this track's own papers target: (1) genuine incremental MAINTENANCE of a live result (an SSSP tree) under a stream of edge insertions/deletions, where batch size and insert/delete mix are semantic choices that affect result staleness; and (2) one-shot STREAMING ANALYTICS over an already-complete historical temporal-edge log (temporal motif counting), where \"batch\"/chunk size is a pure performance-tuning knob with no effect on the (singl",
+    "operation": "Family A (maintenance): R_i = Update(R_{i-1}, B_i) for a sequence of edge-change batches B_1..B_k (each B_i a set of (u,v,w,op) tuples, op in {insert, delete}), where R_i must be observably equivalent to Recompute(G_i) from scratch (G_i = G_0 with B_1..B_i applied), and a point query Q(R_i, s, t) = ",
+    "variants": [
+     {
+      "id": "dgk-incremental-update-latency",
+      "claim": "update-latency and post-update query-latency of a maintained SSSP result under a stream of edge insertions and deletions, swept across batch size and insert/delete mix — the direct operationalization of this track's \"update batch sizes, insert/delete mix, update-throughput vs. query-latency\" axes, modeled on Khanda et al.'s incremental-SSSP-maintenance problem.\n",
+      "inputs": {
+       "suite": "real temporal-edge logs replayed in chronological order as an insertion stream — Khanda et al.'s own graph suite could not be confirmed from available sources (see survey.md), so this spec substitutes",
+       "selection": "graphs with a real per-edge timestamp (so chronological replay is meaningful, not an arbitrary synthetic ordering), large enough that a single edge batch is a small fraction of |E| at the batch sizes below.\n",
+       "recommended_subset": [
+        "wikitalk (SNAP, 1,140,149 v / 7,833,140 temporal edges) — small/medium control instance",
+        "stackoverflow (SNAP, 2,601,977 v / 63,497,050 temporal edges)",
+        "temporal-reddit-reply (8,901,033 v / 646,044,687 temporal edges) — large instance",
+        "ethereum (66,323,478 v / 628,810,973 temporal edges) — large, real financial-transaction-graph instance",
+        "CollegeMsg (SNAP, 1,899 v / 59,835 temporal edges) — tiny debug/CI-size control instance, added since none of the above four are small enough for fast iteration"
+       ],
+       "dense_operand": "N/A"
+      }
+     },
+     {
+      "id": "dgk-temporal-batch-throughput",
+      "claim": "aggregate streaming throughput and end-to-end completion latency for a ONE-SHOT analytics query (temporal motif counting) over a fixed, complete historical temporal-edge log, with chunk/batch size swept as a performance-tuning knob (NOT a semantic insert/delete axis — no mutation occurs in this variant) — the direct operationalization of DTMiner's own evaluation shape, kept separate from dgk-incre",
+      "inputs": {
+       "suite": "DTMiner's own real temporal-graph suite (verified from fulltext + repo scripts, see survey.md)",
+       "selection": "same 4 graphs DTMiner itself uses, all real, all with genuine timestamps spanning multiple years",
+       "recommended_subset": [
+        "wikitalk (wi): 1,140,149 v, 7,833,140 temporal edges, delta=24h",
+        "stackoverflow (so): 2,601,977 v, 63,497,050 temporal edges, delta=24h",
+        "temporal-reddit-reply (re): 8,901,033 v, 646,044,687 temporal edges, delta=10h",
+        "ethereum (eth): 66,323,478 v, 628,810,973 temporal edges, delta=1h"
+       ],
+       "dense_operand": "N/A"
+      }
+     },
+     {
+      "id": "dgk-e2e-preproc",
+      "claim": "one-shot cost of building the initial data structure — either the SSSP rooted-tree/auxiliary-edge structure (Family A) or the chunk/hierarchical index (Family B) — from a static starting graph, reported standalone rather than folded silently into the first update or the first query, since both papers in this track build a nontrivial structure before any update/query timing begins and neither fully",
+      "inputs": {
+       "suite": "union of dgk-incremental-update-latency's and dgk-temporal-batch-throughput's suites",
+       "selection": "same graphs, at G_0 = the full graph (100% of edges) for this variant, since construction cost is what is being isolated here, not update behavior",
+       "recommended_subset": "union of both variants' recommended_subset lists above",
+       "dense_operand": "N/A"
+      }
+     }
+    ]
+   },
+   "papers": [
+    {
+     "key": "conf/ppopp/Hou0H00YL00L026",
+     "title": "DTMiner: A Data-Centric System for Efficient Temporal Motif Mining",
+     "venue": "PPoPP",
+     "year": 2026,
+     "platform": [
+      "cpu"
+     ],
+     "approach": "algorithmic",
+     "artifact_url": "https://github.com/yinling123/DTMiner",
+     "one_liner": "DTMiner: Load-Explore-Synchronize execution model regularizing cache access for temporal motif mining",
+     "kernels_assigned": [
+      "temporal motif mining"
+     ],
+     "categories": [
+      "graph"
+     ],
+     "abstract": "Mining temporal motifs in temporal graphs is essential for many critical applications. Although several solutions have been proposed to handle temporal motif mining, they still suffer from substantial inefficiencies due to significant redundant graph traversals and fragmented memory access, both caused by irregular search tree expansions across different motif matching tasks. In this work, we observe that data accesses issued by these tasks exhibit strong spatial similarity and temporal monotonicity. Based on these observations, this paper proposes an efficient data-centric temporal motif mining system DTMiner, which introduces a novel Load-Explore-Synchronize (LES) execution model to efficiently regularize data accesses to the common temporal graph data among different tasks. Specifically, DTMiner enables the temporal graph chunks to be sequentially loaded into the cache in temporal order and then triggers all relevant tasks to explore only these loaded data for search tree expansions in a fine-grained synchronization mechanism. In this way, different tasks can share the graph traversal corresponding to the same chunks, while fragmented memory accesses are restricted to the graph data residing in the cache, significantly reducing data access overhead. Experimental results demonstrate that DTMiner achieves 1.14×-11.98× performance improvement in comparison with the state-of-the-art temporal motif mining solutions."
+    }
+   ]
+  },
+  {
+   "group": "other:graph-layout",
+   "slug": "graph-layout",
+   "spec": {
+    "summary": "GPU-accelerated 2D force-directed / Path-Guided Stochastic Gradient Descent (PG-SGD) layout of pangenome variation graphs, measured as wall-clock time to complete a fixed SGD iteration schedule, with layout quality (Sampled Path Stress) reported jointly with time since this is a non-convex optimization with no single correct output.\n",
+    "operation": "coords[V,2] = PG_SGD(graph G=(V,E,paths), iteration_schedule, step_size_schedule); minimizes sum over sampled (path, node_i, node_j) triples of (||coords_i - coords_j|| - path_distance(i,j))^2 / path_distance(i,j)^2; output is a 2D embedding of every node.\n",
+    "variants": [
+     {
+      "id": "layout-kernel-hprc-chromosomes",
+      "claim": "steady-state layout wall time on the complete HPRC Year-1 whole-chromosome pangenome suite; graph loading (.og deserialization) excluded but reported separately (one-shot, not amortized)\n",
+      "inputs": {
+       "suite": "Human Pangenome Reference Consortium (HPRC) Year-1 pangenome graphs, odgi .og format",
+       "selection": "complete set: chr1-chr22, chrX, chrY (24 graphs, no cherry-picking possible since it's the full chromosome set)",
+       "recommended_subset": [
+        "chrY or chr21 (smallest, ~3.2x10^5 nodes) — small/dev instance",
+        "chr1 (largest, ~1.1x10^7 nodes, ~1.1x10^9 nucleotides) — large/scale instance",
+        "3+ additional mid-size chromosomes for coverage (e.g. chr6, chr12, chr17)"
+       ],
+       "dense_operand": "N/A (graph structure + path set is the sole input)"
+      }
+     },
+     {
+      "id": "layout-e2e-with-loading",
+      "claim": "end-to-end time including one-shot graph loading, for the case where loading cost is non-negligible relative to layout time on smaller chromosomes (loading is NOT amortized across multiple layout calls in real pangenome-analysis usage — each chromosome is laid out once)\n",
+      "inputs": {
+       "suite": "same recommended_subset as layout-kernel-hprc-chromosomes",
+       "selection": "same",
+       "recommended_subset": "same",
+       "dense_operand": "N/A"
+      }
+     }
+    ]
+   },
+   "papers": [
+    {
+     "key": "conf/sc/LiSDHGGPGZ24",
+     "title": "Rapid GPU-Based Pangenome Graph Layout",
+     "venue": "SC",
+     "year": 2024,
+     "platform": [
+      "nvidia-gpu"
+     ],
+     "approach": "manual",
+     "artifact_url": "https://github.com/tonyjie/gpu_pangenome_layout",
+     "one_liner": "GPU pangenome graph layout with cache-friendly layout/warp merging, 57.3x over CPU",
+     "kernels_assigned": [
+      "pangenome graph layout"
+     ],
+     "categories": [
+      "graph"
+     ],
+     "abstract": "Computational Pangenomics is an emerging field that studies genetic variation using a graph structure encompassing multiple genomes. Visualizing pangenome graphs is vital for understanding genome diversity. Yet, handling large graphs can be challenging due to the high computational demands of the graph layout process. In this work, we conduct a thorough performance characterization of a state-of-the-art pangenome graph layout algorithm, revealing significant data-level parallelism, which makes GPUs a promising option for compute acceleration. However, irregular data access and the algorithm’s memory-bound nature present significant hurdles. To overcome these challenges, we develop a solution implementing three key optimizations: a cache-friendly data layout, coalesced random states, and warp merging. Additionally, we propose a quantitative metric for scalable evaluation of pangenome layout quality. Evaluated on 24 human whole-chromosome pangenomes, our GPU-based solution achieves a 57.3x speedup over the state-of-the-art multithreaded CPU baseline without layout quality loss, reducing execution time from hours to minutes."
+    }
+   ]
+  }
+ ]
+}

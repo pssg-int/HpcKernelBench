@@ -1,0 +1,68 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 5132f48..cb78c0e 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -9,13 +9,13 @@ SET(VERSION_MAJOR "0")
+ SET(VERSION_MINOR "1")
+ SET(VERSION_PATCH "0")
+ 
+-set(CMAKE_CXX_STANDARD 11)
++set(CMAKE_CXX_STANDARD 17)
+ set(CMAKE_CXX_STANDARD_REQUIRED ON)
+ 
+ if(CMAKE_COMPILER_IS_GNUCXX)
+-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -std=c++11") 
++	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -std=c++17") 
+ endif(CMAKE_COMPILER_IS_GNUCXX)
+-set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11 -lineinfo --expt-extended-lambda -O3 -Wno-deprecated-gpu-targets")
++set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++17 -lineinfo --expt-extended-lambda -O3 -Wno-deprecated-gpu-targets")
+ 
+ 
+ include(FindCUDA)
+@@ -26,8 +26,8 @@ Set to Auto for automatic detection (default)."
+ )
+ #cuda_select_nvcc_arch_flags(CUDA_ARCH_FLAGS ${CUDA_ARCH_LIST})
+ #list(APPEND CUDA_NVCC_FLAGS ${CUDA_ARCH_FLAGS})
+-string(APPEND CUDA_NVCC_FLAGS " -gencode arch=compute_86,code=sm_86")
+-set(CMAKE_CUDA_ARCHITECTURES 86)
++string(APPEND CUDA_NVCC_FLAGS " -gencode arch=compute_80,code=sm_80")
++set(CMAKE_CUDA_ARCHITECTURES 80)
+ 
+ #message(STATUS ${CUDA_NVCC_FLAGS})
+ #message(STATUS ${CUDA_ARCH_FLAGS})
+diff --git a/src/kernels_full.cu b/src/kernels_full.cu
+index 91f4d8f..993def1 100644
+--- a/src/kernels_full.cu
++++ b/src/kernels_full.cu
+@@ -1,3 +1,4 @@
++#include <cstdio>  // KernelBench build fix: device printf needs this under c++17/gcc-14 (see STATUS.md)
+ #include "kernels_full.h"
+ #include "define_validate.h"
+ #include "define_transition.h"
+diff --git a/src/kernels_hash.cu b/src/kernels_hash.cu
+index 0b94fcc..a285825 100644
+--- a/src/kernels_hash.cu
++++ b/src/kernels_hash.cu
+@@ -1,3 +1,4 @@
++#include <cstdio>  // KernelBench build fix: device printf needs this under c++17/gcc-14 (see STATUS.md)
+ #include "kernels_hash.h"
+ #include "define_validate.h"
+ #include "define_transition.h"
+diff --git a/src/kernels_transform.cu b/src/kernels_transform.cu
+index 8a3411e..cf39840 100644
+--- a/src/kernels_transform.cu
++++ b/src/kernels_transform.cu
+@@ -1,3 +1,4 @@
++#include <cstdio>  // KernelBench build fix: device printf needs this under c++17/gcc-14 (see STATUS.md)
+ #include "kernels_transform.h"
+ #include "define_validate.h"
+ #include "define_transition.h"
+diff --git a/src/kernels_transform_dump.cu b/src/kernels_transform_dump.cu
+index 5e267ab..996cd96 100644
+--- a/src/kernels_transform_dump.cu
++++ b/src/kernels_transform_dump.cu
+@@ -1,3 +1,4 @@
++#include <cstdio>  // KernelBench build fix: device printf needs this under c++17/gcc-14 (see STATUS.md)
+ #include "kernels_transform_dump.h"
+ #include "define_validate.h"
+ #include "define_transition.h"

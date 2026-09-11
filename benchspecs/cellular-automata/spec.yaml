@@ -1,0 +1,80 @@
+kernel: cellular-automata
+summary: >
+  GPU cellular-automaton (CA) time-stepping throughput for the Larger-Than-Life
+  (LTL) family, where the transition function is a weighted summation over an
+  r-cell-radius neighborhood; compares a tensor-core-mapped implementation
+  against CUDA-core baselines (naive, coarsened, shared-memory-tiled, bit-packed)
+  sharing one codebase, across a radius sweep since radius is the axis the
+  paper's own contribution targets.
+operation: >
+  Given an N x N x Z boolean/low-integer grid (Z independent layers simulated
+  in parallel) and radius r, each step computes for every cell a weighted sum
+  of its (2r+1)x(2r+1) neighborhood and applies a birth/survival threshold
+  rule (LTL: alive iff the sum falls in a configured interval, generalizing
+  Conway's Game of Life to r>1); iterated for `steps` timesteps with periodic
+  or fixed boundary halo handling.
+variants:
+  - id: ca-ltl-kernel-throughput
+    claim: >
+      steady-state per-step kernel throughput (cell-updates/s) as a function
+      of neighborhood radius r, one-shot data layout preparation (uint8 ->
+      tensor-core / bit-packed layout) excluded from per-step time and
+      reported separately, since the artifact's own harness already performs
+      this separation and radius is the paper's central independent variable.
+    inputs:
+      suite: "synthetic random-density LTL grids (the artifact's own generator; no external dataset — CA workloads are parametrically generated, not corpus-drawn)"
+      selection: "grid sizes N in {512, 1024, 2048, 4096} (square, Z=1), matching the paper's own GPU-memory-bound size range; radius r in {1, 2, 3, 4, 6, 8, 12, 16} (the full range the abstract reports, 1<=r<=16, sampled at the values where the paper states a qualitative change: CATSolver competitive at r=1,2, crossing over at r=3, dominant from r>=5)"
+      cell_density: "0.3 (30% live cells), matching the harness's own default RandomFill density; report if varied since a denser/sparser grid does not change any of these solvers' cost (all are dense, not sparsity-adaptive) but should be fixed for reproducibility"
+      steps: "1000 (large enough that one-shot data-layout preparation is negligible relative to steady-state stepping cost; report separately regardless per the timing_scope note below)"
+    protocol:
+      warmup: "1 full untimed step (not present in the public dev-test harness as read; added here as a fairness fix — the harness's single-trial timing is otherwise adopted as-is)"
+      reps: 10
+      statistic: "median (report min/max)"
+      timer: "CUDA events (cudaEventRecord/cudaEventElapsedTime), matching the artifact's own timer; wraps the full `steps`-step loop, not a single step"
+      timing_scope: "kernel only, over all `steps` steps; one-shot data-layout preparation (prepareData: uint8->tensor-core input packing for CATSolver, bit-packing for PACKSolver) excluded and reported separately, once, matching the artifact's own separation of prepareData from the timed loop"
+      preprocessing_reported: "prepareData time, once per (solver, N, radius) combination"
+    metric:
+      primary: "Gcells/s = N*N*Z*steps / (kernel_time_s * 1e9), matching the artifact's own reported metric"
+      secondary: "speedup vs BASESolver (naive CUDA-core baseline) and vs SHAREDSolver (best non-tensor-core baseline in the codebase), dimensionless x, matching the paper's own headline framing (up to 101x / ~14x)"
+    correctness: >
+      MANDATORY pre-timing gate: every solver's final grid state after
+      `steps` steps must match, cell-for-cell, a serial CPU reference
+      implementation of the same LTL rule run on the same initial grid and
+      the same step count (bit-exact, since CA state is boolean/discrete —
+      no tolerance applies). This is a REQUIREMENT this spec adds beyond
+      what the artifact's own `CompareCatPack` check does (see
+      notes_on_fairness): CompareCatPack only cross-checks two of the
+      paper's own implementations against each other, not against an
+      independent reference, so it cannot catch a bug shared by both.
+  - id: ca-ltl-multistep-fusion
+    claim: >
+      effect of fusing k CA steps into one kernel launch (CATMultiStepSolver /
+      CATMultiStepSolver2 vs single-step CATSolver) on halo-exchange
+      amortization, isolating a second axis (fusion depth) the paper's own
+      three tensor-core variants target independently of the radius sweep.
+    inputs:
+      suite: "same synthetic generator as ca-ltl-kernel-throughput"
+      selection: "N=2048, Z=1, radius in {4, 8, 16} (representative of the low/mid/high range), fusion depth k in {1 (CATSolver baseline), 2, 4, 8} (CATMultiStepSolver/2 configurations)"
+    protocol:
+      warmup: 1
+      reps: 10
+      statistic: "median (report min/max)"
+      timer: "CUDA events, same convention as ca-ltl-kernel-throughput"
+      timing_scope: "kernel only, steps fixed at 1000 total regardless of fusion depth (i.e. 1000/k fused-kernel launches for depth k), so all fusion depths execute the same number of underlying CA transitions"
+    metric:
+      primary: "Gcells/s"
+      secondary: "speedup vs k=1 (CATSolver), dimensionless x"
+    correctness: "same bit-exact gate vs serial CPU reference as ca-ltl-kernel-throughput, applied at the final (post-fusion) grid state"
+
+notes_on_fairness:
+  - "The public dev-test harness (tests/test_CG.cu) times a single trial per configuration with no discarded warmup and no repetition. This spec adds warmup + 10-rep median/min/max on top of the artifact's own CUDA-event timer placement, since single-trial GPU timing is vulnerable to clock/thermal-state noise and this project's fairness principles require a fixed repetition protocol."
+  - "The artifact's own correctness check (CompareCatPack) validates agreement between two of the paper's own implementations (CAT and PACK solvers), not against an independent reference. This spec requires an independent serial-CPU reference implementation of the LTL rule as the correctness gate instead, since inter-implementation agreement cannot catch a bug shared by both of the paper's own solvers."
+  - "The abstract also reports energy efficiency (competitive at r<=4, best from r>=5) and a CPU-AMX port; neither is included as a variant here since no energy-measurement code or AMX-relevant benchmark script was found in the surveyed portion of the GPU repo (the AMX port is a separate repository, kezada94/CAT_cpu, not surveyed) — flagged in open_questions rather than fabricated."
+
+open_questions:
+  - "Exact grid sizes and step counts used to produce the paper's own reported figures (as opposed to the dev-test harness's small defaults) were not confirmed from the source read; this spec's size/step choices are this survey's own recommendation, not lifted from a paper script."
+  - "Whether the paper's reported 101x / ~14x speedups are single-trial or averaged over repeated runs was not determinable from the public harness (which itself runs a single trial); if the paper text states a repetition protocol it was not recovered in this survey's source read (no arXiv/OA fulltext was fetched, only the GitHub repo)."
+  - "The CPU AMX port (kezada94/CAT_cpu) was not surveyed as part of this spec; a CPU variant of this benchmark is an open extension."
+
+evidence:
+  journals/tpds/NavarroQMFH25: "CAT: LTL cellular automata mapped to GPU tensor cores via weighted-neighborhood-sum-as-matmul; six solvers in one codebase (BASE/COARSE/SHARED/MCELL/PACK baselines + CAT/CATMultiStep/CATMultiStep2); CUDA-event single-trial timing over a multi-step loop, prepareData excluded from timed loop; Gcells/s throughput metric; CompareCatPack inter-implementation correctness check (not vs. independent reference); up to 101x over GPU baseline, ~14x over fastest prior GPU approach, dominant from r>=3, competitive at r=1,2."

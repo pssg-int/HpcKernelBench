@@ -1,0 +1,37 @@
+diff --git a/src/optixNSearch/sort.cpp b/src/optixNSearch/sort.cpp
+index cade873..376eb92 100644
+--- a/src/optixNSearch/sort.cpp
++++ b/src/optixNSearch/sort.cpp
+@@ -8,6 +8,12 @@
+ #include <thrust/copy.h>
+ #include <thrust/sequence.h>
+ #include <thrust/gather.h>
++// KERNELBENCH PATCH (build-system/CUDA-version fix, ARTIFACT_GUIDE.md rule 3
++// -- no kernel logic changed): thrust::host_vector is used throughout this
++// file but was never explicitly included -- same CUDA-11-vs-12.9 bundled-
++// Thrust transitive-include change as thrust_helper.cu, see that file's
++// patch comment.
++#include <thrust/host_vector.h>
+ 
+ #include <algorithm>
+ #include <iomanip>
+diff --git a/src/optixNSearch/thrust_helper.cu b/src/optixNSearch/thrust_helper.cu
+index f3aa71c..b67c241 100644
+--- a/src/optixNSearch/thrust_helper.cu
++++ b/src/optixNSearch/thrust_helper.cu
+@@ -5,6 +5,15 @@
+ #include <thrust/gather.h>
+ #include <thrust/binary_search.h>
+ #include <thrust/adjacent_difference.h>
++// KERNELBENCH PATCH (build-system/CUDA-version fix, ARTIFACT_GUIDE.md rule 3
++// -- no kernel logic changed): thrust::count/count_if/unique/unique_by_key
++// are used below (lines ~193-210) but were never explicitly included here.
++// Under CUDA 11.x's bundled Thrust (this artifact's original dev toolchain,
++// PPoPP'22) one of the headers above transitively pulled these in; CUDA
++// 12.9's much more modular Thrust no longer does, so the build fails with
++// "namespace thrust has no member ..." unless these are included directly.
++#include <thrust/count.h>
++#include <thrust/unique.h>
+ 
+ // this can't be in the main cpp file since the file containing cuda kernels to
+ // be compiled by nvcc needs to have .cu extensions. See here:

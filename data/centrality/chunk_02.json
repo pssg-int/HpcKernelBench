@@ -1,0 +1,659 @@
+[
+  {
+    "key": "conf/ics/ZhangZLLJZYLL26",
+    "group": "stencil",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "production 7th-order WENO CFD solver (BF3W fused kernel), whole-application timing with a separately reported kernel-focused ratio; AMD MI60/MI200 GPUs (HIP/ROCm), fp64",
+    "gpu_single_card": false,
+    "rationale": "Headline contribution is the high-order stencil kernel for inviscid CFD; README reports an isolated kernel-focused gain alongside full-application speedup, which is exactly the spec's e2e-application variant (this paper is its own worked example in the spec). Note: input platform metadata says nvidia-gpu but survey.md documents AMD MI60/MI200 via HIP/ROCm with no NVIDIA path evidenced, so gpu_single_card is rated false against the survey, not the metadata tag."
+  },
+  {
+    "key": "conf/ipps/YaoZLX26",
+    "group": "stencil",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "full shallow-water dynamical core (HOPE) on the Williamson standard test suite, Ozaki-scheme fp16 Tensor Cores emulating fp64 accuracy, single NVIDIA GPU (A40/RTX A6000)",
+    "gpu_single_card": true,
+    "rationale": "Headline is the Ozaki-scheme TCU stencil reformulation itself, and this paper is the explicit worked example for the spec's e2e-application variant (Williamson geostrophic-flow case named verbatim in its recommended_subset)."
+  },
+  {
+    "key": "conf/ppopp/GuW0Y26",
+    "group": "stencil",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "1D/2D stencil-as-sparse-matmul on Sparse Tensor Cores, fp16, single A100, kernel microbenchmark",
+    "gpu_single_card": true,
+    "rationale": "SPIDER is one of the four papers whose shared CLI/shape catalog literally defines the TCU-matmul variant; reports kernel-level GStencil/s vs cuDNN/ConvStencil/LoRAStencil/FlashFFTStencil with preprocessing excluded and measured separately, exactly the variant's protocol."
+  },
+  {
+    "key": "conf/ics/LiuYYLLQ25",
+    "group": "stencil",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "synthetic 2D/3D box/star stencils (9pt/7pt/27pt), fp32 default (fp64 variant available), ARM many-core CPU (Kunpeng/Phytium), GA-tuned",
+    "gpu_single_card": false,
+    "rationale": "AOStencil is explicitly named as one of the six papers defining variant 1's 'common denominator'; it is a domain-specific compiler exclusively for stencils, evaluated at kernel level via GCells/GFLOPS against SOTA domain-specific compilers."
+  },
+  {
+    "key": "conf/ppopp/HanLCBZYCZCY25",
+    "group": "stencil",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "1D/2D/3D stencil via FFT-bridged Tensor-Core matmul, fp16, A100/H100, kernel microbenchmark",
+    "gpu_single_card": true,
+    "rationale": "FlashFFTStencil shares the ConvStencil/LoRAStencil/SPIDER CLI/timing convention that defines the TCU-matmul variant; headline 2.57x average kernel-level speedup over prior SOTA."
+  },
+  {
+    "key": "conf/dac/SchefflerCB24",
+    "group": "stencil",
+    "centrality": "core",
+    "regime_match": "partial",
+    "regime": "various stencil codes on an 8-core RISC-V compute cluster (Snitch) with indirect stream registers; precision/shape convention unconfirmed, plus an extrapolated 256-core projection not measured hardware",
+    "gpu_single_card": false,
+    "rationale": "Headline is stencil-acceleration hardware (indirect stream registers) evaluated at kernel level (speedup, FPU utilization) against an RV32G baseline -- same general-purpose-compute class as variant 1, but this paper wasn't in the depth survey and its shape/precision convention could not be checked against the named star/box catalog, so only partial confidence in suite overlap."
+  },
+  {
+    "key": "conf/ppopp/XuSZLH024",
+    "group": "stencil",
+    "centrality": "component",
+    "regime_match": "partial",
+    "regime": "PolyBench affine-kernel suite (stencil is one of several loop-nest kernel types) under a unified mixed-precision codegen+autotuner, CPU and GPU",
+    "gpu_single_card": true,
+    "rationale": "PrecTuner is a general mixed-precision code generator/autotuner spanning the whole PolyBench affine-kernel family (GEMM, stencils, etc.), not a stencil-specific contribution -- fits the 'compiler/autotuner that generates this kernel among others' component case; device class matches variant 1 loosely but not its named shape/grid convention."
+  },
+  {
+    "key": "conf/ppopp/ChenLWBWMYZCY24",
+    "group": "stencil",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "1D/2D/3D stencil-as-matmul on Tensor Cores, fp16-class, single A100, kernel microbenchmark",
+    "gpu_single_card": true,
+    "rationale": "ConvStencil originates the shape/CLI catalog and bulk-timing idiom the whole TCU-matmul variant reuses verbatim; kernel-level GStencil/s vs cuDNN im2col baseline."
+  },
+  {
+    "key": "conf/sc/ZhangLYCZCY24",
+    "group": "stencil",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "1D/2D/3D stencil-as-matmul on Tensor Cores (low-rank weight decomposition), fp16-class, single A100, kernel microbenchmark",
+    "gpu_single_card": true,
+    "rationale": "LoRAStencil is explicitly named alongside ConvStencil/FlashFFTStencil/SPIDER as defining the TCU-matmul variant's shared CLI and shape catalog."
+  },
+  {
+    "key": "conf/ics/ZhangWCMWEM23",
+    "group": "stencil",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "2D/3D Jacobi-style stencils (5/9/13/17/21/25pt) plus sparse variants, fp64 default, single NVIDIA GPU, persistent-kernel execution model",
+    "gpu_single_card": true,
+    "rationale": "PERKS is explicitly named as one of the papers defining variant 1's 'common denominator'; reports kernel-level GCells/s, GFLOPS, and bandwidth against SOTA libraries."
+  },
+  {
+    "key": "conf/sc/FernandoNHZSGB22",
+    "group": "stencil",
+    "centrality": "component",
+    "regime_match": "mismatch",
+    "regime": "adaptive-mesh-refinement (octree) finite-difference update inside a full multi-GPU numerical-relativity solver, fp64; weak/strong scaling to hundreds of GPUs, with a single-A100 point (800 GFlops/s) also reported",
+    "gpu_single_card": true,
+    "rationale": "The FD stencil update is one part of a much larger AMR gravitational-wave solver and is evaluated end-to-end (whole-simulation speedup/scaling), not as an isolated kernel; adaptive octree grids are also a structurally different regime than the spec's dense D-dimensional grid."
+  },
+  {
+    "key": "conf/sc/MunksgaardHSO22",
+    "group": "stencil",
+    "centrality": "component",
+    "regime_match": "partial",
+    "regime": "Rodinia Hotspot 2D thermal-diffusion stencil benchmark at its standard problem size, single NVIDIA GPU; one of three unrelated Rodinia kernels (LUD, Hotspot, NW) generated by a general array-language compiler",
+    "gpu_single_card": true,
+    "rationale": "Futhark is a general-purpose array-language compiler evaluated across three unrelated Rodinia kernels, so stencil is one of several targets, not the paper's sole subject; Hotspot is a legitimate dense structured-grid stencil but uses Rodinia's own problem size/suite, not the AN5D/ConvStencil shape convention."
+  },
+  {
+    "key": "conf/cgo/LichtKMBHH21",
+    "group": "stencil",
+    "centrality": "core",
+    "regime_match": "partial",
+    "regime": "general stencil-DAG programs (including a production weather-simulation stencil) mapped to FPGA spatial hardware, single- and multi-device, TOp/s",
+    "gpu_single_card": false,
+    "rationale": "Headline contribution is entirely stencil-DAG-to-hardware mapping, evaluated at kernel level (TOp/s) -- the whole paper is about stencils, matching 'core'; but FPGA device class and heterogeneous-DAG framing differ from the CPU/GPU shape/grid convention, though the spec's own variant-1 digest cites sibling FPGA paper StencilsOnFPGA as informing the same general-purpose-compute class."
+  },
+  {
+    "key": "conf/cgo/KoehlerS21",
+    "group": "stencil",
+    "centrality": "tangential",
+    "regime_match": "mismatch",
+    "regime": "single-pass Harris corner-detection image pipeline (Sobel gradients + structure tensor), fixed 2-image evaluation set, ARM mobile CPU, no time-stepping",
+    "gpu_single_card": false,
+    "rationale": "Harris corner detection is a one-shot 2D image-filter pipeline, not the track's iterative T-time-step PDE stencil sweep; this paper is the sole subject of its own dedicated morphology-image-kernel track, so its assignment here looks like an over-generalization of 'neighborhood-weighted-sum operation' rather than a genuine PDE-stencil match."
+  },
+  {
+    "key": "conf/cgo/AlappatSHKRW21",
+    "group": "stencil",
+    "centrality": "core",
+    "regime_match": "partial",
+    "regime": "stencil kernels arising from explicit ODE-method discretizations, ECM-performance-model-guided autotuning, CPU (Cascade Lake/Rome); overlap with the named star/box catalog not confirmed",
+    "gpu_single_card": false,
+    "rationale": "Headline is a stencil-optimization/performance-prediction tool built directly on Intel's YASK stencil framework, reporting measured gains from ECM-guided kernel selection -- matches variant 1's CPU general-compute class conceptually, but the specific ODE-derived shapes weren't confirmed against the named shape catalog."
+  },
+  {
+    "key": "conf/ipps/KamalavasanMRF21",
+    "group": "stencil",
+    "centrality": "core",
+    "regime_match": "partial",
+    "regime": "Poisson-5pt/Jacobi-7pt/RTM-25pt stencils, fp32, Xilinx Alveo U280 FPGA, on-chip-capacity-limited grid sizes vs a V100 GPU energy/runtime comparison",
+    "gpu_single_card": false,
+    "rationale": "Headline is entirely an FPGA stencil-accelerator design workflow, evaluated at kernel level (GB/s, runtime); explicitly named alongside AN5D/PERKS as informing variant 1's design and its rtm3d25p8th shape is folded into variant 1's own recommended_subset, but its own grid sizes (50^3-400^2) are far smaller than the CPU/GPU convention and the spec reports it separately by design."
+  },
+  {
+    "key": "conf/ipps/BisbasLLNGK21",
+    "group": "stencil",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "3D finite-difference wave-propagation stencils (isotropic/anisotropic acoustic, elastic), fp32, CPU (Broadwell/Skylake), CFL-determined iteration counts",
+    "gpu_single_card": false,
+    "rationale": "Explicitly named as one of variant 1's defining papers ('Devito's generated code'); ablates temporal blocking against Devito's own spatially-blocked baseline at kernel level (GPoints/s)."
+  },
+  {
+    "key": "journals/tpds/GreteGO21",
+    "group": "stencil",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "structured-grid finite-volume MHD update (2nd-order box-shaped stencil support), fp64, single V100 reported plus CPU/multi-GPU scaling",
+    "gpu_single_card": true,
+    "rationale": "Explicitly named as variant 1's defining example ('K-Athena's core update kernel'); reports a clean single-GPU cell-updates/s number (>10^8 on one V100) alongside its production-application framing."
+  },
+  {
+    "key": "journals/tpds/LichtBMH21",
+    "group": "stencil",
+    "centrality": "component",
+    "regime_match": "partial",
+    "regime": "a general catalog of HLS source-to-source optimizing transformations demonstrated across several HPC kernels (GEMM, stencil among others), FPGA spatial architectures",
+    "gpu_single_card": false,
+    "rationale": "This is a general transformation catalog, not a stencil-specific contribution -- stencil is one of several example kernels used to demonstrate the taxonomy, evaluated on FPGA rather than the CPU/GPU convention."
+  },
+  {
+    "key": "conf/cgo/MatsumuraZWEM20",
+    "group": "stencil",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "synthetic star/box 2D/3D stencils plus named application kernels, fp64 (fp32 secondary), single V100/P100, degree-10 temporal blocking",
+    "gpu_single_card": true,
+    "rationale": "AN5D originates the star/box shape-naming convention the whole track reuses verbatim and is the primary defining paper for variant 1's protocol (400ms floor, 5 reps + discarded warmup)."
+  },
+  {
+    "key": "conf/sc/BrunnHBMM20",
+    "group": "stencil",
+    "centrality": "component",
+    "regime_match": "partial",
+    "regime": "high-order finite-difference operators (interpolation/gradient/divergence) embedded in a Gauss-Newton-Krylov image-registration solver, fp64/fp32, multi-GPU with a single-V100 number reported",
+    "gpu_single_card": true,
+    "rationale": "The FD stencil operators are one part of a larger nonlinear image-registration optimization pipeline (interpolation+FD+FFT+Krylov solve), not an isolated iterative PDE sweep; a genuine single-V100 256^3-in-5s number exists but the operators are single-application inside a much larger solver stack."
+  },
+  {
+    "key": "conf/ipps/AlvesMBFGR25",
+    "group": "gnn-aggregation",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "binary-adjacency x dense-feature matmul (plain and degree-normalized GCN aggregation), CPU shared-memory (serial+parallel), SNAP/Planetoid/OGB graphs overlapping the recommended subset (Cora, PubMed), fp32",
+    "gpu_single_card": false,
+    "rationale": "Headline is the CBM compression format specifically for accelerating binary@dense aggregation matmul; kernel-only timing (benchmark_matmul.py) is cleanly separated from format-conversion cost, matching the spec's kernel-f32 variant closely."
+  },
+  {
+    "key": "conf/sc/HeLDL0M025",
+    "group": "gnn-aggregation",
+    "centrality": "core",
+    "regime_match": "partial",
+    "regime": "full GCN training via a GPU Strassen's-algorithm SpMM, single GPU (RTX 4090); no isolated kernel-level benchmark exposed and exact dataset names not confirmed from the README",
+    "gpu_single_card": true,
+    "rationale": "Headline is 'the first GPU-accelerated SpMM implementation based on Strassen's algorithm' for GCN training -- centrally about the aggregation kernel -- but the public artifact only exposes full-training numbers (matches the epoch-training-e2e variant's tier), and the dataset suite could not be independently confirmed."
+  },
+  {
+    "key": "conf/asplos/PengXSHZHKKD24",
+    "group": "gnn-aggregation",
+    "centrality": "core",
+    "regime_match": "partial",
+    "regime": "MaxK top-k-sparsified (CBSR-format) SpGEMM/SSpMM aggregation kernel, single A100, custom 24-graph kernel benchmark plus a 5-dataset full training pipeline",
+    "gpu_single_card": true,
+    "rationale": "Headline is a fast GPU SpMM/SSpMM kernel design reducing GNN memory traffic, with an isolated kernel-level benchmark harness (kernels/spmm_base.h) shared with cuSPARSE/GNNAdvisor baselines; but the actual operand is a structurally top-k-sparsified feature matrix, not the plain dense-N-column input the kernel-f32 variant specifies."
+  },
+  {
+    "key": "conf/ics/0001SLFY024",
+    "group": "gnn-aggregation",
+    "centrality": "tangential",
+    "regime_match": "mismatch",
+    "regime": "segmented/batched dense GEMM per relation-type for heterogeneous GNNs (RGCN/HGT/RGAT), H100/A100/RTX4090",
+    "gpu_single_card": true,
+    "rationale": "FASTEN's operator is segmented (grouped/batched) dense GEMM over relational graph types, not the sparse-adjacency-times-dense-feature aggregation this track's spec defines; its own categories tag it dense_la, not sparse_la, and the assignment to gnn-aggregation looks like a mismatch on operator identity."
+  },
+  {
+    "key": "conf/usenix/WangFWHD23",
+    "group": "gnn-aggregation",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "isolated single-kernel SpMM/SDDMM plus full-epoch GCN training on GNNAdvisor-lineage real graphs heavily overlapping the recommended subset (citeseer/cora/pubmed/ppi/amazon0505/artist/soc-BlogCatalog/amazon0601), fp32, Ampere GPU",
+    "gpu_single_card": true,
+    "rationale": "TC-GNN is one of the few papers in this track that ships both an isolated kernel-only benchmark AND an epoch-level model benchmark, and its 14-graph suite overlaps heavily with the spec's recommended_subset for both the kernel-f32 and epoch-training-e2e variants."
+  },
+  {
+    "key": "conf/hpdc/FuJH22",
+    "group": "gnn-aggregation",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "isolated kernel-only GNN aggregation call (vertex+feature two-level parallelism), dataset-agnostic real-graph CSR (citeseer worked example), N=32 default, single V100",
+    "gpu_single_card": true,
+    "rationale": "TLPGNN's own benchmark (gcn/test_kernel.py) is the narrowest, purest kernel-only scope surveyed in this track -- exactly the spec's kernel-f32 variant's claim."
+  },
+  {
+    "key": "conf/ppopp/WangFD22",
+    "group": "gnn-aggregation",
+    "centrality": "core",
+    "regime_match": "mismatch",
+    "regime": "quantized (1/2/4/8-bit) bit-decomposed Tensor-Core GNN aggregation, plus a separate synthetic INT8 GEMM comparison untethered to any real graph, Ampere-class GPU",
+    "gpu_single_card": true,
+    "rationale": "QGTC's headline contribution is a Tensor-Core kernel design for quantized GNN aggregation, but its precision axis (1-8-bit bit-decomposed) is not commensurable with the spec's fp32 dense-feature variant, which has no quantized counterpart in this track."
+  },
+  {
+    "key": "journals/tpds/XuSYLJ22",
+    "group": "gnn-aggregation",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "GCN backward aggregation restructured as a partial-active-vertex GPU kernel, both kernel-only (1.48-5.65x) and with/without-preprocessing end-to-end numbers, real GNNAdvisor-lineage graphs, GPU",
+    "gpu_single_card": true,
+    "rationale": "EPPGCN is the paper the spec's preprocessing-amortized e2e variant is explicitly modeled on -- it is the only surveyed paper reporting both a with- and without-preprocessing end-to-end number side by side alongside a kernel-only figure."
+  },
+  {
+    "key": "conf/sc/HuYWYZL0ZW20",
+    "group": "gnn-aggregation",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "co-optimized sparse-template+UDF GNN aggregation kernel via TVM autotuning, dataset-agnostic CSR input (Reddit worked example), feature width 128, CPU and GPU dual backend",
+    "gpu_single_card": true,
+    "rationale": "FeatGraph's whole contribution is optimizing the SpMM-like GNN aggregation operator via composable sparse templates and UDFs; it is dataset-agnostic like the spec's suite and reports both CPU and single-GPU kernel-level speedups."
+  },
+  {
+    "key": "conf/sc/HuangD0Y20",
+    "group": "gnn-aggregation",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "isolated kernel-only GNN SpMM, SNAP/SuiteSparse graphs (whole SNAP category mirrored), N in {128,256,512}, fp32, single GPU",
+    "gpu_single_card": true,
+    "rationale": "GE-SpMM is explicitly named as one of the papers defining the kernel-f32 variant's 'common denominator', and its dataset-sweep convention (N doubling 128->256->512) is reused verbatim by the spec."
+  },
+  {
+    "key": "conf/sc/TripathyYB20",
+    "group": "gnn-aggregation",
+    "centrality": "tangential",
+    "regime_match": "mismatch",
+    "regime": "distributed multi-GPU 1D/1.5D/2D/3D parallel decomposition of GNN aggregation; local SpMM uses whichever library is available and is not itself optimized, torch.distributed on 100+ GPUs",
+    "gpu_single_card": false,
+    "rationale": "CAGNET's contribution and measured quantity is communication volume/time for a family of parallel decompositions, not local kernel throughput -- the aggregation kernel is used as an unoptimized sub-step (per survey.md), and the paper's target scenario is inherently multi-GPU-only."
+  },
+  {
+    "key": "conf/ics/LiXSS24",
+    "group": "convolution",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "TVM/Ansor autotuning-search-cost reduction for GEMM+conv2d task sets (YOLO/ResNet networks), RTX3090/4090; found kernel quality matches, not beats, vanilla Ansor by design",
+    "gpu_single_card": true,
+    "rationale": "Ansor-AF-DS is a general autotuner covering both GEMM and conv2d (a compiler that generates this kernel among others), so conv is one of two target ops; its actual contribution -- reaching the same code quality in far fewer trials -- is exactly the spec's dedicated conv-tuning-cost variant, which the spec built around this paper."
+  },
+  {
+    "key": "conf/ppopp/LiuZYLQ24",
+    "group": "convolution",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "pruned sparse conv layers extracted from VGG19/ResNet50/YOLOv3/MobileNet checkpoints at multiple sparsity levels, fp32, single V100",
+    "gpu_single_card": true,
+    "rationale": "Tetris's own benchmark methodology (take a base dense CNN layer, prune it, time the pruned shape) is quoted verbatim as the spec's conv-sparse-pruned-kernel-fp32 variant's methodology."
+  },
+  {
+    "key": "conf/asplos/DingYZLWP23",
+    "group": "convolution",
+    "centrality": "component",
+    "regime_match": "partial",
+    "regime": "general DL tensor-program task-mapping compiler for GPU and TPU (GEMM, conv, and other operators); claims inference latency rivaling cuDNN/cuBLAS but exact conv workload/shapes unconfirmed (abstract-level only, original AE scripts not at current repo HEAD)",
+    "gpu_single_card": true,
+    "rationale": "Hidet generates many different tensor-program kernel types via a task-mapping paradigm, so conv is one of several outputs (component), but survey.md could not confirm its specific conv evaluation protocol/shapes beyond the abstract's general claim."
+  },
+  {
+    "key": "conf/dac/BasalamaWC23",
+    "group": "convolution",
+    "centrality": "component",
+    "regime_match": "mismatch",
+    "regime": "HLS systolic-array design-space search for GEMM+conv layers sampled from VGG16/MobileNetV2/ResNet50/ResNet152, HLS-estimated cycle/latency/resource cost model rather than a measured wall-clock kernel run, FPGA",
+    "gpu_single_card": false,
+    "rationale": "Odyssey is a DSE tool spanning both matmul and conv kernels (component); per survey.md its own run_tests.py entry point is a synthesis-model search, not a profiled kernel execution, which is a categorically different measurement paradigm from this spec's GFLOP/s kernel variants."
+  },
+  {
+    "key": "conf/asplos/0033XSRS21",
+    "group": "convolution",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "dense conv2d layer shapes from ResNet-18/YOLO/MobileNet-depthwise (the exact shape lists the spec's suite is built from), fp32, multicore CPU, per-iteration cache-flushed timing",
+    "gpu_single_card": false,
+    "rationale": "This paper's own resnet.txt/yolo.txt/deepwise.txt layer-shape files are the literal source of the spec's conv-dense-kernel-fp32 recommended_subset; headline is a loop-tiling analytical model evaluated at kernel level against oneDNN/AutoTVM."
+  },
+  {
+    "key": "conf/asplos/ChenMCA21",
+    "group": "convolution",
+    "centrality": "component",
+    "regime_match": "partial",
+    "regime": "non-SIMD vectorizer generator targeting DSP/image/ML kernels; convolution is one of several target kernels, its specific workload/shape details not independently confirmed, CPU",
+    "gpu_single_card": false,
+    "rationale": "Per survey.md, 'convolution is not [VeGen's] primary or sole subject the way it is for [the other convolution-track] papers' -- it is peripheral evidence for a general vectorizer-generator, fitting the compiler-generates-this-kernel-among-others component case, but with real uncertainty about how closely its conv target matches the spec's shape suite."
+  },
+  {
+    "key": "conf/ipps/WangFD21",
+    "group": "convolution",
+    "centrality": "component",
+    "regime_match": "mismatch",
+    "regime": "sliding-channel convolution (a novel grouped-conv variant) evaluated only via a full 350-epoch PyTorch CIFAR-10 training loop (loss/accuracy progress bar), no isolated forward-conv kernel timing harness exposed, NVIDIA GPU",
+    "gpu_single_card": true,
+    "rationale": "Per survey.md, DSXplore's repo has no isolated forward-conv-only timing harness -- the paper's claimed kernel-level speedups are not reproducible from the artifact without extracting and separately benchmarking the SCC op, so despite a genuinely novel kernel design the actual evaluation regime is end-to-end training, not kernel-level."
+  },
+  {
+    "key": "journals/tpds/LiS21",
+    "group": "convolution",
+    "centrality": "component",
+    "regime_match": "mismatch",
+    "regime": "1-bit XNOR bit-Tensor-Core convolution/GEMM; headline metric is end-to-end ResNet-18 ImageNet throughput (images/sec), not per-layer kernel GFLOP/s, Turing GPU",
+    "gpu_single_card": true,
+    "rationale": "Per survey.md, TC-BNN's headline number is whole-network images/sec (5.6K img/s), explicitly noted as an end-to-end rather than kernel-only data point despite bit-convolution being the paper's central kernel design."
+  },
+  {
+    "key": "conf/cgo/CowanMCBC20",
+    "group": "convolution",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "sub-8-bit/binary quantized ResNet-18 layer-by-layer convolution (1x1/1x2/2x2 weight/activation-bit precisions), ARM CPU (Raspberry Pi 3B+)",
+    "gpu_single_card": false,
+    "rationale": "This paper's own ResNet-18 layer-by-layer benchmark at ultra-low-bit precision is reused verbatim as the spec's conv-quantized-kernel variant's suite; it also cleanly separates kernel-only timing from end-to-end and from one-shot micro-kernel synthesis cost."
+  },
+  {
+    "key": "conf/ipps/NoackKK25",
+    "group": "cg-krylov",
+    "centrality": "component",
+    "regime_match": "mismatch",
+    "regime": "DSL-generated SpMV/ILU/PBiCGStab sparse solvers on Graphcore IPUs, SuiteSparse plus synthetic Poisson matrices, MPIR+double-word arithmetic for missing native fp64",
+    "gpu_single_card": false,
+    "rationale": "Graphene is a general DSL/codegen framework generating a suite of linear solvers/preconditioners (SpMV, ILU, PBiCGStab), not a CG implementation; the spec explicitly excludes nonsymmetric/BiCGStab-type solves as out of scope for this CG-specific track, and the platform (IPU) is outside the benchmark's NVIDIA-GPU scope."
+  },
+  {
+    "key": "conf/sc/SuzukiI25",
+    "group": "cg-krylov",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "nested FGMRES/Richardson Krylov solver with fp16 inner iterations, to-convergence solve on symmetric/SPD matrices overlapping the recommended subset, CPU",
+    "gpu_single_card": false,
+    "rationale": "F3R is one of the two papers the spec's cg-mixed-precision-cascade variant is explicitly built around ('F3R's own symmetric list already overlaps heavily with' the recommended subset); headline is the reduced-precision-cascade solver itself, evaluated to convergence."
+  },
+  {
+    "key": "conf/sc/MaACSH25",
+    "group": "cg-krylov",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "ILU(0)/ILU(K)-preconditioned CG on SPD SuiteSparse matrices, both iterative-phase and end-to-end speedups with preconditioner setup measured and reported separately, single A100",
+    "gpu_single_card": true,
+    "rationale": "SPCG's own artifact discipline (separating preconditioner analysis+factorization from the PCG loop) is generalized directly into the spec's cg-e2e-ilu0-to-convergence variant as a mandatory requirement."
+  },
+  {
+    "key": "conf/sc/YangZNJS0T024",
+    "group": "cg-krylov",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "tile-grained mixed-precision single-kernel CG/PCG/BiCGSTAB/PBiCGSTAB solver, single A100 and single MI210",
+    "gpu_single_card": true,
+    "rationale": "Mille-feuille is explicitly named as one of the two papers ('the two papers in this track that build reduced-precision Krylov solvers as their central contribution') the cg-mixed-precision-cascade variant targets."
+  },
+  {
+    "key": "conf/ics/ZhangWCMWEM23",
+    "group": "cg-krylov",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "unpreconditioned CG kernel (SpMV + 2 dots + 3 axpys), SuiteSparse matrices (smaller and larger sets), single NVIDIA GPU, persistent-kernel execution model",
+    "gpu_single_card": true,
+    "rationale": "PERKS's own CG research question is quoted verbatim as the spec's cg-kernel-fixed-iter variant's defining claim ('matching PERKS's explicit research question')."
+  },
+  {
+    "key": "journals/tpds/BernaschiCVD23",
+    "group": "cg-krylov",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "AMG-preconditioned Krylov solver on synthetic 3D-Laplacian stencil SPD systems, weak/strong scaling including a rank=1 single-GPU starting point, multi-GPU MPI-CUDA",
+    "gpu_single_card": true,
+    "rationale": "BootCMatchGX's own `--laplacian-3d` generator and convergence protocol (relative residual < 1e-6, capped 1000 iterations) is quoted verbatim as the spec's cg-hpcg-generator-amg and cg-e2e-ilu0-to-convergence variants' basis; its own weak-scaling series starts at rank count 1, giving a genuine single-GPU data point."
+  },
+  {
+    "key": "conf/sc/BrunnHBMM20",
+    "group": "cg-krylov",
+    "centrality": "component",
+    "regime_match": "mismatch",
+    "regime": "Gauss-Newton-Krylov solve embedded in a nonlinear diffeomorphic image-registration pipeline, single-V100 number reported alongside multi-GPU scaling, not a standalone SPD test-matrix solve",
+    "gpu_single_card": true,
+    "rationale": "The Krylov solve here is the inner linear-system step of an outer nonlinear Gauss-Newton optimization for image registration (a solver stack), not a direct CG-on-SPD-matrix claim comparable to the spec's SuiteSparse/HPCG-generator regime."
+  },
+  {
+    "key": "conf/sc/LuZWFLCY0C024",
+    "group": "multigrid",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "tensor-core/mixed-precision SpGEMM (setup phase) + SpMV (solve phase) AMG kernels incorporated into HYPRE, single A100/H100/MI210",
+    "gpu_single_card": true,
+    "rationale": "AmgT's own `t_start/t_stop` setup/solve split is quoted directly as the basis for the spec's mg-gpu-setup-kernel-f64 and mg-gpu-solve-kernel-fixed-iter variants; this is the origin paper for both."
+  },
+  {
+    "key": "conf/ics/YangLYDHW23",
+    "group": "multigrid",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "HPCG-style geometric-multigrid SYMGS+MG on structured grids with no separate algebraic setup phase, CPU (ARMv8 and x86)",
+    "gpu_single_card": false,
+    "rationale": "MGopt-APP's exact evaluation shape (HPCG integration, 192^3 grid) is named directly as the spec's mg-cpu-geometric-symgs variant's basis; headline is SYMGS/MG parallelization itself, evaluated against vendor/engineer-tuned implementations."
+  },
+  {
+    "key": "conf/ipps/ChoDKLLL23",
+    "group": "multigrid",
+    "centrality": "tangential",
+    "regime_match": "mismatch",
+    "regime": "crowd-sourced transfer-learning autotuner reducing Hypre AMG's tuning search space, alongside two unrelated tuning targets (ScaLAPACK PDGEQRF, SuperLU_DIST), distributed/CPU",
+    "gpu_single_card": false,
+    "rationale": "GPTuneCrowd only tunes existing runtime knobs of the pre-built HYPRE library as one of three unrelated case studies; it does not implement or modify the multigrid setup/solve kernels themselves, so the assignment reads as a tuning-target mention rather than genuine multigrid-kernel work."
+  },
+  {
+    "key": "journals/tpds/BernaschiCVD23",
+    "group": "multigrid",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "AMG-preconditioned Krylov solver on synthetic 3D-Laplacian stencil SPD systems, weak/strong scaling including a rank=1 single-GPU point, multi-GPU MPI-CUDA",
+    "gpu_single_card": true,
+    "rationale": "BootCMatchGX's AMG setup+solve on both 7-point and 27-point Laplacian stencils is the explicit basis for the spec's distributed/weak-scaling framing in this track as well as cg-krylov."
+  },
+  {
+    "key": "conf/ipps/ChenW0W0PTCWMFK21",
+    "group": "multigrid",
+    "centrality": "tangential",
+    "regime_match": "mismatch",
+    "regime": "multigrid-inspired hierarchical multiresolution decomposition used purely for lossy scientific-data compression on GPU, not an algebraic/geometric-multigrid solve of Ax=b",
+    "gpu_single_card": true,
+    "rationale": "MGARD's 'multigrid' is a hierarchical decomposition/refactoring transform for a compression codec (a literal instance of the 'component' definition's own compression-codec example, but here so far removed from the actual operation -- no SpGEMM coarsening, no V-cycle smoothing+SpMV solve -- that the fundamental operation doesn't match the track's Ax=b solver definition at all); GPU-kernel-centric work makes a single-GPU path plausible though not explicitly confirmed."
+  },
+  {
+    "key": "conf/asplos/IkarashiQDRBR25",
+    "group": "blas-level1-2",
+    "centrality": "component",
+    "regime_match": "partial",
+    "regime": "general user-extensible scheduling language generating 80+ high-performance kernels across domains; BLAS-L1/L2-shaped kernels are among the broader set, exact op list and sizes unconfirmed, CPU/ARM",
+    "gpu_single_card": false,
+    "rationale": "Exo 2 is a general USL/codegen framework (a compiler that generates this kernel among others), explicitly named as a target for the spec's blas-l1l2-generated-kernel-suite variant, but the spec itself flags the exact BLAS op list as an open question."
+  },
+  {
+    "key": "conf/cgo/PatelAA25",
+    "group": "blas-level1-2",
+    "centrality": "component",
+    "regime_match": "partial",
+    "regime": "symmetric sparse/dense tensor compiler generating symmetry-aware kernels including SSYMV among MTTKRP and general n-dimensional symmetric tensor kernels, CPU",
+    "gpu_single_card": false,
+    "rationale": "SySTeC's `ssymv` is directly named as the pairing partner for GEMV in the spec's blas-l2-gemv-symv-kernel variant, but SySTeC is a general compiler (SSYMV is one of many symmetry-aware kernels it generates) and its own SYMV problem size could not be confirmed from source."
+  },
+  {
+    "key": "conf/asplos/ChenMCA21",
+    "group": "blas-level1-2",
+    "centrality": "component",
+    "regime_match": "partial",
+    "regime": "non-SIMD vectorizer generator; dot product (uint8 x int8 -> int32, native VNNI instruction width) is one of several target kernels and is the paper's own basis for the mixed-precision-reduction variant, CPU",
+    "gpu_single_card": false,
+    "rationale": "VeGen's own `dot_16x1x16_uint8_int8_int32` kernel is the literal basis for the spec's blas-l1-mixed-precision-reduction variant, but the spec explicitly notes VeGen's own evaluation is a static instruction-count comparison rather than the measured wall-clock throughput the variant requires -- a genuine evaluation-protocol gap, not just an input-regime one."
+  },
+  {
+    "key": "conf/sc/MatteisLH20",
+    "group": "blas-level1-2",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "named BLAS L1/L2/L3 routines (dot, gemv, trsm, etc.) as a streaming HLS library, on-the-fly synthetic vectors/matrices, FPGA",
+    "gpu_single_card": false,
+    "rationale": "fBLAS is the only one of the four papers in this track that benchmarks named BLAS routines directly against a reference library (the spec says so explicitly); its own sdot/ddot/sgemv/dgemv harnesses are the direct basis for both blas-l1-vector-kernel and blas-l2-gemv-symv-kernel."
+  },
+  {
+    "key": "conf/ipps/HuLJ24",
+    "group": "embedding-ops",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "KGE score-function fused tensor ops (TransE/TransH/TransR/TransF/RESCAL family), single NVIDIA GPU",
+    "gpu_single_card": true,
+    "rationale": "cuKE's own evaluated score functions are exactly the spec's embed-single-index-gather recommended_subset; headline is a code generator fusing these score-function tensor ops."
+  },
+  {
+    "key": "conf/sc/PanZZXWSLR0D24",
+    "group": "embedding-ops",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "fused per-field embedding-operator kernels for DLRM-style recsys at MLPerf/EL-Rec-scale table configs, single NVIDIA GPU",
+    "gpu_single_card": true,
+    "rationale": "RecFlex's own table configs and end-to-end sampling convention (sample_batch_nums default) are named directly as the basis for the spec's embed-dlrm-pooled-kernel-f32 and embed-dlrm-e2e-preproc variants."
+  },
+  {
+    "key": "conf/sc/WangWFMMD22",
+    "group": "embedding-ops",
+    "centrality": "core",
+    "regime_match": "mismatch",
+    "regime": "Tensor-Train (TT) factorized/compressed embedding-table lookup for DLRM training, single GPU",
+    "gpu_single_card": true,
+    "rationale": "EL-Rec's headline contribution is a TT-decomposed compressed embedding table (a structurally different, factorized representation reconstructed via small tensor contractions), not the plain dense/uncompressed table gather+pool or single-index lookup either named variant assumes."
+  },
+  {
+    "key": "conf/ics/RandallA021",
+    "group": "embedding-ops",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "Word2Vec single-index embedding gather plus fused elementwise update with data-reuse optimization, single NVIDIA GPU (P100/V100)",
+    "gpu_single_card": true,
+    "rationale": "The spec's embed-single-index-gather variant explicitly names this paper's style ('KGE and word-embedding workloads (cuKE, FULL-W2V style)') as its defining shape."
+  },
+  {
+    "key": "conf/asplos/WonAAE26",
+    "group": "sparse-tensor-contraction",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "sparse(-structured/unstructured)-times-dense indirect-einsum GPU kernels (structured SpMM, unstructured SpMM, point-cloud sparse conv, equivariant tensor product), fp32/fp16, single NVIDIA GPU",
+    "gpu_single_card": true,
+    "rationale": "Insum is the sole and literal basis for the spec's sparse-dense-indirect-einsum-gpu-kernel variant, whose recommended_subset is drawn directly from Insum's own evaluation classes."
+  },
+  {
+    "key": "journals/tpds/SinghU25",
+    "group": "sparse-tensor-contraction",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "sparse-tensor x sparse-tensor contraction (SpGETT) on real FROSTT N-mode tensors, fp64, CPU",
+    "gpu_single_card": false,
+    "rationale": "parTC is the sole and literal basis for the spec's sparse-sparse-tensor-contraction-frostt-kernel-fp64 variant, whose recommended_subset (nips, uber, chicago-crime, etc.) is drawn directly from parTC's own worked examples."
+  },
+  {
+    "key": "conf/ics/DiasSS022",
+    "group": "sparse-tensor-contraction",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "fused multi-operator composite sparse-tensor-algebra expression chains (SDDMM->SpMM->GEMM etc.) via loop-nest restructuring, real SuiteSparse/FROSTT tensors, CPU",
+    "gpu_single_card": false,
+    "rationale": "SparseLNR is the sole and literal basis for the spec's composite-fused-sparse-tensor-algebra-kernel variant, whose 14-matrix/5-tensor suite is drawn directly from this paper's own evaluation set."
+  },
+  {
+    "key": "conf/sc/LuMOEJW22",
+    "group": "lu",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "extreme-scale mixed-precision (fp32 panel/TRSM, fp16 GEMM, fp64 iterative-refinement correction) no-pivot LU, Summit/Frontier-scale, NVIDIA and AMD GPUs, distributed",
+    "gpu_single_card": false,
+    "rationale": "OpenMxP is the sole and literal basis for the spec's lu-mixed-precision-nopivot-ir-kernel variant (its own Higham-generator and headline Summit-partition size are named directly); the benchmark's entire purpose is near-full-machine distributed scaling, with no meaningful standalone single-GPU number reported."
+  },
+  {
+    "key": "conf/sc/MunksgaardHSO22",
+    "group": "lu",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "LU decomposition (Rodinia LUD case study), fp32, no pivoting, single NVIDIA GPU; one of three unrelated Rodinia kernels generated by a general array-language compiler",
+    "gpu_single_card": true,
+    "rationale": "MunksgaardHSO22's LUD case study is named directly and exactly as the spec's no-pivoting fp32 arm of lu-dense-single-node-pivot-kernel, but Futhark is a general compiler (LU is one of three unrelated target kernels), matching 'component'."
+  },
+  {
+    "key": "conf/sc/KwasniewskiKBZS21",
+    "group": "lu",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "communication-optimal 2.5D dense tile LU factorization (tournament pivoting) vs MKL/SLATE (partial pivoting) baselines, fp64, CPU/distributed",
+    "gpu_single_card": false,
+    "rationale": "COnfLUX is the explicit origin paper for both the lu-dense-single-node-pivot-kernel and lu-dense-distributed-tournament-pivot variants (its baselines define the partial-pivoting arm, its own algorithm defines the tournament-pivoting contribution); no GPU path, CPU/distributed only."
+  },
+  {
+    "key": "conf/cgo/KoehlerS21",
+    "group": "morphology-image-kernel",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "Harris corner-response pipeline (grayscale->Sobel->structure tensor->response) on the artifact's own fixed 2-image evaluation set, mobile ARM CPU",
+    "gpu_single_card": false,
+    "rationale": "This is the sole surveyed paper for this track, and the spec's variant is built entirely around its own confirmed protocol (30 timing iterations, median/min/max, the exact 2-image suite); headline is the domain-extensible rewrite-rule compiler generating this Harris kernel and comparing it to Halide/OpenCV."
+  },
+  {
+    "key": "conf/hpdc/PengTPK25",
+    "group": "sparse-format-conversion",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "automatic composable sparse-format (CELL) selection + conversion for GPU SpMM, real GNN adjacency matrices (cora/citeseer/pubmed/ppi/arxiv/proteins/reddit), single NVIDIA GPU",
+    "gpu_single_card": true,
+    "rationale": "LiteForm is the sole and literal basis for both spec variants (its own driver scripts and matrix names are reused verbatim); headline is format selection/conversion itself, evaluated as both a standalone conversion number and an amortized end-to-end SpMM pipeline."
+  },
+  {
+    "key": "conf/ics/Al-KhansaGMH26",
+    "group": "other:astar-search",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "single-pair 8-connected occupancy-grid A* search, GPU-parallel bidirectional bucketed priority structure, single NVIDIA GPU",
+    "gpu_single_card": true,
+    "rationale": "This is the sole surveyed paper and the direct basis for both spec variants (MovingAI-benchmark search-phase throughput and the paper's own procedural-grid generator sweep); headline is the parallel bidirectional A* algorithm itself."
+  },
+  {
+    "key": "conf/ipps/ZhaiJWJZCLZ23",
+    "group": "transformer-inference-fused",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "padding-free fused BERT-base encoder layer (QKV+MHA+FFN+LN in one measured region), fp16, single NVIDIA A100, batch x seqlen sweep",
+    "gpu_single_card": true,
+    "rationale": "ByteTransformer's own bert_bench.sh sweep is named directly as the basis for the spec's fused-encoder-layer-padfree-fp16 variant; headline is the fully fused, padding-free encoder-layer kernel design itself."
+  },
+  {
+    "key": "conf/ppopp/Hou0H00YL00L026",
+    "group": "dynamic-graph-kernel",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "one-shot streaming temporal motif counting over complete historical temporal-edge logs (wikitalk/stackoverflow/temporal-reddit-reply/ethereum), chunked cache-regularized execution, CPU",
+    "gpu_single_card": false,
+    "rationale": "DTMiner's own real temporal-graph suite and evaluation shape are the literal basis for the spec's dgk-temporal-batch-throughput variant; headline is the Load-Explore-Synchronize execution model for exactly this kernel."
+  },
+  {
+    "key": "conf/sc/LiSDHGGPGZ24",
+    "group": "other:graph-layout",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "GPU-accelerated 2D force-directed / PG-SGD layout of pangenome variation graphs, complete HPRC Year-1 whole-chromosome suite (24 graphs), single NVIDIA GPU",
+    "gpu_single_card": true,
+    "rationale": "This is the sole surveyed paper and exact match for the spec's suite (evaluated on all 24 human whole-chromosome pangenomes, precisely the recommended_subset's source); headline is the GPU pangenome-layout kernel itself."
+  }
+]

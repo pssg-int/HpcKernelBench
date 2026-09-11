@@ -1,0 +1,90 @@
+{
+ "kernel": "dnn-operator-fusion",
+ "papers": [
+  {
+   "key": "conf/asplos/TangLWSLXZL26",
+   "title": "RedFuser: An Automatic Operator Fusion Framework for Cascaded Reductions on AI Accelerators",
+   "venue": "ASPLOS",
+   "year": 2026,
+   "doi": "10.1145/3779212.3790209",
+   "arxiv": "2603.10026",
+   "oa_url": "https://doi.org/10.1145/3779212.3790209",
+   "artifact_url": "https://github.com/alibaba/redfuser",
+   "artifact_status": "verified",
+   "platform": [
+    "other"
+   ],
+   "approach": "codegen",
+   "abstract": "Operator fusion, as a key performance optimization technique in the deployment of AI models, significantly improves execution efficiency and has been widely adopted in modern AI compilers. However, for cascaded reduction operations involving multiple loops with inter-loop data dependencies, such as the safe softmax followed by GEMM within attention mechanisms, existing compilers lack effective automated fusion and kernel generation capabilities. Although some works have addressed specific instances through hand-crafted fusion strategies, their solutions are limited in generality and difficult to extend to other similar structures. Given the prevalence of such computational patterns in deep learning models, there remains significant untapped potential in achieving general and automated fusion optimization. In this paper, we present a formal theoretical methodology for analyzing cascaded r",
+   "one_liner": "Automatic fusion of cascaded reductions (e.g. softmax+GEMM) into single kernels; 2-5x over AI compilers."
+  },
+  {
+   "key": "conf/ppopp/DaiDRYLL0CS26",
+   "title": "Accelerating Sparse Transformer Inference on GPU",
+   "venue": "PPoPP",
+   "year": 2026,
+   "doi": "10.1145/3774934.3786434",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/HeyDavid633/PPoPP26-pap161-AE",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "autotuning",
+   "abstract": "Large language models (LLMs) are popular around the world due to their powerful understanding capabilities. As the core component of LLMs, accelerating Transformer through parallelization has gradually become a hot research topic. Mask layers introduce sparsity into Transformer to reduce calculations. However, previous works rarely focus on the performance optimization of sparse Transformer. In addition, current static operator fusion schemes fail to adapt to diverse application scenarios. To address the above problems, we propose STOF, a framework that incorporates optimizations for Sparse Transformer that enables flexible masking and Operator Fusion on GPU. For multi-head attention (MHA) structure, STOF maps the computation to row-wise or block-wise kernels with unique storage formats according to analytical modeling. For downstream operators, STOF maps the fusion scheme to compilation",
+   "one_liner": "STOF: row/block-wise sparse-attention kernels plus searched operator-fusion templates, 1.6x MHA speedup"
+  },
+  {
+   "key": "conf/cgo/LopoukhineFVLDD25",
+   "title": "A Multi-level Compiler Backend for Accelerated Micro-kernels Targeting RISC-V ISA Extensions",
+   "venue": "CGO",
+   "year": 2025,
+   "doi": "10.1145/3696443.3708952",
+   "arxiv": "2502.04063",
+   "oa_url": "https://arxiv.org/pdf/2502.04063",
+   "artifact_url": "https://github.com/ww2766-www/MLIR-Based-Optimization-for-Protocol-Buffer",
+   "artifact_status": "verified",
+   "platform": [
+    "other"
+   ],
+   "approach": "codegen",
+   "abstract": "High-performance micro-kernels must fully exploit today’s diverse and specialized hardware to deliver peak performance to deep neural networks (DNNs). While higher-level optimizations for DNNs are offered by numerous compilers (e.g., MLIR, TVM, OpenXLA), performance-critical micro-kernels are left to specialized code generators or handwritten assembly. Even though widely-adopted compilers (e.g., LLVM, GCC) offer tuned backends, their CPU-focused input abstraction, unstructured intermediate representation (IR) and general-purpose best-effort design inhibit tailored code generation for innovative hardware. We think it is time to widen the classical hourglass backend and embrace progressive lowering across a diverse set of structured abstractions to bring domain-specific code generation to compiler backends. We demonstrate this concept by implementing a custom backend for a RISC-V-based acc",
+   "one_liner": "MLIR compiler backend generating DNN micro-kernels for RISC-V streaming-register accelerator"
+  },
+  {
+   "key": "conf/sc/WangWXHQDWL22",
+   "title": "LightSeq2: Accelerated Training for Transformer-Based Models on GPUs",
+   "venue": "SC",
+   "year": 2022,
+   "doi": "10.1109/SC41404.2022.00043",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/bytedance/lightseq",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Transformer-based neural models are used in many AI applications. Training these models is expensive, as it takes huge GPU resources and long duration. It is challenging because typical data like sentences have variable lengths, and Transformer's computation patterns are more complex than convolutional neural networks. Existing systems either only focus on model inference or optimization for only BERT-like encoder models. In this paper, we present LightSeq2, a system to accelerate training for a general family of Transformer models on GPUs. We propose a series of GPU optimization techniques tailored to the specific computation flow and memory access patterns of Transformer models. LightSeq2 supports many model architectures, including BERT (encoder-only), GPT (decoder-only), Transformer (encoder-decoder), and vision Transformer. Our experiments for a variety of models and benchmarks show",
+   "one_liner": "LightSeq2: GPU kernel optimizations for Transformer training compute/memory patterns, 1.4-3.5x speedup"
+  },
+  {
+   "key": "conf/ics/PrabhakarK0HF21",
+   "title": "SumMerge: an efficient algorithm and implementation for weight repetition-aware DNN inference",
+   "venue": "ICS",
+   "year": 2021,
+   "doi": "10.1145/3447818.3460375",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3447818.3460375",
+   "artifact_url": "https://github.com/rohan-bp/summerge",
+   "artifact_status": "likely",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Deep Neural Network (DNN) inference efficiency is a key concern across the myriad of domains now relying on Deep Learning. A recent promising direction to speed-up inference is to exploit \\emph{weight repetition}. The key observation is that due to DNN quantization schemes---which attempt to reduce DNN storage requirements by reducing the number of bits needed to represent each weight---the same weight is bound to repeat many times within and across filters. This enables a weight-repetition aware inference kernel to factorize and memoize out common sub-computations, reducing arithmetic per inference while still maintaining the compression benefits of quantization. Yet, significant challenges remain. For instance, weight repetition introduces significant irregularity in the inference operation and hence (up to this point) has required custom hardware accelerators to derive net benefit.",
+   "one_liner": "SumMerge: weight-repetition-aware DNN inference kernel factorizing/memoizing sub-computations in software"
+  }
+ ]
+}

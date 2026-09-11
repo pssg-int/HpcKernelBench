@@ -1,0 +1,94 @@
+kernel: spatial-join
+summary: >
+  GPU spatial join: line segment intersection (LSI) and point-in-polygon
+  (PIP) testing between two real geospatial polygon/polyline datasets,
+  measured with index (BVH/grid) BUILD time reported separately from
+  QUERY time, across a uniform-grid baseline, a software-BVH baseline,
+  and an RT-hardware-accelerated implementation all sharing one
+  codebase, plus an external GPU-library baseline, with full
+  double-precision-equivalent correctness required despite RT hardware's
+  native precision limits.
+operation: >
+  LSI: given two sets of polyline chains R (base map) and S (query map),
+  find every pair of segments (r in R, s in S) that geometrically
+  intersect, and the intersection point. PIP: given a point set P and a
+  polygon set (represented as R's chains), determine for each point
+  p in P which polygon (if any) of R contains it. Polygon overlay:
+  combine LSI+PIP results to compute the full overlay of R and S
+  (every resulting face and which R-polygon/S-polygon pair it came
+  from).
+variants:
+  - id: spatial-join-lsi-pip-query
+    claim: >
+      steady-state LSI and PIP query throughput across three index
+      strategies sharing one codebase (uniform grid, software LBVH,
+      RT-hardware-accelerated BVH), with index BUILD cost reported
+      separately from query time -- since BVH build is explicitly the
+      paper's own second stated bottleneck alongside precision recovery,
+      collapsing build+query into one number would hide exactly the
+      tradeoff the paper's contribution targets.
+    inputs:
+      suite: >
+        real US geospatial datasets, the paper's own named evaluation
+        pairs (see survey), spanning administrative-boundary polygons
+        (relatively few, large, complex polygons) to natural-feature
+        polygons (many, smaller, more numerous).
+      selection: "the 8 dataset pairs named in RayJoin's own README cuSpatial-comparison table (updated Aug 2024), covering both LSI-heavy (chain-intersection) and PIP-heavy (point-classification) query mixes"
+      recommended_subset:
+        - {name: "USCounty x Zipcode",   query: PIP, note: "administrative boundaries, moderate polygon count"}
+        - {name: "BlockGroup x WaterBodies", query: PIP, note: "census blocks x natural-feature polygons"}
+        - {name: "Lakes-AF x Parks-AF",  query: PIP, region: Africa}
+        - {name: "Lakes-AS x Parks-AS",  query: PIP, region: Asia}
+        - {name: "Lakes-EU x Parks-EU",  query: PIP, region: Europe, note: "largest / most complex pair in the artifact's own updated table (38.8s cuSpatial 24.06 baseline)"}
+        - {name: "Lakes-NA x Parks-NA",  query: PIP, region: "North America"}
+        - {name: "Lakes-SA x Parks-SA",  query: PIP, region: "South America"}
+        - {name: "USCounty x Zipcode",   query: LSI, note: "same base pair, LSI query mode"}
+      xsect_factor: "0.1-0.5 (RayJoin's own reserved-output-queue-capacity parameter, |R|*|S|*xsect_factor); report the value used since an undersized queue silently truncates results on some implementations"
+    protocol:
+      warmup: 5
+      reps: 5
+      statistic: "mean (report min/max) -- RayJoin's own -warmup/-repeat flags directly implement this convention (average time over N repeat rounds after N warmup rounds); retained as-is since it is the artifact's own explicit, well-documented protocol, one of the more complete protocols found across this project's singleton-track surveys"
+      timer: "device-side timer wrapping query_exec's query call only (the artifact's own internal timing, not independently re-verified in this survey)"
+      timing_scope: >
+        query only; index BUILD (grid-cell assignment for mode=grid,
+        LBVH construction for mode=lbvh, OptiX BVH construction for
+        mode=rt) is a SEPARATE, REQUIRED-reported cost, since it differs
+        by orders of magnitude in character between modes (RT-hardware
+        BVH build is the paper's own stated second bottleneck) and
+        pooling it into query time would erase exactly the tradeoff this
+        track's brief asks to be measured (index build vs. query).
+      dataset_serialization: "report separately, once per dataset pair: CDB-to-binary serialization time (polyover_exec's own -serialize option), a one-shot format-conversion cost distinct from both index build and query"
+      preprocessing_reported: "index BUILD time (see timing_scope) and dataset_serialization, both reported once per (dataset pair, mode)"
+    metric:
+      primary: "query time, ms (matching RayJoin's own reported metric and headline '<460ms for millions of polygons' claim)"
+      secondary: "speedup vs. grid mode (dimensionless x, same-codebase internal baseline) and vs. external cuSpatial >=24.06 (dimensionless x)"
+    correctness: >
+      MANDATORY pre-timing gate, exact-geometry-required (the paper's own
+      stated technical challenge is recovering full precision despite RT
+      hardware's limited native precision support -- 'close enough' is
+      explicitly NOT the bar here): every rt-mode and lbvh-mode result
+      set (intersection points for LSI, polygon assignment for PIP) must
+      match the grid-mode result set (RayJoin's own designated reference,
+      matching its own -check convention) EXACTLY for PIP polygon
+      assignment (discrete, must be bit-identical) and within
+      double-precision-equivalent tolerance (<1e-9 relative, in the
+      original coordinate units) for LSI intersection-point coordinates.
+      External baseline (cuSpatial) results are compared the same way,
+      pinned to cuSpatial >=24.06 specifically because the artifact's own
+      README documents a memory/correctness-relevant bug in 23.12 that
+      was fixed upstream in 24.06 (rapidsai/cuspatial#1381) -- comparing
+      against the unfixed version would not be a fair correctness
+      baseline.
+
+notes_on_fairness:
+  - "RayJoin's own README already demonstrates good baseline hygiene: it identifies and documents a specific cuSpatial version (23.12) with a memory-allocation bug that would otherwise force an unfair workaround (batched processing, inflating cuSpatial's apparent cost via extra I/O/index-construction overhead), and re-benchmarks against the fixed version (24.06). This spec pins the baseline version explicitly for the same reason, rather than silently accepting whatever cuSpatial version happens to be installed."
+  - "This track's brief explicitly calls out 'index build vs. query' as a required axis; RayJoin's own README does not clearly state whether its reported query_exec times include BVH build, so this spec makes the separation mandatory rather than assuming it is already done, since RT-hardware BVH build is one of the paper's own two stated bottlenecks and folding it silently into query time would hide exactly the tradeoff under study."
+  - "grid mode is used as BOTH a performance baseline AND the correctness reference (via RayJoin's own -check convention) -- this spec preserves that dual role since it is the artifact's own design, but notes explicitly that this means grid's own correctness is assumed, not independently re-verified against a fully external ground truth (e.g. a CPU double-precision computational-geometry library) in this spec; see open_questions."
+
+open_questions:
+  - "Whether query_exec's reported query time includes or excludes RT-mode BVH construction was not stated in the fetched README at the CLI-flag level; this spec's mandatory build/query separation is therefore a REQUIREMENT this spec imposes, not a confirmed description of the artifact's current default behavior -- a re-measurement pass should confirm which the raw timer currently captures."
+  - "grid mode is RayJoin's own correctness reference (via -check); whether grid mode itself has been validated against a fully independent ground truth (e.g. GEOS/CGAL double-precision computational geometry) was not confirmed from the fetched sources -- if grid mode has its own subtle bugs, using it as the sole correctness reference would not catch them."
+  - "The exact xsect_factor values used in the paper's own reported evaluation (as opposed to the README's example invocation, 0.1-0.5) were not confirmed from the fetched text."
+
+evidence:
+  conf/ics/GengLZ24: "RayJoin: OptiX RT-core-accelerated LSI + PIP spatial join (+ polygon overlay); CDB chain-format datasets (USCounty/Zipcode/BlockGroup/WaterBodies/Lakes-Parks x6 regions); grid/lbvh/rt modes in one codebase, grid as correctness reference via -check; -warmup/-repeat CLI flags, mean-of-N-repeat-rounds reported explicitly; vs cuSpatial (version-pinned to 24.06 due to a documented 23.12 memory/correctness bug); 3.0-28.3x speedup, <460ms for millions of polygons."

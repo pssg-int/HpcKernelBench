@@ -1,0 +1,356 @@
+kernel: sequence-alignment
+summary: >
+  Pairwise dynamic-programming sequence alignment (Smith-Waterman local /
+  Needleman-Wunsch global-semi-global, exact or X-drop-approximate), plus the
+  two end-to-end genome-mapping pipelines (BWA-MEM-class short-read mapping,
+  LASTZ-class whole-genome alignment) that use a pairwise-alignment kernel as
+  one stage of a larger seed/index -> filter -> extend pipeline. The
+  surveyed literature splits along two axes that cannot be collapsed into one
+  variant: exact-optimal vs. deliberately-approximate (X-drop) scoring, and
+  kernel-only DP throughput vs. end-to-end pipeline throughput with a
+  one-shot index/table build.
+operation: >
+  H[i,j] = max( H[i-1,j-1] + sigma(q_i, s_j), E[i,j], F[i,j], nu )  — the
+  standard SW/NW recurrence over query Q (length n) and subject S (length m),
+  sigma a substitution function (simple match/mismatch or a matrix such as
+  BLOSUM62), E/F the linear- or affine-gap auxiliary matrices; variants 3-4
+  wrap this kernel inside seed -> filter/index -> extend pipelines.
+
+variants:
+  - id: seqalign-exact-pairwise-kernel
+    claim: >
+      steady-state kernel throughput for EXACT optimal pairwise alignment
+      (Smith-Waterman local / Needleman-Wunsch global / semi-global),
+      preprocessing excluded. The common denominator of AnySeq,
+      MASA-CUDAlign/MultiBP, and the futhark-mem-sc22 `nw` benchmark — all
+      three compute a provably optimal score (MultiBP's block pruning is
+      lossless by construction, not an approximation).
+    inputs:
+      suite: >
+        Union of (a) AnySeq's 6 real NCBI/GenBank long-DNA accessions
+        (Table I of arXiv:2002.04561), (b) MASA-CUDAlign/MultiBP's real
+        whole-chromosome pair as an optional large tier, (c) AnySeq's
+        Mason-simulated 150bp Illumina short-read batch, (d) a
+        synthetic-protein tier carried over from futhark-mem-sc22 /
+        Rodinia's `nw` benchmark (the track's only BLOSUM62/protein
+        evidence).
+      selection: >
+        DNA long-sequence pairs: real GenBank accessions named in >=1
+        code-verified surveyed artifact, capped so the small/medium tiers
+        stay single-GPU/CPU tractable (<=50 Mbp); large tier is explicitly
+        optional (chromosome-scale, needs a multi-GPU node or cluster).
+        Short-read batch: fixed count and length from AnySeq's own
+        methodology (regenerate with Mason or an equivalent read simulator,
+        same reference chromosome and read length — exact Mason version/seed
+        not recoverable from the source, see open_questions).
+        Protein tier: synthetic random sequences at the exact sizes
+        futhark-mem-sc22 ships (`row_length` in its compiled-script header).
+      recommended_subset:
+        dna_long_small_medium:
+          - {accession: NC_000962.3, name: "M. tuberculosis H37Rv", bp: 4411532}
+          - {accession: NC_000913.3, name: "E. coli K12 MG1655", bp: 4641652}
+          - {accession: NT_033779.4, name: "D. melanogaster chr2L", bp: 23011544}
+          - {accession: BA000046.3, name: "P. troglodytes chr22", bp: 32799110}
+          - {accession: NC_019481.1, name: "O. aries breed Texel chr24", bp: 42034648}
+          - {accession: NC_019478.1, name: "O. aries breed Texel chr21", bp: 50073674}
+        dna_long_large_optional:
+          - {accession: NC_000001.9, name: "human chr1", bp: 249000000, pair_with: NC_006468.3}
+        dna_short_read_batch: "12,500,000 pairs, 150 bp each, Mason-simulated from GRCh38 chr10"
+        protein_synthetic:
+          - {row_length: 8192}
+          - {row_length: 16384}
+          - {row_length: 32768}
+      scoring:
+        dna_linear: "match=+2, mismatch=-1, gap=-1 (AnySeq's disclosed scheme — the only fully-disclosed DNA scheme in the track)"
+        dna_affine: "match=+2, mismatch=-1, gap_open(Go)=-2, gap_extend(Ge)=-1"
+        protein: "BLOSUM62 24x24 substitution matrix, linear gap penalty=10 (Rodinia/futhark-mem-sc22 convention)"
+      alignment_type: "global (primary, matches the DNA long-sequence and protein tiers) and local/Smith-Waterman (sub-variant, matches MASA-CUDAlign/MultiBP and the short-read batch)"
+      output_mode: "score-only and full-traceback are separately timed sub-modes; both required (the surveyed papers disagree on which to report)"
+    protocol:
+      warmup: 1 (discarded) — no surveyed paper states a warmup count; the spec fixes one
+      reps: 5
+      statistic: "median (report min/max) — following AnySeq, the only surveyed paper to name a statistic at all"
+      timer: "CUDA events (GPU), std::chrono/rdtsc (CPU), synthesis-report cycle count (FPGA)"
+      timing_scope: "DP kernel sweep only (score-only or traceback per output_mode); sequence loading/reversal excluded"
+      preprocessing_reported: "N/A — no index/format conversion in this variant; block-pruning bookkeeping (MultiBP-style) is counted inline since it is part of the DP sweep itself, not a separate step"
+    metric:
+      primary: "GCUPS_nominal = n*m / time, using the FULL unpruned matrix dimensions n*m so pruned methods (MultiBP) remain comparable to unpruned ones (AnySeq)"
+      secondary: "GCUPS_effective = actually-computed cells / time (for pruning methods, reported alongside — never used as the ranking number); wall time ms"
+    correctness: >
+      bit-exact match of the optimal alignment score vs. an independent
+      reference O(n*m) DP implementation run with the identical scoring
+      scheme (e.g. a naive scalar reference, or SeqAn/Parasail with matching
+      parameters). For pruning methods, the pruned result must equal the
+      unpruned reference's score on every held-out instance where the
+      unpruned reference is still tractable — pruning that changes the
+      returned score fails the gate outright (does not qualify for this
+      variant; would need to move to the heuristic variant below with a
+      relaxed correctness definition).
+
+  - id: seqalign-xdrop-heuristic-kernel
+    claim: >
+      steady-state kernel throughput for X-drop / banded APPROXIMATE local
+      alignment, preprocessing excluded. LOGAN's own scenario — deliberately
+      NOT held to the exact-DP correctness bar above, since X-drop is a
+      pruned heuristic by design.
+    inputs:
+      suite: "LOGAN's synthetic benchmark set as the fixed primary input; E. coli/C. elegans real-data subsets (from the BELLA pipeline) as an optional secondary real-data tier"
+      selection: >
+        Primary: 100,000 read pairs, length uniform in [2500, 7500]
+        characters, ~15% simulated error rate (regenerate with a stated
+        error-injection tool/seed — LOGAN's exact generator/seed is not
+        recoverable from available sources, see open_questions).
+        Secondary (optional): E. coli (1.8M alignments) / C. elegans (235M
+        alignments) real long-read overlap sets, exact accession/download
+        source to be confirmed (open question).
+      recommended_subset: "primary synthetic set (100K pairs) is mandatory; E. coli/C. elegans tier optional and reported separately, never averaged into the primary number"
+      x_drop_sweep: "X = 100 is the single REQUIRED reported point (mid-range, present in every baseline row of LOGAN's own comparison table); full sweep X in {10,20,50,100,500,1000,2500,5000} required for papers wanting the full curve"
+      scoring: "DNA linear scheme, match=+2/mismatch=-1/gap=-1 (adopted from the exact-kernel variant for cross-variant consistency, since LOGAN's own scoring values were not recoverable from the accessible text — see open_questions)"
+    protocol:
+      warmup: 1 (discarded, spec-imposed as above)
+      reps: 5
+      statistic: "median (report min/max)"
+      timer: "CUDA events (GPU); host-side std::chrono around the full call including any CPU-side buffering"
+      timing_scope: >
+        GPU kernel execution timed separately from CPU-side sequence
+        reversal/buffering (LOGAN's own methodology left this ambiguous —
+        this spec requires both numbers reported so the ambiguity cannot
+        silently inflate the kernel-only number)
+      preprocessing_reported: "N/A for this kernel-only variant"
+    metric:
+      primary: "nominal-window GCUPS = (2X+1)-wide-band cells / time, assuming the full band is traversed — comparable across implementations regardless of internal pruning"
+      secondary: "effective GCUPS = actually-visited cells / time (will typically be lower than nominal for any implementation that prunes within the band); BOTH numbers are required and must be separately labeled, since none of the surveyed X-drop literature disambiguates this convention"
+    correctness: >
+      alignment score exact match vs. a REFERENCE CPU X-drop implementation
+      (e.g. SeqAn's or ksw2's own X-drop routine) run with the identical X
+      threshold and scoring parameters — NOT vs. the unbounded/exact
+      Smith-Waterman optimum, since X-drop is a deliberate, parameter-
+      dependent approximation and matching the unbounded optimum is not the
+      algorithm's contract.
+
+  - id: seqalign-e2e-short-read-mapping
+    claim: >
+      end-to-end short-read mapping pipeline throughput (one-shot index
+      build + align a full real read set), correctness gated by BIT-EXACT
+      output match to a named reference tool. FastAlign's own stated bar
+      ("100% identical output to BWA-MEM").
+    inputs:
+      suite: >
+        Real human reference genome (GRCh38 primary assembly) + a real,
+        standard, publicly available WGS read set at a fixed named depth.
+      selection: >
+        FastAlign's own paper-scale dataset could not be recovered from any
+        accessible source (no arXiv/OA, repo README only shows a
+        quick-test example) — this spec substitutes a standard,
+        independently reproducible public dataset: a public 30x Illumina
+        WGS run of a well-characterized reference sample (e.g. NA12878 or
+        HG002 from GIAB), explicitly flagged as a substitution rather than
+        a reproduction of the paper's own numbers (see open_questions).
+        A cheap smoke-test tier reuses the repo's own quick-test example
+        (E. coli GCA_000005845.2 reference + SRA SRR2584863 reads) — small
+        enough to run in CI, but explicitly NOT a substitute for the
+        human-scale tier when comparing throughput claims.
+      recommended_subset:
+        smoke_test: "E. coli GCA_000005845.2 + SRA SRR2584863 (paired-end)"
+        human_scale: "GRCh38 primary assembly + a public 30x WGS Illumina read set for NA12878 or HG002"
+    protocol:
+      index_build: >
+        one-shot, timed and reported SEPARATELY from alignment throughput —
+        not amortized into a per-read number, since a real deployment builds
+        the index once and reuses it across many independent later mapping
+        jobs, so there is no principled single amortization count "k" to
+        pick (unlike SpMM-style repeated-kernel-call amortization).
+      alignment: >
+        single full run over the complete read set (a "big job"
+        benchmark — repeated full-dataset runs are prohibitively expensive
+        for the human-scale tier); repeat >=2x and report both numbers if
+        compute budget allows, otherwise explicitly flag the single-run
+        limitation in the report rather than silently presenting one number
+        as if it were a stable median.
+      threading: "all available physical cores, pinned"
+      timer: "wall-clock (process start to SAM/BAM write completion)"
+      timing_scope: "index build reported once, standalone; alignment run reported as wall time + throughput, I/O (read/write of FASTQ/SAM) included since that matches how the tool is actually deployed"
+    metric:
+      primary: "throughput, Gbases/sec (or reads/sec); wall time"
+      secondary: "speedup vs. BWA-MEM baseline (same input, same thread count)"
+      cost_appendix: >
+        cost ($/hour) reported ONLY as an appendix number tied to an
+        explicitly stated cloud instance type and pricing DATE — never used
+        to gate or rank results, since cloud pricing is not stable over time
+        (see notes_on_fairness).
+    correctness: >
+      100% identical SAM/BAM records (chromosome, position, CIGAR, mapping
+      quality, flags) vs. BWA-MEM run with matching parameters on the
+      identical input — bit-exact, matching FastAlign's own stated bar; any
+      single differing record fails the gate for that input.
+
+  - id: seqalign-e2e-whole-genome-alignment
+    claim: >
+      end-to-end whole-genome pairwise alignment (seed -> GPU filter ->
+      extend) throughput including one-shot per-target-genome index/seed-
+      table construction, correctness gated by "recovers every alignment the
+      named baseline tool finds" (a superset gate, not equality). SegAlign's
+      own stated bar.
+    inputs:
+      suite: "SegAlign's 4 named real UCSC vertebrate genome assemblies"
+      selection: >
+        Latest UCSC assemblies at time of benchmark run, pre-processed to
+        drop mitochondrial DNA and unplaced/unlocalized/alternate-haplotype
+        sequences (SegAlign's own stated preprocessing, retained as the
+        spec's rule so genome sizes stay comparable to the source paper).
+      recommended_subset:
+        - {species: "Homo sapiens (human)", assembly: hg38, size_gbp: 3.08}
+        - {species: "Mus musculus (mouse)", assembly: mm10, size_gbp: 2.72}
+        - {species: "Gallus gallus (chicken)", assembly: galGal6, size_gbp: 1.05}
+        - {species: "Taeniopygia guttata (zebra finch)", assembly: taeGut2, size_gbp: 1.02}
+      required_pairs: ["human-mouse", "human-chicken", "chicken-zebra finch"]
+      pair_selection_rationale: >
+        all 3 pairs required (not just the cheapest) — they span a range of
+        evolutionary distance and genome-size product, which SegAlign itself
+        used to show the speedup holds across scenarios rather than
+        reporting only the easiest case.
+    protocol:
+      index_build: "one-shot per target chromosome, timed and reported separately — SegAlign's own practice, the one paper in this track that already does this correctly"
+      alignment: "single full run per genome pair (a \"big job\" benchmark); report wall time"
+      hardware_baseline: >
+        LASTZ must be run on a FIXED, NAMED CPU configuration reported
+        alongside the GPU numbers (do not let the CPU baseline float across
+        different instance types to find its best case, as SegAlign itself
+        did when it picked "the instance type that gave LASTZ its best
+        throughput among those tested" — this spec instead requires ONE
+        stated CPU baseline configuration used for every pair).
+      timer: "wall-clock (process start to alignment-output write completion)"
+    metric:
+      primary: "end-to-end wall-clock speedup vs. LASTZ v1.04.03 (default settings) on the fixed, named CPU baseline"
+      secondary: "filter-stage throughput in million seed-hits/sec (not GCUPS — seeding/filtering is not a DP recurrence), IF the harness instruments that stage separately"
+      cost_appendix: "cost ($/hour) reported only as an appendix number tied to an explicitly stated cloud instance type and pricing date, same rule as the short-read-mapping variant"
+    correctness: >
+      the candidate tool's output alignment set must be a SUPERSET of
+      LASTZ's output alignment set on the same input pair, verified by
+      alignment-interval overlap (not full record identity) — 100% of
+      LASTZ's alignments must be recoverable (equivalent to zero missed
+      points in SegAlign's own dot-plot check). Extra alignments beyond
+      LASTZ's set are allowed and must be reported as a count/percentage,
+      but do not by themselves fail the gate.
+
+notes_on_fairness:
+  - >
+    Exact-vs-heuristic correctness cannot be collapsed into one tolerance
+    rule: papers 1/4/5 (AnySeq, MultiBP, futhark-mem-sc22) are exact DP,
+    paper 2 (LOGAN) is a deliberate approximation validated against another
+    approximation, papers 3/6 (SegAlign, FastAlign) validate an end-to-end
+    pipeline against a reference TOOL's output rather than a DP optimum at
+    all. Variants above are split precisely along this boundary rather than
+    forcing a single "correctness: <tolerance>" line to cover all six.
+  - >
+    GCUPS is not a single well-defined number once pruning/banding enters
+    the picture. This spec requires BOTH a nominal (full/unpruned matrix or
+    band) and an effective (actually-computed cells) GCUPS wherever pruning
+    or X-drop banding applies, and forbids reporting only the flattering one
+    — none of MASA-CUDAlign/MultiBP, LOGAN, or their surrounding literature
+    disambiguates this in the sources available for this survey.
+  - >
+    Cost-normalized ($/hour) metrics, used by both end-to-end papers
+    (SegAlign, FastAlign), are demoted to non-gating appendix data because
+    cloud pricing drifts over time and a number priced in 2020 cannot be
+    fairly compared to one priced in 2026 without re-pricing both to the
+    same date — which this spec cannot guarantee a harness will do.
+  - >
+    MASA-CUDAlign's own README aggregates "best results in different
+    scenarios" across five hardware generations spanning 2010-2021 in a
+    single table. Variant 1 explicitly forbids this by requiring GCUPS_
+    nominal to be reported for the SAME fixed hardware class across the
+    whole recommended_subset, not a best-cell-per-row pick.
+  - >
+    SegAlign itself selected "the instance type that gave LASTZ its best
+    throughput among those tested" for its own CPU baseline — a legitimate
+    choice for showing SegAlign in its best light, but not a fair standing
+    baseline for a benchmark spec. Variant 4 fixes ONE named CPU baseline
+    configuration instead.
+  - >
+    No surveyed paper discloses a warmup/repetition/statistic protocol
+    except AnySeq's unqualified "median." All four variants above therefore
+    IMPOSE a protocol (1 discarded warmup, 5 reps, median + min/max) rather
+    than inheriting silence from the literature as an implicit "single-run"
+    default.
+
+open_questions:
+  - >
+    LOGAN's exact substitution-matrix and gap-penalty values used in its own
+    evaluation were not recoverable from the accessible fulltext (ar5iv);
+    variant 2 substitutes AnySeq's disclosed DNA scheme for cross-variant
+    consistency, which may not match what LOGAN itself actually used.
+  - >
+    LOGAN's exact synthetic-dataset generator (tool + random seed) for the
+    100K read-pair benchmark is not stated in the accessible text; exact
+    byte-for-byte reproduction of their dataset is not possible, only
+    parameter-matched regeneration (length range, error rate).
+  - >
+    MASA-CUDAlign/MultiBP's exact match/mismatch/gap-open/gap-extend values
+    used in the TPDS'21 paper were not found in any accessible source (README
+    or abstract); the MASA-Core command line supports configurable scoring
+    but the paper's chosen values are unknown.
+  - >
+    FastAlign's (PPoPP'26) actual paper-scale evaluation dataset (species,
+    real read counts, depth) could not be recovered — the paper has no
+    arXiv/OA copy and the ACM DOI page is paywalled/forthcoming as of this
+    survey. Variant 3's human-scale tier is an explicit substitution, not a
+    reproduction of the paper's own numbers; if/when the paper text becomes
+    accessible this should be revisited.
+  - >
+    futhark-mem-sc22's default `RUNS` repetition count (used by its
+    `benchmarks/Makefile` when not overridden) and the exact statistic
+    computed by `benchmarks/result-table.py` were not read in detail (file
+    contents not fetched beyond the Makefile help text) — worth confirming
+    before treating this paper's own numbers as directly comparable to the
+    spec's imposed 5-rep/median protocol.
+  - >
+    Whether GCUPS as reported by MASA-CUDAlign/MultiBP and by LOGAN is
+    nominal (full n*m or full band) or effective (actually-computed cells)
+    could not be determined from the accessible sources for either paper —
+    flagged in notes_on_fairness as a required BOTH-numbers policy going
+    forward, but the two papers' OWN published numbers cannot retroactively
+    be classified into one bucket or the other from what was read.
+  - >
+    Exact accession/download source for LOGAN's E. coli and C. elegans
+    "real-data" alignment counts (1.8M and 235M alignments respectively)
+    was not confirmed — the paper states the counts but not a directly
+    fetchable dataset URL beyond the general BELLA pipeline reference.
+  - >
+    BLOSUM62 ambiguity-code handling (N/X characters, etc.) in the
+    protein-synthetic tier of variant 1 is unspecified by futhark-mem-sc22's
+    reference implementation as read; assumed to only ever emit the 20
+    standard amino-acid symbols in its synthetic generator, not verified.
+
+evidence:
+  conf/ipps/MullerS0MLKH20: >
+    AnySeq — median GCUPS on 6 real GenBank long-DNA pairs + 12.5M
+    Mason-simulated 150bp read pairs, CPU(AVX2/AVX512)/GPU(Titan V)/FPGA
+    (ZCU104), disclosed DNA linear/affine scoring, vs. SeqAn/Parasail/NVBio,
+    exact-DP correctness implicit.
+  conf/ipps/ZeniGEDSHBOY20: >
+    LOGAN — GCUPS on synthetic 100K X-drop alignments (len 2500-7500, ~15%
+    error) plus real E. coli/C. elegans counts via BELLA, vs. SeqAn/ksw2
+    X-drop CPU baselines on V100 GPUs; approximate correctness class
+    ("equivalent" to reference X-drop, not exact SW).
+  conf/sc/GoenkaTPH20: >
+    SegAlign — GPU seed+filter (LASTZ reimplementation) + CPU LASTZ extend,
+    3 real UCSC vertebrate WGA pairs, 13.5-14x wall-clock speedup + 305M
+    seed-hits/sec vs. LASTZ v1.04.03 on a fixed CPU instance; correctness =
+    recovers 100% of LASTZ's alignments (superset gate via dot-plot).
+  journals/tpds/FigueiredoNSTM21: >
+    MultiBP/MASA-CUDAlign — exact SW/NW + Myers-Miller with provably-lossless
+    multi-GPU block pruning, 82,822 GCUPS on a 512x V100 cluster for a real
+    249Mbp human-chr1 pair; README aggregates best-of-N results across five
+    hardware generations (2010-2021), a pattern this spec explicitly rejects.
+  conf/sc/MunksgaardHSO22: >
+    Futhark memory-optimization compiler paper — NOT alignment-specific;
+    uses Rodinia's `nw` (Needleman-Wunsch, BLOSUM62, linear gap, synthetic
+    protein sequences up to 32768) as 1 of 7 unrelated memory-bound kernels
+    to show 1.1-2x speedup from compiler-level memory-layout optimizations.
+  conf/ppopp/ZhangLMZT26: >
+    FastAlign/BWA-FastAlign — 2.27-3.28x throughput and 2.54-5.65x cost
+    reduction vs. BWA-MEM/BWA-MEM2/BWA-GPU/ERT-BWA-MEM2, via a hybrid
+    seed-index + intra-query-parallel AVX2 extension; 100% bit-identical
+    SAM/BAM output to BWA-MEM (strongest correctness bar in the track);
+    paper's own evaluation-scale dataset not recoverable (no arXiv/OA).

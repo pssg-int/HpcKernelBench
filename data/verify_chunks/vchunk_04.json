@@ -1,0 +1,1143 @@
+[
+ {
+  "key": "conf/ipps/GuptaPP23",
+  "venue": "IPDPS",
+  "year": 2023,
+  "title": "Accelerating CNN inference on long vector architectures via co-design",
+  "abstract": "CPU-based inference can be deployed as an alternative to off-chip accelerators. In this context, emerging vector architectures are a promising option, owing to their high efficiency. Yet the large design space of convolutional algorithms and hardware implementations makes the selection of design options challenging. In this paper, we present our ongoing research into co-designing future vector architectures for CPU-based Convolutional Neural Networks (CNN) inference focusing on the im2col+GEMM and Winograd kernels. Using the Gem5 simulator we explore the impact of several hardware microarchitectural features including (i) vector lanes, (ii) vector lengths, (iii) cache sizes, and (iv) options for integrating the vector unit into the CPU pipeline. In the context of im2col+GEMM, we study the impact of several BLIS-like algorithmic optimizations such as (1) utilization of vector registers, (2) loop unrolling, (3) loop reorder, (4) manual vectorization, (5) prefetching, and (6) packing of matrices, on the RISC-V Vector Extension and ARM-SVE ISAs. We use the YOLOv3 and VGG16 network models for our evaluation. Our co-design study shows that BLIS-like optimizations are not beneficial to all types of vector microarchitectures. We additionally demonstrate that longer vector lengths (of at least 8192 bits) and larger caches (of 256MB) can boost performance by 5×, with our optimized CNN kernels, compared to a vector length of 512-bit and 1MB of L2 cache. In the context of Winograd, we present our novel approach of inter-tile parallelization across the input/output channels by using 8×8 tiles per channel to vectorize the algorithm on vector length agnostic (VLA) architectures. Our method exploits longer vector lengths and offers high memory reuse, resulting in performance improvement of up to 2.4× for non-strided convolutional layers with 3×3 kernel size, compared to our optimized im2col+GEMM approach on the Fujitsu A64FX processor. Our co-design study furthermore reveals that Winograd requires smaller cache sizes (up to 64MB) compared to im2col+GEMM.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la",
+    "ml_kernels"
+   ],
+   "kernels": [
+    "im2col+GEMM",
+    "Winograd convolution"
+   ],
+   "platform": [
+    "sim",
+    "arm-cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Co-designed BLIS-like im2col+GEMM & tiled Winograd CNN kernels for RVV/SVE vector CPUs"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/RanawakaRA23",
+  "venue": "IPDPS",
+  "year": 2023,
+  "title": "Distributed Sparse Random Projection Trees for Constructing K-Nearest Neighbor Graphs",
+  "abstract": "A random projection tree that partitions data points by projecting them onto random vectors is widely used for approximate nearest neighbor search in high-dimensional space. We consider a particular case of random projection trees for constructing a k-nearest neighbor graph (KNNG) from high-dimensional data. We develop a distributed-memory Random Projection Tree (DRPT) algorithm for constructing sparse random projection trees and then running a query on the forest to create the KNN graph. DRPT uses sparse matrix operations and a communication reduction scheme to scale KNN graph constructions to thousands of processes on a supercomputer. The accuracy of DRPT is comparable to state-of-the-art methods for approximate nearest neighbor search, while it runs two orders of magnitude faster than its peers. DRPT is available at https://github.com/HipGraph/DRPT.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "sparse_la",
+    "primitives"
+   ],
+   "kernels": [
+    "KNN graph construction",
+    "sparse random projection tree"
+   ],
+   "platform": [
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Distributed sparse random-projection-tree algorithm builds KNN graphs 100x faster than peers"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/ShahYDLABC23",
+  "venue": "IPDPS",
+  "year": 2023,
+  "title": "GPU-Accelerated Error-Bounded Compression Framework for Quantum Circuit Simulations",
+  "abstract": "Quantum circuit simulations enable researchers to develop quantum algorithms without the need for a physical quantum computer. Quantum computing simulators, however, all suffer from significant memory footprint requirements, which prevents large circuits from being simulated on classical super-computers. In this paper, we explore different lossy compression strategies to substantially shrink quantum circuit tensors in the QTensor package (a state-of-the-art tensor network quantum circuit simulator) while ensuring the reconstructed data satisfy the user-needed fidelity.Our contribution is fourfold. (1) We propose a series of optimized pre- and post-processing steps to boost the compression ratio of tensors with a very limited performance overhead. (2) We characterize the impact of lossy decompressed data on quantum circuit simulation results, and leverage the analysis to ensure the fidelity of reconstructed data. (3) We propose a configurable compression framework for GPU based on cuSZ and cuSZx, two state-of-the-art GPU-accelerated lossy compressors, to address different use-cases: either prioritizing compression ratios or prioritizing compression speed. (4) We perform a comprehensive evaluation by running 9 state-of-the-art compressors on an NVIDIA A100 GPU based on QTensor-generated tensors of varying sizes. When prioritizing compression ratio, our results show that our strategies can increase the compression ratio nearly 10 times compared to using only cuSZ. When prioritizing throughput, we can perform compression at the comparable speed as cuSZx while achieving 3-4× higher compression ratios. Decompressed tensors can be used in QTensor circuit simulation to yield a final energy result within 1-5% of the true energy value.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "compression",
+    "tensor"
+   ],
+   "kernels": [
+    "lossy compression (cuSZ/cuSZx pipeline)"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "GPU error-bounded compression pipeline (pre/post-processing atop cuSZ/cuSZx) for quantum tensors"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/ChoDKLLL23",
+  "venue": "IPDPS",
+  "year": 2023,
+  "title": "Harnessing the Crowd for Autotuning High-Performance Computing Applications",
+  "abstract": "This paper presents GPTuneCrowd, a crowd-based autotuning framework for tuning high-performance computing applications. GPTuneCrowd collects performance data from various users using a user-friendly tuner interface. GPTuneCrowd then presents novel autotuning techniques, based on transfer learning and parameter sensitivity analysis, to maximize tuning quality using collected data from the crowd. This paper shows several real-world case studies of GPTuneCrowd. Our evaluation shows that GPTuneCrowd’s transfer learning improves the tuned performance of ScaLAPACK’s PDGEQRF by 1.57x and a plasma fusion code NIMROD by 2.97x, over a non-transfer learning autotuner. We use GPTuneCrowd’s sensitivity analysis to reduce the search space of SuperLU_DIST and Hypre. Tuning on the reduced search space achieves 1.17x and 1.35x better tuned performance of SuperLU_DIST and Hypre, respectively, compared to the original search space.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la",
+    "solver_components"
+   ],
+   "kernels": [
+    "QR factorization (PDGEQRF)",
+    "SuperLU_DIST",
+    "Hypre AMG"
+   ],
+   "platform": [
+    "distributed",
+    "cpu"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Crowd-sourced transfer-learning autotuner (GPTuneCrowd) speeds PDGEQRF, SuperLU_DIST, Hypre tuning"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/WangIK23",
+  "venue": "IPDPS",
+  "year": 2023,
+  "title": "PRF: A Fast Parallel Relaxed Flooding Algorithm for Voronoi Diagram Generation on GPU",
+  "abstract": "This paper introduces a novel parallel relaxed flooding (PRF) algorithm for Voronoi diagram generation. The algorithm takes a set of reference points extracted from an image as input and assigns each GPU thread a partition of the image domain to perform parallel flooding computation. Our PRF algorithm has three advantages as follows. (1) The PRF algorithm divides an image domain into subregions for concurrent flooding computation. To achieve high parallelism, a point selection method is incorporated to remove dependencies between different subregions. (2) We exploit the sparsity of the input point data with a k-d tree. With the k-d tree data structure, the point selection step achieves high efficiency, and the amount of CPU-GPU data transfer is reduced. (3) We propose a relaxed flooding method, which achieves more accurate results and decreases memory traffic compared to the traditional flooding method. In addition to these advantages, we provide an empirical method to determine the appropriate parameter in the point selection step for high performance, given an expected error rate. We evaluated the performance of our method on multiple datasets. Compared with the state-of-the-art parallel banding algorithm, our method achieved an average speed-up of 4.6× on the randomly generated datasets with a point density of 0.01%, and 6.8× on nuclei segmentation datasets. The code of the PRF algorithm is publicly available*.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "Voronoi diagram generation",
+    "parallel flooding"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "PRF: parallel relaxed-flooding GPU algorithm for Voronoi diagrams, up to 6.8x over parallel banding"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/NagarajanK23",
+  "venue": "IPDPS",
+  "year": 2023,
+  "title": "RT-DBSCAN: Accelerating DBSCAN using Ray Tracing Hardware",
+  "abstract": "General Purpose computing on Graphical Processing Units (GPGPU) has resulted in unprecedented levels of speedup over its CPU counterparts, allowing programmers to harness the computational power of GPU shader cores to accelerate other computing applications. But this style of acceleration is best suited for regular computations (e.g., linear algebra). Recent GPUs feature new Ray Tracing (RT) cores that instead speed up the irregular process of ray tracing using Bounding Volume Hierarchies. While these cores seem limited in functionality, they can be used to accelerate n-body problems by leveraging RT cores to accelerate the required distance computations. In this work, we propose RT-DBSCAN, the first RT-accelerated DBSCAN implementation. We use RT cores to accelerate Density-Based Clustering of Applications with Noise (DBSCAN) by translating fixed-radius nearest neighbor queries to ray tracing queries. We show that leveraging the RT hardware results in speedups between 1.3x to 4x over current state-of-the-art, GPU-based DBSCAN implementations.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives",
+    "nbody_md"
+   ],
+   "kernels": [
+    "DBSCAN",
+    "nearest-neighbor query via ray tracing"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "RT-DBSCAN: uses GPU ray-tracing cores for DBSCAN neighbor queries, 1.3-4x over SOTA GPU DBSCAN"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/HassanDLF23",
+  "venue": "IPDPS",
+  "year": 2023,
+  "title": "Signal Detection for Large MIMO Systems Using Sphere Decoding on FPGAs",
+  "abstract": "Wireless communication systems rely on aggressive spatial multiplexing Multiple-Input Multiple-Output (MIMO) access points to enhance network throughput. A significant computational hurdle for large MIMO systems is signal detection and decoding, which has exponentially increasing computational complexity as the number of antennas increases. Hence, the feasibility of large MIMO systems depends on suitable implementations of signal decoding schemes.This paper presents an FPGA-based Sphere Decoder (SD) architecture that provides high-performance signal decoding for large MIMO systems, supporting up to 16-QAM modulation. The SD algorithm is refactored to map well to the FPGA architecture using a GEMM-based approach to exploit the parallel computational power of FPGAs. We implement FPGA-specific optimization techniques to improve computational complexity. We show significant improvement in time to decode the received signal with under 10 <sup xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">–2</sup> BER. The design is deployed on a Xilinx Alveo U280 FPGA and shows up to a 9× speedup compared to optimized multi-core CPU execution, achieving real-time requirements. Our proposed design reduces power consumption by a geo-mean of 38.1× compared to CPU implementation, which is important in real-world deployments. We also evaluate our design against alternative approaches on GPU.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la"
+   ],
+   "kernels": [
+    "Sphere decoding (GEMM-based MIMO detection)"
+   ],
+   "platform": [
+    "fpga"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "GEMM-based FPGA sphere-decoder for large MIMO signal detection, 9x faster than CPU"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/FanZWGZDSWL23",
+  "venue": "IPDPS",
+  "year": 2023,
+  "title": "Towards Faster Fully Homomorphic Encryption Implementation with Integer and Floating-point Computing Power of GPUs",
+  "abstract": "Fully Homomorphic Encryption (FHE) allows computations on encrypted data without knowledge of the plaintext message and currently has been the focus of both academia and industry. However, the performance issue hinders its large-scale application, highlighting the urgent requirements of high-performance FHE implementations.With noticing the tremendous potential of GPUs in the field of cryptographic acceleration, this paper comprehensively investigates how to convert the available computing resources residing in GPUs into FHE workhorses, and implement a full set of low-level and middle-level FHE primitives based on two arithmetic units (i.e., INT32 and FP64 units) with three types of data precision (i.e., INT32, INT64 and FP64). This paper gives a comprehensive evaluation and comparison based on each road-map. Our implementations of fundamental functions outperform the implementations on the same platform by 1.7× to 16.7×. Taking CKKS FHE schemes as a case study, our implementation of homomorphic multiplication achieves 3.2× speedup over the state-of-the-art GPU-based implementation, even considering the difference of platforms. The detailed evaluation and comparison of this paper would offer a vital reference for the follow-up work to choose appropriate underlying arithmetic units and important primitive optimizations in GPU-based FHE implementations.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "fft_spectral",
+    "primitives"
+   ],
+   "kernels": [
+    "FHE primitives",
+    "modular arithmetic",
+    "homomorphic multiplication"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "GPU FHE primitive implementations using INT32/FP64 units, 3.2x speedup on CKKS homomorphic mult"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/FanMSWL0Y24",
+  "venue": "IPDPS",
+  "year": 2024,
+  "title": "AMST: Accelerating Large-Scale Graph Minimum Spanning Tree Computation on FPGA",
+  "abstract": "The minimum spanning tree (MST) plays an important role in variant fields, such as chip design and network analysis. With the rapid expansion of vertices in real-life graphs, the bottleneck problem of MST algorithms in large-scale graphs grows more prominent. While there have been many FPGA-based accelerators for large-scale graph algorithms such as Graph Random Walk, and various algorithms to accelerate MST on CPUs and GPUs, effectively implementing MST algorithms for large-scale graphs on FPGAs remains quite challenging. This is due to several reasons: The neighbor vertices in the graph require extensive random memory access and the memory access characteristics vary across different stages and iterations. There are a large number of useless computations due to the existence of internal edges within a component (intra-edge). Parallel MST algorithm suffers from significant communication overhead due to the minimum edge data update conflicts and memory read-write conflicts.This paper proposes AMST to accelerate large-scale graph MST computation on FPGA. First, AMST employs a customized hash-based high-degree vertex cache (HDC) to improve memory access efficiency. Second, AMST adopts a graph pruning strategy that skips intra-edge and sorts edges by weight to eliminate useless computation and memory access. Finally, AMST utilizes a sorting networking module and a multi-port HDC to improve parallel efficiency. The experimental results demonstrate that AMST achieves an average performance speedup of 17.52× over CPU and 1.89× over GPU, as well as 74.96× over CPU and 10.45× over GPU on energy efficiency.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "minimum spanning tree"
+   ],
+   "platform": [
+    "fpga"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "FPGA MST accelerator with hashed vertex cache and edge pruning, up to 17.5x over CPU"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/Liang0MB24",
+  "venue": "IPDPS",
+  "year": 2024,
+  "title": "An O(N) distributed-memory parallel direct solver for planar integral equations",
+  "abstract": "Boundary value problems involving elliptic PDEs such as the Laplace and the Helmholtz equations are ubiquitous in mathematical physics and engineering. Many such problems can be alternatively formulated as integral equations that are mathematically more tractable. However, an integral-equation formulation poses a significant computational challenge: solving large dense linear systems that arise upon discretization. In cases where iterative methods converge rapidly, existing methods that draw on fast summation schemes such as the Fast Multipole Method are highly efficient and well-established. More recently, linear complexity direct solvers that sidestep convergence issues by directly computing an invertible factorization have been developed. However, storage and computation costs are high, which limits their ability to solve large-scale problems in practice. In this work, we introduce a distributed-memory parallel algorithm based on an existing direct solver named \"strong recursive skeletonization factorization [1].\" Specifically, we apply low-rank compression to certain off-diagonal matrix blocks in a way that minimizes computation and data movement. Compared to iterative algorithms, our method is particularly suitable for problems involving ill-conditioned matrices or multiple righthand sides. Large-scale numerical experiments are presented to show the performance of our Julia implementation.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "solver_components"
+   ],
+   "kernels": [
+    "recursive skeletonization factorization",
+    "direct solver for integral equations"
+   ],
+   "platform": [
+    "distributed",
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Distributed-memory O(N) direct solver (skeletonization factorization) for planar integral equations"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/HeislerSDMS24",
+  "venue": "IPDPS",
+  "year": 2024,
+  "title": "Automating GPU Scalability for Complex Scientific Models: Phonon Boltzmann Transport Equation",
+  "abstract": "Heterogeneous computing environments combining CPU and GPU resources provide a great boost to large-scale scientific computing applications. Code generation utilities that partition the work into CPU and GPU tasks while considering data movement costs allow researchers to develop high-performance solutions more quickly and easily, and make these resources accessible to a larger user base.We present developments for a domain-specific language (DSL) and code generation framework for solving partial differential equations (PDEs). These enhancements facilitate GPU-accelerated solution of the Boltzmann transport equation (BTE) for phonons, which is the governing equation for simulating thermal transport in semiconductor materials at sub-micron scales. The solution of the BTE involves thousands of coupled PDEs as well as complicated boundary conditions and solving a nonlinear equation that couples all of the degrees of freedom at each time step. These developments enable the DSL to generate configurable hybrid GPU/CPU code that couples accelerated kernels with user-defined code. We observed performance improvements of around 18X compared to a CPU-only version produced by this same DSL with minimal additional programming effort.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "stencil_pde",
+    "solver_components"
+   ],
+   "kernels": [
+    "PDE solve (phonon Boltzmann transport equation)"
+   ],
+   "platform": [
+    "nvidia-gpu",
+    "cpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "DSL/codegen framework generates GPU-accelerated kernels for coupled PDE (phonon BTE) solve, 18x speedup"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/JayaweeraLWRK24",
+  "venue": "IPDPS",
+  "year": 2024,
+  "title": "DEFCON: Deformable Convolutions Leveraging Interval Search and GPU Texture Hardware",
+  "abstract": "Deformable convolutions can improve detection accuracy in Convolution Neural Networks (CNNs) by leveraging flexible spatial sampling in augmenting kernels with learnable offsets. However, the resulting irregular memory access patterns and additional pixel lookup overhead introduced by deformable layers pose inherent challenges when executed on high-throughput devices such as GPUs. To address these challenges, we introduce DEFCON, a systematic approach to optimizing deformable convolutions. DEFCON is designed to provide: (1) better placement of operators in the neural architecture using interval search, (2) reduced computational demands by leveraging lightweight operators, and (3) optimized inference by using GPU texture hardware. By performing an interval search, we reduce the number of deformable layers in our architecture. By leveraging the GPU’s texture hardware, we are able to use lightweight operators to improve the execution performance of layers, without sacrificing prediction accuracy. By combining these approaches, DEFCON increases the inference performance by 2.8× over YOLACT++ implementation, when run on an NVIDIA Jetson AGX Xavier GPU. Our work enables faster and more accurate predictions when performing deformable convolutions.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels"
+   ],
+   "kernels": [
+    "deformable convolution"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "DEFCON optimizes deformable-convolution kernels via interval search and GPU texture hardware, 2.8x speedup"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/XiaB24",
+  "venue": "IPDPS",
+  "year": 2024,
+  "title": "Machine-Learning-Driven Runtime Optimization of BLAS Level 3 on Modern Multi-Core Systems",
+  "abstract": "BLAS Level 3 operations are essential for scientific computing, but finding the optimal number of threads for multi-threaded implementations on modern multi-core systems is challenging. We present an extension to the Architecture and Data-Structure Aware Linear Algebra (ADSALA) library that uses machine learning to optimize the runtime of all BLAS Level 3 operations. Our method predicts the best number of threads for each operation based on the matrix dimensions and the system architecture. We test our method on two HPC platforms with Intel and AMD processors, using MKL and BLIS as baseline BLAS implementations. We achieve speedups of 1.5 to 3.0 for all operations, compared to using the maximum number of threads. We also analyze the runtime patterns of different BLAS operations and explain the sources of speedup. Our work shows the effectiveness and generality of the ADSALA approach for optimizing BLAS routines on modern multi-core systems.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la"
+   ],
+   "kernels": [
+    "BLAS Level 3 (GEMM, TRSM, etc.)"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "ML-driven thread-count autotuner for BLAS Level 3 ops, 1.5-3x speedup over max-threads baseline"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/ZhangA0L0GK24",
+  "venue": "IPDPS",
+  "year": 2024,
+  "title": "Parallel Approximations for High-Dimensional Multivariate Normal Probability Computation in Confidence Region Detection Applications",
+  "abstract": "Addressing the statistical challenge of computing the multivariate normal (MVN) probability in high dimensions holds significant potential for enhancing various applications. For example, the critical task of detecting confidence regions where a process probability surpasses a specific threshold is essential in diverse applications, such as pinpointing tumor locations in magnetic resonance imaging (MRI) scan images, determining hydraulic parameters in groundwater flow issues, and forecasting regional wind power to optimize wind turbine placement, among numerous others. One common way to compute high-dimensional MVN probabilities is the Separation-of-Variables (SOV) algorithm. This algorithm is known for its high computational complexity of O(n<sup xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">3</sup>) and space complexity of O(n<sup xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">2</sup>), mainly due to a Cholesky factorization operation for an n×n covariance matrix, where n represents the dimensionality of the MVN problem. This work proposes a high-performance computing framework that allows scaling the SOV algorithm and, subsequently, the confidence region detection algorithm. The framework leverages parallel linear algebra algorithms with a task-based programming model to achieve performance scalability in computing process probabilities, especially on large-scale systems. In addition, we enhance our implementation by incorporating Tile Low-Rank (TLR) approximation techniques to reduce algorithmic complexity without compromising the necessary accuracy. To evaluate the performance and accuracy of our framework, we conduct assessments using simulated data and a wind speed dataset. Our proposed implementation effectively handles high-dimensional multivariate normal (MVN) probability computations on shared and distributed-memory systems using finite precision arithmetics and TLR approximation computation. Performance results show a significant speedup of up to 20X in solving the MVN problem using TLR approximation compared to the reference dense solution without sacrificing the application’s accuracy. The qualitative results on synthetic and real datasets demonstrate how we maintain high accuracy in detecting confidence regions even when relying on TLR approximation to perform the underlying linear algebra operations.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la"
+   ],
+   "kernels": [
+    "Cholesky factorization",
+    "Tile Low-Rank approximation"
+   ],
+   "platform": [
+    "distributed",
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "TLR-approximated Cholesky within SOV algorithm speeds up high-dim MVN probability computation 20x"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/FerdousNPSMMKBH24",
+  "venue": "IPDPS",
+  "year": 2024,
+  "title": "Picasso: Memory-Efficient Graph Coloring Using Palettes With Applications in Quantum Computing",
+  "abstract": "A coloring of a graph is an assignment of colors to vertices such that no two neighboring vertices have the same color. The need for memory-efficient coloring algorithms is motivated by their application in computing clique partitions of graphs arising in quantum computations where the objective is to map a large set of Pauli strings into a compact set of unitaries. We present Picasso, a randomized memory-efficient iterative parallel graph coloring algorithm with theoretical sublinear space guarantees under practical assumptions. The parameters of our algorithm provide a trade-off between coloring quality and resource consumption. To assist the user, we also propose a machine learning model to predict the coloring algorithm’s parameters considering these trade-offs. We provide a sequential and parallel implementation of the proposed algorithm.We perform an experimental evaluation on a 64-core AMD CPU equipped with 512 GB of memory and an Nvidia A100 GPU with 40GB of memory. For a small dataset where existing coloring algorithms can be executed within the 512 GB memory budget, we show up to 68× memory savings. On massive datasets, we demonstrate that GPU-accelerated Picasso can process inputs with 49.5× more Pauli strings (vertex set in our graph) and 2,478× more edges than state-of-the-art parallel approaches.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "graph coloring"
+   ],
+   "platform": [
+    "cpu",
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Picasso: memory-efficient randomized parallel graph coloring with GPU accel, up to 68x memory savings."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/0005SFZZG24",
+  "venue": "IPDPS",
+  "year": 2024,
+  "title": "Scalable and Differentiable Simulator for Quantum Computational Chemistry",
+  "abstract": "We develop a high-performance simulator for variational quantum eigensolver (VQE), the major innovations include: (1) A differentiable matrix product state (MPS) based VQE simulator that seamlessly integrates MPS into the automatic differentiation framework, which overcomes the exponential memory growth of state-vector simulator and can efficiently calculate gradients with a cost independent of the number of parameters; (2) A dynamic scheme to distribute the gradient calculations to achieve good load balance; (3) A parallel adaptive VQE which integrates our differentiable MPS simulator to further enhance the simulation performance; (4) Study of real chemical systems with convergence to chemical accuracy using our simulator, achieving nearly linearly strong and weak scaling for chemical systems with up to 100 qubits. Our simulator provides an ideal test ground for VQE and paves the way of benchmarking large-scale VQE experiments on near-term quantum computers.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "tensor",
+    "dense_la"
+   ],
+   "kernels": [
+    "MPS contraction",
+    "tensor network simulation"
+   ],
+   "platform": [
+    "distributed",
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Differentiable MPS-based VQE simulator with distributed gradient calc, scaling to 100-qubit chemistry."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/ChienAK25",
+  "venue": "IPDPS",
+  "year": 2025,
+  "title": "Accelerating Homotopy Continuation with GPUs: Application to Trifocal Pose Estimation",
+  "abstract": "Homotopy Continuation (HC) is an effective tool for solving systems of polynomial equations arising from multiview geometry problems in computer vision. Specifically, polynomial systems of camera pose estimation are widely considered as many are used in visual odometry (VO) or simultaneous localization and mapping (SLAM) frameworks. However, existing HC solvers are very slow for many VOs or SLAMs whose efficiency is critical. In addition, in the presence of outliers, the camera pose is typically solved repeatedly under a hypothesis-verification scheme, or RANSAC, for robust estimation, discouraging even more applications from adopting HC as a practical solver. In this paper, we accelerate the state-of-the-art GPU-HC solver progressively by direct parameter homotopy evaluation, improving GPU utilization, pruning homotopy paths, and early termination of RANSAC process, showing around <tex xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">$9.17 \\times$</tex>, <tex xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">$13.75 \\times$</tex>, <tex xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">$17.06 \\times$</tex>, and <tex xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">$17 \\times$</tex> speedups on NVIDIA V100, A100, H100, and GH200 GPUs, respectively. Additionally, multiple GPUs are also used to demonstrate strong scalability on up to 8 GPUs. We apply the optimized GPU-HC solver on a trifocal pose estimation problem which solves for camera poses using triplet 2D-2D oriented point matches, where one is associated with a 3D point in space. This is particularly useful in recovering VO/SLAM estimation failure when the scene is textureless, as existing recovering methods rely on ample 2D-3D point matches regardless of many 2D-2D pairs present in the images. Experiments show that integrating the accelerated GPU-HC with modern SLAMs substantially increases the success rate of recovering estimation failure without the cost of losing significant runtime.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "solver_components"
+   ],
+   "kernels": [
+    "homotopy continuation solve"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "low",
+   "one_liner": "GPU homotopy-continuation solver optimizations (path pruning, early RANSAC exit), up to 17x speedup."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/CastroAF25",
+  "venue": "IPDPS",
+  "year": 2025,
+  "title": "Adapt-S: Effective DNN Pruning via Unified Accuracy and Performance Tuning",
+  "abstract": "Model sparsification has emerged as a promising approach to reducing model size with minimum impact on accuracy. This is achieved through the removal of some model parameters, a process also known as Deep Neural Network (DNN) pruning. The irregular nature of the generated sparse tensors poses a great challenge in the development of efficient GPU kernels optimized for these workloads. This challenge has been recently addressed through the use of hardware-aware semistructured sparsification methods designed to conform to specialized sparse formats and codesigned with template-based kernel implementations. These methods are commonly based on grouping the non-pruned values in blocks of a given size to generate regularity or on generating patterns that fit specialized hardware units. This pruning pattern-format-kernel triplet presents a high degree of tunability, both at the pruning and kernel sides, which can be used to fit certain accuracy-to-performance tradeoffs. On the pruning side, using larger blocks of consecutive non-pruned values favors performance over accuracy, as the weight selection for removal policy becomes less flexible. On the kernel side, recent studies have proven that the tuning of the configuration parameters of template-based multi-level tiling kernel implementations can yield an extra performance boost. This paper presents AdAPT-S, an autotuning system that generates DNN pruning recipes and optimized kernel configurations to fit an accuracy-to-performance specification. This is done through a cost model that integrates both aspects. AdAPT-S gets extra benefits from the exploitation of layer sensitivity by providing per-layer pruning recipes and kernel configurations. The results show that our approach can achieve superior accuracy-to-performance trade-offs and that this can be used to produce models that fit the user requirements.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels",
+    "sparse_la"
+   ],
+   "kernels": [
+    "structured-sparse matmul"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "AdAPT-S autotunes DNN pruning recipes and sparse-kernel tiling configs jointly for accuracy/perf."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/NucaPT25",
+  "venue": "IPDPS",
+  "year": 2025,
+  "title": "An Adaptive Two-Stage Algorithm for Error-Bounded Scientific Data Compression",
+  "abstract": "The truncated singular value decomposition and its various tensor generalizations have long offered a simple and practical mechanism for compressing data stored in 2D or higherorder tensors. While the resulting low-rank approximations provide strong guarantees on the quality of the resulting reconstruction, they do not always provide sufficient compression as needed by the increasingly large scientific data volumes being produced in large-scale spatio-temporal simulations. In this paper, we introduce a second-stage compression where the singular vectors themselves are further compressed, adding a multiplicative effect on the overall compression ratios achieved. The intuition of this second-stage compression is that singular vectors associated with smaller singular values can be compressed using lower accuracies without compromising the overall accuracy targeted in the compression. Specifically, we show that if the singular vectors are compressed with an accuracy inversely proportional to their singular values, the overall accuracy reached can be readily controlled. We show the effectiveness of the resulting algorithm on sample representative datasets from climate, weather, and computational fluid dynamics, where the proposed algorithm achieves higher compression ratios than other state-of-the-art algorithms for the same target root mean square accuracies. The strength of the method appears to lie in its combination of global feature-level SVD-based compression in the first stage and local entry-level interpolation-guided compression in the second stage, leveraging the complementary strengths of both approaches in a unified pipeline.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "compression",
+    "dense_la"
+   ],
+   "kernels": [
+    "SVD compression"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Two-stage SVD-based error-bounded compressor further compressing singular vectors for higher ratios."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/GargirT25",
+  "venue": "IPDPS",
+  "year": 2025,
+  "title": "Parallel-in-Time Kalman Smoothing Using Orthogonal Transformations",
+  "abstract": "We present a numerically-stable parallel-in-time linear Kalman smoother. The smoother uses a novel highly-parallel QR factorization for a class of structured sparse matrices for state estimation, and an adaptation of the SelInv selective-inversion algorithm to evaluate the covariance matrices of estimated states. Our implementation of the new algorithm, using the Threading Building Blocks (TBB) library, scales well on both Intel and ARM multi-core servers, achieving speedups of up to <tex xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">$47 x$</tex> on 64 cores. The algorithm performs more arithmetic than sequential smoothers; consequently it is 1.8x to 2.5x slower on a single core. The new algorithm is faster and scales better than the parallel Kalman smoother proposed by Särkkä and García-Fernández in 2021.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la",
+    "sparse_la",
+    "solver_components"
+   ],
+   "kernels": [
+    "QR factorization",
+    "selective matrix inversion"
+   ],
+   "platform": [
+    "cpu",
+    "arm-cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Numerically-stable parallel-in-time Kalman smoother via novel structured-sparse QR and SelInv, 47x speedup on 64 cores"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/ZhaoVYWA25",
+  "venue": "IPDPS",
+  "year": 2025,
+  "title": "PolyMorphous: An MLIR-Based Polyhedral Compiler with Loop Transformation Primitives",
+  "abstract": "We present PolyMorphous, an MLIR-based polyhedral compiler that exposes a set of loop-based scheduling primitives, providing users with ample control over optimizations for input code. The primitives are expressed in a new Schedule dialect that is based on MLIR's Transform dialect. PolyMorphous' polyhedral engine collapses the primitives into a polyhedral schedule and checks for its legality. If necessary, and possible, the engine corrects an illegal schedule into a legal one. PolyMorphous is evaluated using the PolyBench suite. The evaluation validates PolyMorphous' approach in two ways. First, it shows that PolyMorphous enables users to explore the optimization space, and that it results in well-optimized code. Second, it shows that PolyMorphous' correction of illegal schedules enables users to optimize code with fewer primitives and improves their productivity by alleviating the need for manual correction. Specifically, the evaluation shows that PolyMorphous optimized code performs as well as code optimized by Pluto+ with its optimization flags tuned to achieve the best performance for each benchmark. Further, for several benchmarks, PolyMorphous optimized code performs better, confirming the value of providing users with control over optimizations. Averaged over all the benchmarks, PolyMorphous optimized code has a speedup of <tex xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">$1.24 \\mathrm{x} / 1.25 \\mathrm{x}$</tex> over that optimized by Pluto+ on Arm/X86 systems. PolyMorphous brings the approach of empowering users of polyhedral compilers with control over optimizations to a community-developed infrastructure, promoting the approach's adoptability. It does so while delivering performant code.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la",
+    "stencil_pde"
+   ],
+   "kernels": [
+    "PolyBench kernels (GEMM, stencils, etc.)"
+   ],
+   "platform": [
+    "cpu",
+    "arm-cpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "PolyMorphous: MLIR polyhedral compiler with loop-transform primitives, matches/beats Pluto+ on PolyBench"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/ZhangGTLWZFSSTT26",
+  "venue": "IPDPS",
+  "year": 2026,
+  "title": "Accelerating AI Compression through Lightweight Lossless Encoding and Pipelined Workflows",
+  "abstract": "Scientific images are essential for agentic interpretation of experimental science, but the explosion of images presents significant challenges. Effective image compression must be fast, parallelizable, achieve high compression ratios, and preserve important domain-specific features. Existing compressors can distort critical textures at high compression ratios. AI-based compressors, on the other hand, have high quality and compression ratios, but are extraordinarily slow. AIZ, a high-performance AI-based compressor preserving visual semantics, effectively addresses this challenge. We introduce a modular, high-performance pipeline that addresses both latency and throughput. We evaluate on many standard and scientific datasets. Compared to AI-based compressors, AIZ achieves similar image quality while providing a 3.1× speedup for processing a single image. Furthermore, we introduce a pipeline design that delivers a 9.6× speedup when processing a batch of images. Compared with state-of-the-art non-AI-based compressors (e.g., Nvidia nvJPEG) at similar compression ratios, AIZ preserves the best image quality but outperforming by 1.9 ×.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "compression"
+   ],
+   "kernels": [
+    "lossless encoding",
+    "image compression pipeline"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "AIZ: lightweight lossless encoding plus pipelined workflow speeds up AI-based image compression 3.1-9.6x"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/ZhangXLCXGL26",
+  "venue": "IPDPS",
+  "year": 2026,
+  "title": "Accelerating High-Frequency Electromagnetic Scattering Prediction with KNN-Augmented Radial Basis Function Networks",
+  "abstract": "High-frequency electromagnetic simulation, crucial for defense and communications applications, requires parallel computing to tackle the escalating computational costs. As an alternative to traditional numerical methods, Physics-Informed Neural Networks (PINNs) struggle with high-frequency problems due to spectral bias, while their variant Feature-Enhanced-Physics-Informed Radial Basis Network (FE-PIRBN) can better capture high-frequency solutions but suffer from quadratic computational complexity O(NM) with respect to the number of radial basis centers. To address this limitation, we propose KRBFNet, a high-performance computing (HPC) oriented framework that implements and scales the established paradigm of localized RBF approximations within a physics-informed network. By employing k-nearest neighbor (KNN) search to dynamically select relevant RBF centers, this approach reduces the dominant computational cost of RBF evaluations from O(NM) to O(Nk) (while requiring an initial O(NM) distance computation), maintaining accuracy while significantly improving efficiency. Experimental results demonstrate that our method achieves comparable accuracy to FE-PIRBN while delivering a 2.55x speedup on a single GPU and a 7.02× speedup on 8 GPUs (relative to a baseline with 3 GPUs.). This work bridges classical meshless PDE solvers (e.g., RBF-FD) with modern deep learning, providing a scalable, GPU-accelerated framework for parametric electromagnetic simulations.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "stencil_pde",
+    "ml_kernels"
+   ],
+   "kernels": [
+    "localized RBF evaluation",
+    "KNN search"
+   ],
+   "platform": [
+    "nvidia-gpu",
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "KRBFNet: KNN-localized RBF centers cut PIRBN complexity O(NM) to O(Nk), 2.55x single-GPU / 7.02x 8-GPU speedup"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/BellavitaRICDVG26",
+  "venue": "IPDPS",
+  "year": 2026,
+  "title": "Communication-Avoiding Linear Algebraic Kernel K-Means on GPUs",
+  "abstract": "Clustering algorithms are among the most important and informative data analysis tools available. Of these, the K-means algorithm is one of the most popular and powerful choices due to its simplicity and generality. However, K-means cannot compute non-linearly separable cluster boundaries, which limits its utility in certain cases. Kernel K-means is a variant of the K-means algorithm that can compute non-linearly separable cluster boundaries. Kernel K-means has significant computational and memory requirements because of the presence of a large kernel matrix which scales quadratically with dataset size. Prior work has accelerated Kernel K-means by formulating it using sparse linear algebra primitives and implementing it on a single GPU. However, that approach cannot run on datasets with more than approximately 80,000 samples due to limited GPU memory.Clustering using Kernel K-means remains challenging because of its high computational and memory costs. In this work, we address this issue by presenting a suite of distributed-memory parallel algorithms for large-scale Kernel K-means clustering on multi-GPU systems. Our approach maps the most computationally expensive components of Kernel K-means onto communication-efficient distributed linear algebra primitives uniquely tailored for Kernel K-means, enabling highly scalable implementations that efficiently cluster million-scale datasets. Central to our work is the design of partitioning schemes that enable communication-efficient composition of the linear algebra primitives that appear in Kernel K-means.Our 1.5D algorithm consistently achieves the highest performance, enabling Kernel K-means to scale to data one to two orders of magnitude larger than previously practical. On 256 GPUs, it achieves a geometric mean weak scaling efficiency of 79.7% and a geometric mean strong scaling speedup of 4.2× . Compared to our 1D algorithm, the 1.5D approach achieves up to a 3.6× speedup on 256 GPUs and reduces clustering time from over an hour to under two seconds relative to a single-GPU sliding window implementation. Our results show that distributed algorithms designed with application-specific linear algebraic formulations can achieve substantial performance improvement.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la",
+    "sparse_la"
+   ],
+   "kernels": [
+    "Kernel K-means",
+    "distributed GEMM/SpGEMM primitives"
+   ],
+   "platform": [
+    "nvidia-gpu",
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "1.5D communication-avoiding distributed LA algorithms scale Kernel K-means to 256 GPUs, 79.7% weak-scaling eff."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/ZengWLC26",
+  "venue": "IPDPS",
+  "year": 2026,
+  "title": "DSTree: Data-Driven Synchronous Traversals for Decision Forests on GPUs",
+  "abstract": "Decision forests are widely adopted for their strong accuracy and interpretability. Their inherently parallel structure, where trees and queries can be evaluated independently, makes them a natural fit for GPUs with massive thread-level parallelism and high memory bandwidth. However, conventional GPU implementations typically bind independent tasks statically to GPU threads, leading to irregular control flow and scattered memory access patterns. This paper proposes DSTree, a dynamic, data-driven inference framework that replaces static execution with a level-synchronous worklist traversal. DSTree enables GPU threads to cooperatively fetch and process active nodes, improving warp utilization and memory access efficiency. Building on top of the worklist, we introduce privatized synchronous traversal to reduce synchronization overhead and a worklist reordering mechanism to improve memory coalescing and data locality. Evaluation across six real-world datasets demonstrates that our method delivers up to 5.3× (3.9× on average) over the state-of-the-art RAPIDS Forest Inference Library (FIL), and up to 3.5× (1.8× on average) speedup over Tahoe.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels"
+   ],
+   "kernels": [
+    "decision-forest inference",
+    "tree traversal"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "DSTree: data-driven worklist traversal for GPU decision-forest inference, up to 5.3x over RAPIDS FIL."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/AnvariSAK26",
+  "venue": "IPDPS",
+  "year": 2026,
+  "title": "DaggerFFT: A Distributed FFT Framework Using Task Scheduling in Julia",
+  "abstract": "The Fast Fourier Transform (FFT) is a fundamental numerical technique with widespread application in a range of scientific problems. As scientific simulations attempt to exploit exascale systems, there has been a growing demand for distributed FFT algorithms that can effectively utilize modern heterogeneous high-performance computing (HPC) systems. Conventional FFT algorithms commonly encounter performance bottlenecks, especially when run on heterogeneous platforms. Most distributed FFT approaches rely on static task distribution and require synchronization barriers, limiting scalability and impacting overall resource utilization.In this paper we present DaggerFFT, a distributed FFT framework, developed in Julia, that treats highly parallel FFT computations as a dynamically scheduled task graph. Each FFT stage operates on a separately defined distributed array. FFT operations are expressed as DTasks operating on pencil or slab partitioned DArrays. Each FFT stage owns its own DArray, and the runtime assigns DTasks across devices using Dagger’s dynamic scheduler that uses work stealing. We demonstrate how DaggerFFT’s dynamic scheduler can outperform state-of-the-art distributed FFT libraries on both CPU and GPU backends, achieving up to a 2.6× speedup on CPU clusters and up to a 1.35× speedup on GPU clusters. We have integrated DaggerFFT into Oceananigans.jl, a geophysical fluid dynamics framework, demonstrating that high-level, task-based runtimes can deliver both superior performance and modularity in large-scale, real-world simulations.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "fft_spectral"
+   ],
+   "kernels": [
+    "FFT"
+   ],
+   "platform": [
+    "cpu",
+    "nvidia-gpu",
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "DaggerFFT: dynamically task-scheduled distributed FFT in Julia, up to 2.6x (CPU)/1.35x (GPU) over SOTA FFT libs."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/SelvitopiOCSEB26",
+  "venue": "IPDPS",
+  "year": 2026,
+  "title": "Fast Algorithms for Scheduling Many-body Correlation Functions on Accelerators",
+  "abstract": "Computation of correlation functions is a key operation in Lattice quantum chromodynamics (LQCD) simulations to extract nuclear physics observables. These functions involve many binary batch tensor contractions, each tensor possibly occupying hundreds of MBs of memory. Performing these contractions on GPU accelerators poses the challenge of scheduling them as to optimize tensor reuse and reduce data traffic. In this work we propose two fast novel scheduling algorithms that reorder contractions to increase temporal locality via input/intermediate tensor reuse. Our schedulers take advantage of application-specific features, such as contractions being binary and locality within contraction trees, to optimize the objective of minimizing peak memory. We integrate them into the LQCD analysis software suite Redstar and improve time-to-solution. Our schedulers attain upto 2.1x improvement in peak memory, which is reflected by a reduction of upto 4.2x in evictions, upto 1.8x in data traffic, resulting in upto 1.9x faster correlation function computation time.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "tensor"
+   ],
+   "kernels": [
+    "tensor contraction scheduling"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Scheduling algorithms reorder LQCD tensor contractions on GPUs to cut peak memory by up to 2.1x."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/SunFW26",
+  "venue": "IPDPS",
+  "year": 2026,
+  "title": "FastTT: Accelerating Shift-XOR Erasure Coding for Data Storage",
+  "abstract": "Erasure coding is a widely used redundancy technique for fault tolerance in data storage systems, offering significant space savings. However, it generally incurs substantial computational overhead. While existing research has explored various optimization techniques for classical Reed-Solomon (RS) erasure codes, more recent shift-XOR codes, which feature significantly lower computational complexity, have received comparatively little attention. In this paper, we focus on two-tone, the state-of-the-art shift-XOR code, and present the first comprehensive and high-optimized implementation of two-tone, FastTT. Due to its inherent shifting pattern, two-tone encounters challenges including redundant memory access operations and inefficient data traversal patterns. To address these issues, we propose a suite of optimization techniques: (1) Cache-Friendly Window Partitioning to improve data locality in both encoding and decoding; (2) Neighbor-Merging Access that combines adjacent data operations within registers to reduce memory traffic in encoding; (3) Erasure–Parity Mapping that simplifies the decoding process of all data and parity erased cases; and (4) Traversal Pattern Selection for accelerating the single-erasure recovery by exploiting the vectorization store operations. Validated across multiple configurations, FastTT consistently outperforms the state-of-the-art erasure coding libraries, including ISA-L and Cerasure, achieving an average encoding throughput improvement of 36.2% (up to 84.1%) and an average decoding throughput improvement of 33.5% (up to 182.1%).",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "erasure coding (shift-XOR)"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "FastTT: cache-friendly, vectorized shift-XOR erasure coding, up to 84%/182% faster encode/decode than ISA-L."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/WangHZ26",
+  "venue": "IPDPS",
+  "year": 2026,
+  "title": "GPU-Accelerated Approximate Nearest Neighbor Search via PCA-Augmented Graph Indexing for Vector Databases",
+  "abstract": "Graph-based indexing methods such as HNSW and CAGRA represent the state of the art for approximate nearest neighbor (ANN) search, but their efficiency and scalability are increasingly constrained by high dimensionality and memory overhead. In this work, we propose a PCA-augmented graph-based ANN framework that integrates in-place dimensionality reduction directly into the index construction and search pipelines, together with a two-stage remapping and reranking strategy in the original feature space to preserve retrieval accuracy.We implement the proposed approach on both CPU and GPU platforms by combining PCA with HNSW and CAGRA. Extensive experiments on large-scale textual and visual datasets show that, on CPU platforms, PCA-augmented indexing substantially reduces index build time and memory usage while significantly improving query throughput at comparable recall levels. On GPU platforms, the proposed PCA+CAGRA variant achieves up to 39% reduction in GPU memory consumption compared with the baseline CAGRA, while maintaining competitive throughput at high recall regimes (Recall@10 ≥ 0.95). Although the current GPU implementation incurs some throughput degradation at lower recall levels due to limited pipeline integration, it demonstrates favorable memory–performance trade-offs for memory-constrained GPU environments.Overall, this work highlights the effectiveness of in-place PCA as a scalable and interpretable alternative to out-of-place compression techniques, and demonstrates its potential as a complementary direction for building memory-efficient and scalable ANN systems across heterogeneous hardware platforms.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "approximate nearest neighbor search",
+    "graph indexing (HNSW/CAGRA)"
+   ],
+   "platform": [
+    "cpu",
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "PCA-augmented HNSW/CAGRA graph indexing cuts GPU memory 39% for approximate nearest-neighbor search."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/RaoPZMF26",
+  "venue": "IPDPS",
+  "year": 2026,
+  "title": "LibraryX: A Framework for Cross-Library-Call Optimization",
+  "abstract": "Scientific applications utilize performance libraries as a software engineering concept: these libraries encapsulate important and well-understood (mathematical) operations, allow for reuse, and are implemented and tuned by experts. Domain scientists then implement complex algorithms based on these domainspecific libraries. While individual library calls are optimized, larger performance gains across sequences of calls—sometimes spanning multiple libraries—are often unrealized, forcing a trade-off between performance and implementation complexity.To overcome this issue, we propose LibraryX, an approach and a system that allows for cross-library-call optimization even when library calls stem from multiple performance libraries. LibraryX annotates library calls with semantic information and optimizes entire directed acyclic graphs (DAGs) of calls dynamically using the SPIRAL code generation system. We demonstrate its effectiveness across a range of memory bound workloads, achieving significant speedups on Nvidia, AMD, and Intel accelerators compared to code using native libraries without cross-call optimization.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la"
+   ],
+   "kernels": [
+    "library-call sequence fusion"
+   ],
+   "platform": [
+    "nvidia-gpu",
+    "amd-gpu",
+    "intel-gpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "low",
+   "one_liner": "LibraryX uses SPIRAL codegen to fuse cross-library call DAGs, speeding memory-bound kernels on NVIDIA/AMD/Intel GPUs."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/ZhangZHSFJZZ26",
+  "venue": "IPDPS",
+  "year": 2026,
+  "title": "Near-Zero Cost KV Cache Compression for Large Language Model Inference",
+  "abstract": "As large language models (LLMs) continue to scale and are increasingly applied to long-context inference tasks, the memory consumption of the key-value (KV) cache has become a critical bottleneck on GPUs. Quantization offers a promising solution, yet existing methods often suffer from high memory overhead, inefficient GPU implementations, and expensive offline preprocessing. In this paper, we introduce Vayne, a unified GPU kernel that seamlessly integrates quantization and lossless compression, enabling near-zero-cost KV cache reduction. Vayne also features a highly optimized lossless GPU encoding scheme that substantially reduces memory usage while preserving model accuracy. At the same time, our implementation incorporates both kernel-level and algorithm-level optimizations, including bit transposing, a decoupled lookback prefix-sum mechanism, pre-RoPE strategies, and other computational optimizations. Experimental results on LongBench using the LLaMA 3.1 8B Instruct model demonstrate that Vayne achieves an average 8.4× speedup over the next best baseline, a 1.4× lower bit rate, and higher accuracy under comparable bit rates. These results highlight Vayne’s effectiveness in enabling high-throughput, memory-efficient LLM inference at scale through efficient KV cache compression.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "compression",
+    "ml_kernels"
+   ],
+   "kernels": [
+    "KV-cache compression",
+    "quantization"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Vayne: unified GPU kernel fusing quantization and lossless encoding for KV-cache, 8.4x speedup over baseline."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/BrodalGKSS26",
+  "venue": "IPDPS",
+  "year": 2026,
+  "title": "Organic Mergesort and Finger Buffer-Tree Sort: Adaptive Sorting Algorithms with External-Memory or Parallel Implementations",
+  "abstract": "We describe two adaptive sorting paradigms, organic mergesort and finger buffer-tree sort, which have parallel or external-memory implementations. Depending on the implementation regime, our mergesort algorithms have optimal time, work, and/or input/output (I/O) operations with respect to the run-based entropy of the input sequence, which matches the performance of optimal sequential internal-memory natural mergesort algorithms, such as Timsort, Peeksort, and Powersort.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "mergesort",
+    "buffer-tree sort"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Adaptive parallel/external-memory mergesort & buffer-tree sort matching optimal entropy bounds"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/JiangYLHDJ26",
+  "venue": "IPDPS",
+  "year": 2026,
+  "title": "PackKV: Reducing KV Cache Memory Footprint through LLM-Aware Lossy Compression",
+  "abstract": "Transformer-based large language models (LLMs) have demonstrated remarkable potential across a wide range of practical applications. However, long-context inference remains a significant challenge due to the substantial memory requirements of the KV Cache, which can scale to several gigabytes as sequence length and batch size increase. In this paper, we present PackKV, a generic and efficient KV cache management framework optimized for long-context generation. PackKV introduces novel lossy compression techniques specifically tailored to the characteristics of KV cache data, featuring a careful co-design of compression algorithms and system architecture. Our approach is compatible with the dynamically growing nature of the KV cache while preserving high computational efficiency. Experimental results show that, under the same and minimum accuracy drop as state-of-the-art quantization methods, PackKV achieves, on average, 153.2% higher memory reduction rate for the K cache and 179.6% for the V cache. Furthermore, PackKV delivers extremely high execution throughput, effectively eliminating decompression overhead and even accelerating the matrix-vector multiplication operation. Specifically, PackKV achieves an average throughput improvement of 75.7% for K and 171.7% for V across A100 and RTX Pro 6000 GPUs, compared to cuBLAS matrix-vector multiplication kernels, while demanding less GPU memory bandwidth. Code available on https://github.com/BoJiang03/PackKV",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "compression",
+    "ml_kernels"
+   ],
+   "kernels": [
+    "KV-cache lossy compression",
+    "GEMV"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "LLM-aware lossy KV-cache compression that also accelerates matrix-vector multiply vs cuBLAS"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ipps/GoodrichG26",
+  "venue": "IPDPS",
+  "year": 2026,
+  "title": "Parallel Integer and Learning-Augmented Sorting Algorithms in the Binary-Forking Model",
+  "abstract": "We provide parallel algorithms for integer sorting and predictive sorting in the binary-forking model, which is designed to reflect the asynchronous and dynamic nature of modern multi-threaded architectures and languages, where synchronization of threads is accounted for while also allowing for asynchronous memory writes using atomic operations, such as test-and-set. We show how to sort n integers in the range from 0 to n in O(log n) span and O(n) work with overwhelming probability, which is asymptotically optimal and appears to be the first such bounds for the binary-forking model. More importantly, we also provide a parallel learning-augmented sorting algorithm, where a machine-learning model provides a prediction of the rank of each element in the sorted sequence. Given such predictions for n elements in an array, X, we show how to sort X in O(log n) span with work that is proportional to n times the logarithm of the average prediction alignment error of X, with overwhelming probability.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "integer sort",
+    "learning-augmented sort"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Optimal parallel integer/learning-augmented sorting algorithms in the binary-forking model"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ppopp/SheffiBBCK20",
+  "venue": "PPoPP",
+  "year": 2020,
+  "title": "Scalable top-k retrieval with Sparta",
+  "abstract": "Many big data processing applications rely on a top-k retrieval building block, which selects (or approximates) the k highest-scoring data items based on an aggregation of features. In web search, for instance, a document's score is the sum of its scores for all query terms. Top-k retrieval is often used to sift through massive data and identify a smaller subset of it for further analysis. Because it filters out the bulk of the data, it often constitutes the main performance bottleneck.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "top-k retrieval"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Sparta: scalable top-k retrieval building block for large-scale scoring/filtering"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ppopp/EsfahaniKV22",
+  "venue": "PPoPP",
+  "year": 2022,
+  "title": "LOTUS: locality optimizing triangle counting",
+  "abstract": "Triangle Counting (TC) is a basic graph mining problem with numerous applications. However, the large size of real-world graphs has a severe effect on TC performance.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "triangle counting"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "LOTUS: locality-optimized triangle counting kernel for large real-world graphs"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ppopp/000122",
+  "venue": "PPoPP",
+  "year": 2022,
+  "title": "RTNN: accelerating neighbor search using hardware ray tracing",
+  "abstract": "Neighbor search is of fundamental importance to many engineering and science fields such as physics simulation and computer graphics. This paper proposes to formulate neighbor search as a ray tracing problem and leverage the dedicated ray tracing hardware in recent GPUs for acceleration. We show that a naive mapping under-exploits the ray tracing hardware. We propose two performance optimizations, query scheduling and query partitioning, to tame the inefficiencies. Experimental results show 2.2X - 65.0X speedups over existing neighbor search libraries on GPUs. The code is available at https://github.com/horizon-research/rtnn.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives",
+    "nbody_md"
+   ],
+   "kernels": [
+    "neighbor search",
+    "k-NN"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "RTNN: maps neighbor search onto GPU ray-tracing hardware via query scheduling/partitioning, up to 65x speedup"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ppopp/LinZZNWLFWYYZ023",
+  "venue": "PPoPP",
+  "year": 2023,
+  "title": "A Scalable Hybrid Total FETI Method for Massively Parallel FEM Simulations",
+  "abstract": "The Hybrid Total Finite Element Tearing and Interconnecting (HTFETI) method plays an important role in solving large-scale and complex engineering problems. This method needs to handle numerous matrix-vector multiplications. Directly calling the vendor-optimized library for general matrix-vector multiplication (gemv) on GPU leads to low performance, since it does not consider optimizations for different matrix sizes in HTFETI, i.e. different row and column sizes. In addition, state-of-the-art graph partitioning methods cannot guarantee load balancing for HTFETI, since the matrix size is determined by the length of the subdomain boundary. To solve the problems above, we first port gemv to the multi-stream pipeline scheme and develop a new batched kernel function on GPU, which brings 15%~30% throughput improvement and 37% average GFLOPs improvement, respectively. We also propose a multi-grained load-balancing scheme based on graph repartitioning and work-stealing, and the load imbalance ratio is down to 1.05~1.09 from 1.5. We have successfully applied the scalable HTFETI method to simulate the whole core assembly of China Experimental Fast Reactor (CEFR) for steady-state analysis, and the efficiencies of weak scalability and strong scalability reach 78% and 72% on 12,288 GPUs, respectively. As far as we know, this is the first time that HTFETI has been used in large-scale and high-fidelity whole core assembly simulation.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la",
+    "solver_components"
+   ],
+   "kernels": [
+    "batched GEMV"
+   ],
+   "platform": [
+    "nvidia-gpu",
+    "distributed"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "low",
+   "one_liner": "New multi-stream batched GEMV kernel (+15-37% throughput/GFLOPs) inside a load-balanced HTFETI solver at 12k GPUs"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ppopp/McCoyHY023",
+  "venue": "PPoPP",
+  "year": 2023,
+  "title": "High-Performance Filters for GPUs",
+  "abstract": "Filters approximately store a set of items while trading off accuracy for space-efficiency and can address the limited memory on accelerators, such as GPUs. However, there is a lack of high-performance and feature-rich GPU filters as most advancements in filter research has focused on CPUs.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "approximate membership filter"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "High-performance, feature-rich approximate-membership-query filter data structures for GPUs"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ppopp/PengZLJR23",
+  "venue": "PPoPP",
+  "year": 2023,
+  "title": "iQAN: Fast and Accurate Vector Search with Efficient Intra-Query Parallelism on Multi-Core Architectures",
+  "abstract": "Vector search has drawn a rapid increase of interest in the research community due to its application in novel AI applications. Maximizing its performance is essential for many tasks but remains preliminary understood. In this work, we investigate the root causes of the scalability bottleneck of using intra-query parallelism to speedup the state-of-the-art graph-based vector search systems on multi-core architectures. Our in-depth analysis reveals several scalability challenges from both system and algorithm perspectives. Based on the insights, we propose iQAN, a parallel search algorithm with a set of optimizations that boost convergence, avoid redundant computations, and mitigate synchronization overhead. Our evaluation results on a wide range of real-world datasets show that iQAN achieves up to 37.7× and 76.6× lower latency than state-of-the-art sequential baselines on datasets ranging from a million to a hundred million datasets. We also show that iQAN achieves outstanding scalability as the graph size or the accuracy target increases, allowing it to outperform the state-of-the-art baseline on two billion-scale datasets by up to 16.0× with up to 64 cores.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives",
+    "graph"
+   ],
+   "kernels": [
+    "approximate nearest neighbor search"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "iQAN: intra-query-parallel graph-based vector search algorithm, up to 76.6x lower latency on multi-core CPUs"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ppopp/LinMSZXT24",
+  "venue": "PPoPP",
+  "year": 2024,
+  "title": "Exploiting Fine-Grained Redundancy in Set-Centric Graph Pattern Mining",
+  "abstract": "Graph Pattern Mining (GPM) applications are memory intensive as they require a tremendous amount of edge checks. In recent years, the \"set-centric\" abstraction has gained attention for its powerful expressive abilities. By leveraging relational algebra, they optimized algorithms with methods like matching orders, early termination, automorphism-breaking, and result reuse to reduce redundancy. However, these approaches primarily address coarse-grained redundancy from exactly the same set formulas, neglecting that the data graph's inherent locality may lead to fine-grained duplicated edge checks. In fact, even unrelated set operations may check the same pair of vertices. This paper introduces the set union operation to the set-centric abstraction to fuse duplicated edge checks into one. It maintains the expressive power of relational algebra and previous optimizations while effectively avoids fine-grained redundancy in GPM tasks. Compared to state-of-the-art methods, our method achieves significant speedup on a V100 GPU cluster, demonstrating up to 305 × faster performance than the state-of-the-art GPM system G2Miner.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "graph pattern mining"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Set-union op fuses fine-grained duplicate edge checks in GPU graph pattern mining, up to 305x over G2Miner"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ppopp/ParkOK24",
+  "venue": "PPoPP",
+  "year": 2024,
+  "title": "INFINEL: An efficient GPU-based processing method for unpredictable large output graph queries",
+  "abstract": "With the introduction of GPUs, which are specialized for iterative parallel computations, the execution of computation-intensive graph queries using a GPU has seen significant performance improvements. However, due to the memory constraints of GPUs, there has been limited research on handling large-scale output graph queries with unpredictable output sizes on a GPU. Traditionally, two-phase methods have been used, where the query is re-executed after splitting it into sub-tasks while only considering the size of the output in a static manner. However, two-phase methods become highly inefficient when used with graph data with extreme skew, failing to maximize the GPU performance. This paper proposes INFINEL, which handles unpredictable large output graph queries in a one-phase method through chunk allocation per thread and kernel stop/restart methods. We also propose applicable optimization techniques due to the corresponding unique characteristics of operating with low time/space overhead and not heavily relying on the GPU output buffer size. Through extensive experiments, we demonstrate that our one-phase method of INFINEL improves the performance by up to 31.5 times over the conventional two-phase methods for triangle listing ULO query.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "large-output graph query",
+    "triangle listing"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "One-phase GPU processing for unpredictable large-output graph queries via chunked kernel restart"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ppopp/LiuSZ24",
+  "venue": "PPoPP",
+  "year": 2024,
+  "title": "Parallel k-Core Decomposition with Batched Updates and Asynchronous Reads",
+  "abstract": "Maintaining a dynamic k-core decomposition is an important problem that identifies dense subgraphs in dynamically changing graphs. Recent work by Liu et al. [SPAA 2022] presents a parallel batch-dynamic algorithm for maintaining an approximate k-core decomposition. In their solution, both reads and updates need to be batched, and therefore each type of operation can incur high latency waiting for the other type to finish. To tackle most real-world workloads, which are dominated by reads, this paper presents a novel hybrid concurrent-parallel dynamic k-core data structure where asynchronous reads can proceed concurrently with batches of updates, leading to significantly lower read latencies. Our approach is based on tracking causal dependencies between updates, so that causally related groups of updates appear atomic to concurrent readers. Our data structure guarantees linearizability and liveness for both reads and updates, and maintains the same approximation guarantees as prior work. Our experimental evaluation on a 30-core machine shows that our approach reduces read latency by orders of magnitude compared to the batch-dynamic algorithm, up to a (4.05 · 105)-factor. Compared to an unsynchronized (non-linearizable) baseline, our read latency overhead is only up to a 3.21-factor greater, while improving accuracy of coreness estimates by up to a factor of 52.7.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "k-core decomposition"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Concurrent-parallel dynamic k-core decomposition data structure with async reads amid batched updates"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ppopp/LiangLRL0C25",
+  "venue": "PPoPP",
+  "year": 2025,
+  "title": "ATTNChecker: Highly-Optimized Fault Tolerant Attention for Large Language Model Training",
+  "abstract": "Large Language Models (LLMs) have demonstrated remarkable performance in various natural language processing tasks. However, the training of these models is computationally intensive and susceptible to faults, particularly in the attention mechanism, which is a critical component of transformer-based LLMs. In this paper, we investigate the impact of faults on LLM training, focusing on INF, NaN, and near-INF values in the computation results with systematic fault injection experiments. We observe the propagation patterns of these errors, which can trigger non-trainable states in the model and disrupt training, forcing the procedure to load from checkpoints. To mitigate the impact of these faults, we propose ATTNChecker, the first Algorithm-Based Fault Tolerance (ABFT) technique tailored for the attention mechanism in LLMs. ATTNChecker is designed based on fault propagation patterns of LLM and incorporates performance optimization to adapt to both system reliability and model vulnerability while providing lightweight protection for fast LLM training. Evaluations on four LLMs show that ATTNChecker incurs on average 7% overhead on training while detecting and correcting all extreme errors. Compared with the state-of-the-art checkpoint/restore approach, ATTNChecker reduces recovery overhead by up to 49×.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels"
+   ],
+   "kernels": [
+    "attention (ABFT)"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Algorithm-based fault tolerance tailored to LLM attention kernel, 7% avg training overhead"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ppopp/GengLZ25",
+  "venue": "PPoPP",
+  "year": 2025,
+  "title": "LibRTS: A Spatial Indexing Library by Ray Tracing",
+  "abstract": "The Ray-Tracing (RT) core has become a widely integrated feature in modern GPUs to accelerate ray-tracing rendering. Recent research has shown that RT cores can also be repurposed to accelerate non-rendering workloads. Since the RT core essentially serves as a hardware accelerator for Bounding Volume Hierarchy (BVH) tree traversal, it holds the potential to significantly improve the performance of spatial workloads. However, the specialized RT programming model poses challenges for using RT cores in these scenarios. Inspired by the core functionality of RT cores, we designed and implemented LibRTS, a spatial index library that leverages RT cores to accelerate spatial queries. LibRTS supports both point and range queries and remains mutable to accommodate changing data. Instead of relying on a case-by-case approach, LibRTS provides a general, highperformance spatial indexing framework for spatial data processing. By formulating spatial queries as RT-suitable problems and overcoming load-balancing challenges, LibRTS delivers superior query performance through RT cores without requiring developers to master complex programming on this specialized hardware. Compared to CPU and GPU spatial libraries, LibRTS achieves speedups of up to 85.1x for point queries, 94.0x for range-contains queries, and 11.0x for range-intersects queries. In a real-world application, pointin-polygon testing, LibRTS also surpasses the state-of-the-art RT method by up to 3.8x.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "spatial point/range query",
+    "BVH traversal"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Repurposes RT cores for general spatial indexing, up to 94x speedup on range queries"
+  },
+  "mode": "confirm-include"
+ }
+]

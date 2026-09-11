@@ -1,0 +1,227 @@
+{
+ "kernel": "sddmm",
+ "papers": [
+  {
+   "key": "conf/asplos/WonAAE26",
+   "title": "Insum: Sparse GPU Kernels Simplified and Optimized with Indirect Einsums",
+   "venue": "ASPLOS",
+   "year": 2026,
+   "doi": "10.1145/3779212.3790176",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3779212.3790176",
+   "artifact_url": "https://github.com/nullplay/IndirectEinsum",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "abstract": "Programming high-performance sparse GPU kernels is notoriously difficult, requiring both substantial effort and deep expertise. Sparse compilers aim to simplify this process, but existing systems fall short in two key ways. First, they are primarily designed for CPUs and rarely produce high-performance GPU code. Second, when computations involve both sparse and dense regions, these compilers often fail to optimize the dense portions effectively. In this paper, we propose a new approach for expressing sparse computations. We start from format-agnostic Einsums over sparse tensors and rewrite them into format-conscious indirect Einsums, which explicitly encode format information by mapping sparse data and metadata onto dense tensor operations through indirect indexing. To execute indirect Einsums, we introduce the Insum compiler, which generates efficient GPU code for these Einsums by lower",
+   "one_liner": "Indirect-Einsum compiler plus GroupCOO formats generating tensor-core sparse GPU kernels; 1.14-3.81x speedups."
+  },
+  {
+   "key": "conf/asplos/JainGC25",
+   "title": "RASSM: Residue-based Acceleration of Single Sparse Matrix Computation via Adaptive Tiling",
+   "venue": "ASPLOS",
+   "year": 2025,
+   "doi": "10.1145/3669940.3707219",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3669940.3707219",
+   "artifact_url": "https://github.com/gt-tinker/RASSM",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Single-Sparse-Matrix Kernels (SSMKs) such as SpMM, SDDMM, SpMV, and SpTS form the backbone of applications such as data analytics, graph processing, finite-element analysis, machine learning (including GNNs and LLMs), etc. This paper introduces Residue-based Acceleration of Single Sparse Matrix Computation via Adaptive Tiling (RASSM), an input-dependent, adaptive 2-dimensional tiling technique for SSMKs. The adaptation leverages the concept of a residue matrix: a data structure that compactly captures the pattern of non-zeros in the sparse matrix. With residues, we show it is possible to make intelligent decisions on adaptive tile sizes, resulting in increased cache occupancy. Residues allow for optimizations across both spatial and temporal locality. RASSM improves data movement and overall performance as compared to prior techniques. For example, using spatial analysis for SpMM on comm",
+   "one_liner": "Residue-guided adaptive 2D tiling for CPU sparse kernels; 1.36x over MKL SpMM, beats ASpT and J-Stream."
+  },
+  {
+   "key": "conf/ics/LiC25",
+   "title": "Fused3S: Fast Sparse Attention on Tensor Cores",
+   "venue": "ICS",
+   "year": 2025,
+   "doi": "10.1145/3721145.3730430",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3721145.3730430",
+   "artifact_url": "https://github.com/HPCForge/Fused3S",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Sparse attention is a core building block in many leading neural network models, from graph-structured learning to sparse sequence modeling.It can be decomposed into a sequence of three sparse matrix operations (3S): sampled dense-dense matrix multiplication (SDDMM), softmax normalization, and sparse matrix multiplication (SpMM).Efficiently executing the 3S computational pattern on modern GPUs remains challenging due to (a) the mismatch between unstructured sparsity and tensor cores optimized for dense operations, and (b) the high cost of data movement.Previous works have optimized these sparse operations individually or addressed one of these challenges.This paper introduces Fused3S, the first fused 3S algorithm that jointly maximizes tensor core utilization and minimizes data movement.Across real-world graph datasets, Fused3S achieves 1.6 -16.3 and 1.5 -14 speedup over state-of-the-art",
+   "one_liner": "Fused3S: fused SDDMM+softmax+SpMM sparse attention on tensor cores, up to 16x on H100/A30"
+  },
+  {
+   "key": "conf/ppopp/ShiLXFWW25",
+   "title": "FlashSparse: Minimizing Computation Redundancy for Fast Sparse Matrix Multiplications on Tensor Cores",
+   "venue": "PPoPP",
+   "year": 2025,
+   "doi": "10.1145/3710848.3710858",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3710848.3710858",
+   "artifact_url": "https://github.com/ParCIS/FlashSparse",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Sparse Matrix-matrix Multiplication (SpMM) and Sampled Dense-dense Matrix Multiplication (SDDMM) are important sparse operators in scientific computing and deep learning. Tensor Core Units (TCUs) enhance modern accelerators with superior computing power, which is promising to boost the performance of matrix operators to a higher level. However, due to the irregularity of unstructured sparse data, it is difficult to deliver practical speedups on TCUs. To this end, we propose FlashSparse, a novel approach to bridge the gap between sparse workloads and the TCU architecture. Specifically, FlashSparse minimizes the sparse granularity for SpMM and SDDMM on TCUs through a novel swap-and-transpose matrix multiplication strategy. Benefiting from the minimum sparse granularity, the computation redundancy is remarkably reduced while the computing power of TCUs is fully utilized. Besides, FlashSpars",
+   "one_liner": "Swap-and-transpose strategy minimizes sparse granularity for SpMM/SDDMM on Tensor Cores, 5.5x over DTC-SpMM"
+  },
+  {
+   "key": "conf/ppopp/PangFQZL24",
+   "title": "A Row Decomposition-based Approach for Sparse Matrix Multiplication on GPUs",
+   "venue": "PPoPP",
+   "year": 2024,
+   "doi": "10.1145/3627535.3638470",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3627535.3638470",
+   "artifact_url": "https://github.com/CRAFT-THU/RoDe",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Sparse-Matrix Dense-Matrix Multiplication (SpMM) and Sampled Dense Dense Matrix Multiplication (SDDMM) are important sparse kernels in various computation domains. The uneven distribution of nonzeros in the sparse matrix and the tight data dependence between sparse and dense matrices make it a challenge to run sparse matrix multiplication efficiently on GPUs. By analyzing the aforementioned problems, we propose a row decomposition (RoDe)-based approach to optimize the two kernels on GPUs, using the standard Compressed Sparse Row (CSR) format. Specifically, RoDe divides the sparse matrix rows into regular parts and residual parts, to fully optimize their computations separately. We also devise the corresponding load balancing and finegrained pipelining technologies. Profiling results show that RoDe can achieve more efficient memory access and reduce warp stall cycles significantly. Compar",
+   "one_liner": "RoDe: row-decomposition CSR SpMM/SDDMM kernels, up to 7.9x/9.0x speedup over SOTA on GPUs"
+  },
+  {
+   "key": "conf/asplos/YeLSCC23",
+   "title": "SparseTIR: Composable Abstractions for Sparse Compilation in Deep Learning",
+   "venue": "ASPLOS",
+   "year": 2023,
+   "doi": "10.1145/3582016.3582047",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3582016.3582047",
+   "artifact_url": "https://github.com/uwsampl/SparseTIR",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "abstract": "Sparse tensors are rapidly becoming critical components of modern deep learning workloads. However, developing high-performance sparse operators can be difficult and tedious, and existing vendor libraries cannot satisfy the escalating demands from new operators. Sparse tensor compilers simplify the development of operators, but efficient sparse compilation for deep learning remains challenging because a single sparse format cannot maximize hardware efficiency, and single-shot compilers cannot keep up with latest hardware and system advances. In this paper, we observe that the key to addressing both these challenges is to leverage composable formats and composable transformations. We propose SparseTIR, a sparse tensor compilation abstraction that offers composable formats and composable transformations for deep learning workloads. SparseTIR constructs a search space over these composable ",
+   "one_liner": "Composable sparse tensor compiler: 1.2-2.3x on GNN ops, up to 7.5x sparse conv vs vendor GPU libraries."
+  },
+  {
+   "key": "conf/usenix/WangFWHD23",
+   "title": "TC-GNN: Bridging Sparse GNN Computation and Dense Tensor Cores on GPUs",
+   "venue": "ATC",
+   "year": 2023,
+   "doi": "",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/YukeWang96/TC-GNN_ATC23",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Recently, graph neural networks (GNNs), as the backbone of graph-based machine learning, demonstrate great success in various domains (e.g., e-commerce). However, the performance of GNNs is usually unsatisfactory due to the highly sparse and irregular graph-based operations. To this end, we propose TC-GNN, the first GNN acceleration framework based on GPU Tensor Core Units (TCUs). The core idea is to reconcile the\"Sparse\"GNN computation with the high-performance\"Dense\"TCUs. Specifically, we conduct an in-depth analysis of the sparse operations in mainstream GNN computing frameworks. We introduce a novel sparse graph translation technique to facilitate TCU processing of the sparse GNN workload. We implement an effective CUDA core and TCU collaboration design to fully utilize GPU resources. We integrate TC-GNN with the PyTorch framework for high programmability. Rigorous experiments show a",
+   "one_liner": "Sparse-graph translation maps GNN SpMM/SDDMM onto GPU tensor cores; 1.70x avg over DGL"
+  },
+  {
+   "key": "conf/ipps/FanWC23",
+   "title": "Fast Sparse GPU Kernels for Accelerated Training of Graph Neural Networks",
+   "venue": "IPDPS",
+   "year": 2023,
+   "doi": "10.1109/IPDPS54959.2023.00057",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/fan1997/HP-SpMM-SDDMM",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Graph Neural Networks (GNNs) are gaining huge traction recently as they achieve state-of-the-art performance on various graph-related problems. GNN training typically follows the standard Message Passing Paradigm, in which SpMM and SDDMM are the two essential sparse kernels. However, existing sparse GPU kernels are inefficient and may suffer from load imbalance, dynamics in GNN computing, poor memory efficiency, and tail effect. We propose two new kernels, Hybrid-Parallel SpMM (HP-SpMM) and Hybrid-Parallel SDDMM (HP-SDDMM), that efficiently perform SpMM and SDDMM on GPUs with a unified hybrid parallel strategy of mixing nodes and edges. In view of the emerging graph-sampling training, we design the Dynamic Task Partition (DTP) method to minimize the tail effect by exposing sufficient parallelism. We further devise the Hierarchical Vectorized Memory Access scheme to achieve aligned global",
+   "one_liner": "Hybrid-parallel SpMM/SDDMM GPU kernels with dynamic task partition, up to 1.72x GNN training speedup"
+  },
+  {
+   "key": "conf/ics/DiasSS022",
+   "title": "SparseLNR: accelerating sparse tensor computations using loop nest restructuring",
+   "venue": "ICS",
+   "year": 2022,
+   "doi": "10.1145/3524059.3532386",
+   "arxiv": "2205.11622",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3524059.3532386",
+   "artifact_url": "https://github.com/adhithadias/SparseLNR",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "abstract": "Sparse tensor algebra computations have become important in many real-world applications like machine learning, scientific simulations, and data mining. Hence, automated code generation and performance optimizations for tensor algebra kernels are paramount. Recent advancements such as the Tensor Algebra Compiler (TACO) greatly generalize and automate the code generation for tensor algebra expressions. However, the code generated by TACO for many important tensor computations remains suboptimal due to the absence of a scheduling directive to support transformations such as distribution/fusion.",
+   "one_liner": "Loop-nest restructuring codegen for sparse tensor algebra (TACO)"
+  },
+  {
+   "key": "conf/ipps/BharadwajBD22",
+   "title": "Distributed-Memory Sparse Kernels for Machine Learning",
+   "venue": "IPDPS",
+   "year": 2022,
+   "doi": "10.1109/IPDPS53621.2022.00014",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/PASSIONLab/distributed_sddmm",
+   "artifact_status": "verified",
+   "platform": [
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Sampled Dense Times Dense Matrix Multiplication (SDDMM) and Sparse Times Dense Matrix Multiplication (SpMM) appear in diverse settings, such as collaborative filtering, document clustering, and graph embedding. Frequently, the SDDMM output becomes the input sparse matrix for a sub-sequent SpMM operation. Existing work has focused on shared memory parallelization of these primitives. While there has been extensive analysis of communication-minimizing distributed 1.5D algorithms for SpMM, no such analysis exists for SDDMM or the back-to-back sequence of SDDMM and SpMM, termed FusedMM. We show that distributed memory 1.5D and 2.5D algorithms for SpMM can be converted to algorithms for SD-DMM with identical communication costs and input / output data layouts. Further, we give two communication-eliding strategies to reduce costs further for FusedMM kernels: either reusing the replication of a",
+   "one_liner": "1.5D/2.5D communication-eliding distributed SDDMM+SpMM (FusedMM) kernels, 10x+ over PETSc"
+  },
+  {
+   "key": "conf/sc/LiOH22",
+   "title": "Efficient Quantized Sparse Matrix Operations on Tensor Cores",
+   "venue": "SC",
+   "year": 2022,
+   "doi": "10.1109/SC41404.2022.00042",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/ParCIS/Magicube",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "library",
+   "abstract": "The exponentially growing model size drives the continued success of deep learning, but it brings prohibitive computation and memory cost. From the algorithm perspective, model sparsification and quantization have been studied to alleviate the problem. From the architecture perspective, hardware vendors provide Tensor cores for acceleration. However, it is very challenging to gain practical speedups from sparse, low-precision matrix operations on Tensor cores, because of the strict requirements for data layout and lack of support for efficiently manipulating the low-precision integers. We propose Magicube, a high-performance sparse-matrix library for low-precision integers on Tensor cores. Magicube supports SpMM and SDDMM, two major sparse operations in deep learning with mixed precision. Experimental results on an NVIDIA A100show that Magicube achieves on average 1.44x (up to 2.37x) spe",
+   "one_liner": "Magicube: quantized low-precision SpMM/SDDMM on Tensor Cores, up to 2.37x over vendor library"
+  },
+  {
+   "key": "conf/ipps/RahmanSA21",
+   "title": "FusedMM: A Unified SDDMM-SpMM Kernel for Graph Embedding and Graph Neural Networks",
+   "venue": "IPDPS",
+   "year": 2021,
+   "doi": "10.1109/IPDPS49936.2021.00034",
+   "arxiv": "2011.06391",
+   "oa_url": "https://arxiv.org/pdf/2011.06391",
+   "artifact_url": "https://github.com/HipGraph/FusedMM",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu",
+    "arm-cpu"
+   ],
+   "approach": "codegen",
+   "abstract": "We develop a fused matrix multiplication kernel that unifies sampled dense-dense matrix multiplication and sparsedense matrix multiplication under a single operation called FusedMM. By using user-defined functions, FusedMM can capture almost all computational patterns needed by popular graph embedding and GNN approaches.FusedMM is an order of magnitude faster than its equivalent kernels in Deep Graph Library. The superior performance of FusedMM comes from the low-level vectorized kernels, a suitable load balancing scheme and an efficient utilization of the memory bandwidth. FusedMM can tune its performance using a code generator and perform equally well on Intel, AMD and ARM processors. FusedMM speeds up an end-to-end graph embedding algorithm by up to 28 x on different processors. The source code is available at https://github.com/HipGraph/FusedMM.",
+   "one_liner": "FusedMM: unified vectorized SDDMM-SpMM kernel for graph embedding/GNNs, 10-28x faster than DGL."
+  },
+  {
+   "key": "conf/sc/GaleZYE20",
+   "title": "Sparse GPU kernels for deep learning",
+   "venue": "SC",
+   "year": 2020,
+   "doi": "10.1109/SC41405.2020.00021",
+   "arxiv": "2006.10901",
+   "oa_url": "https://arxiv.org/pdf/2006.10901",
+   "artifact_url": "https://github.com/luckylsk34/Sparse-Kernels",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Scientific workloads have traditionally exploited high levels of sparsity to accelerate computation and reduce memory requirements. While deep neural networks can be made sparse, achieving practical speedups on GPUs is difficult because these applications have relatively moderate levels of sparsity that are not sufficient for existing sparse kernels to outperform their dense counterparts. In this work, we study sparse matrices from deep learning applications and identify favorable properties that can be exploited to accelerate computation. Based on these insights, we develop high-performance GPU kernels for two sparse matrix operations widely applicable in neural networks: sparse matrix-dense matrix multiplication and sampled dense- dense matrix multiplication. Our kernels reach 27% of singleprecision peak on Nvidia V100 GPUs. Using our kernels, we demonstrate sparse Transformer and Mobi",
+   "one_liner": "High-performance GPU SpMM/SDDMM kernels for moderate-sparsity DNNs, 1.2-2.1x speedup over dense"
+  }
+ ]
+}

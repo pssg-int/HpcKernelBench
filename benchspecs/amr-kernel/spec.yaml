@@ -1,0 +1,213 @@
+kernel: amr-kernel
+summary: >
+  Wavelet-error-driven octree adaptive-mesh-refinement (AMR) time-evolution
+  of the BSSN formulation of the Einstein field equations (binary-black-hole
+  merger, gravitational-wave generation), benchmarked with the paper's own
+  regrid-cost-vs-solve-cost profiling decomposition
+  (remsh_igt vs. rhs/evolve) rather than a synthetic uniform-grid
+  correctness reference, since this track's sole paper's own repo has no
+  such bundled reference script (survey.md Divergences #3).
+
+operation: >
+  for each of NT RK4 sub-timesteps: (1) Regrid -- re-evaluate the wavelet
+  refinement criterion on the current solution and refine/coarsen octants
+  where the estimated wavelet coefficient crosses BSSN_WAVELET_TOL (with
+  BSSN_DENDRO_AMR_FAC coarsening hysteresis), performed every
+  BSSN_REMESH_TEST_FREQ steps, not every step; (2) Unzip -- convert the
+  distributed octree (compressed-graph) representation to zero-padded
+  ghosted patches ("octant-to-patch"), optionally overlapped with the
+  corresponding MPI ghost-exchange; (3) RHS -- evaluate the 6th-order
+  finite-difference BSSN right-hand side on every patch; (4) Zip -- convert
+  patches back to the octree representation ("patch-to-octant"); repeat
+  (2)-(4) 4x per RK4 sub-step. Periodically (BSSN_GW_EXTRACT_FREQ), extract
+  psi4 gravitational-wave modes at 6 fixed observer radii.
+
+variants:
+  - id: bssn-amr-single-node-phase-breakdown
+    claim: >
+      steady-state per-timestep cost broken into regrid vs. solve vs. data-
+      layout-conversion phases, matching the paper's own profiling-field
+      decomposition exactly (survey.md: remsh_igt / unzip+comm / rhs / zip),
+      at a fixed, reduced problem size runnable on a single GPU or CPU node
+      -- NOT the full production q=1 config (which targets a full
+      supercomputer allocation), since a single-node kernel-level variant
+      needs a problem size within reach of one node
+    inputs:
+      suite: "binary-black-hole-merger initial data via the Two-Puncture solver (tpid), same generator as the paper's own q1/q2/q4 configs"
+      selection: >
+        mass ratio q=1 (paper's own default config, BSSN_GR/pars/q1.par.json,
+        confirmed from repo), reduced to BSSN_MAXDEPTH=12 (matching the
+        paper's own weak-scaling config q1_ws.par.json, the shallowest of
+        the paper's 3 confirmed refinement depths -- chosen here
+        specifically because it is the one config confirmed runnable on a
+        small rank count) rather than the production BSSN_MAXDEPTH=15
+        config, which the paper itself only runs at full allocation scale
+      recommended_subset:
+        - "q1 (mass ratio 1, paper's primary configuration)"
+        - "q2 (mass ratio 2, paper's secondary configuration, optional)"
+        - "q4 (mass ratio 4, paper's tertiary configuration, optional)"
+      dense_operand: "N/A -- structured per-octant finite-difference stencil state (24 BSSN evolution variables + 6 constraint-monitor variables per grid point), not a dense matrix operand"
+      refinement_levels: "BSSN_MAXDEPTH=12, BSSN_MINDEPTH=3 (paper's own weak-scaling config, confirmed from q1_ws.par.json); wavelet tolerance BSSN_WAVELET_TOL=1e-5 with spatially-varying tolerance function (R0=20, R1=220), confirmed from q1.par.json"
+      discretization: "6th-order (BSSN_ELE_ORDER=6) finite differences, RK4 time integration, CFL=0.25, Kreiss-Oliger dissipation sigma=0.4 -- all confirmed from q1.par.json"
+    protocol:
+      timesteps_measured: "step_ets as reported by the solver's own profiling output (paper's own field name, confirmed from ReadMe.md); recommend >=100 RK4 steps for a stable min/mean/max-across-ranks estimate"
+      regrid_frequency: "every 10 steps for the reduced/weak-scaling-style config (BSSN_REMESH_TEST_FREQ=10, confirmed from q1_ws.par.json) -- NOTE this differs from the production q1.par.json's BSSN_REMESH_TEST_FREQ=30; using the more-frequent-regrid weak-scaling-style value here specifically so the regrid-cost phase is well-represented in a short measured window, flagged as this spec's deliberate choice"
+      warmup: >
+        first regrid cycle (10 steps) discarded from the measured average --
+        this spec's own addition; the paper's profiling harness (per
+        ReadMe.md) reports min/mean/max over the full `step_ets` profiled
+        window with no described discard, not explicitly a warmup-excluded
+        protocol
+      reps: 3
+      statistic: >
+        median across 3 independent runs of min/mean/max-across-MPI-ranks
+        per phase, report min/max of the 3 runs -- this is a two-level
+        statistic (across-rank AND across-run) since the paper's own
+        harness already reports a rank-distribution (min/mean/max) for
+        every phase per run; this spec adds the run-to-run median/min/max
+        on top, which the paper's own single-run-per-config harness does
+        not do (flagged, notes_on_fairness)
+      timer: "solver-internal wall-clock phase timers (paper's own instrumentation, confirmed field names from ReadMe.md); exact timer call (MPI_Wtime vs. std::chrono) not confirmed from the README text alone"
+      timing_scope: >
+        4 phases exactly as the paper's own profiling output reports them:
+        remsh_igt (regrid), unzip_async and unzip (data-layout conversion,
+        with communication cost inferred as
+        comm = unzip_async_max - unzip_max), rhs (BSSN right-hand-side
+        solve), zip_async (reverse conversion); evolve (= sum of the above
+        across all step_ets steps) reported as the aggregate. GW
+        (psi4) extraction excluded from the per-step timed region since it
+        runs at a coarser BSSN_GW_EXTRACT_FREQ cadence, not every step.
+      preprocessing_reported: >
+        Two-Puncture initial-data solve (tpid executable) and the initial
+        grid-refinement convergence pass reported separately, once, before
+        the measured evolution window begins -- matches the paper's own
+        2-stage workflow (run tpid first, then launch the BSSN solver),
+        confirmed from ReadMe.md
+    metric:
+      primary: >
+        cell-updates/s = dof_uz (grid points after padding, paper's own
+        reported field) x 24 (BSSN evolution variables) / rhs_max time --
+        a DERIVED metric, since the paper's own artifact reports phase
+        wall-times and a single headline GFlops/s figure, not a normalized
+        cell-updates/s throughput (survey.md Divergences #1)
+      secondary: "GFlops/s (paper's own headline metric, 800 GFlops/s on 1x A100 reported in the abstract), per-phase ms (remsh_igt/unzip/rhs/zip, min/mean/max across ranks), regrid-cost fraction (remsh_igt / evolve), inferred communication cost (unzip_async_max - unzip_max)"
+    correctness: >
+      NOT sourced from the paper's own bundled artifact (survey.md
+      Divergences #3: no uniform-grid-reference or GPU-vs-CPU numerical-
+      agreement script was found in the repo's scripts/ directory, which
+      contains only visualization/post-processing utilities). This spec's
+      own recommendation, flagged as such: run the SAME q1 config on both
+      the CPU (bssnSolverCtx) and GPU (bssnSolverCUDA) executables (both
+      confirmed present and separately buildable from the same source tree,
+      ReadMe.md) at matched BSSN_MAXDEPTH/wavelet tolerance, and require the
+      Hamiltonian and momentum constraint-violation norms (C_HAM, C_MOM0-2
+      -- confirmed as reported/extractable evolution-constraint variables
+      from q1.par.json's variable-index comment block) to agree between the
+      two executables to within a small relative tolerance (recommend 1e-3
+      relative) at each GW-extraction checkpoint. This is a CPU-vs-GPU
+      cross-implementation agreement gate, not a comparison to an
+      independent uniform-grid reference (which the paper's own artifact
+      does not provide the tooling for).
+
+  - id: bssn-amr-scaling-regrid-vs-solve
+    claim: >
+      strong- and weak-scaling behavior with the regrid-cost fraction
+      (remsh_igt / evolve) reported explicitly as a function of scale,
+      since this track's paper's central claim is GPU acceleration AT
+      SCALE (up to 8 A100s strong scaling, up to 229,376 x86 cores weak
+      scaling per the abstract), not single-node throughput alone --
+      included as a second variant specifically so the scaling claim is
+      independently checkable, matching this project's pattern of a
+      kernel-only + a scaling/e2e variant per track
+    inputs:
+      suite: "same q1 binary-black-hole-merger initial data as variant 1"
+      selection: >
+        strong scaling: q1_r2.2.par.json (BSSN_MAXDEPTH=14, grain size 4
+        octants/core, confirmed from repo) on 2/4/8 GPUs (paper's own
+        confirmed endpoint is 8 A100s) or CPU-core equivalents; weak
+        scaling: q1_ws.par.json (BSSN_MAXDEPTH=12, grain size 16,000
+        octants/GPU or 1,000 octants/CPU core per ReadMe.md) on a
+        node-count sweep up to the paper's own reported endpoints (8 A100s
+        GPU-side; 229,376 x86 cores CPU-side on TACC Frontera, per the
+        abstract)
+      recommended_subset: ["2 GPU / 2 nodes", "4 GPU / 4 nodes", "8 GPU / 8 nodes (paper's confirmed strong-scaling GPU endpoint)"]
+    protocol:
+      build_flags: "-DBSSN_DISABLE_INITIAL_GRID_REFINEMENT=ON -DBSSN_PROFILE_SCALING_RUN=ON required for scaling runs; GPU additionally requires -DOCT2BLK_COARSEST_LEV=31 -- all confirmed from ReadMe.md"
+      warmup: "same 1-regrid-cycle discard as variant 1"
+      reps: 3
+      statistic: "median across 3 runs per scale point, report min/max"
+      timer: "solver-internal wall-clock phase timers, same as variant 1"
+      timing_scope: "evolve_max (paper's own plotted quantity per ReadMe.md), rhs_max, remsh_igt, and the derived regrid-cost fraction, at each scale point"
+    metric:
+      primary: "speedup(N) = evolve_max(1 unit) / evolve_max(N units), reported separately for strong and weak scaling"
+      secondary: "parallel efficiency (%), regrid-cost fraction vs. scale, GFlops/s vs. scale"
+    correctness: "same CPU-vs-GPU constraint-violation agreement gate as variant 1, checked at the smallest and largest scale point to confirm scaling does not silently change the solution"
+
+notes_on_fairness:
+  - >
+    The paper's fulltext (Methodology/Evaluation section) was unreachable
+    (no arXiv id, only paywalled ACM/IEEE links found) -- the headline
+    numbers cited above (800 GFlops/s, 6x, 2.5x, 8 A100s, 229,376 cores)
+    come from the paper's abstract only, while the phase-decomposition and
+    parameter-file details come from a direct repo read. This split is
+    flagged consistently: metric/protocol STRUCTURE is source-verified,
+    the paper's own reported NUMBERS are abstract-only.
+  - >
+    No correctness/validation script was found bundled in the artifact
+    repo; this spec substitutes a CPU-vs-GPU cross-implementation agreement
+    check using the solver's own constraint-violation monitors (C_HAM,
+    C_MOM0-2), which IS something the repo's parameter format supports
+    (these are named, indexed output variables), even though no ready-made
+    script runs the comparison automatically.
+  - >
+    Variant 1 deliberately uses the weaker-refinement q1_ws.par.json
+    (BSSN_MAXDEPTH=12) rather than the physically-production-quality
+    q1.par.json (BSSN_MAXDEPTH=15), because the latter is only meaningful
+    at the paper's own full-allocation scale; this spec is explicit that
+    variant 1's numbers are NOT the paper's own physically-accurate
+    production configuration, to avoid readers mistaking a
+    scaling-study-grade run for the paper's scientific-quality result.
+
+open_questions:
+  - >
+    Exact evaluation-section prose (workload sizes actually plotted in each
+    figure, exact node/GPU counts per data point, exact statistic reported
+    per data point) is unresolved -- the paper's fulltext was unreachable
+    from any open source found.
+  - >
+    Exact timer instrumentation (MPI_Wtime, std::chrono, or a custom
+    profiling macro) behind the reported phase times is not stated in the
+    README text read.
+  - >
+    Whether the abstract's "229,376 x86 cores" weak-scaling endpoint used
+    the same q1_ws.par.json configuration this spec anchors on, or a
+    different (larger-BSSN_MAXDEPTH) production-grade config, is
+    unconfirmed.
+  - >
+    No bundled correctness/reference-comparison tooling was found in the
+    repo; whether the authors validated GPU-vs-CPU numerical agreement
+    internally (and simply did not ship the comparison script) is unknown.
+
+evidence:
+  fernando_sc22: >
+    Dendro-GR: octree wavelet-AMR (Dendro library) + BSSN numerical-
+    relativity physics module (SymPyGR code generation), multi-GPU (CUDA)
+    extension for binary-black-hole mergers / gravitational-wave
+    generation; q in {1,2,4} mass ratios; default q=1 domain [-400,400]^3,
+    BSSN_MAXDEPTH=15 (production) / 14 (strong-scaling config) / 12
+    (weak-scaling config), 6th-order FD, RK4, CFL=0.25, wavelet-tolerance
+    AMR (tol=1e-5, spatially-varying via R0=20/R1=220); solver's own
+    profiling reports min/mean/max-across-ranks for remsh_igt (regrid),
+    unzip_async/unzip (layout conversion +/- comm), rhs (solve), zip_async
+    (reverse conversion), evolve (aggregate) -- confirmed field-by-field
+    from ReadMe.md; separate standalone octant-to-patch/patch-to-octant
+    padding-zone microbenchmark (run_meshgpu_tests) parameterized by
+    depth/tolerance/interpolation-order(=6 in paper)/CPU-GPU flag; strong
+    scaling to 8 A100s (TACC Lonestar6 gpu-a100 queue, confirmed SLURM
+    script), weak scaling to 229,376 x86 cores on TACC Frontera (abstract);
+    800 GFlops/s on 1x A100, 6x speedup vs. SOTA, 2.5x vs. 128-core EPYC
+    7763 CPU node (all abstract-only, fulltext unreachable -- no arXiv id,
+    only paywalled ACM/IEEE links found). No bundled correctness/reference-
+    comparison script found in repo; GW psi4 extraction at 6 radii x 3
+    L-modes supported but is a domain-science output, not an automated
+    correctness gate.

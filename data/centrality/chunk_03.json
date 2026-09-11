@@ -1,0 +1,659 @@
+[
+  {
+    "key": "conf/ics/ChunduryBLSM26",
+    "group": "spmv",
+    "centrality": "component",
+    "regime_match": "mismatch",
+    "regime": "diagonal-structured Hamiltonian matrices (HamLib suite), custom diagonal-sparse layout, not general CSR",
+    "gpu_single_card": true,
+    "rationale": "HamSim builds a diagonal-sparse matvec kernel but the headline contribution and evaluation are the full Hamiltonian-simulation speedup vs Qiskit-Aer, not isolated y=Ax throughput vs SpMV libraries; the diagonal-only structure and quantum-sim workload (HamLib) differ fundamentally from SuiteSparse."
+  },
+  {
+    "key": "conf/asplos/JainGC25",
+    "group": "spmv",
+    "centrality": "tangential",
+    "regime_match": "mismatch",
+    "regime": "n/a - no SpMV implementation shipped",
+    "gpu_single_card": false,
+    "rationale": "Per benchspecs/spmv/survey.md #10, RASSM's abstract advertises SpMV/SpTS among its SSMKs but the public artifact's kernel dispatch only implements spmm/sddmm; a repo-wide search for spmv returns zero hits, so it is excluded from the spmv spec entirely."
+  },
+  {
+    "key": "conf/dac/LinLDZLY25",
+    "group": "spmv",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "general SuiteSparse-style sparse matrices, multi-core CPU",
+    "gpu_single_card": false,
+    "rationale": "SSpMV's headline is an ML-based algorithm/parameter selector specifically for SpMV, evaluated at kernel level against SOTA sparse libraries across multi-core platforms; CPU-only."
+  },
+  {
+    "key": "conf/ics/CongSC00Q25",
+    "group": "spmv",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "SuiteSparse Matrix Collection (2,843 matrices), fp64, GPU",
+    "gpu_single_card": true,
+    "rationale": "CB-SpMV's headline is a cache-friendly blocked SpMV kernel evaluated on 2,843 SuiteSparse matrices vs cuSPARSE-BSR/TileSpMV/DASP, kernel-level throughput on A100/RTX4090; survey confirms fp64 kernel-only timing."
+  },
+  {
+    "key": "conf/ipps/NoackKK25",
+    "group": "spmv",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "SuiteSparse + synthetic Poisson matrices, on IPU (not NVIDIA GPU)",
+    "gpu_single_card": false,
+    "rationale": "A DSL/framework (CodeDSL/TensorDSL) that generates a suite of solvers (SpMV, ILU, PBiCGStab) for Graphcore IPUs -- SpMV is one generated kernel among several, though isolated SpMV scaling numbers on SuiteSparse are reported; platform is IPU, not an NVIDIA GPU."
+  },
+  {
+    "key": "conf/sc/QiuXFZD0WCC024",
+    "group": "spmv",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "structurally+numerically symmetric SuiteSparse subset (rows>5e4, nnz>1e5), fp; x86/ARM CPU",
+    "gpu_single_card": false,
+    "rationale": "DCS-SpMV's headline is exactly a symmetric-SpMV divide-and-conquer algorithm evaluated at kernel level vs SOTA on x86/ARM; its own criterion defines the spec's spmv-symmetric-kernel variant. CPU-only."
+  },
+  {
+    "key": "conf/sc/LuZWFLCY0C024",
+    "group": "spmv",
+    "centrality": "component",
+    "regime_match": "partial",
+    "regime": "tensor-core mixed-precision SpMV inside AMG V-cycle (level-dependent fp64/fp32/fp16 cascade), workload-weighted over solver levels",
+    "gpu_single_card": true,
+    "rationale": "AmgT's SpMV kernel is real and separately instrumented (time_spmv) but per benchspecs/spmv/survey.md, it is evaluated embedded in the AMG solve phase (up to 1,551 calls/run) rather than as an isolated kernel benchmark; overlaps the sequence-krylov variant's usage pattern but at mixed/lower precision."
+  },
+  {
+    "key": "conf/hpdc/ChuHDDC0WH23",
+    "group": "spmv",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "general CSR-format sparse matrices, GPU",
+    "gpu_single_card": true,
+    "rationale": "Headline is two new general-purpose GPU SpMV algorithms (flat/line-enhance) with adaptive selection, evaluated directly against existing GPU SpMV approaches."
+  },
+  {
+    "key": "conf/ics/ZhangWCMWEM23",
+    "group": "spmv",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "SuiteSparse SpMV datasets ('smaller'/'larger' tiers), fp, GPU",
+    "gpu_single_card": true,
+    "rationale": "PERKS's headline is a general persistent-kernel execution model demonstrated primarily on 2D/3D stencils, with a Krylov-subspace CG/SpMV instantiation as a secondary generality demonstration; it does report isolated SpMV speedups on SuiteSparse subsets vs a SOTA library."
+  },
+  {
+    "key": "conf/ipps/ZhangLYDYLW23",
+    "group": "spmv",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "sequence of SpMV calls (Ax, A^2x, ..., linear combinations) on the same matrix, SuiteSparse-class, CPU (ARM+Intel)",
+    "gpu_single_card": false,
+    "rationale": "FBMPK's headline is exactly optimizing a bounded sequence of SpMV invocations on the same matrix; explicitly named in the spec as the paper defining the spmv-sequence-krylov variant."
+  },
+  {
+    "key": "conf/dac/SongCGC22",
+    "group": "spmv",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "general SuiteSparse Matrix Collection (2,519 matrices, geomean density 1.4e-3), fp32, FPGA",
+    "gpu_single_card": false,
+    "rationale": "Serpens's headline is a general-purpose HBM FPGA SpMV accelerator evaluated on the near-exhaustive SuiteSparse suite vs GraphLily/Sextans/K80 GPU at kernel level ('Kernel time' explicitly labeled in code); FPGA-only artifact."
+  },
+  {
+    "key": "conf/ipps/YeHHLLJ22",
+    "group": "spmv",
+    "centrality": "core",
+    "regime_match": "partial",
+    "regime": "CT-imaging / integral-equation-derived sparse matrices, fp32, CPU SIMD",
+    "gpu_single_card": false,
+    "rationale": "CSCV's headline is a new SpMV format+vectorized-kernel evaluated at kernel level against 7 SOTA SpMV implementations, but the test matrices are domain-specific (CT-imaging/integral-equation derived) rather than the track's general SuiteSparse suite -- narrower emphasis than the general variant."
+  },
+  {
+    "key": "conf/ipps/ChenSSTBL22",
+    "group": "spmv",
+    "centrality": "core",
+    "regime_match": "mismatch",
+    "regime": "1-bit (binary/pattern-only) adjacency matrices, GPU",
+    "gpu_single_card": true,
+    "rationale": "Bit-GraphBLAS reports explicit kernel-level SpMV speedups (up to 40x) for its B2SR bit-level format, but per benchspecs/spmv/survey.md this 521-matrix binary domain is explicitly excluded from the general fp SpMV variant since 1-bit storage changes the byte-accounting model."
+  },
+  {
+    "key": "conf/sc/DuLWLTS22",
+    "group": "spmv",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "general SuiteSparse Matrix Collection (843 matrices), CPU/ARM",
+    "gpu_single_card": false,
+    "rationale": "AlphaSparse's headline is auto-generating novel SpMV formats/kernels per input matrix, evaluated at kernel level against 5 SOTA hand-designed formats plus autotuning baselines across SuiteSparse."
+  },
+  {
+    "key": "conf/sc/CheshmiCD22",
+    "group": "spmv",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "general sparse matrices, CPU, fp",
+    "gpu_single_card": false,
+    "rationale": "LCM I/E's vectorization technique targets a family of sparse kernels (SpMV/SpMM/SpTRSV) with an explicit, separately-reported SpMV speedup (1.67x) vs MKL at kernel level -- SpMV is a primary named member of the evaluated family."
+  },
+  {
+    "key": "journals/tpds/AzadSHGB22",
+    "group": "spmv",
+    "centrality": "component",
+    "regime_match": "partial",
+    "regime": "large-scale distributed/combinatorial graph matrices, CPU/GPU/distributed",
+    "gpu_single_card": false,
+    "rationale": "CombBLAS 2.0 is a general distributed-memory combinatorial-algorithms library; SpMV is one of many primitives, evaluated mainly via scaling/application benchmarks across the whole library rather than isolated kernel-vs-vendor-library throughput -- hardest call in this group since GPU kernel support exists but is not the paper's evaluation focus."
+  },
+  {
+    "key": "conf/dac/ParraviciniCSS21",
+    "group": "spmv",
+    "centrality": "component",
+    "regime_match": "mismatch",
+    "regime": "mostly synthetic embedding-similarity matrices (+1 real GloVe matrix), reduced/fixed-point precision, FPGA",
+    "gpu_single_card": false,
+    "rationale": "Top-K SpMV fuses a top-k reduction into the SpMV kernel for approximate embedding similarity search -- a distinct operation from the spec's plain y=Ax, evaluated with ranking-quality metrics (not elementwise tolerance) on mostly-synthetic data; FPGA-only."
+  },
+  {
+    "key": "conf/ipps/NiuLDJ0T21",
+    "group": "spmv",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "full SuiteSparse Matrix Collection, GPU",
+    "gpu_single_card": true,
+    "rationale": "TileSpMV's headline is a general tiled GPU SpMV algorithm evaluated across the full SuiteSparse collection vs Merge-SpMV/CSR5/BSR at kernel level."
+  },
+  {
+    "key": "journals/tpds/AhmadYU21",
+    "group": "spmv",
+    "centrality": "tangential",
+    "regime_match": "mismatch",
+    "regime": "SpMV used only as a residual/correction sub-step inside an SpTRSV DAG split, SuiteSparse triangular matrices",
+    "gpu_single_card": true,
+    "rationale": "The paper's contribution is a split-execution model for SpTRSV; SpMV appears only as a byproduct term of the DAG split (one of two sub-solves plus an SpMV), never independently optimized or benchmarked as a standalone kernel."
+  },
+  {
+    "key": "journals/tpds/LiAY21",
+    "group": "spmv",
+    "centrality": "core",
+    "regime_match": "partial",
+    "regime": "SuiteSparse-class matrices with varied input-vector sparsity (SpMV/SpMSpV), GPU",
+    "gpu_single_card": true,
+    "rationale": "Headline is an adaptive ML-based kernel-selection framework specifically for SpMV/SpMSpV evaluated at kernel level on GPUs; emphasis on varied vector sparsity is narrower than the spec's plain dense-vector SpMV variant."
+  },
+  {
+    "key": "conf/ics/BellavitaPPVG26",
+    "group": "spgemm",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "large unstructured SuiteSparse/HipMCL-style matrices, distributed multi-GPU",
+    "gpu_single_card": false,
+    "rationale": "Trident's headline is exactly a distributed communication-avoiding SpGEMM algorithm; its own Table 2 workloads define the spec's distributed-strong-scaling variant. Multi-GPU/multi-node is the point of the paper."
+  },
+  {
+    "key": "conf/ics/LiG26",
+    "group": "spgemm",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "SuiteSparse square/rectangular matrices, fp64, single GPU",
+    "gpu_single_card": true,
+    "rationale": "Ocean's headline is a single-GPU estimation-based SpGEMM kernel replacing the symbolic pass; explicitly named as one of the papers defining the spec's flop-threshold selection and square-kernel variant."
+  },
+  {
+    "key": "conf/ipps/BellavitaRICDVG26",
+    "group": "spgemm",
+    "centrality": "component",
+    "regime_match": "mismatch",
+    "regime": "kernel-matrix / clustering-derived sparse operands for distributed Kernel K-means, not general A^2 self-products",
+    "gpu_single_card": false,
+    "rationale": "SpGEMM/GEMM are internal distributed linear-algebra primitives used to scale Kernel K-means clustering; the paper's headline and evaluation are Kernel K-means weak-scaling efficiency end-to-end, not isolated SpGEMM kernel throughput. Multi-GPU distributed is the whole point."
+  },
+  {
+    "key": "conf/ppopp/BellavitaPMVG25",
+    "group": "spgemm",
+    "centrality": "component",
+    "regime_match": "mismatch",
+    "regime": "kernel-matrix operands for GPU Kernel K-means, not general A^2 self-products",
+    "gpu_single_card": true,
+    "rationale": "Popcorn formulates Kernel K-means via sparse linear algebra (including SpGEMM-like primitives) as an internal building block; evaluation is end-to-end clustering time, not isolated SpGEMM throughput vs SpGEMM competitors."
+  },
+  {
+    "key": "conf/sc/Islam00B25",
+    "group": "spgemm",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "SuiteSparse matrices, fp64, CPU",
+    "gpu_single_card": false,
+    "rationale": "clusterwise-spgemm's headline is exactly an SpGEMM row-reordering + cluster-wise computation scheme; its own break-even-iteration methodology directly defines the spec's e2e-preproc variant. CPU-only."
+  },
+  {
+    "key": "journals/tpds/SinghU25",
+    "group": "spgemm",
+    "centrality": "tangential",
+    "regime_match": "mismatch",
+    "regime": "sparse tensors (order>=3) reformulated as matrices, CPU",
+    "gpu_single_card": false,
+    "rationale": "parTC's contribution is sparse tensor contraction (SpGETT) that deliberately AVOIDS the SpGEMM-based approach, using SpGEMM only as a comparison baseline it outperforms."
+  },
+  {
+    "key": "journals/tpds/ChenY25",
+    "group": "spgemm",
+    "centrality": "component",
+    "regime_match": "partial",
+    "regime": "boolean/graph adjacency matrices via tensor cores, low-precision, GPU",
+    "gpu_single_card": true,
+    "rationale": "ToT reformulates triangle counting as SpGEMM+intersection+reduction on tensor cores, but the paper's headline and evaluation metric are end-to-end triangle-counting speedup/memory savings, not general-purpose fp64 A^2 SpGEMM throughput; operates on boolean graph matrices rather than general SuiteSparse values."
+  },
+  {
+    "key": "conf/sc/LuZWFLCY0C024",
+    "group": "spgemm",
+    "centrality": "component",
+    "regime_match": "mismatch",
+    "regime": "tensor-core mixed-precision R.A.P coarsening products from AMG's own hierarchy, not a benchmark-chosen A^2",
+    "gpu_single_card": true,
+    "rationale": "Per benchspecs/spgemm/survey.md, AmgT's SpGEMM is 'not a standalone SpGEMM microbenchmark' -- it is measured as it naturally occurs inside AMG setup (R_i.A.P_i per level), an AMG-workload-weighted mixture rather than a clean kernel-level A^2 measurement; validated only via AMG solve convergence, not elementwise SpGEMM correctness."
+  },
+  {
+    "key": "conf/ipps/ChenSSTBL22",
+    "group": "spgemm",
+    "centrality": "core",
+    "regime_match": "mismatch",
+    "regime": "1-bit (binary/pattern-only) adjacency matrices, GPU",
+    "gpu_single_card": true,
+    "rationale": "Bit-GraphBLAS reports an even larger explicit kernel-level SpGEMM speedup (up to 6555x) for its B2SR format as one of the paper's 'essential GraphBLAS kernels', but the binary-matrix regime differs fundamentally from the spec's general fp64 A^2 self-product."
+  },
+  {
+    "key": "conf/ipps/LiuFAALJPG22",
+    "group": "spgemm",
+    "centrality": "tangential",
+    "regime_match": "mismatch",
+    "regime": "hypergraph line-graph expansion, not a general A^2 self-product; CPU",
+    "gpu_single_card": false,
+    "rationale": "The paper's own algorithms are explicitly designed to be 'orders of magnitude faster than state-of-the-art SpGEMM methods' by avoiding SpGEMM -- SpGEMM appears only as the baseline class the paper beats, not as an optimized kernel of this work."
+  },
+  {
+    "key": "conf/ppopp/NiuLJS0022",
+    "group": "spgemm",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "SuiteSparse matrices (A^2, general A x B), fp64, GPU",
+    "gpu_single_card": true,
+    "rationale": "TileSpGEMM's headline is exactly a general tiled GPU SpGEMM algorithm addressing load imbalance/locality/accumulator selection; one of the deeply-surveyed papers that directly defines the spec's square-kernel variant."
+  },
+  {
+    "key": "journals/tpds/AzadSHGB22",
+    "group": "spgemm",
+    "centrality": "component",
+    "regime_match": "partial",
+    "regime": "large-scale distributed/combinatorial graph matrices, CPU/GPU/distributed",
+    "gpu_single_card": false,
+    "rationale": "CombBLAS 2.0 is a general distributed combinatorial-algorithms library covering many primitives (SpGEMM one of them); evaluated via library-wide scaling/application rules-of-thumb rather than a dedicated SpGEMM-vs-SOTA kernel benchmark. Hardest call in this group: GPU kernel support exists but the paper's own framing and scale are fundamentally distributed multi-node."
+  },
+  {
+    "key": "conf/ipps/HussainSBA21",
+    "group": "spgemm",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "extreme-scale unstructured matrices (protein-similarity networks etc.), distributed CPU",
+    "gpu_single_card": false,
+    "rationale": "Headline is exactly communication-avoiding, memory-constrained distributed SpGEMM at extreme scale in CombBLAS; explicitly one of the papers whose Table V instances define the spec's distributed-strong-scaling variant."
+  },
+  {
+    "key": "conf/asplos/YiZHYSWZZLL26",
+    "group": "attention-kernel",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "paged fp16 KV cache decode attention, GQA-heavy, saturating batch sizes, GPU",
+    "gpu_single_card": true,
+    "rationale": "PAT's headline is exactly a prefix-aware decode-attention kernel; the spec's attn-decode-kv-cache-kernel variant is built directly around PAT's own claim and shapes."
+  },
+  {
+    "key": "conf/asplos/TangLWSLXZL26",
+    "group": "attention-kernel",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "MHA/MLA shapes (BERT/ViT/LLaMA-65B/DeepSeek-R1), fp, GPU (A10/H800 per survey)",
+    "gpu_single_card": true,
+    "rationale": "RedFuser is a general cascaded-reduction fusion compiler; attention (softmax+GEMM) is one of several fused patterns alongside MoE routing and FP8-quantized GEMM, matching the compiler/DSL-generates-this-kernel-among-others definition, though its named MHA/MLA sources match the spec's prefill regime well."
+  },
+  {
+    "key": "conf/cgo/ZhangDSHSP26",
+    "group": "attention-kernel",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "MHA prefill (batch1/heads32/d64/seq2048) and flash-decoding shapes, fp, GPU",
+    "gpu_single_card": true,
+    "rationale": "Hexcute is a general GPU-layout-synthesis compiler; attention is one of four benchmarked kernel classes (GEMM, Attention, FP8 GEMM, warp-specialized) plus MoE/Mamba, but its own benchmark_attention.py shapes are explicitly named as defining the spec's prefill-kernel suite."
+  },
+  {
+    "key": "conf/ppopp/Xu0BXX00000C26",
+    "group": "attention-kernel",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "fused GEMM+softmax attention, tensor-vector parallelism, GPU",
+    "gpu_single_card": true,
+    "rationale": "FlashAttention-T's headline is exactly a fully-tensorized fused attention kernel evaluated against FlashAttention baselines at kernel level; explicitly named in the spec."
+  },
+  {
+    "key": "conf/ppopp/ChenC0XMM0X00W026",
+    "group": "attention-kernel",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "unified attention across FlashAttention-style algorithm variants, NVIDIA+AMD GPU",
+    "gpu_single_card": true,
+    "rationale": "MetaAttention's sole target is attention-kernel generation across hardware backends (not a multi-kernel-class compiler like RedFuser/Hexcute), evaluated at kernel level against FlashAttention on both NVIDIA and AMD."
+  },
+  {
+    "key": "conf/ics/FuYDS24",
+    "group": "attention-kernel",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "full-sequence self-attention, fp32, ARM multi-core CPU",
+    "gpu_single_card": false,
+    "rationale": "MEATTEN is the track's sole CPU paper and directly defines the spec's attn-cpu-kernel-multicore variant."
+  },
+  {
+    "key": "conf/ipps/ZhaiJWJZCLZ23",
+    "group": "attention-kernel",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "BERT-style bidirectional MHA, variable-length/padding-free, fp, GPU",
+    "gpu_single_card": true,
+    "rationale": "ByteTransformer's headline is a padding-free fused MHA kernel evaluated against PyTorch at kernel level; its BERT-base sweep directly defines part of the spec's prefill-kernel input suite."
+  },
+  {
+    "key": "conf/sc/WangWXHQDWL22",
+    "group": "attention-kernel",
+    "centrality": "component",
+    "regime_match": "partial",
+    "regime": "fp16/int8 Transformer training kernels (embeddings, layers, attention), GPU",
+    "gpu_single_card": true,
+    "rationale": "LightSeq2 optimizes the whole Transformer training pipeline (embeddings, encoder/decoder, attention, etc.); attention is one of many fused kernels and evaluation is end-to-end training speedup, not an isolated attention-kernel throughput number."
+  },
+  {
+    "key": "conf/sc/ChenHPLG0D021",
+    "group": "attention-kernel",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "BERT/DistilBERT self-attention, fp, GPU",
+    "gpu_single_card": true,
+    "rationale": "E.T.'s headline includes a re-engineered self-attention operator (plus a separate pruning contribution) evaluated against TensorRT/FasterTransformer; one of the 9 papers the spec was directly built from."
+  },
+  {
+    "key": "conf/ppopp/ZhangLMZT26",
+    "group": "sequence-alignment",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "human reference genome short-read mapping, exact/bit-identical to BWA-MEM, CPU",
+    "gpu_single_card": false,
+    "rationale": "FastAlign's own '100% identical output to BWA-MEM' bar directly defines the spec's seqalign-e2e-short-read-mapping variant. CPU-only."
+  },
+  {
+    "key": "conf/sc/MunksgaardHSO22",
+    "group": "sequence-alignment",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "exact Needleman-Wunsch DNA alignment (Rodinia NW benchmark), GPU",
+    "gpu_single_card": true,
+    "rationale": "futhark-mem-sc22 is a general functional-array-language memory-optimization compiler; NW is one of three example benchmarks (alongside LUD, Hotspot) demonstrating generality, matching the DSL-example-set component pattern, though its NW benchmark is explicitly named as defining the exact-pairwise-kernel variant."
+  },
+  {
+    "key": "journals/tpds/FigueiredoNSTM21",
+    "group": "sequence-alignment",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "long DNA sequence pairs (whole chromosomes), exact Smith-Waterman, multi-GPU",
+    "gpu_single_card": true,
+    "rationale": "MultiBP/MASA-CUDAlign's headline is exactly exact Smith-Waterman alignment of long DNA sequences; its real whole-chromosome pair directly defines the spec's large-tier exact-pairwise-kernel input. Hardest call on gpu_single_card: headline scaling result uses 512 V100s, but MASA-CUDAlign's base algorithm is single-GPU-capable."
+  },
+  {
+    "key": "conf/ipps/MullerS0MLKH20",
+    "group": "sequence-alignment",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "DNA long-sequence pairs, exact Smith-Waterman/Needleman-Wunsch, CPU/GPU/FPGA",
+    "gpu_single_card": true,
+    "rationale": "AnySeq's headline is a general high-performance pairwise-alignment library evaluated at kernel level against SeqAn/NVBio; explicitly named as defining part of the spec's exact-pairwise variant."
+  },
+  {
+    "key": "conf/ipps/ZeniGEDSHBOY20",
+    "group": "sequence-alignment",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "synthetic long-read pairs (LOGAN's own scenario) + E. coli/C. elegans real subsets, X-drop approximate, GPU",
+    "gpu_single_card": true,
+    "rationale": "LOGAN's headline is exactly the GPU X-drop alignment kernel; its own scenario directly defines the spec's seqalign-xdrop-heuristic-kernel variant, with explicit single- and multi-GPU numbers reported."
+  },
+  {
+    "key": "conf/sc/GoenkaTPH20",
+    "group": "sequence-alignment",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "UCSC vertebrate genome assemblies, seed-filter-extend whole-genome alignment, GPU",
+    "gpu_single_card": true,
+    "rationale": "SegAlign's own stated bar and 4 named UCSC assemblies directly define the spec's seqalign-e2e-whole-genome-alignment variant."
+  },
+  {
+    "key": "journals/tpds/ChenY25",
+    "group": "triangle-counting",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "real-world graphs, tensor-core native layout, GPU",
+    "gpu_single_card": true,
+    "rationale": "ToT's headline is exactly triangle counting via tensor cores; the spec's tc-gpu-kernel-exact variant explicitly allows a tensor-core native layout as an accepted resident format."
+  },
+  {
+    "key": "conf/ipps/Li0PTZ24",
+    "group": "triangle-counting",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "real-world graphs (SNAP/SuiteSparse-class), single GPU",
+    "gpu_single_card": true,
+    "rationale": "TC-Compare's headline is a comparative framework plus a new GroupTC algorithm for GPU triangle counting; its own 100-iteration convention directly defines the spec's tc-gpu-e2e-preproc variant."
+  },
+  {
+    "key": "conf/ipps/SandersU23",
+    "group": "triangle-counting",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "large real-world graphs (LiveJournal/Orkut/Twitter/Friendster-class), distributed CPU",
+    "gpu_single_card": false,
+    "rationale": "katric's headline is distributed-memory exact triangle counting; explicitly one of the 3 papers ({katric, lcc, TriPoll}) whose graphs directly define the spec's distributed strong-scaling variant."
+  },
+  {
+    "key": "conf/ipps/StrauszVGBH22",
+    "group": "triangle-counting",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "large real-world graphs (LiveJournal-class, scale-free), distributed CPU",
+    "gpu_single_card": false,
+    "rationale": "lcc's headline is asynchronous distributed triangle counting/LCC; explicitly one of the 3 defining papers for the spec's distributed strong-scaling variant."
+  },
+  {
+    "key": "conf/sc/SteilRIPSP21",
+    "group": "triangle-counting",
+    "centrality": "core",
+    "regime_match": "partial",
+    "regime": "massive real+synthetic temporal graphs with edge/vertex metadata, distributed CPU",
+    "gpu_single_card": false,
+    "rationale": "TriPoll's headline generalizes plain triangle counting to metadata-aware triangle surveys on massive graphs; explicitly one of the 3 defining papers for the distributed variant, but the metadata-survey generalization is broader than the spec's plain exact-count operation."
+  },
+  {
+    "key": "conf/cgo/PatelAA25",
+    "group": "mttkrp",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "synthetic symmetric sparse tensors (Erdos-Renyi), CPU",
+    "gpu_single_card": false,
+    "rationale": "SySTeC is a symmetry-aware sparse-tensor compiler generating multiple kernel types, but its own generator protocol directly defines the spec's mttkrp-symmetric-kernel variant and its headline result (30.4x) is specifically the 5-D symmetric MTTKRP."
+  },
+  {
+    "key": "conf/ipps/0001S0K25",
+    "group": "mttkrp",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "synthetic + real hypergraph-derived symmetric sparse tensors, CPU",
+    "gpu_single_card": false,
+    "rationale": "SymProp's headline is exactly symmetric S3TTMc/S3TTMcTC kernels (the spec's closely-related symmetric-Tensor-Times-Matrix-chain family); its 5 named hypergraph datasets directly define the spec's symmetric variant."
+  },
+  {
+    "key": "conf/asplos/WonMEA23",
+    "group": "mttkrp",
+    "centrality": "component",
+    "regime_match": "partial",
+    "regime": "726 sparsity patterns across SpMV/SpMM/SDDMM/MTTKRP, CPU",
+    "gpu_single_card": false,
+    "rationale": "WACO is a learned format+schedule autotuner covering four kernel types (SpMV, SpMM, SDDMM, MTTKRP); MTTKRP is one generated/optimized kernel among others rather than the paper's sole focus."
+  },
+  {
+    "key": "conf/ics/NguyenHCLTSRPC22",
+    "group": "mttkrp",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "FROSTT real-world sparse tensors, order 3-4, GPU",
+    "gpu_single_card": true,
+    "rationale": "BLCO's headline is exactly out-of-memory sparse MTTKRP on GPUs; explicitly named (Table 2) as defining the spec's general-kernel-fp64 variant."
+  },
+  {
+    "key": "conf/ipps/LiK26",
+    "group": "sparse-attention-kernel",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "structured/regional sparse ViT attention masks, fp16, GPU",
+    "gpu_single_card": true,
+    "rationale": "Headline is a tile-aware ILP scheduling framework for structured sparse attention, evaluated against FlashAttention fixed tiling; matches the spec's structured-mask variant regime."
+  },
+  {
+    "key": "conf/ppopp/DaiDRYLL0CS26",
+    "group": "sparse-attention-kernel",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "structured sparse-attention masks (causal/sliding/Longformer/BigBird/dilated), GPU",
+    "gpu_single_card": true,
+    "rationale": "STOF's 5 named mask types directly define the spec's sparse-attn-structured-mask-kernel variant."
+  },
+  {
+    "key": "conf/ics/LiC25",
+    "group": "sparse-attention-kernel",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "real graph adjacency (single + batched graphs), tensor cores, GPU",
+    "gpu_single_card": true,
+    "rationale": "Fused3S's own claim is explicitly the sole basis for the spec's sparse-attn-graph-adjacency-kernel variant (fused SDDMM+softmax+SpMM over real graph adjacency)."
+  },
+  {
+    "key": "conf/ipps/TomczakK25",
+    "group": "sparse-attention-kernel",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "structured sparse-attention masks, swept sparsity factor, GPU",
+    "gpu_single_card": true,
+    "rationale": "TomczakK25's own swept sparsity-factor range across Local/Local-1D-Dilated/Local-2D masks directly defines part of the spec's structured-mask variant."
+  },
+  {
+    "key": "conf/asplos/TangLWSLXZL26",
+    "group": "scan-reduction",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "online-softmax-then-GEMM cascaded reduction, GPU (A10/H800 per survey)",
+    "gpu_single_card": true,
+    "rationale": "RedFuser's headline methodology IS generalized cascaded-reduction fusion (of which softmax-then-GEMM is the canonical instance), evaluated at kernel level (2-5x over compilers, matching hand-written kernels); this matches the scan-reduction-fused-cascaded variant almost exactly. Note the platform field says 'other' but benchspecs/attention-kernel/survey.md confirms NVIDIA A10/H800 hardware."
+  },
+  {
+    "key": "journals/tpds/NavarroCBRV21",
+    "group": "scan-reduction",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "flat sum-reduction over large GPU-resident arrays, GPU",
+    "gpu_single_card": true,
+    "rationale": "Headline is exactly a tensor-core arithmetic-reduction kernel; explicitly named as defining the spec's scan-reduction-flat-kernel variant."
+  },
+  {
+    "key": "conf/sc/HenriksenHSO20",
+    "group": "scan-reduction",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "generalized (segmented/keyed) histogram, GPU",
+    "gpu_single_card": true,
+    "rationale": "Headline is exactly generalized-histogram GPU codegen; explicitly named as defining the spec's scan-reduction-segmented-histogram variant."
+  },
+  {
+    "key": "conf/ipps/SalwasserSG025",
+    "group": "graph-partitioning",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "trillion-edge web/synthetic graphs, large k, CPU/distributed",
+    "gpu_single_card": false,
+    "rationale": "TeraPart's own operating point and headline 16x peak-memory reduction directly define the spec's gp-kernel-large-k and gp-memory-scaling variants."
+  },
+  {
+    "key": "conf/dac/LeeLHJHL024",
+    "group": "graph-partitioning",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "DIMACS10-scale graphs, small power-of-2 k, GPU",
+    "gpu_single_card": true,
+    "rationale": "G-kway's own operating point directly defines the spec's gp-kernel-small-k variant."
+  },
+  {
+    "key": "conf/ipps/MengSPML26",
+    "group": "other:tensor-train-decomposition",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "FROSTT + knowledge-graph hyperedge + synthetic sparse tensors, CPU/GPU",
+    "gpu_single_card": true,
+    "rationale": "STTID's own run.sh 3-category workload split directly defines the spec's tt-sparse-decomposition-kernel variant."
+  },
+  {
+    "key": "conf/sc/WangWFMMD22",
+    "group": "other:tensor-train-decomposition",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "standard DLRM click-through-rate datasets, fixed TT-rank embedding tables, GPU",
+    "gpu_single_card": true,
+    "rationale": "EL-Rec's TT-compressed embedding kernel is real and separable (a drop-in PyTorch API) but the spec's own variant for this paper is explicitly end-to-end DLRM training throughput, not an isolated per-lookup kernel benchmark; its own 3-dataset practice defines that e2e variant."
+  },
+  {
+    "key": "conf/ics/YangLWHT23",
+    "group": "dp-dynamic-programming",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "large sparse real-world graphs, hybrid Floyd-Warshall+Dijkstra APSP, distributed multi-GPU",
+    "gpu_single_card": false,
+    "rationale": "This is the sole paper the dp-dynamic-programming spec was built around -- its Floyd+Dijkstra hybrid, METIS partitioning, and distributed-GPU framework match the spec verbatim. Hardest call on gpu_single_card: the paper's core novelty is resolving a GPU-count-vs-block-count mismatch, i.e. it is designed around multi-GPU scaling (headline result: 2048 GPUs), though a single-GPU/single-partition degenerate case likely runs."
+  },
+  {
+    "key": "conf/ics/MandarapuFPBK26",
+    "group": "nbody",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "uniformly-packed random spherical-particle systems, single GPU RT cores",
+    "gpu_single_card": true,
+    "rationale": "This is the sole paper the nbody spec was built around; its own particle-scaling benchmark and BVH/detect/integrate phase decomposition define the spec's only variant verbatim."
+  },
+  {
+    "key": "conf/ipps/RanawakaRA23",
+    "group": "other:knn-graph-construction",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "high-dimensional ANN-benchmark-style point sets, distributed CPU",
+    "gpu_single_card": false,
+    "rationale": "This is the sole paper the knn-graph-construction spec was built around; its distributed sparse random-projection-tree algorithm and MPI-process scaling directly define both spec variants. No GPU in the artifact."
+  },
+  {
+    "key": "conf/sc/LassSKP20",
+    "group": "other:matrix-function-evaluation",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "CP2K liquid-water DFT benchmark family, CPU/GPU/FPGA",
+    "gpu_single_card": true,
+    "rationale": "This is the sole paper the matrix-function-evaluation spec was built around; its submatrix method and CP2K benchmark family define the spec's only variant verbatim. GPU acceleration is explicitly demonstrated."
+  },
+  {
+    "key": "journals/tpds/LanMHSDWLQF20",
+    "group": "winograd",
+    "centrality": "component",
+    "regime_match": "partial",
+    "regime": "3x3 stride-1 conv layers within a full CNN inference pipeline (VGG-16 etc.), ARM CPU",
+    "gpu_single_card": false,
+    "rationale": "FeatherCNN's TensorGEMM-accelerated Winograd routine is one of three named techniques (alongside general layer optimization and layer fusion) in a general ARM inference library; evaluation is end-to-end network forward-pass speedup (vs Caffe/TFLite) rather than an algorithm-invariant per-layer Winograd-vs-direct/im2col/FFT comparison. CPU-only, no GPU."
+  }
+]

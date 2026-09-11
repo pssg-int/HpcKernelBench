@@ -1,0 +1,668 @@
+[
+ {
+  "key": "conf/cgo/LopezKB26",
+  "group": "gemm",
+  "centrality": "component",
+  "regime_match": "mismatch",
+  "regime": "symbolic-size BLAS/LAPACK kernel-chain sequencing overhead, not a standalone GEMM benchmark",
+  "gpu_single_card": false,
+  "rationale": "Headline is a multi-versioning codegen that selects/sequences BLAS/LAPACK kernel calls (GEMM among TRSM/SYRK/etc.) for symbolic-size chains; the reported metric is FLOPs/time within 15% of optimal chain cost, not GEMM throughput vs. a vendor baseline. CPU only."
+ },
+ {
+  "key": "conf/cgo/ZhangDSHSP26",
+  "group": "gemm",
+  "centrality": "component",
+  "regime_match": "partial",
+  "regime": "DL-shaped (attention/MoE-adjacent) fp16 tensor-core GEMM via an auto-layout-synthesis compiler",
+  "gpu_single_card": true,
+  "rationale": "Hexcute is a layout-synthesis compiler that generates many kernel types (GEMM, FlashAttention, MoE); it reports matching cuBLAS on GEMM but the shapes are DL-workload-derived rather than the track's square/irregular sweep."
+ },
+ {
+  "key": "conf/ipps/BellavitaRICDVG26",
+  "group": "gemm",
+  "centrality": "component",
+  "regime_match": "partial",
+  "regime": "distributed multi-GPU dense/sparse GEMM primitives tailored to Kernel K-means, not general-purpose square GEMM",
+  "gpu_single_card": false,
+  "rationale": "GEMM/SpGEMM appear only as communication-efficient primitives inside a distributed Kernel K-means clustering algorithm evaluated end-to-end (weak-scaling efficiency to 256 GPUs); no standalone GEMM benchmark, and the contribution is fundamentally multi-GPU distributed, not a single-card path."
+ },
+ {
+  "key": "conf/ipps/DengYFD26",
+  "group": "gemm",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "small/irregular DeepSeek/LLaMA-derived GEMM shapes, multi-precision, ARM SME",
+  "gpu_single_card": false,
+  "rationale": "MPGEMM's headline IS an open-source GEMM library evaluated kernel-level against Apple Accelerate/OpenBLAS/Eigen; its DeepSeek/LLaMA shapes are explicitly one of the spec's own cited sources for the small-irregular variant. CPU (ARM) only, no GPU."
+ },
+ {
+  "key": "conf/ipps/YaoZLX26",
+  "group": "gemm",
+  "centrality": "tangential",
+  "regime_match": "mismatch",
+  "regime": "Ozaki-scheme FP16 tensor-core convolution-reformulated stencil update, not a standalone dense GEMM",
+  "gpu_single_card": true,
+  "rationale": "GEMM here is a reformulation vehicle for a shallow-water stencil dynamical core (headline is the PDE solver); there is no standalone dense-GEMM kernel benchmark against vendor libraries."
+ },
+ {
+  "key": "conf/asplos/IkarashiQDRBR25",
+  "group": "gemm",
+  "centrality": "component",
+  "regime_match": "partial",
+  "regime": "80+ hand-schedulable HPC/DL kernels including GEMM, cross-platform (CPU/ARM)",
+  "gpu_single_card": false,
+  "rationale": "Exo 2 is a user-extensible scheduling-language compiler whose evaluation spans 80+ kernels including GEMM; matches the 'autotuner/DSL that generates this kernel among others' component pattern. CPU/ARM only, exact shape overlap with the track's sweep unconfirmed."
+ },
+ {
+  "key": "conf/cgo/LopoukhineFVLDD25",
+  "group": "gemm",
+  "centrality": "component",
+  "regime_match": "mismatch",
+  "regime": "RISC-V streaming-register-accelerator DNN micro-kernels, FPU-utilization metric, not GEMM GFLOP/s",
+  "gpu_single_card": false,
+  "rationale": "An MLIR compiler backend that generates generic 'DNN micro-kernels' (GEMM-like) for a custom RISC-V accelerator; evaluated via FPU utilization %, not vendor-comparable GEMM throughput. Platform is a custom accelerator, not CPU/GPU/FPGA in the track's sense."
+ },
+ {
+  "key": "conf/ics/DezfuliC25",
+  "group": "gemm",
+  "centrality": "component",
+  "regime_match": "mismatch",
+  "regime": "sparse-dependence-fused dense/SpMM matmul for GNN training and sparse solves",
+  "gpu_single_card": false,
+  "rationale": "Tile-fusion is a compiler technique fusing a dense matmul loop with a sparse (SpMM) loop for GNN/solver pipelines; GEMM is one half of a fused kernel evaluated via GNN-training and sparse-solve speedups, not standalone dense GEMM throughput. CPU only."
+ },
+ {
+  "key": "conf/sc/WangHZSJWDZ25",
+  "group": "gemm",
+  "centrality": "tangential",
+  "regime_match": "mismatch",
+  "regime": "one incidental GEMM call inside an EVD back-transformation reordering, not a benchmarked GEMM kernel",
+  "gpu_single_card": true,
+  "rationale": "GEMM appears only as 'one additional GEMM computation' incurred by restructuring EVD back-transformation; the paper's kernel and baselines are all EVD-specific (MAGMA/cuSOLVER), not a GEMM benchmark."
+ },
+ {
+  "key": "conf/sc/FuXGMSWSD0Y25",
+  "group": "gemm",
+  "centrality": "tangential",
+  "regime_match": "mismatch",
+  "regime": "tensor-core cross-correlation difference kernel for cryo-EM, not a general dense GEMM",
+  "gpu_single_card": true,
+  "rationale": "The accelerated kernel is a cryo-EM cross-correlation/difference computation reformulated via Tensor Cores, not a general-purpose GEMM; evaluated against RELION's own baseline, not vendor GEMM libraries."
+ },
+ {
+  "key": "conf/sc/WuZDZHC25",
+  "group": "gemm",
+  "centrality": "component",
+  "regime_match": "partial",
+  "regime": "fp32/fp16 GEMM sized to Fourier Neural Operator hidden dimensions, fused with FFT/iFFT",
+  "gpu_single_card": true,
+  "rationale": "TurboFNO builds a real from-scratch GEMM kernel matching/exceeding cuBLAS, but the headline contribution is the fused FFT-GEMM-iFFT operator for FNOs; GEMM is one stage of that fused pipeline, sized to FNO workloads rather than the track's independent square/irregular sweep."
+ },
+ {
+  "key": "journals/tpds/NavarroQMFH25",
+  "group": "gemm",
+  "centrality": "tangential",
+  "regime_match": "mismatch",
+  "regime": "cellular-automata neighborhood update reformulated as tensor-core matmul, not benchmarked as GEMM",
+  "gpu_single_card": true,
+  "rationale": "CAT maps a CA transition function onto tensor-core matmul; results are reported in CA-domain metrics (speedup vs. GPU/CPU CA baselines) not GEMM GFLOP/s against vendor libraries."
+ },
+ {
+  "key": "journals/tpds/LinXWYLL25",
+  "group": "gemm",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "OpenCL GEMM on FPGA/OpenCL devices, square + GEMMBATCHED sweeps",
+  "gpu_single_card": false,
+  "rationale": "CL-DB-GEMM's headline IS an optimized, Bayesian-autotuned OpenCL GEMM kernel; its own 'multiples of 128/129' square sweep and GEMMBATCHED/GEMMSTRIDEDBATCHED sweep are literally the cited basis for this track's square and batched variants. FPGA/OpenCL, no NVIDIA GPU."
+ },
+ {
+  "key": "conf/asplos/YuLZCFX24",
+  "group": "gemm",
+  "centrality": "component",
+  "regime_match": "partial",
+  "regime": "dynamic-shape DL tensor-program GEMM on GPU Tensor Cores / Ascend NPU",
+  "gpu_single_card": true,
+  "rationale": "MikPoly is a dynamic-shape tensor compiler (micro-kernel polymerization) evaluated across GEMM and other dynamic-shape operators vs. vendor libraries; GEMM is one of several operator types it targets, and shapes are dynamic-DL-derived rather than the fixed sweep."
+ },
+ {
+  "key": "conf/ics/LiXSS24",
+  "group": "gemm",
+  "centrality": "component",
+  "regime_match": "partial",
+  "regime": "TVM-tuned GEMM/2D-convolution shapes; the claim is auto-tuning search time, not raw GEMM throughput",
+  "gpu_single_card": true,
+  "rationale": "This is an autotuning-acceleration paper (faster TVM search for GEMM and conv2d kernels), matching the 'autotuner that generates this kernel among others' component pattern; the headline metric is tuning-time reduction, not kernel throughput vs. a fixed baseline."
+ },
+ {
+  "key": "conf/ipps/GeorganasKVKNPB24",
+  "group": "gemm",
+  "centrality": "component",
+  "regime_match": "partial",
+  "regime": "CPU DL/HPC kernels (incl. GEMM) via Tensor Processing Primitives + declarative loops",
+  "gpu_single_card": false,
+  "rationale": "TPP-MLIR is a broader framework producing portable near-peak DL/HPC kernels via TPPs and loop abstractions; GEMM is one of several kernel types generated, evaluated with standalone and end-to-end workloads. CPU only."
+ },
+ {
+  "key": "conf/ppopp/XuSZLH024",
+  "group": "gemm",
+  "centrality": "component",
+  "regime_match": "partial",
+  "regime": "PolyBench affine-kernel suite (GEMM one of ~30 kernels) under mixed-precision autotuning",
+  "gpu_single_card": true,
+  "rationale": "PrecTuner is a general mixed-precision code generator/autotuner for PolyBench affine programs; GEMM is a generic example among many affine kernels, not a dedicated GEMM optimization target."
+ },
+ {
+  "key": "conf/ppopp/ChenLWBWMYZCY24",
+  "group": "gemm",
+  "centrality": "tangential",
+  "regime_match": "mismatch",
+  "regime": "stencil-to-matmul transformation on Tensor Cores, not a general dense GEMM benchmark",
+  "gpu_single_card": true,
+  "rationale": "ConvStencil transforms stencil computation into matmul to exploit Tensor Cores; headline and baselines are stencil-domain (speedup over stencil solvers), not GEMM vs. vendor libraries."
+ },
+ {
+  "key": "conf/ppopp/JangdaY24",
+  "group": "gemm",
+  "centrality": "tangential",
+  "regime_match": "mismatch",
+  "regime": "Kronecker-structured matrix-matrix multiplication, a distinct operation from general dense GEMM",
+  "gpu_single_card": true,
+  "rationale": "FastKron implements Kronecker-product matrix multiplication (multiplication with a Kronecker product of several smaller matrices), a structurally different operation from the spec's C=A*B GEMM; baselines are tensor-algebra libraries, not cuBLAS-style GEMM."
+ },
+ {
+  "key": "conf/sc/ZhangLYCZCY24",
+  "group": "gemm",
+  "centrality": "tangential",
+  "regime_match": "mismatch",
+  "regime": "low-rank stencil-weight decomposition on Tensor Cores, not a general dense GEMM",
+  "gpu_single_card": true,
+  "rationale": "LoRAStencil decomposes stencil weight matrices into rank-1 factors to reduce TCU memory-access redundancy for stencil computation; it is not a GEMM implementation or benchmark."
+ },
+ {
+  "key": "conf/sc/LtaiefACRSKDBAK24",
+  "group": "gemm",
+  "centrality": "component",
+  "regime_match": "mismatch",
+  "regime": "GWAS/KRR-specific mixed-precision GEMM inside a tile Cholesky-based solver, application-sized matrices",
+  "gpu_single_card": true,
+  "rationale": "GEMM is a real, separable BLAS3 building block used inside the paper's tile-Cholesky-based KRR solver for GWAS; it is not independently benchmarked against vendor GEMM at the track's square/irregular sizes."
+ },
+ {
+  "key": "conf/sc/WuMZDW0WW24",
+  "group": "gemm",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "small/irregular (tall-skinny, long-rectangular) GEMM on Arm CPUs",
+  "gpu_single_card": false,
+  "rationale": "autoGEMM's headline IS an autotuned irregular-GEMM micro-kernel generator, evaluated kernel-level against LIBXSMM/LibShalom/OpenBLAS/Eigen; explicitly one of the cited source artifacts for the small-irregular variant. Arm CPU only."
+ },
+ {
+  "key": "conf/asplos/DingYZLWP23",
+  "group": "gemm",
+  "centrality": "component",
+  "regime_match": "partial",
+  "regime": "DL tensor-program GEMM/conv2d shapes on NVIDIA GPUs via task-mapping compiler",
+  "gpu_single_card": true,
+  "rationale": "Hidet is a compiler paradigm producing fast GPU kernels for DL tensor programs (GEMM and conv2d among them); GEMM is one of the operator types it targets, not the sole headline kernel."
+ },
+ {
+  "key": "conf/dac/BasalamaWC23",
+  "group": "gemm",
+  "centrality": "component",
+  "regime_match": "partial",
+  "regime": "FPGA systolic-array matmul/convolution design-space exploration",
+  "gpu_single_card": false,
+  "rationale": "Odyssey is a DSE tool that explores tiling/dataflow for systolic-array designs across 'various matrix multiplication and convolution kernels' -- an autotuner generating multiple kernel-family designs, not a dedicated GEMM implementation. FPGA only."
+ },
+ {
+  "key": "conf/dac/ZhuangYZ23",
+  "group": "gemm",
+  "centrality": "core",
+  "regime_match": "partial",
+  "regime": "Versal ACAP systolic-array matmul accelerator, FP32/INT16/INT8",
+  "gpu_single_card": false,
+  "rationale": "AutoMM/CHARM is dedicated specifically to generating matrix-multiply accelerator designs (not a multi-kernel-family DSE tool), evaluated kernel-level (GFLOPs/TOPs) against A100/U250/TX2; but its INT16/INT8 emphasis and FPGA/ACAP target diverge from the spec's fp64/32/16 CPU/GPU-focused sweep."
+ },
+ {
+  "key": "conf/ics/WuZLHJWC23",
+  "group": "gemm",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "large/near-square dense GEMM, fp32/fp64, GPU, incl. irregular shapes",
+  "gpu_single_card": true,
+  "rationale": "This paper's own 1024-6144-step-512 square sweep is explicitly the cited basis for the track's gemm-square-kernel variant; headline is a from-scratch GEMM kernel beating/matching cuBLAS."
+ },
+ {
+  "key": "conf/ipps/LiYTLZ22",
+  "group": "gemm",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "DGEMM on AMD GPU via Tensile auto-tuning, batched and single",
+  "gpu_single_card": false,
+  "rationale": "Tensile-FGPS's headline is a fine-grained prefetching scheme for DGEMM kernels, evaluated kernel-level and explicitly named in the spec text; but the GPU is AMD, not NVIDIA, so out of the benchmark's single-NVIDIA-GPU scope."
+ },
+ {
+  "key": "conf/sc/HuangC22",
+  "group": "gemm",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "distributed dense matrix multiplication, arbitrary M=N=K, fp64",
+  "gpu_single_card": false,
+  "rationale": "CA3DMM is explicitly the named source algorithm for the gemm-distributed-e2e variant (same example sizing rationale, ntest=10 convention); CPU-only distributed, no GPU."
+ },
+ {
+  "key": "conf/sc/LiuLLFYSZWPCGHW21",
+  "group": "gemm",
+  "centrality": "component",
+  "regime_match": "mismatch",
+  "regime": "tensor-contraction-based quantum-circuit simulation on Sunway many-core, not standalone dense GEMM",
+  "gpu_single_card": false,
+  "rationale": "GEMM/matmul appears as a fused permute-multiply primitive deep inside a 42-million-core tensor-network quantum-circuit simulator; evaluated via whole-application EFLOPS, not a GEMM benchmark. Sunway platform, no NVIDIA GPU."
+ },
+ {
+  "key": "conf/sc/YangFDSW21",
+  "group": "gemm",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "small/irregular-shaped GEMM on ARMv8 multi-core",
+  "gpu_single_card": false,
+  "rationale": "LibShalom's headline IS an optimized small/irregular GEMM library, explicitly and repeatedly cited as a canonical source for the gemm-small-irregular-kernel variant. Arm CPU only."
+ },
+ {
+  "key": "journals/tpds/LichtBMH21",
+  "group": "gemm",
+  "centrality": "tangential",
+  "regime_match": "mismatch",
+  "regime": "GEMM as one illustrative HLS-transformation case study, not a dedicated optimized GEMM implementation",
+  "gpu_single_card": false,
+  "rationale": "This is a catalog/tutorial of HLS optimizing transformations demonstrated on a sample set of HPC kernels (GEMM, stencil); GEMM is an example, not a competitively-optimized, vendor-baseline-compared implementation."
+ },
+ {
+  "key": "conf/dac/AlshboulTS20",
+  "group": "gemm",
+  "centrality": "tangential",
+  "regime_match": "mismatch",
+  "regime": "matrix-multiply as case-study kernel for NVMM write-reduction tiling; no vendor-baseline throughput comparison",
+  "gpu_single_card": false,
+  "rationale": "WET studies the effect of loop tiling on NVMM write amplification using matrix multiplication as its case-study kernel; the metric is write-count reduction (and secondarily performance), not GEMM throughput vs. cuBLAS/MKL-class baselines. CPU only."
+ },
+ {
+  "key": "conf/ics/ZhangSW20",
+  "group": "gemm",
+  "centrality": "component",
+  "regime_match": "partial",
+  "regime": "Tensor-Core low-rank Gram-matrix approximation (random-projection matmul) for SVM training",
+  "gpu_single_card": true,
+  "rationale": "GEMM/matmul is used to compute a Tensor-Core-accelerated low-rank Gram-matrix approximation inside an SVM training system; it is a real, separable sub-kernel of a larger ML training pipeline, not independently GEMM-benchmarked."
+ },
+ {
+  "key": "conf/sc/MatteisLH20",
+  "group": "gemm",
+  "centrality": "core",
+  "regime_match": "partial",
+  "regime": "streaming HLS BLAS3 GEMM (and other BLAS routines) on FPGA",
+  "gpu_single_card": false,
+  "rationale": "fBLAS is an open-source BLAS library whose evaluated routines include GEMM as a primary BLAS3 member; but its streaming, on-chip-communication-composed design differs from the spec's off-chip square/irregular DRAM-resident sweep. FPGA only."
+ },
+ {
+  "key": "journals/tpds/LanMHSDWLQF20",
+  "group": "gemm",
+  "centrality": "component",
+  "regime_match": "mismatch",
+  "regime": "Winograd-transform tile GEMM (TensorGEMM) embedded in CNN inference, ARM CPU",
+  "gpu_single_card": false,
+  "rationale": "TensorGEMM accelerates Winograd-transformed convolution tiles inside the FeatherCNN inference library; GEMM performance is reported but the shapes are small Winograd-tile-specific, not the general square/irregular sweep, and the headline is the CNN inference framework. ARM CPU only."
+ },
+ {
+  "key": "conf/sc/LtaiefACRSKDBAK24",
+  "group": "cholesky",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "GPU tensor-core mixed-precision (FP64/FP32/FP16/INT8/FP8) tile Cholesky, real UK BioBank GWAS covariance matrices",
+  "gpu_single_card": true,
+  "rationale": "The paper's headline IS a new four-precision Cholesky-based solver reaching 1.805 mixed-precision ExaOp/s; explicitly the source for the GPU/tensor-core tier of the mixed-precision variant (UK BioBank GWAS size cited directly in the spec)."
+ },
+ {
+  "key": "conf/ipps/CaoAPBLKD22",
+  "group": "cholesky",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "distributed tile low-rank (TLR) Cholesky, STARS-H-generated 3D data-sparse covariance matrices, fp64",
+  "gpu_single_card": false,
+  "rationale": "Headline is runtime-level optimizations (trimming, rank-aware distribution) specifically for TLR Cholesky factorization, evaluated as factorization performance vs. other TLR Cholesky implementations; explicitly cited in the spec as 'paper 2' for the TLR variant. CPU/distributed only."
+ },
+ {
+  "key": "conf/ipps/MondalAL0GK22",
+  "group": "cholesky",
+  "centrality": "component",
+  "regime_match": "matches",
+  "regime": "TLR/HODLR Cholesky-based likelihood evaluation, STARS-H covariance matrices",
+  "gpu_single_card": false,
+  "rationale": "Headline is a new non-Gaussian (Tukey g-and-h) statistical model for geospatial data; TLR Cholesky is the underlying, reused ExaGeoStat-family computational engine, matching the instructions' 'geostatistics application' component example, though the input suite matches the spec's TLR variant."
+ },
+ {
+  "key": "conf/sc/CaoAAPNBDGKLS22",
+  "group": "cholesky",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "mixed-precision + low-rank tile Cholesky, STARS-H covariance matrices, Fugaku A64FX",
+  "gpu_single_card": false,
+  "rationale": "Central technical contribution is combining mixed-precision and low-rank computation within one tile Cholesky solver, evaluated kernel-level (12x vs. a highly-optimized dense Cholesky baseline). No GPU (Fugaku A64FX CPU nodes)."
+ },
+ {
+  "key": "journals/tpds/AbdulahCPBDGKLS22",
+  "group": "cholesky",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "three-precision (FP64/32/16) tile Cholesky, STARS-H covariance matrices, multi-GPU PaRSEC",
+  "gpu_single_card": true,
+  "rationale": "Headline is a three-precision tile-Cholesky/TRSM solver for Gaussian MLE via PaRSEC, matching the mixed-precision variant's 'band-percentage' scheme; kernels_assigned explicitly list Cholesky factorization and TRSM. Includes an NVIDIA-GPU platform path."
+ },
+ {
+  "key": "conf/ipps/CaoPABLKD21",
+  "group": "cholesky",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "distributed TLR Cholesky, 3D exponential Matern covariance matrices, fp64",
+  "gpu_single_card": false,
+  "rationale": "Headline is PaRSEC-runtime/rank-aware optimizations specifically for TLR Cholesky factorization, evaluated as a 7x speedup over prior TLR Cholesky implementations; explicitly the spec's 'paper 5' source. CPU/distributed only."
+ },
+ {
+  "key": "conf/sc/KwasniewskiKBZS21",
+  "group": "cholesky",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "communication-optimal 2.5D dense Cholesky/LU, single-node and distributed fp64",
+  "gpu_single_card": false,
+  "rationale": "This is the explicitly-named 'paper 1' basis for both the single-node and distributed fp64 Cholesky variants (its own NB-tuning behavior is cited as the motivating lesson); no GPU, CPU/distributed only."
+ },
+ {
+  "key": "journals/tpds/SalvanaAHLSGK21",
+  "group": "cholesky",
+  "centrality": "component",
+  "regime_match": "matches",
+  "regime": "low-rank-approximated Cholesky-based Gaussian log-likelihood for multivariate geospatial cokriging",
+  "gpu_single_card": false,
+  "rationale": "Headline is a multivariate geospatial statistics/cokriging methodology; Cholesky-based likelihood evaluation with low-rank approximation is the reused computational engine, matching the geostatistics-application component pattern despite input-suite overlap with the spec."
+ },
+ {
+  "key": "conf/cgo/PegolottiAP26",
+  "group": "gemv",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "nonuniform-bitwidth (INT2/3/4) quantized-weight GEMV, CPU, LLM linear layers",
+  "gpu_single_card": false,
+  "rationale": "QIGen's headline IS a kernel generator producing nonuniformly-quantized matrix-vector kernels for LLM inference; explicitly the named source for the gemv-quantized-weight-kernel variant. CPU only."
+ },
+ {
+  "key": "conf/ipps/JiangYLHDJ26",
+  "group": "gemv",
+  "centrality": "component",
+  "regime_match": "matches",
+  "regime": "KV-cache-compressed GEMV on NVIDIA GPUs, LLM decode",
+  "gpu_single_card": true,
+  "rationale": "This is the instructions' own worked example: PackKV's headline is KV-cache lossy compression; GEMV acceleration is an additional benefit of the compression scheme, matching the gemv-e2e-compressed-format variant it is cited for."
+ },
+ {
+  "key": "conf/ppopp/FrantarCCHA25",
+  "group": "gemv",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "INT4-quantized-weight GEMV/GEMM batch sweep crossing the memory/compute-bound roofline knee, GPU, LLM linear layers",
+  "gpu_single_card": true,
+  "rationale": "MARLIN's headline IS mixed-precision GPU GEMM/GEMV kernels for LLM inference; its bench.py MODELS dict and full batch-size ALL=True sweep are the explicit, verbatim basis for the gemv-quantized-weight-kernel and gemv-batched-decode variants."
+ },
+ {
+  "key": "conf/asplos/LamJ0MGLLLRLRW024",
+  "group": "gemv",
+  "centrality": "component",
+  "regime_match": "mismatch",
+  "regime": "compute-bound LWE-ring modular-arithmetic matrix-vector multiply for private information retrieval",
+  "gpu_single_card": true,
+  "rationale": "GPU-DPF's MVM kernel is real and separable but embedded in a larger PIR system (evaluated via end-to-end QPS and PIR-ML co-design gains); the spec itself flags this kernel as compute- not memory-bound, unlike the memory-bandwidth-bound regime this track targets."
+ },
+ {
+  "key": "conf/sc/LtaiefHWJRK23",
+  "group": "gemv",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "tile low-rank matrix-vector multiply, seismic MDD real datasets, Cerebras CS-2",
+  "gpu_single_card": false,
+  "rationale": "TLR-MVM is explicitly the named source for the gemv-e2e-compressed-format variant (same seismic-redatuming datasets, same bench.cpp harness). Platform is Cerebras CS-2, not an NVIDIA GPU."
+ },
+ {
+  "key": "conf/ppopp/PanQZ26",
+  "group": "kcore-kclique",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "maximal clique enumeration on large real graphs (up to 146B cliques), GPU",
+  "gpu_single_card": true,
+  "rationale": "RDMCE's headline IS a GPU MCE algorithm/kernel, explicitly and by name the basis for the mce-enum variant, including its own SNAP/nrvis/KONECT graph suite."
+ },
+ {
+  "key": "conf/ppopp/LiuSZ24",
+  "group": "kcore-kclique",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "batch-dynamic k-core maintenance under streamed edge updates, CPU",
+  "gpu_single_card": false,
+  "rationale": "LiuSZ24's headline IS a parallel batch-dynamic k-core decomposition data structure, explicitly and repeatedly named as the source for the kcore-dynamic-batch variant (its own dynamic graph streams and batch sizes). CPU only."
+ },
+ {
+  "key": "conf/ics/AlmasriHNXH22",
+  "group": "kcore-kclique",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "exact k-clique counting on GPU, SNAP graphs",
+  "gpu_single_card": true,
+  "rationale": "KCGPU's headline IS a parallel GPU k-clique-counting kernel, explicitly the basis for the kclique-count-exact variant (its own Table 1 graph set)."
+ },
+ {
+  "key": "conf/sc/BestaMLTIKAJPKGVMH22",
+  "group": "kcore-kclique",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "approximate probabilistic (Bloom-filter/MinHash) clique counting, CPU",
+  "gpu_single_card": false,
+  "rationale": "ProbGraph's headline IS Bloom-filter probabilistic set representations applied to clique counting and clustering, explicitly the basis for the kclique-count-approx variant (its own Table VIII graph suite). CPU only."
+ },
+ {
+  "key": "conf/ppopp/Shun20",
+  "group": "kcore-kclique",
+  "centrality": "tangential",
+  "regime_match": "mismatch",
+  "regime": "hypergraph (bipartite vertex-hyperedge) algorithms, k-core one of ~8 algorithms covered",
+  "gpu_single_card": false,
+  "rationale": "The spec itself explicitly excludes this paper's hypergraph inputs as a structurally different data model (bipartite incidence, not a plain adjacency list); k-core is only one of eight algorithms (betweenness, PageRank, SSSP, etc.) in a general hypergraph-processing framework, not a dedicated k-core/k-clique contribution."
+ },
+ {
+  "key": "conf/ppopp/YangNYLDXJ026",
+  "group": "eigensolver",
+  "centrality": "component",
+  "regime_match": "partial",
+  "regime": "sparse matrix-power kernel (MPK) for polynomial preconditioners, applied to both linear AND eigenvalue solves, CPU/Arm",
+  "gpu_single_card": false,
+  "rationale": "DBMPK optimizes the general matrix-power kernel used by polynomial preconditioners for both linear systems and eigenproblems; it is not itself an eigensolver implementation, so it is a real but separable component of the Krylov-filtered partial-spectrum pipeline. CPU/Arm only."
+ },
+ {
+  "key": "conf/ppopp/WangDZWZLJZ25",
+  "group": "eigensolver",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "dense symmetric tridiagonalization on GPU, fp64",
+  "gpu_single_card": true,
+  "rationale": "cuEV's headline IS a GPU tridiagonalization algorithm (double-blocking band reduction + bulge chasing), explicitly named as the tridiagonalization-stage basis for the dense full-spectrum EVD variant, beating cuSOLVER/MAGMA."
+ },
+ {
+  "key": "conf/sc/WangHZSJWDZ25",
+  "group": "eigensolver",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "2-stage dense symmetric EVD back-transformation on GPU, fp64",
+  "gpu_single_card": true,
+  "rationale": "This paper's headline IS a restructured EVD back-transformation algorithm, explicitly named as the back-transformation-stage basis for the dense full-spectrum EVD variant, beating MAGMA/cuSOLVER by up to 3.58x/2.21x."
+ },
+ {
+  "key": "journals/tpds/LiaoLLR21",
+  "group": "eigensolver",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "distributed structured divide-and-conquer symmetric tridiagonal eigensolver, fp64",
+  "gpu_single_card": false,
+  "rationale": "PSDC is explicitly named as 'the one distributed paper in this track' and the exact basis for the eigensolver-symmetric-tridiagonal-dc-distributed variant (its own Clement/Hermite/Toeplitz generators and strong-scaling sizes). CPU/distributed only."
+ },
+ {
+  "key": "journals/tpds/ShiLXSH21",
+  "group": "eigensolver",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "polynomial-filtered partial-spectrum eigensolver, planetary normal-mode FEM operators, fp64",
+  "gpu_single_card": false,
+  "rationale": "This paper's own four shipped FEM models are the explicit, verbatim basis for the polynomial-filtered partial-spectrum variant's tier (a). Distributed CPU, no GPU."
+ },
+ {
+  "key": "conf/ipps/NiuOSC26",
+  "group": "community-detection",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "Louvain modularity-maximizing community detection with convergence guarantee, CPU, SNAP graphs",
+  "gpu_single_card": false,
+  "rationale": "NiuOSC26 is explicitly named as the subject matter operationalized by the cd-determinism-repeatability variant and is a source for cd-kernel-modularity; headline IS the Louvain algorithm itself. CPU only."
+ },
+ {
+  "key": "conf/ppopp/WangLLWM00Z25",
+  "group": "community-detection",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "GPU-accelerated Louvain modularity community detection, SNAP graphs",
+  "gpu_single_card": true,
+  "rationale": "GALA's headline IS a GPU Louvain algorithm; its own README com-lj worked example is explicitly reproduced verbatim in the cd-kernel-modularity variant's recommended subset."
+ },
+ {
+  "key": "journals/tpds/ZhuSFX23",
+  "group": "community-detection",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "structural-information-theory (non-modularity) community detection, hybrid sparse CPU/GPU",
+  "gpu_single_card": true,
+  "rationale": "HSSInfo's headline IS a community detection algorithm (structural-entropy minimization), explicitly named as the basis for the cd-alt-objective-report variant; evaluated kernel-level against eleven baseline algorithms."
+ },
+ {
+  "key": "conf/sc/BestaMLTIKAJPKGVMH22",
+  "group": "community-detection",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "Bloom-filter approximate (Jarvis-Patrick-style) threshold clustering, CPU",
+  "gpu_single_card": false,
+  "rationale": "ProbGraph's clustering algorithm is explicitly named as the basis for the alt-objective (non-modularity) variant of this track; clustering is one of the two headline applications of the paper's core technique. CPU only."
+ },
+ {
+  "key": "conf/sc/ChenZSLY25",
+  "group": "topk-selection",
+  "centrality": "component",
+  "regime_match": "matches",
+  "regime": "billion-scale approximate-nearest-neighbor top-k, PIM hardware",
+  "gpu_single_card": false,
+  "rationale": "UpANNS's early-pruning top-k selection is one of four innovations inside a larger PIM-based ANNS system, evaluated end-to-end (QPS); still the explicit, sole basis for the topk-e2e-ann-approx variant. Platform is UPMEM PIM, not a GPU."
+ },
+ {
+  "key": "conf/sc/ZhangNLW23",
+  "group": "topk-selection",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "exact top-k of a GPU-resident array, synthetic distributions, batch sweep",
+  "gpu_single_card": true,
+  "rationale": "AIR Top-K/GridSelect's headline IS GPU top-k selection algorithms, explicitly and repeatedly named as 'the most systematically-swept paper in this track' and the direct basis for the topk-array-kernel-exact variant."
+ },
+ {
+  "key": "conf/dac/ParraviciniCSS21",
+  "group": "topk-selection",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "reduced-precision-score Top-K SpMV for embedding similarity, FPGA",
+  "gpu_single_card": false,
+  "rationale": "Top-K SpMV's headline IS a Top-K SpMV FPGA kernel, explicitly the sole named basis for the topk-approx-precision variant (same synthetic sweep and GloVe dataset). FPGA only."
+ },
+ {
+  "key": "conf/ipps/YaoZLX26",
+  "group": "climate-kernel",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "FP16 Tensor-Core shallow-water dynamical core, Williamson test suite",
+  "gpu_single_card": true,
+  "rationale": "Unlike its tangential role in the gemm group, here the paper's headline (accelerating a shallow-water dynamical core) IS exactly what this track's dyncore variant measures; the variant is reused verbatim from this same paper's stencil-track entry."
+ },
+ {
+  "key": "conf/sc/AbdulahBBCCGKKL24",
+  "group": "climate-kernel",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "mixed-precision SHT + tile-low-rank Cholesky climate emulator, multi-GPU/distributed (AMD+NVIDIA)",
+  "gpu_single_card": true,
+  "rationale": "This paper's own training data and 0.976 EFlop/s Frontier-scale headline point are the explicit, sole basis for the climate-emulator-solver-kernel variant. Runs on NVIDIA GPUs (Alps GH200, Leonardo A100) among other platforms."
+ },
+ {
+  "key": "conf/asplos/GargaryL026",
+  "group": "other:json-parsing",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "fully GPU-offloaded JSON parsing (UTF-8 validate+tokenize+nest), standard corpora",
+  "gpu_single_card": true,
+  "rationale": "cuJSON's headline IS a GPU JSON-parsing algorithm/kernel, the sole and direct basis for this track's only variant."
+ },
+ {
+  "key": "conf/dac/AghdaeiF24",
+  "group": "other:spectral-sparsification",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "incremental spectral sparsification, SuiteSparse Laplacian-derived graphs, CPU",
+  "gpu_single_card": false,
+  "rationale": "inGRASS's headline IS the incremental spectral-sparsification algorithm itself (LRD decomposition + resistance-embedding updates), the sole and direct basis for both variants, matching the paper's own 200x speedup claim. CPU only."
+ },
+ {
+  "key": "conf/ics/ChunduryBLSM26",
+  "group": "other:hamiltonian-simulation",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "diagonal-budgeted Trotterized Hamiltonian time evolution, HamLib suite, CPU+GPU",
+  "gpu_single_card": true,
+  "rationale": "HamSim's headline IS the diagonal-budgeted Trotterization algorithm and diagonal-sparse SpMV kernel, the sole and direct basis for both variants (same HamLib families, same diagonal-density framing)."
+ },
+ {
+  "key": "conf/ipps/YamoutBJMH22",
+  "group": "other:vertex-cover",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "exact GPU branch-and-bound MVC/PVC search, DIMACS + real-world graphs",
+  "gpu_single_card": true,
+  "rationale": "This paper's GPU search-tree traversal for Minimum/Parameterized Vertex Cover is the sole and direct basis for both variants of this track."
+ },
+ {
+  "key": "conf/ppopp/McCoyHY023",
+  "group": "other:membership-filter",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "GPU approximate-membership filters (GQF/TCF/RSQF/SQF/Bloom/Blocked-Bloom), insert/query/delete throughput + FPR",
+  "gpu_single_card": true,
+  "rationale": "This paper's six filter implementations are the sole and direct basis for this track's only variant, matching the artifact's own capacity sweep."
+ },
+ {
+  "key": "conf/sc/FernandoNHZSGB22",
+  "group": "amr-kernel",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "wavelet-AMR BSSN finite-difference update, binary-black-hole q1/q2/q4 configs, GPU+CPU",
+  "gpu_single_card": true,
+  "rationale": "Dendro-GR is the sole and direct basis for both AMR variants (exact q1/q2/q4 and BSSN_MAXDEPTH parameter matches); the paper reports a single-A100 800 GFlops/s number, confirming a single-GPU path."
+ },
+ {
+  "key": "journals/tpds/UdayashankarMA26",
+  "group": "other:content-defined-chunking",
+  "centrality": "core",
+  "regime_match": "matches",
+  "regime": "SIMD-vectorized content-defined chunking, DEB real VM-image dataset, CPU",
+  "gpu_single_card": false,
+  "rationale": "SeqCDC is the sole and direct basis for this track's only variant (matching '10x over unaccelerated' claim verbatim). CPU (SSE/AVX) only, no GPU."
+ }
+]

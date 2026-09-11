@@ -1,0 +1,162 @@
+kernel: dnn-operator-fusion
+summary: >
+  Fusing a chain of DNN subgraph operators (elementwise / reduction / GEMM
+  combinations pulled from attention, normalization, MoE routing, and
+  quantized-GEMM building blocks) into as few kernel launches as legally
+  possible, measured separately at single-fused-kernel, subgraph, and
+  full-model granularity, with compile/autotuning search time reported as
+  its own axis rather than hidden inside any of those three.
+operation: >
+  Generic: given an operator chain op1 -> op2 -> ... -> opk drawn from the
+  canonical pattern set below, produce a fused kernel (or minimal kernel
+  set) computing the same function as the unfused sequential execution of
+  op1..opk, and compare launch count / latency / bandwidth against the
+  unfused baseline and against the best available hand-written reference.
+canonical_fusion_patterns:
+  # unifies RedFuser's "cascaded reduction", STOF's MI/CI taxonomy, and
+  # LightSeq2's elementwise-chain language into one vocabulary.
+  - id: elementwise-chain
+    example: "bias-add + dropout + residual-add (LightSeq2)"
+    stof_class: MI+MI
+  - id: reduction-elementwise
+    example: "LayerNorm (two-pass mean/var reduction + normalize+affine); Softmax (STOF Bias+LayerNorm class)"
+    stof_class: MI+MI / CI+MI
+  - id: gemm-reduction-cascaded
+    example: "softmax(QK^T)V attention core (RedFuser's cascaded reduction); MLA"
+    stof_class: CI+MI (attention specifically)
+  - id: gemm-gemm
+    example: "back-to-back matmuls, e.g. FFN up-proj -> down-proj (STOF CI+CI)"
+    stof_class: CI+CI
+  - id: moe-routing
+    example: "router GEMM + softmax + topk + expert gather/scatter (RedFuser)"
+    stof_class: not covered by STOF; RedFuser-only pattern
+  - id: quant-gemm
+    example: "FP8 per-token quantization + GEMM (RedFuser); low-bit weight-repetition-aware conv/GEMM (SumMerge, single-op case)"
+    stof_class: not covered by STOF; RedFuser/SumMerge
+
+variants:
+  - id: fusion-single-kernel
+    claim: >
+      steady-state latency/bandwidth of ONE fused kernel in isolation
+      (synthetic harness, decoupled from any specific model), i.e. the
+      "single-fused-kernel" granularity that RedFuser's four subgraphs and
+      SumMerge collapse into by construction, and that LightSeq2 reports
+      per-operator (10 reps).
+    inputs:
+      patterns: [elementwise-chain, reduction-elementwise, gemm-reduction-cascaded, gemm-gemm]
+      shapes:
+        elementwise-chain: "[batch in {1,8,16}, seqlen in {128,512,2048}, hidden in {512,1024,4096}], fp16"
+        reduction-elementwise: "same shape grid; LayerNorm and Softmax separately"
+        gemm-reduction-cascaded: "MHA core: [batch in {1,8,16}, heads matching BERT-Base(12)/BERT-Large(16)/LLaMA-65B(64), seqlen in {128,512,2048,4096}, head_dim=64/128], mask_id in {0(dense),1,2,3} sparsity patterns (STOF's mask sweep)"
+        gemm-gemm: "FFN shapes: [batch*seqlen in {2048,8192,32768}, hidden in {768,1024,4096}, ffn_mult=4]"
+      recommended_subset:
+        - "BERT-Base MHA @ (batch=1,seqlen=128) and (batch=16,seqlen=2048)"
+        - "LLaMA-65B-scale MHA @ (batch=1,seqlen=4096)"
+        - "LayerNorm @ hidden=1024, batch*seqlen=8192"
+        - "FFN GEMM+GEMM @ hidden=1024, batch*seqlen=8192"
+      precision: [fp16, fp32]
+    protocol:
+      warmup: 10
+      reps: 20
+      statistic: median (report min/max); note STOF's own kernel-level script (benchmk_attn_unified.py) uses exactly this warmup/reps pair, verified in code
+      timer: device-side events (CUDA events)
+      timing_scope: >
+        the fused kernel launch(es) only; for the unfused baseline this
+        includes ALL constituent kernel launches back-to-back (launch
+        overhead is intentionally NOT excluded from the unfused baseline,
+        since eliminating per-launch overhead is exactly what fusion claims
+        to buy — excluding it would erase the effect being measured)
+      preprocessing_reported: "N/A at this granularity (no compilation happens per-call once a kernel is already built; see fusion-compile-search-time)"
+    metric:
+      primary: "GB/s effective bandwidth (bytes read+written by the fused op / time) for memory-bound patterns (elementwise-chain, reduction-elementwise); GFLOP/s for compute-bound patterns (gemm-gemm, gemm-reduction-cascaded at large seqlen)"
+      secondary: [latency_us, speedup_vs_unfused_pytorch_eager, speedup_vs_best_hand_written_reference_if_one_exists]
+    correctness: "max rel err vs. unfused PyTorch-eager sequential reference < 1e-2 (fp16) / 1e-5 (fp32)"
+
+  - id: fusion-subgraph
+    claim: >
+      fused kernel(s) exercised inside a larger block including adjacent
+      unfused glue ops (reshape/transpose/gather) — RedFuser's actual
+      reporting granularity ("four representative subgraphs"), and STOF's
+      MHA-block-in-context numbers.
+    inputs:
+      patterns: [gemm-reduction-cascaded (full MHA block), moe-routing, quant-gemm]
+      moe_routing_configs: "Switch-Transformer / ERNIE / DeepSeek-V2-Lite / Qwen3 scale expert counts and top-k, as used by RedFuser"
+      quant_gemm_configs: "FP8 per-token quant+GEMM shapes from ERNIE / DeepSeek-R1 / Qwen3, as used by RedFuser"
+      mha_block_configs: "BERT-Base/Large, GPT2, LLaMA, T5, ViT MHA blocks at (batch,seqlen) in {(1,128),(8,512),(16,2048)}, matching STOF's end-to-end sweep granularity applied at block level"
+      precision: [fp16, fp8 (quant-gemm only)]
+    protocol:
+      warmup: 10
+      reps: 20
+      statistic: median (report min/max)
+      timer: device-side events (CUDA events)
+      timing_scope: "full subgraph incl. adjacent unfused ops needed to feed/consume the fused kernel(s); host-side control-flow/dispatch excluded"
+    metric:
+      primary: "normalized latency vs. PyTorch Eager (unfused) reference, matching RedFuser's own reporting convention"
+      secondary: [GFLOP/s, speedup_vs_torch_compile, speedup_vs_tvm_relax_default_pipeline (excluding CUTLASS/FlashInfer backends, per RedFuser's own methodology, to isolate fusion capability rather than backend-library quality), speedup_vs_hand_written_reference]
+    correctness: "same gate as fusion-single-kernel"
+
+  - id: fusion-e2e-model
+    claim: >
+      full-model forward-inference and/or one full training step latency,
+      with the fusion framework's kernels embedded in a real model,
+      matching STOF's and LightSeq2's end-to-end tables.
+    inputs:
+      models: [BERT-Base, BERT-Large, GPT2, LLaMA-7B-scale-block, T5, ViT-B]
+      settings: ["(batch=1, seqlen=128)", "(batch=8, seqlen=512)", "(batch=16, seqlen=2048)"]
+      long_context_sweep: "seqlen 4k-16k at batch=1 (STOF's additional sweep)"
+      mode: [inference_forward_only, training_step (fwd+bwd+optimizer, SGD or Adam, matching EL-Rec/LightSeq2 style full-step timing)]
+      precision: [fp16]
+    protocol:
+      warmup: 10
+      reps: 10
+      statistic: median (report min/max); STOF's own end2end script (benchmk_end2end.py) uses this exact warmup/reps pair, verified in code — deliberately kept distinct from the single-kernel/subgraph 10/20 pair above per the instructions' separation requirement
+      timer: device-side events with host-side wall-clock cross-check (CUDA events for the timed region; torch.cuda.synchronize()-bracketed wall clock as a secondary check, matching EL-Rec/LightSeq2's approach for full-step timing)
+      timing_scope: "whole model forward (and backward+optimizer for training_step mode); compilation/graph-capture/autotuning EXCLUDED and reported once via fusion-compile-search-time, never amortized silently into this number"
+    metric:
+      primary: "latency_ms (inference) or samples/sec, tokens/sec (training)"
+      secondary: [speedup_vs_pytorch_native, speedup_vs_pytorch_compile, gpu_utilization_pct, peak_memory_GB]
+    correctness: "output matches unfused reference within max rel err 1e-2 (fp16); for training_step mode, loss trajectory over >=100 steps matches reference within 1% relative (LightSeq2/EL-Rec-style downstream check, in addition to the per-step numeric gate)"
+
+  - id: fusion-compile-search-time
+    claim: >
+      compile/autotune search time for the fusion framework, reported
+      separately and explicitly amortized, never silently folded into
+      fusion-e2e-model latency. Mandatory for any codegen/autotuning-based
+      entrant (RedFuser-, STOF-, MCFuser-, Bolt-style systems); reported as
+      0 / N-A for hand-written systems (LightSeq2-style), which is itself a
+      valid and meaningful data point, not a missing one.
+    inputs:
+      patterns: "same set as fusion-single-kernel / fusion-subgraph, one search-time number per pattern/shape"
+      target_settings: "at minimum the (batch=16, seqlen=2048) setting, matching STOF's own Table 4 comparison point"
+    protocol:
+      statistic: "wall-clock minutes for one full autotuning search to convergence (as defined by the framework's own stopping criterion, stated explicitly)"
+      timer: host wall clock
+      timing_scope: "search/tuning only, from first candidate generation to selected-configuration output; excludes the one-time cost of building the compiler itself"
+    metric:
+      primary: "search_time_minutes"
+      secondary:
+        - "amortization_count_k: number of fusion-e2e-model inference/training steps needed for the search-time cost to be repaid relative to the unfused baseline, computed as search_time / (unfused_latency - fused_latency) per step"
+        - "speedup_vs_other_autotuners (e.g. STOF's reported 6.7x/6.9x faster search than MCFuser/Bolt at (16,2048))"
+
+notes_on_fairness:
+  - "RedFuser reports subgraph-level numbers only and never a whole-model number; STOF and LightSeq2 both report a model-level number. This spec forces all three granularities (single-kernel, subgraph, model) to be requested and reported as separate variants specifically so a RedFuser-style submission can't be compared directly to a LightSeq2-style model-level claim without the gap being visible."
+  - "Only STOF quantifies compile/search time (Table 4, vs. MCFuser/Bolt); RedFuser has an autotuner but reports no search-time numbers at all. fusion-compile-search-time is made mandatory for any autotuning/codegen entrant so this gap can't recur silently; hand-written systems correctly report 0."
+  - "STOF's own kernel-level (10 warmup/20 reps) and end-to-end-level (10 warmup/10 reps) scripts already use two different rep counts for two different granularities — this spec keeps that distinction rather than forcing one rep count across levels, since the code (not the paper prose, which had incorrectly said '100' for the kernel level) is the ground truth for what STOF actually measured."
+  - "No paper in the track directly names cuDNN or TensorRT as a baseline; this spec does not invent numbers for them but requires torch.compile/Dynamo-Inductor (used by RedFuser and STOF) and PyTorch Eager (used by all three well-documented papers) as the mandatory minimum baseline pair, with hand-written per-pattern references (FlashAttention2-class) and a general compiler (TVM, RedFuser's own choice) as recommended additions."
+  - "LightSeq2 uses a different baseline system per model family (Fairseq+Apex / HuggingFace / DeepSpeed) rather than one fixed set; this spec's fusion-e2e-model variant instead fixes PyTorch Native + PyTorch Compile as the common baseline pair across all models, with framework-specific baselines allowed as bonus comparisons rather than replacements."
+  - "Fusion-single-kernel's unfused-baseline timing scope deliberately keeps per-kernel-launch overhead IN (not excluded), unlike a typical 'kernel-only' spec variant elsewhere in this project — because launch-overhead reduction is precisely operator fusion's mechanism of benefit; excluding it would make every fusion framework look like it has zero benefit at large shapes where compute time dominates launch overhead."
+  - "SumMerge and the CGO'25 RISC-V-backend paper only fit the taxonomy at the single-fused-kernel / quant-gemm and elementwise-chain corners respectively, and neither could be verified past abstract level (ACM 403, arXiv fulltext unreachable across 3 mirrors, and the RISC-V paper's listed artifact repo turned out to be an unrelated protobuf-acceleration project). They are represented in canonical_fusion_patterns for taxonomy completeness but contribute no concrete numeric defaults to the variants above."
+
+open_questions:
+  - "RedFuser's evaluation summary obtained does not state a single fixed precision for the non-FP8 workloads (MHA/MLA/MoE-routing) — likely fp16/bf16 given the model scales (LLaMA-65B, DeepSeek) but not confirmed in the text obtained."
+  - "STOF's correctness check (correct_verify_attn.py) computes max_diff/mean_diff against a PyTorch reference but the printed/enforced tolerance threshold was not visible in the code slice read; the 1e-2 (fp16) gate above is this spec's own default, not confirmed against STOF's actual pass/fail threshold."
+  - "SumMerge's shapes, baselines, and timing protocol are entirely unconfirmed (stub artifact repo, paywalled paper) — the quant-gemm pattern's inclusion of SumMerge in canonical_fusion_patterns is a taxonomy placement based on the abstract's description, not a benchmarked data point."
+  - "The CGO'25 RISC-V-backend paper's actual benchmarked kernel list, baseline set, and warmup/rep protocol could not be recovered at all from sources reachable in this environment; its 'up to 90% FPU utilization' headline number has no shape/baseline context attached and is not used anywhere in the variants above."
+  - "Whether RedFuser's per-pattern search-time is genuinely negligible (hence unreported) or simply omitted from the evaluation section is unresolved — the amortization_count_k metric in fusion-compile-search-time is designed to force this to be answered by any future RedFuser-class submission."
+
+evidence:
+  conf/asplos/TangLWSLXZL26: "Subgraph-level only (4 patterns: MHA/MLA/MoE-routing/FP8-quant-GEMM), no whole-model numbers, no quantitative search-time despite having an autotuner; vs PyTorch Eager/Dynamo/TVM-Relax(no CUTLASS/FlashInfer)/FlashAttention2/FlashMLA; A10+H800, CUDA 12.8."
+  conf/ppopp/DaiDRYLL0CS26: "Three granularities cleanly separated in code: kernel-level (warmup=10,reps=20, verified in benchmk_attn_unified.py, contradicting the paper-text's stated '100'), end-to-end (warmup=10,reps=10, benchmk_end2end.py), and tuning-cost (Table 4, only paper to quantify search time, 6.7x/6.9x faster than MCFuser/Bolt); FP16 throughout; RTX4090+A100; vs PyTorch Native/Compile/FA2/FlexAttention/ByteTransformer/Bolt/MCFuser/SPLAT."
+  conf/sc/WangWXHQDWL22: "Two granularities: operator-level (10 reps, e.g. LayerNorm ~4x) and full-training-model-level (40-min steady state, no isolated warmup); different baseline per model family (Fairseq+Apex/HuggingFace/DeepSpeed); FP16 mixed precision; V100/A100 up to 40 GPUs; no search-time axis (hand-written, correctly)."
+  conf/ics/PrabhakarK0HF21: "Abstract-only: weight-repetition factorization/memoization inside a single quantized conv/GEMM kernel (CPU), not a multi-op fusion chain; artifact repo is an empty stub; ACM PDF paywalled (403)."
+  conf/cgo/LopoukhineFVLDD25: "Abstract-only: MLIR multi-level backend for a RISC-V streaming-register accelerator, incremental register allocation, 'up to 90% FPU utilization across key DNN kernels'; listed artifact repo is a mismatched, unrelated protobuf-acceleration project (confirmed via README); no shapes/baselines/protocol recoverable."

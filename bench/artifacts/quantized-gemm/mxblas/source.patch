@@ -1,0 +1,21 @@
+diff --git a/mxblas/jit/compiler.py b/mxblas/jit/compiler.py
+index 25d30a1..05a507d 100644
+--- a/mxblas/jit/compiler.py
++++ b/mxblas/jit/compiler.py
+@@ -142,7 +142,15 @@ def build(name: str, arg_defs: tuple, code: str) -> Runtime:
+         + (",--verbose" if PTXAS_VERBOSE_FLAG in os.environ else ""),
+         # Suppress some unnecessary warnings, such as unused variables for certain `constexpr` branch cases
+         "--diag-suppress=177,174,940",
+-        "-I/home/yatorho/doc/projs/cu_head",
++        # (build-system fix, HPC-KernelBench integration) dropped a hardcoded
++        # "-I/home/yatorho/doc/projs/cu_head" here: the upstream author's own
++        # local dev include dir, absent on every other machine. Confirmed
++        # via `grep -rn '#include' mxblas/include/mxblas/*.cuh
++        # mxblas/gemm/generator.py mxblas/gemm/mainloop_tma_scales_generator.py`
++        # that every header the generated GEMM kernel sources pull in is
++        # either a standard CUDA header or this repo's own "{mxblas_root}/
++        # mxblas/*.cuh" (absolute-pathed by the generator itself, see
++        # generator.py) -- nothing under the dropped path is ever needed.
+         "-DDISABLE_MX_MAIN",
+         "-lcuda",
+     ]

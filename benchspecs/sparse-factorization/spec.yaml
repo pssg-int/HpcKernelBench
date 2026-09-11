@@ -1,0 +1,289 @@
+kernel: sparse-factorization
+summary: >
+  Sparse direct factorization of a matrix stored in a sparse format —
+  nonsymmetric LU (partial pivoting or threshold pivoting), SPD Cholesky, or
+  (possibly rectangular) QR — via a fill-reducing-ordering + symbolic-analysis
+  + numeric-factorization pipeline, measured so that ordering cost, symbolic
+  cost, and numeric cost are never silently merged into one number unless the
+  variant says so explicitly.
+operation: >
+  LU family: P*A*Q = L*U  (A[N,N] sparse nonsymmetric, P/Q permutations from
+  pivoting/ordering, L unit-lower-triangular, U upper-triangular, both sparse
+  with fill-in beyond A's nonzero pattern).
+  Cholesky family: P*A*P^T = L*L^T (A[N,N] sparse SPD, P a fill-reducing
+  symmetric permutation, L sparse lower-triangular).
+  QR family: A*Q_col = Q*R (A[M,N] sparse, M>=N typical; Q_col a
+  column-fill-reducing permutation, Q orthogonal (implicit, Householder/
+  multifrontal), R sparse upper-triangular).
+variants:
+  - id: sparse-factor-symbolic-kernel
+    claim: >
+      steady-state SYMBOLIC factorization time only (fill-in pattern /
+      elimination-tree or supernode-partition computation), with the
+      fill-reducing ordering computed once beforehand and given as a fixed,
+      pre-permuted input matrix — NOT counted in this variant's timed region.
+      This mirrors gSoFa's own methodology exactly (its README states the
+      reordered matrix is dumped once from SuperLU_DIST and fed to gSoFa "for
+      fair comparison"), generalized here to all three factorization
+      families so LU/Cholesky/QR symbolic phases are comparable on the same
+      protocol. This is the track's common-denominator variant: it is the
+      only phase gSoFa's paper reports at all, and it isolates the
+      graph/combinatorial cost from the floating-point cost.
+    family: "LU | Cholesky | QR  (harness run separately per family; do not average across families)"
+    inputs:
+      suite: SuiteSparse Matrix Collection
+      selection: >
+        LU: the 13 real nonsymmetric matrices gSoFa evaluates (order
+        11,948-943,695; nnz ~149K-77.6M; circuit/structural/CFD/thermal/
+        economic/chemical/EM/bioengineering domains) — chosen because this is
+        the only fulltext-verified matrix list in this track's survey.
+        Cholesky: real SPD matrices; swCholesky's own "FloridaSparse0" list
+        is unpublished (open question below), so this spec fixes a named
+        standard substitute set instead of inheriting an unknown one.
+        QR: STM-multifrontal-QR's public 16-matrix smoke-test set (any
+        shape/symmetry; QR tolerates rectangular and non-SPD inputs).
+      recommended_subset:
+        LU: [bcsstk18, bbmat, epb2, g7jac200sc, lhr71c, mark3jac, rma10,
+             audikw_1, dielfilterv3real, hamrle3, pre2, stomach, twotone]
+        Cholesky: [bcsstk14, bcsstk17, nasa2910, msc10848, apache2, thermal2,
+                   ecology2, parabolic_fem, g3_circuit, andrews, ldoor,
+                   af_shell10, thermomech_dm, stocf-1465, flan_1565]
+        QR: [dwt_992, lns_3937, bcsstk14, epb1, reorientation_8, sme3dc,
+             3d_51448_3d, cvxqp3, t2d_q9, xenon1, bayer10, zd_jac2_db, ex18,
+             c-67, language, mycielskian13]
+      ordering_for_input: >
+        precomputed once with METIS nested-dissection (or AMD as a
+        cheaper/deterministic fallback where METIS is unavailable); this
+        precompute is REPORTED once (see preprocessing_reported) but not
+        part of the 3+ timed repetitions below. Exact ordering algorithm used
+        MUST be disclosed per run — do not silently default.
+    protocol:
+      format: "CSC/CSR (Matrix Market source, converted once; conversion excluded from timed region, reported once)"
+      warmup: 0 (symbolic factorization is a one-shot combinatorial computation per matrix; no steady-state to warm into)
+      reps: 3 (minimum; matches gSoFa's own protocol)
+      statistic: median (report min/max alongside — gSoFa's own "average of 3" is weaker than this track's convention and is called out as such)
+      timer: host-side wall-clock (CUDA-kernel or std::chrono, whichever wraps the symbolic-factorization call exactly, excluding matrix I/O and ordering)
+      timing_scope: "symbolic/analysis phase only; ordering, numeric factorization, and triangular solve excluded"
+      preprocessing_reported: "ordering computation time and matrix-format-conversion time, each separately, once per matrix"
+    metric: {primary: "ms (wall-clock)", secondary: "TEPS (traversed edges/sec, graph-traversal-style throughput; optional, per gSoFa's own convention)"}
+    correctness: "exact nonzero-fill-pattern agreement (same set of (row,col) fill positions in L/U, L, or R) vs. a sequential CPU reference (CSparse/UMFPACK/CHOLMOD/SuiteSparseQR symbolic phase, matching family); no floating-point tolerance applies since this phase is combinatorial"
+
+  - id: sparse-factor-numeric-kernel
+    claim: >
+      steady-state NUMERIC factorization time/throughput given a precomputed
+      ordering AND precomputed symbolic structure (nonzero counts/positions
+      of L/U, L, or R already known) — matches swCholesky's scoping (ordering
+      given via precomputed permutation files) and PanguLU's per-phase GFLOP/s
+      reporting of its numeric-factorization stage specifically. Tile/block
+      size (PanguLU's `-nb`, or the analogous supernode-merge parameter in
+      Cholesky/QR) MUST be disclosed per run as a required CLI argument, not a
+      silent default — this is PanguLU's own interface convention
+      (`pangulu_example.elf -nb <block_size> -f <matrix>`) and matches this
+      benchmark suite's sibling `cholesky` track's fairness rule.
+    family: "LU | Cholesky | QR (same per-family matrix subsets as sparse-factor-symbolic-kernel)"
+    inputs:
+      suite: SuiteSparse Matrix Collection (same recommended_subset lists as sparse-factor-symbolic-kernel, per family)
+      dense_operand: "N/A (sparse operator only); dense RHS vector b, fp64, entries U(-1,1), one per matrix, fixed/seeded for reproducibility"
+      block_size: "PanguLU-style tile/block rank nb; sweep nb in {32, 64, 128} and disclose the value used in every reported number (do not report a single hand-picked-best nb without disclosure)"
+    protocol:
+      format: "sparse structure given (symbolic phase excluded and reported separately, once); precomputed fill-reducing ordering given (excluded, reported separately, once)"
+      warmup: 1 (factorization is expensive relative to SpMM/SpMV-style microkernels; 1 discard run is enough to settle allocator/cache state)
+      reps: 5
+      statistic: median (report min/max)
+      timer: "device-side CUDA events for GPU numeric kernels (PanguLU-style); host wall-clock (std::chrono) for CPU-only paths (swCholesky/Sunway-class, STM-QR/NUMA-CPU-class)"
+      timing_scope: "numeric factorization only; ordering, symbolic analysis, and triangular solve excluded and reported separately"
+      preprocessing_reported: "ordering + symbolic-analysis time, once per matrix, reported alongside but never amortized into the numeric-kernel reps above"
+    metric: {primary: "GFLOP/s (2*flop_count(factors)/time; flop_count from the symbolic phase's reported fill-in, per family's standard factor-flop formula)", secondary: "ms"}
+    correctness: >
+      residual gate before timing counts: fp64 -> ||PAQ - LU||_F / ||A||_F <
+      1e-10 (LU) or ||PAP^T - LL^T||_F / ||A||_F < 1e-10 (Cholesky) or
+      ||AQ - QR||_F / ||A||_F < 1e-10 (QR); fp32 -> same formulas, tol 1e-5.
+      Where a solve is more natural than a factor-residual (e.g. reusing
+      PanguLU's own pangulu_gstrs), ||Ax-b||/||b|| under the same tolerances
+      is an acceptable substitute — disclose which check was used.
+
+  - id: sparse-factor-ordering-sensitivity
+    claim: >
+      how much the CHOICE of fill-reducing ordering algorithm affects
+      downstream numeric-factorization time, fill-in ratio, and memory, on a
+      fixed matrix suite — makes explicit what STM-multifrontal-QR's paper
+      studies directly (its entire contribution is picking AMD vs. COLAMD vs.
+      METIS vs. NESDIS per-matrix via a learned classifier) and what
+      GPTuneCrowd instead folds invisibly into one bundled runtime number by
+      treating ordering (`COLPERM`) as just another autotuned knob. This
+      variant is this spec's answer to "fill-reducing ordering in or out of
+      scope": it is IN scope, but as an independent, disclosed, swept axis —
+      never silently fixed to one method and never silently hidden inside an
+      end-to-end number.
+    family: "LU | Cholesky | QR (same per-family matrix subsets as above)"
+    inputs:
+      suite: SuiteSparse Matrix Collection (same recommended_subset lists as sparse-factor-symbolic-kernel, per family)
+      ordering_methods: [AMD, COLAMD (or CCOLAMD for QR), METIS-node-nested-dissection, NESDIS (if available in the target library; else omit and disclose the omission)]
+    protocol:
+      format: "each ordering method computed once per (matrix, method) pair; ordering-compute time is itself a REPORTED metric here, not excluded"
+      warmup: 0
+      reps: 3 per (matrix, ordering-method) pair, for both the ordering computation and the subsequent numeric factorization it feeds into sparse-factor-numeric-kernel's protocol
+      statistic: median
+      timer: same as sparse-factor-numeric-kernel (device-side CUDA events for GPU; host wall-clock for CPU)
+      timing_scope: "ordering-computation time reported as its own number; downstream numeric-factorization time (using each ordering) reported using the sparse-factor-numeric-kernel protocol"
+      preprocessing_reported: "N/A — ordering IS the thing being measured/reported in this variant, not preprocessing to exclude"
+    metric: {primary: "numeric-factorization time (ms) as a function of ordering method, per matrix", secondary: "fill ratio nnz(factors)/nnz(A); ordering-compute time (ms)"}
+    correctness: "same residual/solve gate as sparse-factor-numeric-kernel, applied independently per ordering choice — a poor ordering must still produce a correct factorization, only slower / with more fill"
+
+  - id: sparse-factor-e2e-amortized
+    claim: >
+      end-to-end wall time — ordering + symbolic analysis + numeric
+      factorization + one triangular solve — amortized over k repeated
+      numeric factorizations of the SAME sparsity pattern with fresh values
+      (or a fresh RHS), reflecting the realistic HPC usage pattern
+      GPTuneCrowd's own NIMROD case study exercises: a fixed mesh/matrix
+      nonzero pattern, ordering computed once, but each of NIMROD's 30
+      time-marching steps triggers a fresh block-Jacobi numeric
+      factorization via SuperLU_DIST. k=30 is chosen to match that
+      real-usage number exactly (GPTuneCrowd: "we set the number of time
+      steps to 30"); k MUST be disclosed and preprocessing cost MUST be
+      reported both as a one-shot absolute number and as its per-iteration
+      amortized contribution (preproc_time / k), never silently merged into
+      a per-iteration average without that breakdown.
+    family: "LU (primary — matches GPTuneCrowd/NIMROD/SuperLU_DIST's family; Cholesky/QR analogues optional)"
+    inputs:
+      suite: SuiteSparse Matrix Collection
+      selection: >
+        PARSEC group matrices Si5H12 and H2O (GPTuneCrowd's own two named
+        matrices, same domain "similar sparsity pattern" pairing it uses for
+        its sensitivity-analysis-transfer case study), plus the LU
+        recommended_subset above for broader coverage beyond GPTuneCrowd's
+        2-matrix case study.
+      k: 30 (one-shot ordering+symbolic, amortized over 30 numeric-factor+solve iterations; matches GPTuneCrowd's NIMROD time-step count)
+    protocol:
+      format: "ordering + symbolic computed once at k=0; each of k=1..30 does numeric-factor(fresh values, same pattern) + triangular-solve(fresh RHS)"
+      warmup: 0 (the amortization argument IS the point; no separate warmup phase)
+      reps: 3 (repeat the whole k=30 sequence 3x, report median total and median per-iteration time)
+      statistic: median
+      timer: host-side wall-clock around the whole k-iteration loop, with per-phase sub-timers (ordering, symbolic, each of the k numeric+solve iterations) all individually recorded
+      timing_scope: "end-to-end; ordering+symbolic reported once (absolute) and divided by k (amortized-per-iteration), numeric+solve reported per-iteration and as a k-iteration mean"
+      preprocessing_reported: "ordering + symbolic time, once, both as an absolute number and as preproc_time/k"
+    metric: {primary: "amortized ms/iteration = (ordering+symbolic)/k + mean(numeric+solve per iteration)", secondary: "one-shot ordering+symbolic ms; total k-iteration wall time"}
+    correctness: "same residual/solve gate as sparse-factor-numeric-kernel, checked on every one of the k iterations, not just the first — a factorization that degrades numerically across repeated fresh-value calls (e.g. due to growth-factor blowup in later iterations) must fail the gate at whichever iteration it fails, not be averaged away"
+
+notes_on_fairness:
+  - >
+    gSoFa's own protocol ("average of three runs", no explicit warmup/min/max
+    reporting) is weaker than this spec's median+min/max convention; this
+    spec upgrades it rather than copying it verbatim, per the track
+    instructions' engineer-not-diplomat principle.
+  - >
+    PanguLU's `-nb` block-size parameter and GPTuneCrowd's tuned `NSUP`/
+    `NREL`/`nprows` SuperLU_DIST parameters both demonstrate that this
+    family of kernels has significant, easy-to-hide-behind-a-"best config"
+    tunable knobs; every numeric variant in this spec requires the knob
+    value(s) used to be disclosed per reported number, never silently
+    hand-picked-best-of-N and reported without the value.
+  - >
+    STM-multifrontal-QR's own README admits its released artifact does NOT
+    actually combine its two headline contributions (GCN ordering-selection
+    + STM numeric scheduling) — "not really combined... due to lack of
+    accuracy of GCN automatic classifier". Any reproduction against this
+    repo will reproduce the STM numeric-phase speedup only, not the paper's
+    full claimed 20.78% symbolic-time reduction; this is flagged here so a
+    future Phase-2 harness builder doesn't discover the gap the hard way.
+  - >
+    gSoFa and swCholesky both exclude ordering from their timed kernel by
+    feeding a precomputed permutation as input — this is a legitimate
+    experimental design (isolating the FLOP-bound phase from the
+    graph/combinatorial phase) but becomes an unfair comparison if its
+    numbers are ever placed side-by-side with PanguLU's or STM-QR's
+    ordering-inclusive numbers without noting the difference. This spec's
+    4-variant split exists specifically to prevent that silent mixing.
+  - >
+    GPTuneCrowd is not a factorization-kernel paper at all — it is included
+    in this track's input list because two of its case studies happen to
+    tune sparse-solver parameters, but its own "speedup" numbers measure
+    tuning-quality-per-function-evaluation-budget, not kernel throughput.
+    Its numbers should NOT be cited as a sparse-LU-factorization performance
+    baseline; it is used here only as motivation for the e2e-amortized
+    variant's k=30 realistic-usage argument and for the disclosed-tunable-
+    parameters fairness principle above.
+
+open_questions:
+  - >
+    PanguLU's exact SuiteSparse matrix list/count for its SC23 headline
+    numbers (11.70x/17.97x speedup) was not recovered — the SC23 paper
+    fulltext is ACM-DL/IEEE-Xplore paywalled and the conference proceedings
+    page returned HTTP 403 to automated fetch. The "1.50x/3.32x geometric
+    mean" figure surfaced in web-search snippets is ambiguous (possibly from
+    a later citing paper, e.g. arXiv:2512.04389's comparison, rather than
+    PanguLU's own text) and should be re-verified against the primary PDF
+    before being used as a spec target number.
+  - >
+    swCholesky's actual matrix suite (`FloridaSparse0`), its timing/
+    repetition protocol, and its baseline comparison are all unrecoverable
+    from the public repo (job-launcher script only, no paper text fetched —
+    TPDS is IEEE-Xplore paywalled). The Cholesky recommended_subset above is
+    this spec's own standard-substitute curation, NOT swCholesky's actual
+    set — flagged explicitly rather than presented as verified.
+  - >
+    Neither PanguLU's nor swCholesky's correctness-checking methodology
+    (residual formula, tolerance) was confirmed from any available source;
+    both projects' interfaces (`pangulu_gstrs`/`pangulu_gssv`; a presumed
+    solve step in `sw_cholesky`) suggest a residual check would be natural,
+    but this spec's residual gate for those two families is this spec's own
+    requirement, not a reproduction of the original papers' practice.
+  - >
+    STM-multifrontal-QR's "error verification" field (written to
+    `Results/QR_time.txt`) has an unknown exact formula/tolerance — the
+    README documents that the field exists but not its definition.
+  - >
+    Sunway SW26010 (swCholesky) is realistically inaccessible outside China;
+    STM-multifrontal-QR's ARM NUMA "Taishan Server" is similarly
+    non-standard. A Phase-2 harness targeting Perlmutter/any-x86-or-generic-
+    ARM machine will need to either recompile these two artifacts for a
+    different architecture (nontrivial — swCholesky's kernels are written
+    against Sunway-specific scratchpad-memory intrinsics) or substitute a
+    portable reference implementation (e.g. CHOLMOD for swCholesky's family,
+    SuiteSparseQR-on-x86 for STM-QR's family) and treat the original paper's
+    numbers as reference-only, not reproducible targets.
+
+evidence:
+  conf/ipps/ChoDKLLL23: >
+    Not a factorization-kernel paper — a crowd-based BO autotuner
+    (GPTuneCrowd). Its SuperLU_DIST case study tunes [COLPERM, LOOKAHEAD,
+    nprows, NSUP, NREL] on matrices Si5H12/H2O (PARSEC/SuiteSparse), 4 Cori
+    Haswell nodes, measuring whole-application wall time (ordering choice
+    folded in, symbolic/numeric not separated), 3-5 seeded repeats, "speedup"
+    = tuned-runtime ratio vs. a non-transfer-learning BO baseline (not vs. a
+    vendor library). Read via fulltext PDF.
+  conf/sc/FuZWLLYZGLZ0023: >
+    PanguLU: 2D block-cyclic distributed sparse LU, phases (reorder/
+    symbolic/preprocess/numeric/solve) timed separately per its own
+    changelog; SuiteSparse-drawn matrix benchmarks (exact list not
+    recovered); baseline SuperLU_DIST; up to 11.70x/17.97x speedup on 128
+    A100/MI50 GPUs; `-nb` block size a required, disclosed CLI parameter.
+    Read via GitHub README + example run scripts; SC23 paper fulltext not
+    accessible (403/paywall).
+  journals/tpds/GaihreLL22: >
+    gSoFa: GPU symbolic-only sparse LU factorization; 13 named SuiteSparse
+    matrices with ordering pre-computed by SuperLU_DIST and given as fixed
+    input (ordering excluded from timed region); Summit V100 nodes, 1-44
+    nodes; "average of 3 runs"; metrics = wall time, TEPS, memory-bandwidth
+    utilization (GB/s, %peak); baselines GLU3.0/SuperLU_DIST/custom
+    parallel-fill2; avg 5x vs SuperLU_DIST at 44 nodes. Read via arXiv
+    fulltext (2007.00840) + repo README.
+  conf/sc/LinYWT021: >
+    STM-multifrontal QR: symbolic-analysis ordering choice (AMD/COLAMD/
+    METIS/NESDIS, GCN-selected in the paper) + STM numeric-phase NUMA-aware
+    scheduling, timed SEPARATELY per the harness (`QR_time.txt` records
+    analysis time, numeric time, and an error-verification field per run);
+    16-matrix public smoke set, paper claims ~80% of UF collection; Taishan
+    Server (ARM, 120 cores/4 NUMA); baselines MKL sparse QR,
+    SuiteSparseQR; 20.78% numeric-time reduction, ~4% memory overhead, 1.22x
+    vs. SuiteSparseQR. README explicitly states the released artifact does
+    NOT actually combine GCN ordering-selection with STM scheduling. Read
+    via GitHub README + STMMQR subdirectory README/scripts.
+  journals/tpds/LiLYLGYQ20: >
+    swCholesky: numeric-only sparse Cholesky for Sunway SW26010; ordering
+    precomputed offline (permutation files given as input, excluded from
+    timed kernel); matrix suite ("FloridaSparse0"), timing protocol,
+    baselines, and correctness method all unrecoverable from the public
+    repo (job-launcher script + CSV result dumps only; TPDS fulltext
+    paywalled). Read via GitHub README + software/README.md + test.py.

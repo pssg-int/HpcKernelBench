@@ -1,0 +1,74 @@
+{
+ "kernel": "mttkrp",
+ "papers": [
+  {
+   "key": "conf/cgo/PatelAA25",
+   "title": "SySTeC: A Symmetric Sparse Tensor Compiler",
+   "venue": "CGO",
+   "year": 2025,
+   "doi": "10.1145/3696443.3708919",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3696443.3708919",
+   "artifact_url": "https://github.com/radha-patel/SySTeC",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "abstract": "Symmetric and sparse tensors arise naturally in many domains including linear algebra, statistics, physics, chemistry, and graph theory. Symmetric tensors are equal to their transposes, so in the n-dimensional case we can save up to a factor of n! by avoiding redundant operations. Sparse tensors, on the other hand, are mostly zero, and we can save asymptotically by processing only nonzeros. Unfortunately, specializing for both symmetry and sparsity at the same time is uniquely challenging. Optimizing for symmetry requires consideration of n! transpositions of a triangular kernel, which can be complex and error prone. Considering multiple transposed iteration orders and triangular loop bounds also complicates iteration through intricate sparse tensor formats. Additionally, since each combination of symmetry and sparse tensor formats requires a specialized implementation, this leads to a c",
+   "one_liner": "SySTeC compiler auto-generates symmetry-aware sparse/dense tensor kernels, up to 30.4x on MTTKRP"
+  },
+  {
+   "key": "conf/ipps/0001S0K25",
+   "title": "SymProp: Scaling Sparse Symmetric Tucker Decomposition via Symmetry Propagation",
+   "venue": "IPDPS",
+   "year": 2025,
+   "doi": "10.1109/IPDPS64566.2025.00109",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/tensorworld/SymProp",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Sparse symmetric tensors are an important class of tensors, and their decompositions serve as powerful tools for revealing low-rank structures. This paper introduces SymProp, a novel approach for scaling sparse symmetric Tucker decomposition by propagating symmetry through intermediate computations. SymProp optimizes two key computational kernels: Sparse Symmetric Tensor Times Same Matrix chain (<tex xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">$\\mathrm{S}^{3}$</tex> TTMc) for Higher-Order Orthogonal Iteration (HOOI) and Sparse Symmetric Tensor Times Same Matrix chain Times Core (<tex xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">$\\mathrm{S}^{3}$</tex> TTMcTC) for Higher-Order QR Iteration (HOQRI). Our method employs a metaprogramming-based index iteration approach to efficiently handle the upper tri",
+   "one_liner": "SymProp: symmetry-propagated sparse symmetric TTMc/TTMcTC kernels, up to 50.9x speedup over SPLATT"
+  },
+  {
+   "key": "conf/asplos/WonMEA23",
+   "title": "WACO: Learning Workload-Aware Co-optimization of the Format and Schedule of a Sparse Tensor Program",
+   "venue": "ASPLOS",
+   "year": 2023,
+   "doi": "10.1145/3575693.3575742",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3575693.3575742",
+   "artifact_url": "https://github.com/nullplay/Workload-Aware-Co-Optimization",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "autotuning",
+   "abstract": "In this paper, we present WACO, a novel method of co-optimizing the format and the schedule of a given sparsity pattern in a sparse tensor program. A core challenge in this paper is the design of a lightweight cost model that accurately predicts the runtime of a sparse tensor program by considering the sparsity pattern, the format, and the schedule. The key idea in addressing this is exploiting a sparse convolutional network to learn meaningful features of the sparsity pattern and embedding a coupled behavior between the format and the schedule using a specially designed schedule template. In addition, within the enormous search space of co-optimization, our novel search strategy, an approximate nearest neighbor search, efficiently and accurately retrieves the best format and schedule for a given sparsity pattern. We evaluated WACO for four different algorithms (SpMV, SpMM, SDDMM, and MT",
+   "one_liner": "Learned co-optimization of sparse format+schedule; 1.14-1.43x over MKL/ASpT on SpMV/SpMM/SDDMM/MTTKRP"
+  },
+  {
+   "key": "conf/ics/NguyenHCLTSRPC22",
+   "title": "Efficient, out-of-memory sparse MTTKRP on massively parallel architectures",
+   "venue": "ICS",
+   "year": 2022,
+   "doi": "10.1145/3524059.3532363",
+   "arxiv": "2201.12523",
+   "oa_url": "https://arxiv.org/pdf/2201.12523",
+   "artifact_url": "https://github.com/jeewhanchoi/blocked-linearized-coordinate",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu",
+    "intel-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Tensor decomposition (TD) is an important method for extracting latent information from high-dimensional (multi-modal) sparse data. This study presents a novel framework for accelerating fundamental TD operations on massively parallel GPU architectures. In contrast to prior work, the proposed Blocked Linearized Coordinate (BLCO) format enables efficient out-of-memory computation of tensor algorithms using a unified implementation that works on a single tensor copy. Our adaptive blocking and linearization strategies not only meet the resource constraints of GPU devices, but also accelerate data indexing, eliminate control-flow and memory-access irregularities, and reduce kernel launching overhead. To address the substantial synchronization cost on GPUs, we introduce an opportunistic conflict resolution algorithm, in which threads collaborate instead of contending on memory access to disco",
+   "one_liner": "BLCO format for out-of-memory sparse MTTKRP on GPUs, 2.1-2.6x geomean over MM-CSF"
+  }
+ ]
+}

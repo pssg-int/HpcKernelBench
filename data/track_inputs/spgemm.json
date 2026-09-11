@@ -1,0 +1,232 @@
+{
+ "kernel": "spgemm",
+ "papers": [
+  {
+   "key": "conf/ics/BellavitaPPVG26",
+   "title": "Communication-Avoiding SpGEMM via Trident Partitioning on Hierarchical GPU Interconnect",
+   "venue": "ICS",
+   "year": 2026,
+   "doi": "10.1145/3797905.3800543",
+   "arxiv": "2603.21444",
+   "oa_url": "https://doi.org/10.1145/3797905.3800543",
+   "artifact_url": "https://github.com/HicrestLaboratory/Trident",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu",
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "abstract": "The multiplication of two sparse matrices, known as SpGEMM, is a key kernel in scientific computing and large-scale data analytics, underpinning graph algorithms, machine learning, simulations, and computational biology, where sparsity is often highly unstructured. The unstructured sparsity makes achieving high performance challenging because it limits both memory efficiency and scalability. In distributed memory, the cost of exchanging and merging partial products across nodes further constrains performance. These issues are exacerbated on modern heterogeneous supercomputers with deep, hierarchical GPU interconnects. Current SpGEMM implementations overlook the gap between intra-node and inter-node bandwidth, resulting in unnecessary data movement and synchronization not fully exploiting the fast intra-node interconnect. To address these challenges, we introduce Trident, a hierarchy-awar",
+   "one_liner": "Hierarchy-aware trident-partitioned communication-avoiding distributed SpGEMM, up to 2.38x"
+  },
+  {
+   "key": "conf/ics/LiG26",
+   "title": "Ocean: Fast Estimation-Based Sparse General Matrix-Matrix Multiplication on GPU",
+   "venue": "ICS",
+   "year": 2026,
+   "doi": "10.1145/3797905.3807868",
+   "arxiv": "2604.19004",
+   "oa_url": "https://doi.org/10.1145/3797905.3807868",
+   "artifact_url": "https://github.com/CornellHPC/Ocean-SpGEMM",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "In computational science and data analytics, many workloads involve irregular and sparse computations that are inherently difficult to optimize for modern hardware. A key kernel is Sparse General Matrix-Matrix Multiplication (SpGEMM), which underpins simulations, graph analytics, and machine learning applications. SpGEMM exhibits irregular memory access patterns and workload imbalance, making it challenging to achieve high performance on GPUs. Current GPU SpGEMM solutions typically rely on a two-pass workflow to address load imbalance and reduce memory access. The symbolic pass, which determines the number of output elements per row, accounts for roughly 28% of the total runtime on average. In this work, we question the necessity of exact symbolic computation and introduce an estimation-based SpGEMM workflow. Our approach replaces the costly symbolic step with lightweight HyperLogLog est",
+   "one_liner": "Estimation-based GPU SpGEMM replacing symbolic pass with HyperLogLog, 1.4-2.8x on A100/H100"
+  },
+  {
+   "key": "conf/ipps/BellavitaRICDVG26",
+   "title": "Communication-Avoiding Linear Algebraic Kernel K-Means on GPUs",
+   "venue": "IPDPS",
+   "year": 2026,
+   "doi": "10.1109/IPDPS65963.2026.00030",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/CornellHPC/Vivaldi",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu",
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Clustering algorithms are among the most important and informative data analysis tools available. Of these, the K-means algorithm is one of the most popular and powerful choices due to its simplicity and generality. However, K-means cannot compute non-linearly separable cluster boundaries, which limits its utility in certain cases. Kernel K-means is a variant of the K-means algorithm that can compute non-linearly separable cluster boundaries. Kernel K-means has significant computational and memory requirements because of the presence of a large kernel matrix which scales quadratically with dataset size. Prior work has accelerated Kernel K-means by formulating it using sparse linear algebra primitives and implementing it on a single GPU. However, that approach cannot run on datasets with more than approximately 80,000 samples due to limited GPU memory.Clustering using Kernel K-means remai",
+   "one_liner": "1.5D communication-avoiding distributed LA algorithms scale Kernel K-means to 256 GPUs, 79.7% weak-scaling eff."
+  },
+  {
+   "key": "conf/ppopp/BellavitaPMVG25",
+   "title": "Popcorn: Accelerating Kernel K-means on GPUs through Sparse Linear Algebra",
+   "venue": "PPoPP",
+   "year": 2025,
+   "doi": "10.1145/3710848.3710887",
+   "arxiv": "2501.05587",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3710848.3710887",
+   "artifact_url": "https://github.com/HicrestLaboratory/Popcorn",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "K-means is a popular clustering algorithm with significant applications in numerous scientific and engineering areas. One drawback of K-means is its inability to identify non-linearly separable clusters, which may lead to inaccurate solutions in certain cases. Kernel K-means is a variant of classical K-means that can find non-linearly separable clusters. However, it scales quadratically with respect to the size of the dataset, taking several minutes to cluster even medium-sized datasets on traditional CPU-based machines.",
+   "one_liner": "GPU kernel K-means accelerated via sparse linear algebra formulation"
+  },
+  {
+   "key": "conf/sc/Islam00B25",
+   "title": "Improving SpGEMM Performance Through Matrix-Reordering and Cluster-wise Computation",
+   "venue": "SC",
+   "year": 2025,
+   "doi": "10.1145/3712285.3759885",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3712285.3759885",
+   "artifact_url": "https://github.com/PASSIONLab/clusterwise-spgemm",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Sparse matrix-sparse matrix multiplication (SpGEMM) is a key kernel in many scientific applications and graph workloads. Unfortunately, SpGEMM is bottlenecked by data movement due to its irregular memory access patterns. Significant work has been devoted to developing row reordering schemes towards improving locality in sparse operations, but prior studies mostly focus on the case of sparse-matrix vector multiplication (SpMV).",
+   "one_liner": "Matrix-reordering plus cluster-wise computation scheme to improve SpGEMM locality/performance"
+  },
+  {
+   "key": "journals/tpds/SinghU25",
+   "title": "Efficient Parallel Sparse Tensor Contraction",
+   "venue": "TPDS",
+   "year": 2025,
+   "doi": "10.1109/TPDS.2025.3557750",
+   "arxiv": "",
+   "oa_url": "https://hal.science/hal-04659658/document",
+   "artifact_url": "https://github.com/ssomesh/parTC",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "We investigate the performance of algorithms for sparse tensor-sparse tensor multiplication (SpGETT). This operation, also called sparse tensor contraction, is a higher order analogue of the sparse matrix-sparse matrix multiplication (SpGEMM) operation. Therefore, SpGETT can be performed by first converting the input tensors into matrices, then invoking high performance variants of SpGEMM, and finally reconverting the resultant matrix into a tensor. Alternatively, one can carry out the scalar operations underlying SpGETT in the realm of tensors without matrix formulation. We discuss the building blocks in both approaches and formulate a hashing-based method to avoid costly search or redirection operations. We present performance results with the current state-of-the-art SpGEMM-based approaches, existing SpGETT approaches, and a carefully implemented SpGETT approach with a new fine-tuned ",
+   "one_liner": "Hashing-based parallel sparse tensor contraction (SpGETT) beats SpGEMM-based approaches by ~21-25%."
+  },
+  {
+   "key": "journals/tpds/ChenY25",
+   "title": "ToT: Triangle Counting on Tensor Cores",
+   "venue": "TPDS",
+   "year": 2025,
+   "doi": "10.1109/TPDS.2025.3606878",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1109/tpds.2025.3606878",
+   "artifact_url": "https://github.com/yuang-chen/ToT-TPDS25",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Triangle counting is a fundamental graph algorithm used to identify the number of triangles within a graph. This algorithm can be reformulated into linear algebraic operations, including sparse matrix multiplication, intersection and reduction. Modern GPUs, equipped with Tensor Cores, offer massive parallelism that can significantly accelerate graph algorithms. However, leveraging Tensor Cores, originally designed for dense matrix multiplication, to handle sparse workloads for triangle counting presents non-trivial challenges. In this paper, we conduct an in-depth analysis of the state-of-the-art techniques that utilize Tensor Cores for matrix operations, identifying critical performance shortfalls. Based on these insights, we introduce ToT, which enhances the utilization of Tensor Cores and expands their functionalities for diverse sparse matrix operations. In experiments, ToT is evalua",
+   "one_liner": "ToT: Tensor Core triangle counting via sparse matrix ops, 3.81x speedup, 17x memory savings"
+  },
+  {
+   "key": "conf/sc/LuZWFLCY0C024",
+   "title": "AmgT: Algebraic Multigrid Solver on Tensor Cores",
+   "venue": "SC",
+   "year": 2024,
+   "doi": "10.1109/SC41406.2024.00058",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/SuperScientificSoftwareLaboratory/AmgT",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu",
+    "amd-gpu"
+   ],
+   "approach": "library",
+   "abstract": "Algebraic multigrid (AMG) methods are particularly efficient to solve a wide range of sparse linear systems, due to their good flexibility and adaptability. Even though modern parallel devices, such as GPUs, brought massive parallelism to AMG, the latest major hardware features, i.e., tensor core units and their low precision compute power, have not been exploited to accelerate AMG. This paper proposes AmgT, a new AMG solver that utilizes the tensor core and mixed precision ability of the latest GPUs during multiple phases of the AMG algorithm. Considering that the sparse general matrix-matrix multiplication (SpGEMM) and sparse matrix-vector multiplication (SpMV) are extensively used in the setup and solve phases, respectively, we propose a novel method based on a new unified sparse storage format that leverages tensor cores and their variable precision. Our method improves both the perf",
+   "one_liner": "AmgT: tensor-core/mixed-precision SpGEMM+SpMV kernels for AMG setup/solve, up to 2.2x over HYPRE"
+  },
+  {
+   "key": "conf/ipps/ChenSSTBL22",
+   "title": "Bit-GraphBLAS: Bit-Level Optimizations of Matrix-Centric Graph Processing on GPU",
+   "venue": "IPDPS",
+   "year": 2022,
+   "doi": "10.1109/IPDPS53621.2022.00056",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/hsung2/Bit-GraphBLAS",
+   "artifact_status": "likely",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "In a general graph data structure like an adjacency matrix, when edges are homogeneous, the connectivity of two nodes can be sufficiently represented using a single bit. This insight has, however, not yet been adequately exploited by the existing matrix-centric graph processing frameworks. This work fills the void by systematically exploring the bit-level representation of graphs and the corresponding optimizations to the graph operations. It proposes a two-level representation named Bit-Block Compressed Sparse Row (B2SR) and presents a series of optimizations to the graph operations on B2SR by leveraging the intrinsics of modern GPUs. Evaluations on NVIDIA Pascal and Volta GPUs show that the optimizations bring up to 40× and 6555× for essential GraphBLAS kernels SpMV and SpGEMM, respectively, making GraphBLAS-based BFS accelerate up to 433×, SSSP, PR, and CC up to 35×, and TC up to 52×.",
+   "one_liner": "Bit-Block CSR (B2SR) format; bit-level GraphBLAS SpMV/SpGEMM sped up to 6555x on GPU"
+  },
+  {
+   "key": "conf/ipps/LiuFAALJPG22",
+   "title": "High-order Line Graphs of Non-uniform Hypergraphs: Algorithms, Applications, and Experimental Analysis",
+   "venue": "IPDPS",
+   "year": 2022,
+   "doi": "10.1109/IPDPS53621.2022.00081",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/pnnl/NWHypergraph",
+   "artifact_status": "likely",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Hypergraphs offer flexible and robust data representations for many applications, but methods that work directly on hypergraphs are not readily available and tend to be prohibitively expensive. Much of the current analysis of hypergraphs relies on first performing a graph expansion – either based on the nodes (clique expansion), or on the hyperedges (line graph) − and then running standard graph analytics on the resulting representative graph. However, this approach suffers from massive space complexity and high computational cost with increasing hypergraph size. Here, we present efficient, parallel algorithms to accelerate and reduce the memory footprint of higher-order graph expansions of hypergraphs. Our results focus on the hyperedge-based s-line graph expansion, but the methods we develop work for higher-order clique expansions as well. To the best of our knowledge, ours is the firs",
+   "one_liner": "Parallel memory-efficient s-line graph expansion algorithms for hypergraphs, beats SpGEMM baselines"
+  },
+  {
+   "key": "conf/ppopp/NiuLJS0022",
+   "title": "TileSpGEMM: a tiled algorithm for parallel sparse general matrix-matrix multiplication on GPUs",
+   "venue": "PPoPP",
+   "year": 2022,
+   "doi": "10.1145/3503221.3508431",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/SuperScientificSoftwareLaboratory/TileSpGEMM",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Sparse general matrix-matrix multiplication (SpGEMM) is one of the most fundamental building blocks in sparse linear solvers, graph processing frameworks and machine learning applications. The existing parallel approaches for shared memory SpGEMM mostly use the row-row style with possibly good parallelism. However, because of the irregularity in sparsity structures, the existing row-row methods often suffer from three problems: (1) load imbalance, (2) high global space complexity and unsatisfactory data locality, and (3) sparse accumulator selection.",
+   "one_liner": "TileSpGEMM: tiled CSR SpGEMM algorithm for GPUs addressing load imbalance, locality, and accumulator selection"
+  },
+  {
+   "key": "journals/tpds/AzadSHGB22",
+   "title": "Combinatorial BLAS 2.0: Scaling Combinatorial Algorithms on Distributed-Memory Systems",
+   "venue": "TPDS",
+   "year": 2022,
+   "doi": "10.1109/TPDS.2021.3094091",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/PASSIONLab/CombBLAS",
+   "artifact_status": "verified",
+   "platform": [
+    "distributed",
+    "nvidia-gpu",
+    "cpu"
+   ],
+   "approach": "library",
+   "abstract": "Combinatorial algorithms such as those that arise in graph analysis, modeling of discrete systems, bioinformatics, and chemistry, are often hard to parallelize. The Combinatorial BLAS library implements key computational primitives for rapid development of combinatorial algorithms in distributed-memory systems. During the decade since its first introduction, the Combinatorial BLAS library has evolved and expanded significantly. This article details many of the key technical features of Combinatorial BLAS version 2.0, such as communication avoidance, hierarchical parallelism via in-node multithreading, accelerator support via GPU kernels, generalized semiring support, implementations of key data structures and functions, and scalable distributed I/O operations for human-readable files. Our article also presents several rules of thumb for choosing the right data structures and functions in",
+   "one_liner": "Combinatorial BLAS 2.0: distributed-memory sparse/graph BLAS primitives with GPU kernel support"
+  },
+  {
+   "key": "conf/ipps/HussainSBA21",
+   "title": "Communication-Avoiding and Memory-Constrained Sparse Matrix-Matrix Multiplication at Extreme Scale",
+   "venue": "IPDPS",
+   "year": 2021,
+   "doi": "10.1109/IPDPS49936.2021.00018",
+   "arxiv": "2010.08526",
+   "oa_url": "https://arxiv.org/pdf/2010.08526",
+   "artifact_url": "https://github.com/PASSIONLab/CombBLAS",
+   "artifact_status": "verified",
+   "platform": [
+    "distributed",
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "We present a distributed-memory algorithm for sparse matrix-matrix multiplication (SpGEMM) of extremely large matrices where the generated output is larger than the aggregated memory of a target supercomputer. We address this challenge by splitting the computation into batches with each batch generating a set of output columns. We developed a distributed symbolic step to understand the memory requirement and determine the number of batches beforehand. We integrated the multiplication in each batch with an existing communication avoiding techniques to reduce the communication overhead while multiplying matrices in a 3-D process grid. Furthermore, we made the in-node computations faster by designing a sort-free SpGEMM and merging algorithm. Incorporating all the proposed approaches, our SpGEMM scales for large protein-similarity networks using 262,144 cores on a Cray XC40 supercomputer whi",
+   "one_liner": "Communication-avoiding, batched, sort-free distributed SpGEMM scaling to 262K cores in CombBLAS"
+  }
+ ]
+}

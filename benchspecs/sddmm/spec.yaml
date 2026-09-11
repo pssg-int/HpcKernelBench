@@ -1,0 +1,220 @@
+kernel: sddmm
+summary: >
+  Measure Sampled Dense-Dense Matrix Multiplication throughput — computing
+  dot products between rows of two dense matrices only at the nonzero
+  positions of a given sparsity pattern — across the three input traditions
+  (general SuiteSparse, sparse-DNN/DLMC, real GNN graphs) and two precision
+  regimes (fp32/fp16 unstructured Tensor-Core, sub-fp32 quantized) the
+  track's papers actually use, plus an end-to-end fused-attention variant
+  for papers that only report SDDMM embedded in a bigger pipeline.
+operation: "P[i,j] = S[i,j] * dot(A[i,:], B[j,:])  for (i,j) in nnz(S); A: M x K dense, B: N x K dense (row-major), S/P: M x N sparse with identical sparsity pattern"
+
+variants:
+  - id: sddmm-csr-kernel-f32
+    claim: >
+      steady-state SDDMM kernel throughput on general (non-DNN) sparse
+      matrices given in CSR, fp32, preprocessing excluded from the timed
+      loop. This is the common denominator most GPU papers in the track
+      report (RoDe, and implicitly the Sputnik/Gale-2020 kernels every
+      later paper baselines against).
+    inputs:
+      suite: SuiteSparse
+      selection: >
+        real square or rectangular matrices with rows >= 1e4, cols >= 1e4,
+        nnz >= 1e5 — the exact `ssgetpy` filter RoDe's own dataset-download
+        script uses (`rowbounds=(10000,None), colbounds=(10000,None),
+        nzbounds=(100000,None)`), adopted verbatim so the suite is
+        reproducible from the artifact rather than hand-picked; excludes
+        pattern-only (no numeric values) matrices.
+      recommended_subset: [192bit, wv2010, xenon2, Zd_Jac2_db, Zhao2, mip1,
+        cage12, cage13, cage14, pwtk, af_shell1, af_shell4, af_shell7,
+        torso1, torso2, torso3, scircuit, hcircuit, kim2, gearbox, cfd2,
+        pkustk14, Stanford, Hamrle3, language, barrier2-1]
+      dense_operand: "K in {32, 128}, fp32, initialized U(-1,1); A row-major M x K, B row-major N x K"
+    protocol:
+      format: "CSR (given); MTX->CSR parse is O(nnz), not counted as preprocessing, but its wall time is still logged once per matrix"
+      warmup: 5
+      reps: 50
+      statistic: median (report min/max/std)
+      timer: device-side CUDA events (cudaEvent_t start/stop around the kernel launch loop only)
+      timing_scope: "kernel only; H2D/D2H transfer and CSR parse excluded from the timed region"
+      preprocessing_reported: separately, once per matrix (CSR build time, not amortized into throughput)
+    metric: {primary: "GFLOP/s (2 * nnz * K)", secondary: ms}
+    correctness: >
+      max absolute error vs. a double-precision dense reference SDDMM
+      (S elementwise-multiplied by A*B^T computed on CPU in fp64) < 1e-4
+      per nonzero; the check MUST run and pass before a timed run counts
+      toward the reported statistic. (RoDe's own artifact ships this exact
+      check as `#ifdef VALIDATE` but leaves it out of the default AE
+      binary — the spec makes it mandatory, deliberately diverging from
+      the paper's own published practice.)
+
+  - id: sddmm-tensorcore-blocked-fp16
+    claim: >
+      steady-state SDDMM kernel throughput using Tensor-Core blocked
+      sparse formats (unstructured sparsity packed into fixed row-window
+      tiles) on real graph-adjacency matrices, fp16/tf32, one-shot block
+      preprocessing excluded from steady-state but reported separately.
+      Matches FlashSparse's and Fused3S's own kernel-only tables.
+    inputs:
+      suite: "union of real graph datasets from Fused3S, FusedMM, and HP-SpMM-SDDMM's own evaluation suites (PyG/OGB/DGL-loadable)"
+      selection: >
+        graphs appearing in the evaluation suite of >= 2 of the three
+        source papers (to avoid a single paper's cherry-picked set
+        dominating the union), plus one large-scale OGB graph for
+        scale coverage.
+      recommended_subset: [cora, citeseer, pubmed, reddit, ogbn-products,
+        ogbn-arxiv, ogbn-proteins, ogbn-papers100M, collab, ddi, ppa,
+        Yelp, Flickr, AmazonCoBuyComputer, AmazonCoBuyPhoto, CoauthorCS,
+        CoauthorPhysics, com-amazon, amazon0505, Artist]
+      dense_operand: "K in {32, 128}, fp16 primary / tf32 secondary, U(-1,1); both precisions run and reported as separate rows, never averaged together"
+    protocol:
+      format: >
+        Tensor-Core blocked format (row-window x column-tile, e.g.
+        16 x 8 or 16 x 16 as used by FlashSparse/Fused3S); one-shot
+        CSR -> block conversion timed and reported separately, never
+        inside the per-iteration loop.
+      warmup: 3
+      reps: 10
+      statistic: "median (report mean and std too) — adopts Fused3S's protocol verbatim as the track's cleanest, spec-compliant reference"
+      timer: "device-side CUDA events (torch.cuda.Event(enable_timing=True), end_event.synchronize() before recording elapsed time)"
+      timing_scope: "kernel only; block conversion, H2D/D2H excluded"
+      preprocessing_reported: "separately, once per matrix (block-partition cost; report both raw-nnz and zero-padded-nnz from tiling, since block padding materially changes the apparent nnz used in the FLOP count)"
+    metric:
+      primary: "GFLOP/s (2 * nnz_padded * K)"
+      secondary: "GFLOP/s (2 * nnz_raw * K) — reported alongside so tiling-induced padding overhead is visible rather than hidden inside one number"
+      tertiary: ms
+    correctness: >
+      max relative error vs. an fp32 CSR reference SDDMM < 1e-2 (standard
+      fp16 Tensor-Core tolerance), gated before timing counts.
+
+  - id: sddmm-quantized-dlmc
+    claim: >
+      quantized (sub-fp32) SDDMM kernel throughput on sparsity-controlled
+      sparse-DNN weight matrices, isolating numeric precision as the axis
+      of comparison — Magicube's contribution is a genuinely distinct
+      numerical regime from the fp32/fp16 variants above and cannot be
+      fairly folded into either.
+    inputs:
+      suite: "DLMC (Deep Learning Matrix Collection, introduced by Gale et al. SC'20), accessed via Magicube's own per-sparsity file lists `eval_matrices/s{50,70,80,90,95,98}.txt`"
+      selection: >
+        5 matrices sampled from each of rn50/magnitude_pruning and
+        transformer/magnitude_pruning at 3 representative sparsity
+        buckets (0.7, 0.9, 0.95) using the first 5 entries of the
+        corresponding s70/s90/s95 file lists — 30 matrices total, spanning
+        low/medium/high sparsity without requiring the full DLMC corpus
+        (thousands of per-layer matrices) for every benchmark run.
+      recommended_subset: [
+        "rn50/magnitude_pruning/0.7 (5 layers, per s70.txt)",
+        "rn50/magnitude_pruning/0.9 (5 layers, per s90.txt)",
+        "rn50/magnitude_pruning/0.95 (5 layers, per s95.txt)",
+        "transformer/magnitude_pruning/0.7 (5 layers, per s70.txt)",
+        "transformer/magnitude_pruning/0.9 (5 layers, per s90.txt)",
+        "transformer/magnitude_pruning/0.95 (5 layers, per s95.txt)"]
+      dense_operand: "K in {32, 128}; three precision sub-variants: 4-bit x 4-bit, 8-bit x 8-bit, 16-bit x 16-bit Tensor-Core integer formats, each a separate reported row"
+    protocol:
+      format: "given (DLMC .smtx -> CSR); quantized packing of A/B operands is one-shot preprocessing, excluded from the timed loop and reported separately"
+      warmup: 32
+      reps: 100
+      statistic: >
+        median (report min/max/std). Deliberate deviation from Magicube's
+        own artifact, which times 512 reps after a 32-iteration warmup but
+        reports the mean, not the median — the spec keeps the (larger, to
+        absorb quantized-kernel launch-overhead variance) warmup count but
+        switches the summary statistic per the track-wide fairness
+        principle.
+      timer: "device-side CUDA events, one start/stop pair per iteration"
+      timing_scope: "kernel only; quantization/dequantization of operands excluded, reported separately"
+      preprocessing_reported: separately, once per matrix (quantized packing cost)
+    metric:
+      primary: "GFLOP/s (2 * nnz * K), counted at the unquantized logical FLOP rate so 4b/8b/16b rows remain comparable to each other and to variants 1-2"
+      secondary: ms
+      tertiary: "bits per output element (4/8/16) as an explicit precision descriptor alongside the throughput number"
+    correctness: >
+      dequantized output error vs. an fp32 CSR reference SDDMM below a
+      precision-dependent relative threshold: 4-bit <= 1e-1, 8-bit <= 1e-2,
+      16-bit <= 1e-3; gated before timing counts. (Not recoverable from
+      the excerpted Magicube artifact files — this threshold is a spec
+      design choice, not a reproduction of a stated paper tolerance; flag
+      for follow-up against the paper's Table if a tighter number is
+      published.)
+
+  - id: sddmm-attention-e2e
+    claim: >
+      end-to-end fused SDDMM + softmax + SpMM ("3S" sparse-attention)
+      pipeline cost, one-shot preprocessing (block partition / row-window
+      layout) amortized over k=100 repeated forward passes — the context
+      most track papers actually deploy SDDMM in (GNN attention / graph
+      embedding), and the only number several papers (Fused3S headline
+      figures, FusedMM's end-to-end Force2Vec runs, FlashSparse's
+      GCN/AGNN tables) report at all. Isolated SDDMM-stage cost is
+      additionally reported via kernel-name profiling so this variant
+      stays comparable to sddmm-tensorcore-blocked-fp16.
+    inputs:
+      suite: "same graph suite as sddmm-tensorcore-blocked-fp16, restricted to a 12-graph subset for end-to-end run-time budget reasons"
+      recommended_subset: [cora, citeseer, pubmed, reddit, ogbn-products,
+        ogbn-arxiv, ppa, collab, Flickr, Yelp, AmazonCoBuyComputer, com-amazon]
+      dense_operand: "K = 128 (embedding dim; the value every papers' most-detailed table in this track actually uses), fp16 compute / fp32 accumulate"
+    protocol:
+      format: "implementation-native (Tensor-Core blocked or CSR); one-shot format conversion + row-window partition performed ONCE per matrix, then amortized over the k repeated forward passes below — never re-run per pass"
+      warmup: 3 full pipeline passes (discarded)
+      reps: "k = 100 forward passes (amortization count is explicit and part of the spec, per the fairness principle that amortization must be stated, not implied)"
+      statistic: "median per-pass wall time (report min/max/std) across the 100 passes; preprocessing cost amortized in (one-shot cost / k added to each pass's reported time)"
+      timer: "device-side CUDA events for the fused pipeline wall time; separately, `ncu --kernel-name regex:<sddmm-kernel-name>` (following Fused3S's own supplementary-figure methodology) to isolate just the SDDMM stage's device time within the fused pipeline"
+      timing_scope: "end-to-end (preprocessing amortized in) as the primary number; isolated SDDMM-stage-only kernel time reported alongside, never substituted for the end-to-end number"
+      preprocessing_reported: "amortized over k=100 (primary variant) AND reported once, un-amortized, as a standalone number (so both amortization arguments are auditable)"
+    metric:
+      primary: "ms/pass, fused SDDMM+softmax+SpMM, preprocessing amortized"
+      secondary: "GFLOP/s, FLOPs = nnz*K*2 (SDDMM) + nnz*5 (softmax) + nnz*K*2 (SpMM) — Fused3S's own three-term formula"
+      tertiary: "isolated SDDMM-stage GFLOP/s (2*nnz*K), from kernel-name-filtered profiling, directly comparable to sddmm-tensorcore-blocked-fp16"
+    correctness: >
+      fused-pipeline output within 1e-2 relative error of an unfused
+      fp32-CSR SDDMM -> softmax -> SpMM reference chain computed
+      independently; the SDDMM sub-stage additionally held to the same
+      1e-2 relative-error bar as sddmm-tensorcore-blocked-fp16. Gated
+      before timing counts — none of the source papers (Fused3S's
+      accuracy test is a separate script; FusedMM validates only via
+      downstream F1 score) actually gate correctness this way today.
+
+notes_on_fairness:
+  - >
+    IMPLEMENTATION FINDING (added while building bench/, 2026-08-06): the phrase
+    "max relative error" used by this track's papers and by the variants above is
+    under-specified, and taken literally it fails correct kernels. An output
+    element here is a sum of many signed products; cancellation regularly leaves a
+    true value near zero, and |out-ref|/|ref| then blows up to O(1e-2..1e0) for a
+    perfectly good fp32 kernel (measured: 3.9e-2 on SuiteSparse/cant at N=128 with
+    scipy's own fp32 CSR product). The reference harness therefore gates on
+    |out-ref| / (|A|*|B|) elementwise — the standard componentwise backward-error
+    denominator — and records the naive pointwise-relative, absolute and L2-relative
+    values alongside so the choice stays auditable. Any implementation of this spec
+    must state which denominator it used; "relative error" alone is not a gate.
+  - "No two of the 8 papers with recovered protocols share an input suite (DLMC vs. general SuiteSparse vs. real GNN graphs) — the spec resolves this with per-suite variants rather than an artificial forced union that would silently favor whichever tradition has more matrices."
+  - "RoDe's shipped correctness check (#ifdef VALIDATE) is off by default in the artifact's own AE binary; every variant here makes the equivalent check mandatory before a run counts."
+  - "FusedMM validates SDDMM output only indirectly, via downstream classification F1-score equivalence, not a per-element numerical tolerance on the SDDMM output itself; all variants here require a direct numerical tolerance instead."
+  - "Magicube reports the mean of 512 timed reps; RoDe reports the (effectively) mean of 10; only Fused3S reports median. All variants here standardize on median + reported min/max/std, per the track-wide instructions, which is a deliberate change from 3 of the 4 GPU papers' own practice."
+  - "RoDe and FlashSparse both correctly separate and report preprocessing/format-conversion cost rather than silently folding it into steady-state throughput; this practice is generalized to all variants here, including the DLMC quantized-packing cost, which was not visibly separated in the excerpted Magicube files."
+  - "Fused3S's headline numbers are for the fused 3-stage pipeline, not isolated SDDMM; sddmm-attention-e2e reproduces that framing explicitly (with a stated amortization count, which the source papers do not always give) while sddmm-tensorcore-blocked-fp16 keeps an isolated-kernel number so both kinds of paper claim are comparable on their own terms rather than conflated."
+  - "distributed_sddmm/HnH's min-wall-time dynamic-repetition protocol (run until elapsed >= min_time, variable trial count) is structurally different from every fixed-rep GPU protocol surveyed and is NOT folded into any variant above; a distributed/CPU-cluster SDDMM variant would need its own protocol definition, left as an open question below rather than forced into the fixed-rep template."
+
+open_questions:
+  - "Gale et al. SC'20's exact DLMC matrix count and sparsity-bucket boundaries were only recovered via an AI-summarized ar5iv extract, not a verbatim table quote; cross-check against the paper's actual Table 1 (or against Magicube's eval_matrices/s*.txt file contents, a faithful machine-readable proxy) before the harness locks in matrix counts."
+  - "Gale et al. SC'20's own timing protocol (warmup/rep count/statistic) could not be recovered from the arXiv extract at all; needs a PDF-level re-read or inspection of the separately maintained Sputnik/google-research repo (the track input's artifact_url, luckylsk34/Sparse-Kernels, appears to be a third-party mirror, not the original google-research/sputnik repo — flag for the artifact-verification pipeline too)."
+  - "RASSM's SDDMM-specific timing protocol (warmup/rep/statistic) was not fully recovered; code/src/main.cpp confirms the --kernel sddmm path and data_movement_experiment_sddmm entry point exist, but the actual measurement loop (likely in global.cpp/common.cpp, not read in this pass) needs a follow-up read before RASSM numbers back the CPU reference point in sddmm-csr-kernel-f32-style comparisons. Also unclear whether RASSM treats SDDMM as a first-class contribution or an SpMM-adjacent add-on -- its own abstract frames the headline speedup entirely in SpMM terms."
+  - "HP-SpMM-SDDMM's currently hosted artifact contains no SDDMM benchmark code despite the paper and repo name (only spmm/ and test/ are present); unresolved whether an SDDMM path exists in a different branch/commit or was simply never open-sourced -- needs a `gh api repos/fan1997/HP-SpMM-SDDMM/branches` and commit-history check before concluding the gap is permanent."
+  - "Insum (ASPLOS'26): the artifact repo (nullplay/IndirectEinsum) is a single unrelated SpMM-COO Triton-codegen demo with no benchmark/dataset/run scripts; ASPLOS'26 has not yet occurred as of this survey, so no methodology facts could be recovered at all. Re-survey once the conference proceedings/artifact are published."
+  - "distributed_sddmm/HnH's min_time threshold for its dynamic-repetition protocol is set by a caller not read in this pass (only the do-while loop structure and throughput formula were recovered); a concrete value is needed before this protocol family could become its own spec variant for a future distributed-SDDMM track."
+  - "sddmm-quantized-dlmc's correctness thresholds (4b/8b/16b relative-error bars) are a spec design choice, not a reproduction of a number stated in the Magicube paper/artifact -- the excerpted sddmm_benchmark.cpp did not expose a validation/tolerance check. Revisit if the paper's own accuracy table is located."
+  - "Whether FlashSparse's and Fused3S's TC-block padding overhead (nnz_padded vs. nnz_raw) is large enough to materially change variant rankings was not quantified in this survey -- both dual-FLOP-count metric fields in sddmm-tensorcore-blocked-fp16 are a hedge, not a resolved answer."
+
+evidence:
+  conf/sc/GaleZYE20: "DLMC dataset (ResNet-50/Transformer pruned weights) + SuiteSparse comparison; V100, fp32/mixed fp16, CUDA events (protocol detail not independently verified from extract); cuSPARSE/MergeSpMM/ASpT baselines; 27% of fp32 peak, geomean 3.58x/2.19x speedup."
+  conf/ipps/RahmanSA21: "Real graphs (Cora/Pubmed/YouTube/Orkut/OGBprot/+RMAT synthetic), d in {32..512}; 10 iterations averaged, no stated warmup; fp32 (fp64 optional); DGL/MKL baselines; correctness validated indirectly via downstream F1-score match, not numerical tolerance."
+  conf/ipps/BharadwajBD22: "Synthetic Erdos-Renyi matrices, MKL CSR fp64 on CPU/MPI; min-wall-time dynamic-repetition protocol (run until elapsed>=min_time), not fixed-iteration; GFLOP/s = nnz*2*R/elapsed; MKL SpMM / PETSc baselines."
+  conf/sc/LiOH22: "DLMC dataset via eval_matrices/s{50,70,80,90,95,98}.txt sparsity buckets; 32-iter warmup + 512 timed reps, per-iteration CUDA events, reports MEAN; 4b/8b/16b quantized Tensor-Core precisions; A100."
+  conf/ppopp/PangFQZL24: "SuiteSparse via ssgetpy (rows,cols>=1e4, nnz>=1e5); N in {32,128}, fp32; ITER=10, no separate warmup, CUDA events, mean over loop; correctness check present but NOT compiled into default AE binary; preprocessing time reported separately from steady-state throughput."
+  conf/ppopp/ShiLXFWW25: "515 SuiteSparse matrices + DGL/PyG GNN datasets, TC-blocked format; N in {32,128}, fp16/tf32 as separate rows; format-conversion cost reported separately (Table 7 ablation); RoDe/Sputnik/cuSPARSE/GNNAdvisor/TC-GNN/GE-SpMM baselines; H100 PCIe + RTX4090."
+  conf/ics/LiC25: "15 real graphs (cora/pubmed/reddit/ogbn-products/etc.) + batched-graph sets; embedding dim 128; 3-iter discarded warmup + 10 timed reps, CUDA events, reports MEDIAN (+mean/std) -- cleanest protocol in the track; explicit 3-term FLOP formula (sddmm+softmax+spmm); correctness via separate accuracy-test script, not gated into perf run."
+  conf/asplos/JainGC25: "47 named SuiteSparse matrices (CPU, ~45GB), overlaps RoDe on cage12/13/14+xenon2; --kernel {spmm,sddmm} flag confirms real SDDMM code path; ASpT/J-Stream/CSR/CSF baselines; paper's own reproducibility claim is trend-level only ('exact numbers will vary'), not tight numerical reproducibility."
+  conf/ipps/FanWC23: "16 named GNN graphs (Yelp/Flickr/AIFB/.../reddit), K in {32,64,128}, cuSPARSE/GE-SpMM baselines, 'average GFLOPS' reported -- BUT current artifact snapshot contains only an SpMM benchmark path, no SDDMM code despite paper/repo title; protocol facts above describe the SpMM harness, not a verified SDDMM one."
+  conf/asplos/WonAAE26: "Artifact repo is a single unrelated SpMM-COO Triton-codegen demo (torch.compile-based indirect einsum), no benchmark/dataset/run scripts; ASPLOS'26 not yet held as of survey date; no methodology facts recoverable."

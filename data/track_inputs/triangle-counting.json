@@ -1,0 +1,91 @@
+{
+ "kernel": "triangle-counting",
+ "papers": [
+  {
+   "key": "journals/tpds/ChenY25",
+   "title": "ToT: Triangle Counting on Tensor Cores",
+   "venue": "TPDS",
+   "year": 2025,
+   "doi": "10.1109/TPDS.2025.3606878",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1109/tpds.2025.3606878",
+   "artifact_url": "https://github.com/yuang-chen/ToT-TPDS25",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Triangle counting is a fundamental graph algorithm used to identify the number of triangles within a graph. This algorithm can be reformulated into linear algebraic operations, including sparse matrix multiplication, intersection and reduction. Modern GPUs, equipped with Tensor Cores, offer massive parallelism that can significantly accelerate graph algorithms. However, leveraging Tensor Cores, originally designed for dense matrix multiplication, to handle sparse workloads for triangle counting presents non-trivial challenges. In this paper, we conduct an in-depth analysis of the state-of-the-art techniques that utilize Tensor Cores for matrix operations, identifying critical performance shortfalls. Based on these insights, we introduce ToT, which enhances the utilization of Tensor Cores and expands their functionalities for diverse sparse matrix operations. In experiments, ToT is evalua",
+   "one_liner": "ToT: Tensor Core triangle counting via sparse matrix ops, 3.81x speedup, 17x memory savings"
+  },
+  {
+   "key": "conf/ipps/Li0PTZ24",
+   "title": "A Comparative Study of Intersection-Based Triangle Counting Algorithms on GPUs",
+   "venue": "IPDPS",
+   "year": 2024,
+   "doi": "10.1109/IPDPS57955.2024.00099",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/Jangbao/TC-Compare",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Counting triangles in large graphs, being a crucial problem in graph computing, has attracted significant attention from research communities. There is a large body of work dedicated to algorithmic design and efficient implementation on parallel platforms such as GPUs. Among them, the intersection-based triangle counting algorithm is found to be the most efficient approach and a few GPU implementations have been proposed following this algorithm. However, there remains a gap in understanding how these algorithms perform when confronted with diverse real-world graph datasets. It is a well-established fact that the performance of GPU code is heavily influenced by data characteristics, including graph size and node degree, often leading to issues such as workload imbalances and inefficient memory access. The goal of this study is to systematically evaluate the performance and analyze the be",
+   "one_liner": "Comparative study of GPU triangle-counting kernels plus new GroupTC algorithm outperforming across datasets"
+  },
+  {
+   "key": "conf/ipps/SandersU23",
+   "title": "Engineering a Distributed-Memory Triangle Counting Algorithm",
+   "venue": "IPDPS",
+   "year": 2023,
+   "doi": "10.1109/IPDPS54959.2023.00076",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/niklas-uhl/katric",
+   "artifact_status": "verified",
+   "platform": [
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Counting triangles in a graph and incident to each vertex is a fundamental and frequently considered task of graph analysis. We consider how to efficiently do this for huge graphs using massively parallel distributed-memory machines. Unsurprisingly, the main issue is to reduce communication between processors. We achieve this by counting locally whenever possible and reducing the amount of information that needs to be sent in order to handle (possible) nonlocal triangles. We also achieve linear memory requirements despite superlinear communication volume by introducing a new asynchronous sparse-all-to-all operation. Furthermore, we dramatically reduce startup overheads by allowing this communication to use indirect routing. Our algorithms scale (at least) up to 32 768 cores and are up to 18 times faster than the previous state of the art.",
+   "one_liner": "Distributed-memory triangle counting via async sparse-all-to-all, up to 18x faster than SOTA"
+  },
+  {
+   "key": "conf/ipps/StrauszVGBH22",
+   "title": "Asynchronous Distributed-Memory Triangle Counting and LCC with RMA Caching",
+   "venue": "IPDPS",
+   "year": 2022,
+   "doi": "10.1109/IPDPS53621.2022.00036",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/fvella/lcc",
+   "artifact_status": "verified",
+   "platform": [
+    "distributed"
+   ],
+   "approach": "manual",
+   "abstract": "Triangle count and local clustering coefficient are two core metrics for graph analysis. They find broad application in analyses such as community detection and link recommen-dation. To cope with the computational and memory demands that stem from the size of today's graph datasets, distributed-memory algorithms have to be developed. Current state-of-the-art solutions suffer from synchronization overheads or expensive pre-computations needed to distribute the graph, achieving limited scaling capabilities. We propose a fully asynchronous implementation for triangle counting and local clustering coef-ficient based on 1D partitioning, using remote memory accesses for transferring data and avoid synchronization. Additionally, we show how these algorithms present data reuse on remote memory accesses and how the overall communication time can be improved by caching these accesses. Finally, we ",
+   "one_liner": "Asynchronous 1D-partitioned triangle counting/LCC with RMA caching, up to 100x vs 2020 champion"
+  },
+  {
+   "key": "conf/sc/SteilRIPSP21",
+   "title": "TriPoll: computing surveys of triangles in massive-scale temporal graphs with metadata",
+   "venue": "SC",
+   "year": 2021,
+   "doi": "10.1145/3458817.3476200",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3458817.3476200",
+   "artifact_url": "https://github.com/llnl/tripoll",
+   "artifact_status": "verified",
+   "platform": [
+    "distributed",
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Understanding the higher-order interactions within network data is a key objective of network science. Surveys of metadata triangles (or patterned 3-cycles in metadata-enriched graphs) are often of interest in this pursuit. In this work, we develop TriPoll, a prototype distributed HPC system capable of surveying triangles in massive graphs containing metadata on their edges and vertices. We contrast our approach with much of the prior effort on triangle analysis, which often focuses on simple triangle counting, usually in simple graphs with no metadata. We assess the scalability of TriPoll when surveying triangles involving metadata on real and synthetic graphs with up to hundreds of billions of edges. We utilize communication-reducing optimizations to demonstrate a triangle counting task on a 224 billion edge web graph in approximately half of the time of competing approaches, while add",
+   "one_liner": "TriPoll: distributed metadata-aware triangle surveying on massive temporal graphs, 2x faster"
+  }
+ ]
+}

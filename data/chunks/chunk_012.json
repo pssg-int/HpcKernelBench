@@ -1,0 +1,447 @@
+[
+ {
+  "key": "conf/usenix/QiuYGZ25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "HotRAP: Hot Record Retention and Promotion for LSM-trees with Tiered Storage",
+  "abstract": "The multi-level design of Log-Structured Merge-trees (LSM-trees) naturally fits the tiered storage architecture: the upper levels (recently inserted/updated records) are kept in fast storage to guarantee performance while the lower levels (the majority of records) are placed in slower but cheaper storage to reduce cost. However, frequently accessed records may have been compacted and reside in slow storage. Existing algorithms are inefficient in promoting these ``hot'' records to fast storage, leading to compromised read performance. We present HotRAP, a key-value store based on RocksDB that can timely promote hot records individually from slow to fast storage and keep them in fast storage while they are hot. HotRAP uses an on-disk data structure (a specially-made LSM-tree) to track the hotness of keys and includes three pathways to ensure that hot records reach fast storage with short delays. Our experiments show that HotRAP outperforms state-of-the-art LSM-trees on tiered storage by up to 5.4$\\times$ compared to the second best under read-only and read-write-balanced YCSB workloads with common access skew patterns, and by up to 1.9$\\times$ compared to the second best under Twitter production workloads.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/JhaPAB25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "HyCache: Hybrid Caching for Accelerating DNN Input Preprocessing Pipelines",
+  "abstract": "End-to-end deep neural networks' (DNNs) training performance depends not only on the time spent in training the model weights but also on the time spent in loading and preprocessing the training data. Recent advances in GPU hardware have made training substantially faster. As a result, the bottleneck has shifted to the CPU-based input pipeline. This pipeline must fetch and transform each sample through multiple stages before it can be consumed by the GPU. Prior works accelerate preprocessing by caching intermediate results across epochs, but suffer from several key limitations: They cache either in memory or in storage, but are unable to leverage both together. They can cache the output of a stage only if it can entirely fit in the cache, which is a severe limitation for larger datasets. They can cache the output of only one of the stages, which could be suboptimal. We thus introduce Hybrid Cache (HyCache), a runtime that enables the caching of subsets of preprocessed data from multiple intermediate steps on both memory and storage. HyCache possesses the ability to partially cache the outputs of a stage across both memory and storage. HyCache deploys integer linear programming (ILP) to automatically determine the best caching strategies across the memory and the storage by finding an optimal trade-off between recomputation and caching. Importantly, it does so without any manual intervention. HyCache outperforms state-of-the-art prior approaches, delivering a raw pipeline throughput improvement ranging in speedups from 1.11&times; to 10.1&times; over a variety of pipelines.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/He0HZ25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "HypeReca: Distributed Heterogeneous In-Memory Embedding Database for Training Recommender Models",
+  "abstract": "Making high-quality recommendations is important in online applications. To improve user satisfaction and effectiveness of advertising, deep learning-based recommender models (DLRM) are widely studied and deployed. Training these models on massive data demands increasing computation power, commonly provided by a cluster of numerous GPUs. Meanwhile, the embedding tables of the models are huge, posing challenges on the memory. Existing systems exploit host memory and hashing techniques to accommodate them. However, the simple offloading design is hard to scale up to multiple nodes. The sparse access to the distributed embedding tables introduces high data management and all-to-all communication overhead. We find that a distributed in-memory key-value database is the best abstraction to serve and maintain embedding vectors in DLRM training. To achieve high scalability, our system, HypeReca, utilizes both GPU and CPU memory. We improve the throughput of data management according to the batching pattern of DNN training, using a pipeline over decentralized indexing tables and a contentionavoiding schedule for data exchange. A two-fold parallel strategy is used to guarantee consistency of all embedding vectors. The communication overhead is reduced by replicating a few frequently accessed embedding vectors, exploiting the sparse pattern with a performance model. In our evaluation on 32 GPUs over real-world datasets, HypeReca achieves 2.16−16.8× end-to-end speedup over HugeCTR, TorchRec and TFDE. The source code is available at https://github.com/thu-pacman/hypereca/ .",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/LandsbergG0L25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "IRHash: Efficient Multi-Language Compiler Caching by IR-Level Hashing",
+  "abstract": "Compilation caches (CCs) save time, energy, and money by avoiding redundant compilations. They are provided by means of compiler wrappers (Ccache, sccache, cHash) or native build system features (Bazel, Buck2). Conceptually, a CC pays off if the achieved savings by cache hits outweigh the extra costs for cache lookups. Thus, most techniques try to detect a cache hit early in the compilation process by hashing the (preprocessed/tokenized) source code, but hashing the AST has also been suggested to achieve even higher end-to-end savings, as the increased accuracy outweighs the additional parsing costs. Technically, all these CCs are currently limited to C or C-style languages. In this paper we take the conceptual question of the “right” lookup level for compiler caches one step further onto the IR level. We provide IRHash, an IR-level CC for LLVM that not only offers higher accuracy than the previous works but can also support all languages with an LLVM backend. We evaluate IRHash against Ccache and cHash based on the development history of 16 open-source projects written in C, C++, Fortran, and Haskell. With an average build time reduction of 19% across all C projects, IRHash provides better end-to-end savings than Ccache (10%) and cHash (16%), while additionally supporting more languages.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/GongTAK25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Identifying and Analyzing Pitfalls in GNN Systems",
+  "abstract": "Papers on recent graph neural network (GNN) systems have established a clear trend of not showing training accuracy results, and directly or indirectly relying on smaller datasets for evaluations majorly. Our in-depth analysis shows that the omission of accuracy results leads to a chain of pitfalls in the system design, implementation, framework integration, and evaluation process, questioning the practicality of many of the proposed system optimizations, and affecting conclusions, lessons learned. We analyze many GNN systems and show the fundamental impact of these pitfalls. We further develop hypotheses, recommendations, and evaluation methodologies, and provide future directions. Finally, a new prototype, GRAPHPY, is developed to show the quantitative impact of the pitfall and establish baseline memory consumption and runtime information for GNN training. GRAPHPY also establishes a new line of optimizations rooted in solving the system-design pitfalls efficiently and practically that can be productively integrated into prior works.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/WangCLC0Z25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "JENGA: Enhancing LLM Long-Context Fine-tuning with Contextual Token Sparsity",
+  "abstract": "The escalating demand for long-context applications has intensified the necessity of extending the LLM context windows. Despite recent fine-tuning approaches successfully expanding context lengths, their high memory footprints, especially for activations, present a critical practical limitation. Current parameter-efficient fine-tuning methods prioritize reducing parameter update overhead over addressing activation memory constraints. Similarly, existing sparsity mechanisms improve computational efficiency but overlook activation memory optimization due to the phenomenon of Shadowy Activation . In this paper, we propose JENGA, the first LLM fine-tuning system that explores and exploits a new token-level sparsity mechanism inherent in long-context scenarios, termed Contextual Token Sparsity . JENGA minimizes redundant token involvement by assessing the informativeness of token embeddings while preserving model accuracy. Specifically, JENGA introduces three key techniques: (1) Token Elimination, dynamically identifying and excluding redundant tokens across varying inputs and layers. (2) Pattern Prediction, utilizing well-trained predictors to approximate token sparsity patterns with minimal overhead. (3) Kernel Optimization, employing permutation-free and segment-based strategies to boost system performance. We implement JENGA as an end-to-end fine-tuning system compatible with various LLM architectures and other optimization techniques. Comprehensive evaluations demonstrate that JENGA reduces memory consumption by up to 1.93&times; and achieves up to 1.36&times; speedups, outperforming state-of-the-art fine-tuning systems.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/0002YJLADLCLYLY25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Katz: Efficient Workflow Serving for Diffusion Models with Many Adapters",
+  "abstract": "Text-to-image (T2I) generation using diffusion models has become a blockbuster service in today's AI cloud. A production T2I service typically involves a serving workflow where a base diffusion model is augmented with many ControlNet and LoRA adapters to control the details of output images, such as shapes, outlines, poses, and styles. In this paper, we present Katz, a system that efficiently serves a T2I workflow with many adapters. Katz differentiates compute-heavy ControlNets from compute-light LoRAs, where the former introduces significant computational overheads while the latter is bottlenecked by loading. Katz proposes to take ControlNet off the critical path with a ControlNet-as-a-Service design, in which ControlNets are decoupled from the base model and deployed as a separate, independently scalable service on dedicated GPUs, thus enabling ControlNet caching, parallelization, and sharing. To hide the high LoRA loading overhead, Katz employs bounded asynchronous loading that overlaps LoRA loading with initial base model execution by a maximum of K steps, while maintaining the same image quality. Katz further accelerates base model execution across multiple GPUs with latent parallelism . Collectively, these designs enable Katz to outperform the state-of-the-art T2I serving systems, achieving up to 7.8&times; latency reduction and 1.7&times; throughput improvement in serving SDXL models on H800 GPUs, without compromising image quality.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/ManakkalDP025",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "LITESHIELD: Secure Containers via Lightweight, Composable Userspace μKernel Services",
+  "abstract": "This paper introduces LITESHIELD, a new userspace isolation architecture for secure containers that reexamines the boundary between user applications and system services. LITESHIELD decouples traditional guest kernel functionality into modular userspace microkernel (µkernel) services that interact with guest applications via low-latency, shared-memory-based inter-process communication (IPC). By serving most Linux syscalls in userspace, LITESHIELD enforces a significantly reduced user-to-host interface, with just 22 syscalls, achieving strong isolation comparable to virtual machines (VMs) while avoiding the complexity of hypervisors and hardware virtualization. LITESHIELD further provides a POSIX-compatible runtime with fine-grained syscall interception to support legacy applications and enables composable µkernel services that can integrate specialized userspace components (e.g., networking and filesystems). Our implementation demonstrates that LITESHIELD delivers strong isolation with performance comparable to traditional containers.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/WeiZ0025",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "LogCrisp: Fast Aggregated Analysis on Large-scale Compressed Logs by Enabling Two-Phase Pattern Extraction and Vectorized Queries",
+  "abstract": "Cloud providers generate logs at massive scales, often requiring dense compression using log patterns. Meanwhile, aggregated analysis on logs is essential for various applications. However, performing aggregated analysis on highly compressed logs presents two fundamental challenges: 1) it is hard to extract a set of log patterns that have both a global description and high filtering effectiveness; 2) executing full-text queries on numerically encoded data is challenging. This paper proposes a two-phase pattern extraction paradigm. Such a paradigm decouples messages within patterns into Sketch (global pattern structure) and Specs (local fine-grained pattern specifications). The Sketch is extracted in an offline phase to provide a comprehensive global description, while the Specs are customized in the online phase to enhance pattern filtering effectiveness. Additionally, this paper proposes an efficient prefix/suffix vectorized query algorithm for numerically encoded data, which leverages AVX SIMD instructions to convert full-text queries into high-performance range/point queries. We implement and integrate all these techniques into a system called LogCrisp, which is evaluated using nearly 7TB of logs from both production environments and public datasets. Experimental results show that LogCrisp achieves an order of magnitude lower analysis latency, 3.8&times; higher ingestion speed, and an almost identical compression ratio, compared with state-of-the-art works.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/Zhang0PTX25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Mitigating Resource Usage Dependency in Sorting-based KV Stores on Hybrid Storage Devices via Operation Decoupling",
+  "abstract": "LSM-tree-based key-value (KV) stores mainly employ sorting-based operations (e.g., flush and compaction) to manage the KV pairs on disk. Through analysis and experiments with RocksDB, we identify that the sorting operations cause critical issues of operation coupling, including intertwined resource consumption within an operation, interdependencies and contention among operations. These coupling problems lead to dependency in resource usage and are particularly exacerbated on hybrid storage devices, causing significant resource fragmentation and increased write stalls. Existing approaches to mitigating write stalls rely on either fixed differentiated data management or superficial scheduling of data sorting operations, but they fail to fundamentally address the resource usage dependency caused by operation coupling. In this paper, we propose DecouKV, designed to alleviate resource usage dependency and enhance resource utilization on hybrid storage devices through operation decoupling. Specifically, DecouKV decouples data sorting operations into CPU-intensive index merge tasks and I/O-intensive data append and data flush tasks by separating indexes from data files, managing indexes with a mergeable skip list-based structure and managing data with append-only files. Furthermore, we propose an elastic scheme for tuning level capacity and introduce a parameterized queue-based task scheduling strategy to maximize resource utilization. We implement DecouKV and conduct experimental evaluations. Compared to RocksDB, as well as state-of-the-art systems such as MatrixKV, PrismDB, SplitDB and ADOC, DecouKV improves CPU utilization by 25.4%-32.3%, increases throughput by 2.3-4.9&times;, and reduces tail latency by 74.3%-91.4% under write-intensive workloads. DecouKV also achieves a modest throughput improvement of 1.2-2.3&times; under read-intensive workloads.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/AwamotoH25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Opening Up Kernel-Bypass TCP Stacks",
+  "abstract": "We have seen a surge of kernel-bypass network stacks with different design decisions for higher throughput and lower latency than the kernel stack, but how do they perform in comparison to each others in a variety of workload, given that modern stacks have to handle both bulk data transfers over multi-hundred gigabit Ethernet and small request-response messages that require low latency? We found that even representative kernel-bypass stacks have never been compared for a set of basic workloads, likely because of difficulty to run their implementation. This paper takes the first step towards answering that question by comparing six in-kernel or kernel-bypass stacks. We show that existing stacks cannot handle those workloads at the same time or lack generality. We then use those observations to discuss possible pathways towards practical kernel-bypass stacks.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/GuoSH0P025",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Optimizing Input Minimization in Kernel Fuzzing",
+  "abstract": "Ensuring the reliability and security of an operating system (OS) kernel is a critical and challenging task. To this end, coverage-guided kernel fuzzing has been employed as an effective technique for finding kernel bugs. Specifically, in kernel fuzzing, input minimization is one critical stage to provide short, coverage-preserving seeds for improving the efficacy of fuzzing. However, we observe that the cost of the minimization &ndash;- taking over half of the fuzzing resources &ndash;- significantly limits the potential of kernel fuzzing. To the best of our knowledge, no prior work explores and mitigates the preceding problem in kernel fuzzing. To this end, we introduce and design two general and novel optimization strategies &ndash;- influence-guided call removal and type-informed argument simplification &ndash;- for reducing the minimization cost. The key idea of these two strategies is to reduce the number of dynamic program executions needed for verifying whether the new coverage achieved by the inputs is always preserved. We optimized the input minimization stage by our strategies in Syzkaller, the most popular and representative kernel fuzzer, resulting in a prototype named SyzMini. Our evaluation shows that SyzMini can significantly reduce the minimization cost by 60.7%. Moreover, SyzMini improves branch coverage by 12.5%, and finds 1.7~2X more unique bugs. On the latest upstream kernel version, Syzmini has found 13 previously unknown bugs, all of which have been confirmed and four have already been fixed. Our optimization strategies also show the general applicability for improving the effectiveness of other kernel fuzzers. We have made our implementation of SyzMini publicly available at https://github.com/ecnusse/SyzMini .",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/FengCWPLY25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Optimus: Accelerating Large-Scale Multi-Modal LLM Training by Bubble Exploitation",
+  "abstract": "Multimodal large language models (MLLMs) have extended the success of large language models (LLMs) to multiple data types, such as image, text and audio, achieving significant performance in various domains, including multimodal translation, visual question answering and content generation. Nonetheless, existing systems are inefficient to train MLLMs due to substantial GPU bubbles caused by the heterogeneous modality models and complex data dependencies in 3D parallelism. This paper proposes Optimus, a distributed MLLM training system that reduces end-to-end MLLM training time. Optimus is based on our principled analysis that scheduling the encoder computation within the LLM bubbles can reduce bubbles in MLLM training. To make scheduling encoder computation possible for all GPUs, Optimus searches the separate parallel plans for encoder and LLM, and adopts a bubble scheduling algorithm to enable exploiting LLM bubbles without breaking the original data dependencies in the MLLM model architecture. We further decompose encoder layer computation into a series of kernels, and analyze the common bubble pattern of 3D parallelism to carefully optimize the sub-millisecond bubble scheduling, minimizing the overall training time. Our experiments in a production cluster show that Optimus accelerates MLLM training by 20.5%-21.3% with ViT-22B and GPT-175B model over 3072 GPUs compared to baselines.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/0002CM025",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "PMR: Fast Application Response via Parallel Memory Reclaim on Mobile Devices",
+  "abstract": "Mobile applications exhibit increasingly high memory demands, making efficient memory management critical for enabling fast and responsive user experiences. However, our analysis of Android systems reveals inefficiencies in the current kernel-level memory reclaim design, which struggles to meet the performance demands of modern apps and fails to exploit upgraded storage devices. To address this challenge, we propose PMR, a parallel memory reclaim scheme. PMR introduces two key techniques: proactive page shrinking (PPS) and storage-friendly page writeback (SPW). PPS enhances the memory reclaim process by decoupling the time-consuming steps of page shrinking and page writeback for parallel execution, while SPW optimizes write I/O operations through batched unmapping of victim pages for bulk, efficient writeback. Experimental results on real-world mobile devices demonstrate that PMR can improve application response times by up to 43.6% compared to the original Android memory reclaim approach.",
+  "hint_categories": [
+   "dense_la"
+  ]
+ },
+ {
+  "key": "conf/usenix/Kong0H25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "PPipe: Efficient Video Analytics Serving on Heterogeneous GPU Clusters via Pool-Based Pipeline Parallelism",
+  "abstract": "With the rapid innovation of GPUs, heterogeneous GPU clusters in both public clouds and on-premise data centers have become increasingly commonplace. In this paper, we demonstrate how pipeline parallelism, a technique wellstudied for throughput-oriented deep learning model training, can be used effectively for serving latency-bound model inference, e.g., in video analytics systems, on heterogeneous GPU clusters. Our work exploits the synergy between diversity in model layers and diversity in GPU architectures, which results in comparable inference latency for many layers when running on low-class and high-class GPUs. We explore how such overlooked capability of low-class GPUs can be exploited using pipeline parallelism and present a novel inference serving system, PPipe, that employs pool-based pipeline parallelism via an MILP-based control plane and a data plane that performs resource reservation-based adaptive batching. Evaluation results on diverse workloads (18 CNN models) show that PPipe achieves 41.1% - 65.5% higher utilization of low-class GPUs while maintaining high utilization of high-class GPUs, leading to 32.2% - 75.1% higher serving throughput compared to various baselines.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/YelamWGYSXNSK25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "PageFlex: Flexible and Efficient User-space Delegation of Linux Paging Policies with eBPF",
+  "abstract": "To increase platform memory efficiency, hyperscalers like Google and Meta transparently demote \"cold\" application data to cheaper cost-per-byte memory tiers like compressed memory and NVMe SSDs. These systems rely on standard kernel paging policies and mechanisms to maximize the achievable memory savings without hurting application performance. Although the literature promises better policies, implementing and deploying them within the Linux kernel is challenging. Delegating policies and mechanisms to user space, through userfaultfd or library-based approaches, incurs overheads and may require modifying application code. We present PageFlex, a framework for delegating Linux paging policies to user space with minimal overhead and full compatibility with existing real-world deployments. PageFlex uses eBPF to delegate policy decisions while providing low-overhead access to in-kernel memory state and access information, thus balancing flexibility and performance. Additionally, PageFlex supports different paging strategies for distinct memory regions and application phases. We show that PageFlex can delegate existing kernel-based policies with little (&lt; 1%) application slowdown, effectively realizing the benefits of state-of-the-art policies like Hyperbolic caching and Leap prefetching, and unlocking application-specific benefits through region- and phase-aware policy specialization.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/JiKOKK25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Para-ksm: Parallelized Memory Deduplication with Data Streaming Accelerator",
+  "abstract": "To tame the rapidly rising cost of memory in servers, hyperscalers have begun deploying memory deduplication features, such as Kernel Same-page Merging (ksm), for some of their services. Nonetheless, ksm incurs a datacenter tax significant enough to notably degrade performance of co-running applications, which hinders its wider and more aggressive deployment. Meanwhile, the server-class CPU has started to integrate various on-chip accelerators to effectively reduce datacenter taxes. One of such accelerators is Data Streaming Accelerator (DSA), which can offload the two most taxing functions of ksm, page comparison and checksum computation, from CPU. In this work, we demonstrate that ksm offloading these two functions to DSA (DSA-ksm) can reduce the performance degradation of co-running applications caused by ksm from 1.6–5.8&times; to 1.0–1.6&times;. However, we uncover that DSA-ksm, which naïvely replaces CPU-based functions with their DSA-based counterparts, yields significantly lower rates of memory deduplication than ksm due to the long latency of offloading these functions through on-chip PCIe. To address this shortcoming, we redesign ksm to exploit DSA’s batching capability (Para-ksm). It facilitates a given function to operate on multiple pages per offload, rather than a single page as ksm does, thereby amortizing the long offloading latency. Compared to ksm, Para-ksm increases the amount of memory deduplication per CPU cycle used for ksm by 31–50% while decreasing the performance degradation to 1.3–2.7&times;.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/KimPNHKLL25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "PathWeaver: A High-Throughput Multi-GPU System for Graph-Based Approximate Nearest Neighbor Search",
+  "abstract": "Graph-based Approximate Nearest Neighbor Search (ANNS) is widely adopted in numerous applications, such as recommendation systems, natural language processing, and computer vision. While recent works on GPU-based acceleration have significantly advanced ANNS performance, the ever-growing scale of datasets now demands efficient multi-GPU solutions. However, the design of existing works overlooks multi-GPU scalability, resulting in naive approaches that treat additional GPUs as a means to extend memory capacity for large datasets. This inefficiency arises from partitioning the dataset and independently searching for data points similar to the queries in each GPU. We therefore propose PathWeaver, a novel multi-GPU framework designed to scale and accelerate ANNS for large datasets. First, we propose pipelining-based path extension, a GPU-aware pipelining mechanism that reduces prior work's redundant search iterations by leveraging GPU-to-GPU communication. Second, we design ghost staging that leverages a representative dataset to identify optimal query starting points, reducing the search space for challenging queries. Finally, we introduce direction-guided selection, a data selection technique that filters irrelevant points early in the search process, minimizing unnecessary memory accesses and distance computations. Comprehensive evaluations across diverse datasets demonstrate that PathWeaver achieves 3.24$\\times$ geomean speedup and up to 5.30$\\times$ speedup on 95% recall rate over state-of-the-art multi-GPU-based ANNS frameworks.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/WuZ0LPZ025",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "PluS: Highly Efficient and Expandable ML Compiler with Pluggable Graph Schedules",
+  "abstract": "Machine learning (ML) compilers are effective solutions for deploying diverse Deep Neural Network (DNN) workloads on various hardware platforms automatically. However, there is a notable lag in existing ML compilers when it comes to supporting emerging optimization techniques like recent attention optimizations. These compilers lack the requisite flexibility to support expert-driven subgraph optimizations timely, resulting in suboptimal performance compared to manually optimized libraries. Conversely, template-based compilers lack the ability to abstractly express subgraphs, thereby reducing their adaptability to subtle changes in model architectures. In this paper, we present PluS, an end-to-end ML compiler that facilitates the deployment of expert-optimized subgraph implementations while still preserving compiler flexibility. We rethink the encapsulation of ML compiler and decouple the burdensome embedded graph transformation process. PluS provides a lightweight loop-centric subgraph abstraction for experts to manage a flexible pattern warehouse, and employs a pattern identification approach for subgraph generation. As a result, PluS can deploy efficient subgraph implementations with minimal manual efforts, making it outperform the state-of-the-art rule-based embedded compilers (up to 4.04× speedup) on popular ML models.",
+  "hint_categories": [
+   "graph",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/ZhangMWNL0L0025",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "PopFetcher: Towards Accelerated Mixture-of-Experts Training Via Popularity Based Expert-Wise Prefetch",
+  "abstract": "Scaling laws indicate that increasing model size enhances performance. The Mixture-of-Experts (MoE) architecture enables scaling model parameters to trillions while requiring only a sub-linear increase in training computations. However, the sparse activation of experts within MoE leads to substantial All-to-All communications and imbalanced computation workloads, which in turn can severely degrade training efficiency. In this paper, we develop PopFetcher, a scalable MoE training system with popularity-aided expert-wise prefetching, to address these communication and computation bottlenecks. Specifically, PopFetcher uncovers skewed and correlated patterns in expert selection, and implements a lightweight sliding-window technique to accurately predict the popularity of experts. As a result, PopFetcher facilitates dynamic identification of high-demand experts and prefetches them in the next layer during the execution of current non-MoE computations, thereby exploiting the idle network links to reduce dispatched tokens in upcoming All-to-All communications. PopFetcher rigorously formulates the end-to-end training latency and develops a tailored pruning strategy to derive the globally optimal prefetching scheme, which can restore both communication and computation balances based on the underlying network infrastructure. By prioritizing All-to-All data stream during the backward pass, PopFetcher significantly alleviates the communication blockage. Extensive experiments conducted on GPU clusters demonstrate that PopFetcher outperforms existing state-of-the-art systems, reducing training time by 15%-94.5%.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/ShanHGMHCWSS0XR25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Primus: Unified Training System for Large-Scale Deep Learning Recommendation Models",
+  "abstract": "The scale of deep learning recommendation models (DLRM) continues to grow, demanding increasingly vast computing and storage resources. In production environments, improving training efficiency and effectiveness has become the primary goal to meet the needs of numerous model training jobs under resource limitations. We introduce Primus, a unified training system that unifies the training resources, data, and paradigms to support high-performance DLRM training at ByteDance. Specifically, ① Primus provides a unified abstraction of resources and interoperates with multiple scheduling systems, achieving a consistent training experience with horizontal and vertical dynamic scaling strategies across resource pools. ② Primus offers a unified three-tier data definition and employs a data task graph generation approach to support data orchestration of multi-source training samples composed of batch and stream data. ③ Primus devises a new hybrid training paradigm for DLRMs that ensures high model timeliness by controlling parameter updates and applying fine-grained prioritization of mixed batch and stream data. Primus has demonstrated its efficiency and effectiveness in handling large-scale, enterprise-grade DLRM training over five years of deployment at ByteDance. Evaluations show Primus’s optimizations of resources, data, and paradigms. Firstly, dynamic scaling reduces training cost by 17.1% at the cluster level and increases CPU utilization from 50% to 80% per job. Secondly, data orchestration accelerates task generation by 23× and achieves higher training throughput. Lastly, after applying the hybrid training paradigm with 4 different DLRMs, advertising revenue increases by 0.4%-2.4%.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/ZhangZSZ25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "QFactory: Accelerating Quantized Large Language Model Serving with Qtile Graphs",
+  "abstract": "Quantization is a critical technique for accelerating large language models. To achieve tangible speedups, weight dequantization must be performed on-the-fly, necessitating tailored quantized kernels for various quantization algorithms and precision formats. Existing methods typically rely on a static eager execution paradigm for dequantization operations, which overlooks a broader range of potential optimizations, leading to suboptimal performance. In this paper, we present QFactory, an efficient compilation framework designed to generate high-performance quantized kernels. QFactory introduces a novel Qtile abstraction that facilitates the representation of quantized tensors, transforming the traditional tensor computation graph into a Qtile-graph (Qgraph). Leveraging this QGraph abstraction, QFactory first explores graph-level Qtile computation transformations to generate equivalent QGraphs, thereby expanding the search space for optimizations. Subsequently, QFactory employs operator-level Qtile scheduling to identify optimal memory loading strategies for each Qtile within the QGraph before generating the final code. Experimental results demonstrate that QFactory achieves an average performance improvement of 1.66× over existing systems and delivers 1.23× end-toend generation speedup when integrated into state-of-the-art large language model serving systems.",
+  "hint_categories": [
+   "tensor",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/0004YLKA25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Resource Multiplexing in Tuning and Serving Large Language Models",
+  "abstract": "Large language models (LLMs) have been increasingly adopted in a variety of application scenarios. However, in spite of the high demand for both tuning and inference, GPUs are often underutilized because they are devoted to a single task. A common argument for single-purpose deployments is the need to meet strict service-level objectives (SLOs). As LLM workloads become more complex, there are, indeed, significant challenges in achieving high utilization while still guaranteeing the necessary low latency. In this paper, we present LLMStation, a flexible spatial-temporal multiplexing and scheduling system for concurrent LLM fine-tuning and inference. LLMStation adopts several novel approaches, including a new iteration-level multitasking scheduling mechanism, an Autograd engine that transforms a tuning task into a suspendable pipeline, and an inference engine capable of batching inference and tuning requests. Our evaluation shows that LLMStation delivers 1.38× to 14.77× the throughput of state-of-the-art systems while meeting inference latency SLOs. These performance gains remain under various setups and workloads, proving LLMStation to be an effective tool to increase the efficiency of LLM deployments.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/XieGWX25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Revealing Floating-Point Accumulation Orders in Software/Hardware Implementations",
+  "abstract": "Accumulation-based operations, such as summation and matrix multiplication, are fundamental to numerous computational domains. However, their accumulation orders are often undocumented in existing software and hardware implementations, making it difficult for developers to ensure consistent results across systems. To address this issue, we introduce FPRev, a diagnostic tool designed to reveal the accumulation order in the software and hardware implementations through numerical testing. With FPRev, developers can identify and compare accumulation orders, enabling developers to create reproducible software and verify implementation equivalence. FPRev is a testing-based tool that non-intrusively reveals the accumulation order by analyzing the outputs of the tested implementation for distinct specially designed inputs. Employing FPRev, we showcase the accumulation orders of popular libraries (such as NumPy and PyTorch) on CPUs and GPUs (including GPUs with specialized matrix accelerators such as Tensor Cores). We also validate the efficiency of FPRev through extensive experiments. FPRev exhibits a lower time complexity compared to the basic solution. FPRev is open-sourced at https://github.com/peichenxie/FPRev.",
+  "hint_categories": [
+   "dense_la"
+  ]
+ },
+ {
+  "key": "conf/usenix/JiaQCLBPLFJX025",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Rex: Closing the language-verifier gap with safe and usable kernel extensions",
+  "abstract": "Safe kernel extensions have gained significant traction, evolving from simple packet filters to large, complex programs that customize storage, networking, and scheduling. Existing kernel extension mechanisms like eBPF rely on in-kernel verifiers to ensure safety of kernel extensions by static verification using symbolic execution. We identify significant usability issues—safe extensions being rejected by the verifier—due to the language-verifier gap, a mismatch between developers’ expectation of program safety provided by a contract with the programming language, and the verifier’s expectation. We present Rex, a new kernel extension framework that closes the language-verifier gap and improves the usability of kernel extensions in terms of programming experience and maintainability. Rex builds upon language-based safety to provide safety properties desired by kernel extensions, along with a lightweight extralingual runtime for properties that are unsuitable for static analysis, including safe exception handling, stack safety, and termination. With Rex, kernel extensions are written in safe Rust and interact with the kernel via a safe interface provided by Rex’s kernel crate. No separate static verification is needed. Rex addresses usability issues of eBPF kernel extensions without compromising performance.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/ZhengX0025",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "SAVE: Software-Implemented Fault Tolerance for Model Inference against GPU Memory Bit Flips",
+  "abstract": "Machine learning models are used in safety-critical edge applications such as autonomous driving, industrial robots, and satellites. However, GPU memory bit flips can significantly reduce the model accuracy. Existing mitigations either compromise accuracy or introduce substantial overhead. Our insight is that not all hardware bits are created equal and bit flips vary in their impact on model inference . Specifically, for the GPU memory, modern AI accelerators provide bit-flip-free but small reliable memory. For the model inference, due to nonlinear activation functions in the model, some bits are naturally robust against flips, while other vulnerable bits can silently corrupt results. Thus, we prioritize the allocation of vulnerable bits' computations in the reliable memory to enhance the robustness of the model inference. We propose SAVE, a software-implemented fault tolerance system that protects model inference without modifying the model and with minimal performance impact. SAVE operates in four stages: S election to identify vulnerable bits based on the intrinsic characteristics of model inference, A llocation to prioritize computations related to more vulnerable bits in reliable memory, V erification to efficiently detect errors through asynchronous CPU checks, and E dit to recover from detected faults. Evaluation across computer vision, robotics, and decision-making models shows that SAVE maintains model accuracy even under 4K bit flips while incurring less than 9% performance overhead.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/GanPLLGW0X25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "SNARY: A High-Performance and Generic SmartNIC-accelerated Retrieval System",
+  "abstract": "Industrial large-scale recommendation systems mostly follow a two-stage paradigm: retrieval and ranking stages. The retrieval stage aims to select thousands of relevant candidates from a vast corpus with millions or more items, and thus often becomes the performance bottleneck. Offloading the retrieval stage to hardware is a promising solution. Nevertheless, previous solutions either fail to achieve optimal performance or lack the sufficient generality to support fuzzy search, which has been widely used in modern retrieval systems to improve their scalability and efficiency. In this paper, we present SNARY, a generic SmartNIC-accelerated retrieval system, to facilitate both exact and fuzzy search. Specifically, SNARY utilizes High-Bandwidth Memory (HBM) for corpus storing and scanning and designs two types of search engines: a data parallelism exact search, and a Locality-Sensitive Hashing (LSH)-based fuzzy search. Furthermore, SNARY employs a pipeline-based approach to select Top-K items and streams the data flow of the whole system. We have implemented SNARY on Xilinx commercial SmartNICs. Experimental results show SNARY achieves a 20.91%-83.88% lower latency and a 1.26&times;-18.27&times; higher latency-bounded throughput in exact search scenarios, and achieves a 85.13%-87.40%lower latency and a 20.18&times;-23.81&times; higher latency-bounded throughput in fuzzy search scenarios in comparison with the state-of-the-art hardware-based solutions.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/YangWW0L0025",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "ShieldReduce: Fine-Grained Shielded Data Reduction",
+  "abstract": "Storage savings and data confidentiality are two primary yet conflicting goals in outsourced backup management. While deduplication-aware encryption has been extensively studied to make deduplication viable for encrypted data, it is incompatible with fine-grained delta and local compression for further storage savings. We present ShieldReduce, a secure outsourced storage system that aims for fine-grained shielded data reduction by applying deduplication, delta compression, and local compression to data in a trusted execution environment based on Intel SGX, so as to achieve high storage savings with security guarantees. To mitigate the I/Os of accessing base chunks for delta compression in SGX, ShieldReduce adopts bi-directional delta compression via a novel hybrid inline and offline compression design to maintain the physical locality of base chunks. Evaluation on various backup workloads shows that ShieldReduce achieves significant speedups over a shielded baseline without bi-directional delta compression, while maintaining comparable storage savings to fine-grained data reduction for plain data.",
+  "hint_categories": [
+   "primitives",
+   "compression"
+  ]
+ },
+ {
+  "key": "conf/usenix/Pan0LDKX25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "SolFS: An Operation-Log Versioning File System for Hash-free Efficient Mobile Cloud Backup",
+  "abstract": "Mobile cloud backup applications are widely used to safeguard user data. This paper found that current cloud backup is inefficient on resource-limited mobile devices because it consumes excessive CPU resources for delta synchronization that requires intensive hash computation to identify the modified ranges of file data. To address this issue, this paper presents SolFS, an operation log versioning file system to optimize mobile cloud backup efficiency. The core idea is that if the cloud backup application knows the modified offset and length of each write since the last backup, it will be able to identify the new modified data and upload them only, avoiding data hashing throughout the entire file. SolFS proposes a series of designs to achieve this design goal. First, SolFS introduces per-file mergeable operation logging that allows each file to manage its write operation logs (i.e., offset and length) in an extent tree and merge operation logs with contiguous or overlapping modified ranges of file data. Then, SolFS proposes the operation log persistence and versioning mechanism that allows different cloud backup applications to manage their own file versions without interfering with each other. In addition, SolFS incorporates techniques such as compact log and dynamic granularity, to optimize the memory and storage overhead to the system. Finally, SolFS achieves hash-free file difference identification with minimum additional overhead and extends the ability of cloud backup applications. The experimental results show that SolFS can significantly reduce the computational overhead of both APP-side or server-side over 90% on average and the total cloud synchronization time by over 88.8% when files are updated.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/0002LWYWCSY025",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Toppings: CPU-Assisted, Rank-Aware Adapter Serving for LLM Inference",
+  "abstract": "Low-Rank Adaptation (LoRA) is a popular approach that adapts a base large language model (LLM) to domain-specific tasks by adding lightweight trainable adapters. In this paper, we present Toppings, a system that efficiently serves many LoRA adapters derived from a common base model. Toppings pins the base model on GPUs and dynamically loads the requested LoRA adapters from host memory as new requests arrive. In view of the high GPU loading overhead, which not only delays the time-to-first-token of the newly arrived request but also interrupts the ongoing decoding of all inflight queries when continuous batching is in use, Toppings proposes a CPU-assisted LoRA serving approach. It simultaneously uses CPUs to compute the lightweight adaption for prefilling as the requested LoRA adapter is being loaded onto GPUs; it then switches to the GPUs after loading completes to resume the remaining computation. Toppings develops a highly optimized synchronization mechanism and pipeline loading scheme to efficiently coordinate LoRA computation on the CPUs and GPUs. Toppings further designs a rank-aware scheduling algorithm that optimally schedules heterogeneous LoRA requests to maximize the SLO attainment. Compared with the state-of-the-art LoRA serving systems, Toppings improves the average request serving latency by up to 1.7&times; and achieves an SLO attainment of up to 99%.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/YuWCYLL0CNYD25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Torpor: GPU-Enabled Serverless Computing for Low-Latency, Resource-Efficient Inference",
+  "abstract": "Serverless computing offers a compelling cloud model for online inference services. However, existing serverless platforms lack efficient support for GPUs, hindering their ability to deliver high-performance inference. In this paper, we present Torpor, a serverless platform for GPU-efficient, low-latency inference. To enable efficient sharing of a node's GPUs among numerous inference functions, Torpor maintains models in main memory and dynamically swaps them onto GPUs upon request arrivals (i.e., late binding with model swapping). Torpor uses various techniques, including asynchronous API redirection, GPU runtime sharing, pipelined model execution, and efficient GPU memory management, to minimize latency overhead caused by model swapping. Additionally, we design an interference-aware request scheduling algorithm that utilizes high-speed GPU interconnects to meet latency service-level objectives (SLOs) for individual inference functions. We have implemented Torpor and evaluated its performance in a production environment. Utilizing late binding and model swapping, Torpor can concurrently serve hundreds of inference functions on a worker node with 4 GPUs, while achieving latency performance comparable to native execution, where each model is cached exclusively on a GPU. Pilot deployment in a leading commercial serverless cloud shows that Torpor reduces the GPU provisioning cost by 70% and 65% for users and the platform, respectively.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/0003L0LMDL025",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Towards High-Performance Transactional Stateful Serverless Workflows with Affinity-Aware Leasing",
+  "abstract": "Function-as-a-Service (FaaS) is the most prevalent serverless computing paradigm, offering significant flexibility to develop, deploy, and operate cloud applications. However, traditional FaaS frameworks face significant challenges in operating transactional stateful workflows which often involve multiple functions with shared state. Previous solutions rely on external datastores to manage shared state, suffering from high communication overhead to guarantee transactional consistency for stateful workflows. In this paper, we present RTSFaaS, an RDMA-capable transactional stateful FaaS framework that achieves high performance while guaranteeing transactional consistency. RTSFaaS exploits a lease-based concurrency control protocol to dynamically assign and transfer leases among workers to achieve concurrency control. Specifically, RTSFaaS incorporates two key designs: (1) an affinity-aware lease assignment mechanism that improves the benefit of caching by dynamically assigning data leases to selected workers according to the data function affinity, and (2) an RDMA-capable dynamic lease transferring mechanism to reduce the cost of locking by serializing concurrent data accesses with one-sided RDMA primitives. Experimental results show that RTSFaaS achieves up to 5&times; and 20&times; performance speedup compared with state-of-the-art transactional stateful FaaS platforms&ndash;Boki and Beldi, and up to 1.7&times; and 2.1&times; performance improvement when their concurrency control protocols implemented for RDMA networks are applied to RTSFaaS.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/WuXZZWLRC25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Turbocharge ANNS on Real Processing-in-Memory by Enabling Fine-Grained Per-PIM-Core Scheduling",
+  "abstract": "Approximate Nearest Neighbor Search (ANNS) plays a key role in database and AI infrastructure. It exhibits extremely high memory intensity with a ∼1:1 compute-to-memory access ratio. Commodity Processing-in-Memory (PIM) hardware such as UPMEM is promising for overcoming the memory wall in ANNS. However, its reuse of the system DDR bus prevents the CPU and PIM cores from accessing memory simultaneously. This necessitates batch scheduling in existing systems, which, in turn, leads to severe underutilization in two scenarios: 1) inter-batch, where PIM remains idle while the CPU is copying data, and 2) intra-batch, caused by uneven load distribution of PIM cores in a batch. This paper proposes an efficient PIM-capable ANNS system named PIMANN. We observe that each PIM core has an additional, undocumented, and little-known control interface (originally used for control commands like launching PIM kernels), which could be retrofitted for fine-grained arbitration of DDR bus access. Thus, PIMANN can break the traditional batching scheduling paradigm and adopt a fine-grained, per-PIM-core scheduling paradigm. With this key idea, PIMANN introduces 1) persistent PIM kernel technique to eliminate the idle state between two batches, and 2) per-PU query dispatching technique that dispatches queries based on the real-time load of PIM cores. Experiments show that PIMANN can boost throughput by 2.4-10.4&times; compared to existing ANNS systems on CPU or GPU. The implementation of PIMANN is available at https://github.com/cds-ruc/PIM-ANNS .",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/LianJKTBRZ25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Universal Checkpointing: A Flexible and Efficient Distributed Checkpointing System for Large-Scale DNN Training with Reconfigurable Parallelism",
+  "abstract": "Deep neural network (DNN) training continues to scale rapidly in terms of model size, data volume, and sequence length, to the point where multiple machines are required to fit large models for training. Different distributed and parallel training strategies have been developed to support large-scale DNN training by partitioning the training state across GPUs. However, existing DNN training systems provide very limited support for reconfiguring parallelism strategies in the middle of the training via checkpointing. This limitation arises because distributed checkpoints are tightly coupled to specific model parallelism and hardware configurations, preventing large-scale training jobs from efficiently adapting to hardware failures or resource elasticity. This paper presents Universal Checkpointing (UCP), a novel checkpointing system that enables flexible and efficient DNN training with reconfigurable parallelism. UCP overcomes challenges in existing systems by decoupling checkpoint structure from parallel training strategies and hardware configurations. In addition, we present a pattern-based reconfiguration pipeline that enables automatic, flexible, and efficient mapping of checkpoint state to various parallelism strategies. Evaluation on a range of DNN models, including state-of-the-art dense and sparse LLMs, shows that UCP enables reconfiguration for a broader set of widely used parallelism strategies than existing solutions while adding negligible reconfiguration cost. UCP has been successfully employed in real LLM training workloads, greatly enhancing their flexibility and resilience to dynamic hardware environments.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/XiaWY0C25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Voltrix: Sparse Matrix-Matrix Multiplication on Tensor Cores with Asynchronous and Balanced Kernel Optimization",
+  "abstract": "Sparse Matrix-Matrix Multiplication (SpMM) is crucial in scientific computing and machine learning. Despite advancements in GPU architectures, efficiently leveraging Tensor Cores for SpMM remains challenging. The core issue is the mismatch between the inherently sparse nature of the matrices and the dense computational patterns. Existing methods struggle with substantial overheads in loading data to computation units and cannot adequately manage data imbalance across computations, thereby limiting the high computational throughput potential of Tensor Cores. In this paper, we introduce Voltrix-SpMM, a revolutionary GPU kernel design that overcomes these challenges. First, we implement an asynchronous data loading pipeline that employs a bit-wise compressed format for sparse matrices and bulk memory copy instructions for dense matrices. This innovative design enables efficient data access and incorporates a warp-specialized producer-consumer model to seamlessly overlap data loading with computation. Second, we develop a persistent and I/O co-balanced kernel mechanism that features a two-stage partition strategy to achieve balance between input and output. Implemented with CUDA 12.6, Voltrix-SpMM substantially improves performance, delivering an average speedups of 36.5x and 1.8x over Tensor Core-based TC-GNN and DTC-SpMM respectively, and an average 1.7x speedup over the CUDA Core-based RoDe, fully unleashing the power of Tensor Cores for SpMM.",
+  "hint_categories": [
+   "dense_la",
+   "sparse_la",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/Zhang000CP25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "WIC: Hiding Producer-Consumer Synchronization Delays with Warp-Level Interrupt-based GPU Communications",
+  "abstract": "GPU communication plays a pivotal role in collaborative computation across multiple devices. Despite advancements in inter-device communication fabrics and architectures, synchronization still remains a significant challenge due to the manual coordination required between producers and consumers at the application level. In this work, we first reveal that traditional synchronization is a primary bottleneck in GPU communication, where consumers frequently poll for producer data availability. Specifically, early-started polling leads to the unnecessary occupation of computational resources. To address this issue, we propose Warp-level Interrupt-based Communication (WIC), a novel synchronization framework for GPU communication that introduces a fine-grained interruption mechanism at the warp level to replace repetitive polling. WIC preemptively stalls warps engaged in frequent polling and releases computational resources for other warps, thereby effectively overlapping producer-consumer synchronization with ongoing computations. Comprehensive experiments demonstrate that WIC significantly outperforms conventional polling methods by 1.13 &times; on average across various applications with diverse communication patterns.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/Gao0ZLS25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Weaver: Efficient Multi-LLM Serving with Attention Offloading",
+  "abstract": "LLM serving platforms typically provide services for tens to hundreds of different models, where a small number of hot models receive the majority of the requests, while most other models remain cold. Yet, current serving systems can not efficiently handle such workloads: Using dedicated instances for hot and cold models makes the GPU memory underutilized, and multiplexing different models with model parallelism introduces communication overhead. We propose a mechanism called workload weaving , which offloads attention operators of hot models to running cold models, achieving high GPU memory utilization with low communication cost. To mitigate the blocking caused by running cold models, we propose WEAVER with two key techniques: (i) GPU-driven dynamic control flow, which delegates the control logic of offloading to GPUs, letting the offloaded operators bypass pending kernels in the GPU hardware queue; (ii) operator splitting, which carefully divides the large kernels of cold models into smaller ones to mitigate the head-of-line blocking. Our evaluation using real-world LLM trace demonstrates that WEAVER improves the throughput of hot models by up to 77% while maintaining the same or lower TPOT. For the cold model, WEAVER incurs a modest overhead (3-5ms).",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/PatelA25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "XRT: An Accelerator-Aware Runtime for Accelerated Chip Multiprocessors",
+  "abstract": "Datacenter applications spend a considerable portion of compute resources executing common functions. This has led to the deployment of accelerators capable of executing these functions with higher performance and energy efficiency. At the same time, datacenter applications require microsecond-scale response times and low tail latency. To meet these strict requirements, recent Chip Multi-Processors (CMPs) incorporate several on-chip accelerators. This enables fast communication between the general-purpose cores, direct accelerator access to the on-chip memory subsystem, and scalable sharing of accelerator resources across applications running on many general-purpose cores. Despite hardware support for on-chip accelerators, a lack of support at the runtime level prevents their efficient use at scale. Our key insight in this work is that current runtimes are unsuitable for applications that make heavy use of on-chip accelerators, yielding suboptimal throughput&ndash;sometimes even worse than a system without accelerators. To address this problem, we develop XRT, a runtime for accelerated CMPs designed to scale to many-core, many-accelerator CPUs. Across a set of representative services, XRT achieves up to 3.2&times; higher throughput-under-SLO compared to an unoptimized runtime and never experiences slowdowns compared to a system that executes all request processing on general-purpose cores.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/Hwang0KES25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Z-LFS: A Zoned Namespace-tailored Log-structured File System for Commodity Small-zone ZNS SSDs",
+  "abstract": "This paper presents a novel zoned namespace (ZNS) tailored log-structured file system (LFS) called Z-LFS for commodity small-zone ZNS SSDs. Specifically, Z-LFS first enables append-only updates on metadata while leveraging the unique metadata characteristic of LFS on ZNS SSDs. Second, Z-LFS devises speculative log stream management according to the workload temperature to maximize active zone utilization. Finally, Z-LFS adopts conflict-aware zone allocation to minimize resource contention within ZNS SSDs while considering LFS features. We implement Z-LFS based on F2FS in the Linux kernel and evaluate it with commodity ZNS SSD. Our evaluations show that Z-LFS achieves higher performance by up to 33.44× and 3.5× compared with F2FS and a state-of-the-art interface for commodity ZNS SSDs, respectively.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/HuangZZ0LH0Z25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "mTuner: Accelerating Parameter-Efficient Fine-Tuning on Multi-GPU Servers with Elastic Tensor",
+  "abstract": "With the growing importance of personalized large language models (LLMs) and fine-tuning techniques, parameter-efficient fine-tuning (PEFT) has emerged as a mainstream approach, offering reduced computational and storage demands compared to full-parameter fine-tuning. Compared to pre-training, we find memory efficiency more critical during fine-tuning. Although the overall memory capacity of fine-tuning hardware is typically limited, memory becomes more precious since most parameters are frozen and can be cached for performance optimization. To better utilize memory, we propose Elastic Tensor, an abstraction for dynamic tensor management, enabling flexible control over their availability, accumulation, and release in memory. Elastic tensor defines four key operations for static and runtime tensors with tunable ratios: gather, discard, execute, and checkpoint. With elastic tensors, a series of optimizations are enabled, such as improving temporal memory utilization, relaxing data dependence, and accumulating runtime tensors in a memory-adaptive way. We implement mTuner, an end-to-end fine-tuning system based on elastic tensors. Compared with state-of-the-art training and fine-tuning systems, mTuner achieves a throughput improvement of up to 51.2% and 24.8% (28.3% and 14.5% on average) on PCIe and NVLink servers respectively, for LLMs from 7B to 70B. mTuner is publicly available at https://github.com/xxcclong/mTuner .",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/LovelessOB20",
+  "venue": "CGO",
+  "year": 2020,
+  "title": "A performance-optimizing compiler for cyber-physical digital microfluidic biochips",
+  "abstract": "This paper introduces a compiler optimization strategy for Software-Programmable Laboratories-on-a-Chip (SP-LoCs), which miniaturize and automate a wide variety of benchtop laboratory experiments. The compiler targets a specific class of SP-LoCs that manipulate discrete liquid droplets on a 2D grid, with cyber-physical feedback provided by integrated sensors and/or video monitoring equipment. The optimization strategy employed here aims to reduce the overhead of transporting fluids between operations, and explores tradeoffs between the latency and resource requirements of mixing operations: allocating more space for mixing shortens mixing time, but reduces the amount of spatial parallelism available to other operations. The compiler is empirically evaluated using a cycle-accurate simulator that mimics the behavior of the target SP-LoC. Our results show that a coalescing strategy, inspired by graph coloring register allocation, effectively reduces droplet transport latencies while speeding up the compiler and reducing its memory footprint. For biochemical reactions that are dominated by mixing operations, we observe a linear correlation between a preliminary result using a default mixing operation resource allocation and the percentage decrease in execution time that is achieved via resizing.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/MatsumuraZWEM20",
+  "venue": "CGO",
+  "year": 2020,
+  "title": "AN5D: automated stencil framework for high-degree temporal blocking on GPUs",
+  "abstract": "Stencil computation is one of the most widely-used compute patterns in high performance computing applications. Spatial and temporal blocking have been proposed to overcome the memory-bound nature of this type of computation by moving memory pressure from external memory to on-chip memory on GPUs. However, correctly implementing those optimizations while considering the complexity of the architecture and memory hierarchy of GPUs to achieve high performance is difficult. We propose AN5D, an automated stencil framework which is capable of automatically transforming and optimizing stencil patterns in a given C source code, and generating corresponding CUDA code. Parameter tuning in our framework is guided by our performance model. Our novel optimization strategy reduces shared memory and register pressure in comparison to existing implementations, allowing performance scaling up to a temporal blocking degree of 10. We achieve the highest performance reported so far for all evaluated stencil benchmarks on the state-of-the-art Tesla V100 GPU.",
+  "hint_categories": [
+   "stencil_pde"
+  ]
+ },
+ {
+  "key": "conf/cgo/ChenPPLR20",
+  "venue": "CGO",
+  "year": 2020,
+  "title": "ATMem: adaptive data placement in graph applications on heterogeneous memories",
+  "abstract": "Active development in new memory devices, such as non-volatile memories and high-bandwidth memories, brings heterogeneous memory systems (HMS) as a promising solution for implementing large-scale memory systems with cost, area, and power limitations. Typical HMS consists of a small-capacity high-performance memory and a large-capacity low-performance memory. Data placement on such systems plays a critical role in performance optimization. Existing efforts have explored coarse-grained data placement in applications with dense data structures; however, a thorough study of applications that are based on graph data structures is still missing.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/CowanMCBC20",
+  "venue": "CGO",
+  "year": 2020,
+  "title": "Automatic generation of high-performance quantized machine learning kernels",
+  "abstract": "Quantization optimizes machine learning inference for resource constrained environments by reducing the precision of its computation. In the extreme, even single-bit computations can produce acceptable results at dramatically lower cost. But this ultra-low-precision quantization is difficult to exploit because extracting optimal performance requires hand-tuning both high-level scheduling decisions and low-level implementations. As a result, practitioners settle for a few predefined quantized kernels, sacrificing optimality and restricting their ability to adapt to new hardware.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/cgo/YuPJLT20",
+  "venue": "CGO",
+  "year": 2020,
+  "title": "COLAB: a collaborative multi-factor scheduler for asymmetric multicore processors",
+  "abstract": "Increasingly prevalent asymmetric multicore processors (AMP) are necessary for delivering performance in the era of limited power budget and dark silicon. However, the software fails to use them efficiently. OS schedulers, in particular, handle asymmetry only under restricted scenarios. We have efficient symmetric schedulers, efficient asymmetric schedulers for single-threaded workloads, and efficient asymmetric schedulers for single program workloads. What we do not have is a scheduler that can handle all runtime factors affecting AMP for multi-threaded multi-programmed workloads.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/JavanmardAKPCH20",
+  "venue": "CGO",
+  "year": 2020,
+  "title": "Deriving parametric multi-way recursive divide-and-conquer dynamic programming algorithms using polyhedral compilers",
+  "abstract": "We present a novel framework to automatically derive highly efficient parametric multi-way recursive divide&conquer algorithms for a class of dynamic programming (DP) problems. Standard two-way or any fixed R-way recursive divide&conquer algorithms may not fully exploit many-core processors. To run efficiently on a given machine, the value of R may need to be different for every level of recursion based on the number of processors available and the sizes of memory/caches at different levels of the memory hierarchy. The set of R values that work well on a given machine may not work efficiently on another machine with a different set of machine parameters. To improve portability and efficiency, Multi-way Autogen generates parametric multi-way recursive divide&conquer algorithms where the value of R can be changed on the fly for every level of recursion. We present experimental results demonstrating the performance and scalability of the parallel programs produced by our framework.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/WangYZM20",
+  "venue": "CGO",
+  "year": 2020,
+  "title": "Efficient and scalable cross-ISA virtualization of hardware transactional memory",
+  "abstract": "System virtualization is a key enabling technology. However, existing virtualization techniques suffer from a significant limitation due to their limited cross-ISA support for emerging architecture-specific hardware extensions. To address this issue, we make the first attempt at hardware transactional memory (HTM), which has been supported by modern multi-core processors and used by more and more applications to simplify concurrent programming. In particular, we propose an efficient and scalable mechanism to support cross-ISA virtualization of HTMs. The mechanism emulates guest HTMs using host HTMs, and tries to preserve as much as possible the performance and the scalability of guest applications. Experimental results on STAMP benchmarks show that an average of 2.3X and 12.6X performance speedup can be achieved respectively for x86_64 and PowerPC64 guest applications on an x86_64 host machine. Moreover, it can attain similar scalability to the native execution of the applications.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/IsmailS20",
+  "venue": "CGO",
+  "year": 2020,
+  "title": "Efficient nursery sizing for managed languages on multi-core processors with shared caches",
+  "abstract": "In modern programming languages, automatic memory management has become a standard feature for allocating and freeing memory. In this paper, we show that the performance of today’s managed languages can degrade significantly due to cache contention among multiple concurrent applications that share a cache. To address this problem, we propose to change the programs’ memory access patterns by adjusting the nursery size. We propose Dynamic Nursery Allocator (DNA), an online dynamic scheme that automatically adjusts the nursery sizes of multiple managed-language programs running concurrently without any prior knowledge or offline profiling. The experimental results on a native Intel machine show that DNA can significantly improve the system throughput by 16.3% on average and as much as 73% over today’s nursery sizing scheme when four applications run concurrently sharing the last-level cache.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/cgo/ParkLZM20",
+  "venue": "CGO",
+  "year": 2020,
+  "title": "Low-cost prediction-based fault protection strategy",
+  "abstract": "Increasing failures from transient faults necessitates the cost-efficient protection mechanism that will be always activated. Thus, we propose a novel prediction-based transient fault protection strategy as a low-cost software-only technique. Instead of re-executing expensive computations for validation, an output prediction is used to cheaply determine an approximate value for a sequence of computation. When actual computation and prediction agree within a predefined acceptable range, the computation is assumed fault-free, and expensive re-computation can be skipped. With our approach, a significant reduction in dynamic instruction counts is possible. Missed faults may occur, but their occurrences can be explicitly kept to a small amount with a proper acceptable range. For evaluation, we build an automatic compilation system, called RSkip, that transforms a program into a resilient executable with the prediction-based protection scheme. Prior instruction replication work shows 2.33x execution time compared to the unreliable execution over nine compute-intensive benchmarks. With a control for the loss in protection rate, RSkip can reduce the protection overhead to 1.27x by skipping redundant computation in our target loops at a rate of 81.10",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/cgo/ShaikhhaSGO20",
+  "venue": "CGO",
+  "year": 2020,
+  "title": "Multi-layer optimizations for end-to-end data analytics",
+  "abstract": "We consider the problem of training machine learning models over multi-relational data. The mainstream approach is to first construct the training dataset using a feature extraction query over input database and then use a statistical software package of choice to train the model. In this paper we introduce Iterative Functional Aggregate Queries (IFAQ), a framework that realizes an alternative approach. IFAQ treats the feature extraction query and the learning task as one program given in the IFAQ's domain-specific language, which captures a subset of Python commonly used in Jupyter notebooks for rapid prototyping of machine learning applications. The program is subject to several layers of IFAQ optimizations, such as algebraic transformations, loop transformations, schema specialization, data layout optimizations, and finally compilation into efficient low-level C++ code specialized for the given workload and data.",
+  "hint_categories": []
+ }
+]

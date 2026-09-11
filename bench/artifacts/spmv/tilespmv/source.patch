@@ -1,0 +1,82 @@
+diff --git a/src/external/CSR5_cuda/anonymouslib_cuda.h b/src/external/CSR5_cuda/anonymouslib_cuda.h
+index c3a8db2..e53bf2d 100644
+--- a/src/external/CSR5_cuda/anonymouslib_cuda.h
++++ b/src/external/CSR5_cuda/anonymouslib_cuda.h
+@@ -55,7 +55,11 @@ private:
+ template <class ANONYMOUSLIB_IT, class ANONYMOUSLIB_UIT, class ANONYMOUSLIB_VT>
+ int anonymouslibHandle<ANONYMOUSLIB_IT, ANONYMOUSLIB_UIT, ANONYMOUSLIB_VT>::warmup()
+ {
+-    format_warmup();
++    // CUDA-version build fix (see ../../../STATUS.md): was missing
++    // `return` (undefined behavior for a non-void function); propagate
++    // format_warmup()'s own now-fixed return value instead of discarding
++    // it. No logic changed.
++    return format_warmup();
+ }
+ 
+ template <class ANONYMOUSLIB_IT, class ANONYMOUSLIB_UIT, class ANONYMOUSLIB_VT>
+diff --git a/src/external/CSR5_cuda/detail/cuda/format_cuda.h b/src/external/CSR5_cuda/detail/cuda/format_cuda.h
+index 7a2637c..8aaa529 100644
+--- a/src/external/CSR5_cuda/detail/cuda/format_cuda.h
++++ b/src/external/CSR5_cuda/detail/cuda/format_cuda.h
+@@ -4,6 +4,16 @@
+ #include "common_cuda.h"
+ #include "utils_cuda.h"
+ 
++// CUDA-version build fix (see ../../../../../../STATUS.md): this function
++// is declared to return int but had no `return` on any path -- falling off
++// the end of a non-void function is undefined behavior in C++, and under
++// nvcc 12.9 -O3 (this build) it manifested as a genuine hang immediately
++// after this function's own last statement returns (confirmed by adding
++// instrumentation around every call in this path: the final
++// checkCudaErrors(cudaFree(d_scan)) above completes and prints its result,
++// then control never reaches the caller's next statement). No arithmetic
++// or kernel logic changed -- only the missing return value, matching the
++// ANONYMOUSLIB_SUCCESS convention every other method in this class uses.
+ int format_warmup()
+ {
+     int *d_scan;
+@@ -16,6 +26,7 @@ int format_warmup()
+         warmup_kernel<<< num_blocks, num_threads >>>(d_scan);
+ 
+     checkCudaErrors(cudaFree(d_scan));
++    return ANONYMOUSLIB_SUCCESS;
+ }
+ 
+ template<typename iT, typename uiT>
+diff --git a/src/external/CSR5_cuda/detail/cuda/utils_cuda.h b/src/external/CSR5_cuda/detail/cuda/utils_cuda.h
+index 8ce405d..9371af6 100644
+--- a/src/external/CSR5_cuda/detail/cuda/utils_cuda.h
++++ b/src/external/CSR5_cuda/detail/cuda/utils_cuda.h
+@@ -199,18 +199,28 @@ double scan_32_shfl(double    x)
+     for (int STEP = 0; STEP < STEPS; STEP++)
+     {
+         // Use predicate set from SHFL to guard against invalid peers
++        //
++        // CUDA-version build fix (see ../../../../../STATUS.md): the
++        // original instruction, "shfl.up.b32" with no ".sync" qualifier and
++        // no membermask operand, is pre-Volta PTX -- ptxas targeting sm_70+
++        // (this machine's A100 is sm_80) rejects it outright ("Instruction
++        // 'shfl' without '.sync' is not supported on .target sm_70 and
++        // higher"). Adding ".sync" plus a full-warp membermask (0xffffffff)
++        // reproduces the old implicit-all-lanes-participate semantics
++        // exactly (every thread in the warp executes this scan with no
++        // divergent exit beforehand) -- same arithmetic, newer PTX syntax.
+         asm(
+             "{"
+             "  .reg .s32 lo;"
+             "  .reg .s32 hi;"
+             "  .reg .pred p;"
+             "  mov.b64 {lo, hi}, %1;"
+-            "  shfl.up.b32 lo|p, lo, %2, %3;"
+-            "  shfl.up.b32 hi|p, hi, %2, %3;"
++            "  shfl.sync.up.b32 lo|p, lo, %2, %3, %4;"
++            "  shfl.sync.up.b32 hi|p, hi, %2, %3, %4;"
+             "  mov.b64 %0, {lo, hi};"
+             "  @p add.f64 %0, %0, %1;"
+             "}"
+-            : "=d"(x) : "d"(x), "r"(1 << STEP), "r"(SHFL_C));
++            : "=d"(x) : "d"(x), "r"(1 << STEP), "r"(SHFL_C), "r"(0xffffffff));
+     }
+ 
+     return x;

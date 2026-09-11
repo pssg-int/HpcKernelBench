@@ -1,0 +1,257 @@
+kernel: spmspv
+summary: >
+  Sparse matrix times sparse vector (SpMSpV), where both the nonzero
+  PATTERN and the resulting output density of the vector operand are
+  first-class variables rather than fixed at "dense." Measured primarily
+  as a function of swept input-vector density on a fixed matrix suite
+  (the axis this track's own papers treat as central), with a second
+  variant driven by a real, workload-generated non-uniform sparsity
+  trace (BFS frontiers) since a synthetic sweep and a real trajectory are
+  not interchangeable, plus a construction-cost variant for the
+  bitmap/index structures several techniques in this track require.
+operation: >
+  y[M](sparse, nnz_y variable) = A[M,K](sparse, CSR/CSC/bitmap) *
+  x[K](sparse, nnz_x swept); output nnz_y is NOT known a priori and must
+  be produced (allocated/compacted) by the kernel, unlike SpMV where the
+  output is always a fully-populated dense M-vector.
+
+variants:
+  - id: spmspv-density-sweep-kernel
+    claim: >
+      steady-state kernel throughput as a function of INPUT VECTOR
+      DENSITY, swept from near-empty to fully dense on a FIXED matrix —
+      the controlled-sensitivity-curve variant LiAY21 runs directly and
+      the one this track's whole point is to compare across
+      implementations at matched density, not just at one arbitrarily
+      chosen sparsity level.
+    inputs:
+      suite: "SuiteSparse Matrix Collection, same collection as benchspecs/spmv/spec.yaml"
+      selection: >
+        the spmv track's own recommended_subset (25 named matrices,
+        1e4 <= nnz <= 2e8), restricted to structurally non-trivial
+        instances (drop pure diagonal/near-diagonal matrices where a
+        sparse-vector multiply degenerates), reused here rather than
+        re-deriving a new suite so SpMSpV-vs-SpMV throughput is directly
+        comparable on the SAME matrices, per this track's stated goal of
+        aligning with benchspecs/spmv/spec.yaml.
+      recommended_subset:
+        [audikw_1, ldoor, Serena, StocF-1465, Bump_2911, Flan_1565,
+         Hook_1498, Geo_1438, dielFilterV3real, Long_Coup_dt6, Cube_Coup_dt6,
+         crankseg_2, cage15, delaunay_n24, roadNet-CA, hugetrace-00020,
+         wiki-Talk, soc-LiveJournal1, com-Orkut, webbase-1M, in-2004,
+         nlpkkt240, Queen_4147, mip1, pwtk]
+      vector_operand: >
+        x: sparse, nnz_x in {1, 0.001%, 0.01%, 0.1%, 1%, 10%, 50%, 100%}
+        of K (LiAY21's "1 to n with a uniform interval" ramp, discretized
+        into this explicit, reportable grid rather than an unstated
+        continuous sweep), nonzero positions chosen uniform-random with
+        fixed seed=42, nonzero values (where the semiring is arithmetic,
+        not Boolean) initialized U(-1,1). At nnz_x=100% this variant's
+        number MUST equal (within noise) the spmv-csr-kernel number for
+        the same matrix at N=1 in benchspecs/spmv/spec.yaml — implementations
+        failing this identity indicate the SpMSpV path is not a correct
+        generalization of the dense case.
+    protocol:
+      format: >
+        matrix given as CSR (converted once if the technique needs a
+        different layout, e.g. bitmap/CSC-with-value-index; conversion
+        timed once and reported separately, never inside the per-call
+        number — same discipline as spmv-csr-kernel).
+      warmup: 20
+      reps: 100 per (matrix, density) cell
+      statistic: "median (report min/max/stdev alongside)"
+      timer: "device-side events (CUDA/HIP) or std::chrono per iteration, one timestamp pair per call, never a single pair around a batched loop"
+      timing_scope: >
+        kernel only (candidate-generation/filtering + accumulate +
+        output-compaction), H2D/D2H excluded. If the technique performs
+        runtime KERNEL SELECTION as part of every call (e.g. LiAY21's
+        ML-based selector), that selection cost (feature computation +
+        model inference) is INCLUDED in this per-call number and reported
+        as its own line item (selection_overhead_ms) alongside the total
+        — this fixes the common failure mode of amortizing away an
+        adaptive framework's per-call decision cost, and matches LiAY21's
+        own (better-than-average) practice of always including it.
+      preprocessing_reported: >
+        separately, once: format/bitmap conversion time, plus (if used)
+        any load-balancing preprocessing (LiAY21's "load-balanced"
+        kernel family redistributes nonzeros before the main kernel runs).
+      output_allocation: >
+        REQUIRED disclosure: how the implementation sizes/allocates the
+        output buffer for y, since nnz_y is not known in advance. Three
+        legitimate strategies exist in this track's literature and must
+        be named explicitly: (a) dense M-length buffer, sparse-populate
+        (BLEST's bitmap approach — implicitly "dense" allocation, O(M)
+        memory regardless of nnz_y), (b) worst-case sparse buffer sized
+        to an upper bound (e.g. sum of column nnz for touched columns)
+        with a post-hoc compaction pass, (c) two-pass (count then
+        allocate exact size then fill). The allocation strategy changes
+        both peak memory and whether a compaction/atomic step appears in
+        the timed kernel; this must be reported, not left implicit.
+      precision: "fp32 (matches LiAY21); fp64 optional secondary. Boolean/bitwise semiring (BLEST's regime) is out of scope for THIS variant and covered by spmspv-bfs-frontier-trace instead."
+    metric:
+      primary: >
+        GNZ/s = (nnz_x_effective_reads + output_nnz_writes) / time_seconds
+        / 1e9 — nonzeros processed per second, a semiring- and
+        precision-agnostic throughput unit chosen because neither
+        surveyed paper's own metric (LiAY21's speedup-only; BLEST's
+        ms/speedup-only) is directly comparable across the density range,
+        and GFLOP/s is undefined for BLEST's Boolean kernels.
+      secondary: "ms (median); selection_overhead_ms (if the technique does runtime kernel selection, else 'n/a')"
+    correctness: >
+      max relative error vs. an independently computed fp64 dense
+      reference (y = A*x computed with x's implicit zeros included,
+      restricted to comparison at the positions the kernel actually
+      returns as nonzero) < 1e-4 at fp32. In addition, the RETURNED
+      SUPPORT (set of indices reported nonzero) must exactly match the
+      reference's nonzero support — a value-only tolerance check without
+      a support check would let an implementation silently drop or
+      fabricate nonzeros and still "pass."
+
+  - id: spmspv-bfs-frontier-trace
+    claim: >
+      throughput across the REAL, non-uniform sparsity trajectory a
+      level-synchronous BFS actually produces (frontier density rises
+      then falls across levels, the "small-world bulge" BLEST's own
+      numbers exhibit), as opposed to spmspv-density-sweep-kernel's
+      synthetic uniform ramp — kept as its own variant because a
+      technique tuned to do well on a smooth synthetic sweep is not
+      guaranteed to do well on the bursty, workload-driven density
+      sequence real graph algorithms generate, and this is the actual
+      production use case for SpMSpV in this track (BLEST) and one of
+      two real applications LiAY21 evaluates against.
+    inputs:
+      suite: "union of benchspecs/bfs/spec.yaml's bfs-kernel-real-graphs recommended_subset and BLEST's own custom SuiteSparse selection (|V|>=23M, |E|<=2^32-1)"
+      selection: "graphs with a giant component and BFS diameter that produces >=8 distinct frontier levels, so the density trajectory has enough points to be meaningful"
+      recommended_subset:
+        [com-LiveJournal, com-Orkut, soc-LiveJournal1, GAP-road, GAP-web,
+         GAP-twitter, uk-2005, it-2004, europe_osm, com-Friendster,
+         webbase-2001, nlpkkt240]
+      vector_operand: >
+        x_0 = single source bit set (nnz_x=1); x_{i+1} = frontier of BFS
+        level i+1, derived from x_i via the SpMSpV call itself (this
+        variant is inherently sequential across levels, unlike
+        spmspv-density-sweep-kernel's independent density cells) — same
+        64-fixed-seed-random-root protocol as
+        benchspecs/bfs/spec.yaml's bfs-kernel-real-graphs.
+    protocol:
+      format: "same as spmspv-density-sweep-kernel; bitmap/BVSS-style layouts allowed and their construction timed once per graph, reported separately"
+      warmup: 1 full BFS (discarded)
+      reps: "64 full BFS traversals (64 roots), matching benchspecs/bfs/spec.yaml"
+      statistic: >
+        per-level nnz_x/nnz_y and per-level SpMSpV time recorded for
+        EVERY level of EVERY traversal (not just a summary number) so the
+        density trajectory itself is reportable, plus median end-to-end
+        BFS time across the 64 roots for a single comparable headline
+        number.
+      timer: "device-side events or std::chrono around each per-level SpMSpV call"
+      timing_scope: >
+        per-level kernel calls only; graph load/format construction
+        excluded and reported once (preprocessing_reported below);
+        H2D/D2H of the output parent/level array excluded (matches
+        benchspecs/bfs/spec.yaml's bfs-kernel-real-graphs timing_scope).
+      preprocessing_reported: "separately, once per graph: format/bitmap construction time, any reordering time, same discipline as spmspv-density-sweep-kernel"
+      output_allocation: "same disclosure requirement as spmspv-density-sweep-kernel"
+      precision: "Boolean/bitwise semiring is the PRIMARY mode here (matches BLEST); arithmetic fp32/fp64 semirings are optional secondary if the technique supports weighted BFS-like traversal"
+    metric:
+      primary: "GTEPS (edges connecting frontier vertices to their parents / time_seconds / 1e9), matching benchspecs/bfs/spec.yaml's definition so BFS-as-SpMSpV numbers are directly comparable to the bfs track's own numbers"
+      secondary: "per-level (nnz_x, nnz_y, GNZ/s) trace; end-to-end BFS time (ms, median of 64)"
+    correctness: >
+      same validation_level=2-equivalent gate as benchspecs/bfs/spec.yaml
+      (reached-vertex set and parent validity checked against an
+      independent reference BFS), since the operation here IS a BFS; the
+      per-level value-correctness check from spmspv-density-sweep-kernel
+      does not apply (Boolean semiring has no numeric tolerance to check).
+
+  - id: spmspv-e2e-preproc
+    claim: >
+      end-to-end throughput including one-shot structure construction
+      (format conversion, bitmap/BVSS packing, or load-balancing
+      preprocessing), amortized over k=100 calls at a FIXED
+      representative density (10%, chosen as a realistic mid-sparsity
+      operating point neither fully sparse nor fully dense) — the
+      construction-cost analogue of benchspecs/spmv/spec.yaml's
+      spmv-e2e-preproc, needed here because BLEST's BVSS structure and
+      LiAY21's load-balancing preprocessing are both nontrivial one-shot
+      costs neither paper's own artifact clearly amortizes with a stated
+      k.
+    inputs:
+      suite: "same as spmspv-density-sweep-kernel"
+      selection: "same as spmspv-density-sweep-kernel"
+      recommended_subset: "same as spmspv-density-sweep-kernel"
+      vector_operand: "nnz_x = 10% of K, fixed across all k=100 calls (same support, resampled values per call)"
+    protocol:
+      format: "input is raw CSR/COO; conversion to the technique's native structure (bitmap/BVSS/load-balanced layout) IS timed, once"
+      warmup: 20
+      reps: "k=100 post-construction calls; report both the amortized number and the pure post-construction kernel time"
+      statistic: median
+      timer: "same per-platform per-iteration timers as spmspv-density-sweep-kernel, plus one bracket around the one-shot construction"
+      timing_scope: "construction + k kernel calls; H2D/D2H of the original matrix included once"
+      preprocessing_reported: "both standalone (ms, once) AND amortized-per-call (construction_ms/k added to each call's time), same discipline as benchspecs/spmv/spec.yaml's spmv-e2e-preproc"
+      output_allocation: "same disclosure requirement as spmspv-density-sweep-kernel"
+      precision: "same as spmspv-density-sweep-kernel"
+    metric:
+      primary: "GNZ/s (amortized: k*(nnz_x + output_nnz) / (construction_time + k*kernel_time))"
+      secondary: "ms (construction, standalone, once); ms (per-call, pure post-construction kernel, median)"
+    correctness: "same tolerance and support-match check as spmspv-density-sweep-kernel, checked post-construction"
+
+notes_on_fairness:
+  - >
+    BLEST's own root-selection procedure (`constructGreatSourceVertices`)
+    actively filters BFS source roots to those with near-average per-root
+    runtime before reporting numbers, which is a stronger and less
+    disclosed selection effect than any single-paper root-selection bias
+    already documented in benchspecs/bfs/spec.yaml. spmspv-bfs-frontier-trace
+    fixes this by mandating the SAME 64-fixed-seed-random-root protocol as
+    the bfs track, with no post-hoc filtering of which roots' results
+    count.
+  - >
+    LiAY21 explicitly measures and includes its adaptive framework's
+    per-call kernel-selection overhead (5.2-7.2% average, up to 14%) in
+    every reported number — better practice than most of the SpMV track's
+    papers, which never surface conversion/search cost at all. This spec
+    requires the same disclosure (selection_overhead_ms) from every
+    technique tested under spmspv-density-sweep-kernel, not just adaptive
+    ones, so a non-adaptive fixed-kernel baseline's "free" selection cost
+    (zero) is visibly comparable to an adaptive technique's non-zero cost.
+  - >
+    Neither paper reports the OUTPUT nonzero-count/allocation strategy
+    explicitly as a first-class experimental variable, even though it
+    materially affects both peak memory and whether a compaction pass
+    appears inside the timed region. All three variants above make
+    output_allocation a mandatory disclosure field.
+  - >
+    BLEST reports ms/speedup only (no GTEPS anywhere in the fetched
+    text) and LiAY21 reports speedup/accuracy only (no absolute
+    throughput number at all) — neither paper's own metric is usable as
+    a cross-paper common denominator. GNZ/s is introduced here
+    specifically because it is well-defined for both the Boolean
+    (BLEST) and arithmetic (LiAY21) semirings this track spans, which
+    GFLOP/s is not.
+
+open_questions:
+  - >
+    Neither paper's exact correctness/validation method could be
+    confirmed from the fetched sources (BLEST: an `OutputVerifier.cuh`
+    exists but its check level is unconfirmed; LiAY21: no
+    correctness/tolerance discussion was retrievable from the fulltext).
+    The correctness clauses above are this spec's own fairness-driven
+    default (value tolerance + exact support match), not derived from
+    either paper's stated practice.
+  - >
+    LiAY21's 2,010-matrix SuiteSparse set is used only to TRAIN its ML
+    kernel selector, not as a reported-benchmark suite; whether a
+    selector trained on that set generalizes to
+    spmspv-density-sweep-kernel's recommended_subset (drawn from the
+    spmv track's suite, not LiAY21's own 18-matrix test set) is an open
+    question this spec cannot resolve without re-running LiAY21's
+    training pipeline.
+  - >
+    The exact semiring/output-format BLEST's BVSS structure supports
+    beyond plain BFS reachability (e.g. whether it generalizes to
+    weighted or multi-source SpMSpV) could not be confirmed from the
+    fetched arXiv HTML; spmspv-bfs-frontier-trace assumes Boolean BFS
+    only.
+
+evidence:
+  conf/ics/ElbekK26: "GAP suite + custom SuiteSparse (|V|>=23M,|E|<=2^32-1, 9 graphs); 64 random-but-runtime-filtered roots; ms+speedup only, no GTEPS; BVSS construction timed separately; Boolean semiring; baselines BerryBees/Gunrock/GSWITCH/GAP."
+  journals/tpds/LiAY21: "2,010 SuiteSparse matrices (ML training) + 18-matrix held-out test suite; input-vector density swept 1-to-n uniform interval; 10 runs averaged; fp32; selector overhead (5.2-7.2% avg) always included; baselines cuSPARSE/Merge-SpMV/Hola-SpMV/push-pull-adaptive; real-app validation via BFS (11-2803 iters) and PageRank (27-288 iters)."

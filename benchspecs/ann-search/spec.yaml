@@ -1,0 +1,219 @@
+kernel: ann-search
+summary: >
+  Nearest-neighbor search over a fixed vector/point database, split into two
+  variants that the 7 surveyed papers treat as genuinely different claims:
+  high-dimensional APPROXIMATE search over the standard SIFT/DEEP/SPACEV
+  billion-scale suite (recall@k vs QPS Pareto curve as THE metric, never QPS
+  alone), and low-dimensional (2D/3D) EXACT (or tightly error-bounded)
+  spatial k-NN over real point-cloud/geometric data where recall@k is
+  meaningless (search is exact by construction) and correctness is instead a
+  measured exact-match rate or bounded error rate. Index-build time/memory
+  and batch-vs-single-query latency are always reported separately from
+  steady-state search throughput in both variants.
+operation: >
+  high-dim variant: for each query q in Q[Nq,D], return the (approximate)
+  top-k indices of X[N,D] minimizing dist(q, x_i) under a fixed distance
+  metric (L2 by default), N up to 10^9, D in [96,128];
+  low-dim/exact variant: for each query q in Q[Nq,D], return the EXACT top-k
+  (or all points within a fixed radius r) of X[N,D], D in {2,3}, N up to 10^7
+
+variants:
+  - id: ann-highdim-recall-qps-pareto
+    claim: >
+      steady-state approximate nearest-neighbor search throughput (QPS) at
+      FIXED recall@k targets, reported as a recall-vs-QPS curve (never QPS
+      alone), with index-build time and peak memory reported as separate,
+      one-shot numbers (not amortized into per-query time). This is the
+      common denominator PathWeaver, DRIM-ANN, UpANNS, and FANNS all
+      actually target (all 4 evaluate on the SIFT/DEEP/SPACEV billion-scale
+      family and an IVF-PQ-or-graph-based index), and is the standard
+      ann-benchmarks.com-style framing this track's papers only partially
+      realize on their own (see Divergences: only FANNS sweeps multiple
+      recall targets by construction; the other 3 report at most one fixed
+      recall floor or none at all in their released scripts).
+    inputs:
+      suite: >
+        union of the standard billion-scale ANN benchmark datasets named
+        across the 4 high-dim papers: SIFT1B/SIFT100M (texmex/BIGANN corpus,
+        128-dim), DEEP1B/DEEP100M (Yandex benchmark, 96-dim), SPACEV1B
+        (Microsoft SPTAG, 100-dim); plus PathWeaver's `sift-128-euclidean`
+        (ann-benchmarks-convention SIFT, presumed SIFT1M scale) for a
+        million-scale comparison point none of the billion-scale papers
+        provide.
+      selection: >
+        fix the 3 billion-scale bases at both their native 10^9 scale and
+        the 10^8 (100M) sub-scale DRIM-ANN and FANNS already use for
+        GPU-memory-constrained comparisons, so GPU and non-GPU (CPU/FPGA/PIM)
+        candidates are both representable; add SIFT1M (the classic small-
+        scale sanity-check size, PathWeaver's own dataset) so a candidate
+        that cannot yet scale to billions still has a comparable submission
+        point. 10,000 queries per dataset (the convention all 4 papers
+        already share).
+      recommended_subset:
+        - {name: sift1m, base: SIFT1M, dim: 128, n_base: 1000000, n_queries: 10000, metric: L2}
+        - {name: sift100m, base: SIFT100M, dim: 128, n_base: 100000000, n_queries: 10000, metric: L2}
+        - {name: sift1b, base: SIFT1B, dim: 128, n_base: 1000000000, n_queries: 10000, metric: L2}
+        - {name: deep100m, base: DEEP100M, dim: 96, n_base: 100000000, n_queries: 10000, metric: L2}
+        - {name: deep1b, base: DEEP1B, dim: 96, n_base: 1000000000, n_queries: 10000, metric: L2}
+        - {name: spacev1b, base: SPACEV1B, dim: 100, n_base: 1000000000, n_queries: 10000, metric: L2}
+      distance_metric: "L2 (Euclidean) — the only metric used across all 4 high-dim papers; cosine/IP not attested in this track's literature, left as an open question for a future variant"
+    protocol:
+      index_build:
+        reported_separately: >
+          MANDATORY, once per (dataset, candidate) pair, not amortized into
+          per-query time: wall-clock build time AND peak resident
+          memory (host + device, reported separately) — closing the gap
+          where NONE of DRIM-ANN's, UpANNS's, or FANNS's released scripts
+          separate build cost/memory from search QPS (PathWeaver's graph
+          build happens once outside its swept-parameter search loop, which
+          is the right structure, but the repo still never reports the
+          build number on its own).
+        index_params_reported: >
+          the candidate's chosen index parameters (IVF nlist/nprobe, PQ
+          m/subvector-bits, or graph degree/intermediate-degree for
+          CAGRA-style candidates) MUST be reported alongside build time,
+          since build cost is meaningless without knowing what was built.
+      search:
+        warmup: 10
+        reps: >
+          20 minimum per (dataset, recall-target, batch-size) cell — raising
+          every one of the 4 papers' own (unstated or unenforced) repetition
+          counts to this project's general >=20-sample floor; none of the 4
+          released scripts states a per-config repetition count explicitly
+          in the fetched excerpts.
+        statistic: "median QPS/latency (report min/max); mean recall@k across reps (recall is a ratio over the fixed query set, not a per-iteration timing sample, so mean is the correct statistic there — matching PathWeaver's own convention of mean-recall + median-latency)"
+        timer: "device-side events for GPU candidates; std::chrono/rdtsc-equivalent wall clock for CPU/FPGA/PIM candidates (this track spans 4 hardware families, so no single timer API is prescribed)"
+        timing_scope: "search only; index build/load, quantizer training, and any query-set-independent warm-cache priming excluded and reported per index_build above"
+      batch_and_single_query: >
+        MANDATORY: report BOTH a large saturating batch (10,000 queries,
+        matching FANNS's own throughput-oriented convention) for peak-QPS
+        numbers AND single-query (batch=1) latency with a full
+        distribution (report p50/p95/p99, matching FANNS's
+        100,000-individual-query latency-distribution practice) — closing
+        the gap where UpANNS fixes a small batch (BS=10) throughout with no
+        single-query mode, and PathWeaver/DRIM-ANN don't state batch size at
+        all in the fetched excerpts.
+    metric:
+      primary: >
+        recall@k vs. QPS Pareto curve, k in {1, 10, 100} (FANNS's own 3
+        recall-report points, adopted as the standard here since it is the
+        most complete framing surveyed), swept across enough index/search
+        parameter settings (nlist/nprobe or graph search-width) to trace a
+        curve, NOT a single (recall, QPS) point — a bare "N QPS" or "Nx
+        speedup" number without an accompanying recall value is NOT an
+        admissible submission under this spec, correcting UpANNS's own
+        released script (which exposes NPROBS/TOPK as run parameters but
+        never gates or reports the resulting recall in the same file).
+      secondary: "single-query p50/p95/p99 latency (ms) at the fixed recall targets; index build time (s) and peak memory (GB) as standalone numbers, per protocol.index_build"
+    correctness: >
+      recall@k computed against exact ground-truth top-k (brute-force L2,
+      computed once per dataset/query-set and cached — the standard
+      ann-benchmarks convention; ground-truth files ship with
+      SIFT/DEEP/SPACEV already). A candidate's recall@k at its OWN chosen
+      operating point must be measured and reported in the SAME run that
+      produces the QPS number for that point (not read from a separate
+      offline accuracy script) — closing DRIM-ANN's/UpANNS's gap where
+      recall is either a hard-coded assumption (>=0.8 floor, not
+      re-verified per run) or absent from the reproducibility script
+      entirely.
+
+  - id: exact-spatial-knn-kernel
+    claim: >
+      steady-state EXACT (or, if the candidate is RTNN-style
+      radius-relaxation approximate, tightly error-bounded with the error
+      rate measured and reported as a first-class number, not assumed)
+      k-nearest-neighbor or fixed-radius search over low-dimensional (2D/3D)
+      point data, preprocessing (spatial index/BVH/grid construction)
+      excluded and reported separately. This is CLOVER's and RTNN's own
+      claim, and what X-HD's internal RT-accelerated k-NN routine (not its
+      end-to-end Hausdorff-distance computation, which is a different
+      operation) is a valid candidate submission for. Recall@k does not
+      apply here — accuracy is binary exact-match (or a measured
+      approximation-error rate for RTNN-style candidates), not a ratio
+      against an approximate baseline.
+    inputs:
+      suite: >
+        union of the 3 papers' real+synthetic point data: CLOVER's uniform-
+        random synthetic points in [-5,5]^3 (17 sizes, N in
+        [1000, 1000000]) plus its real mesh/graphics point clouds; RTNN's 3
+        real domains (KITTI LiDAR self-driving point clouds, Stanford 3D
+        Scanning Repository graphics models, Millennium Simulation N-body
+        cosmological data); X-HD's point sets extracted from its 3 domains
+        (MRI volumes, GIS polygon vertex sets, PLY graphics meshes) treated
+        as raw 2D/3D point clouds for the k-NN-only sub-benchmark.
+      selection: >
+        keep all of CLOVER's 17 synthetic sizes (it is the only paper with a
+        genuine size sweep in this family) plus one real dataset per source
+        domain, so both the controlled-synthetic and real-world-distribution
+        axes are covered.
+      recommended_subset:
+        - {name: uniform-1k, N: 1000, D: 3, k: 30, source: "CLOVER synthetic, U(-5,5)^3"}
+        - {name: uniform-100k, N: 100000, D: 3, k: 30, source: "CLOVER synthetic, U(-5,5)^3"}
+        - {name: uniform-1m, N: 1000000, D: 3, k: 30, source: "CLOVER synthetic, U(-5,5)^3"}
+        - {name: stanford-bunny, N: 360000, D: 3, k: 50, source: "RTNN, Stanford 3D Scanning Repository, near-uniform"}
+        - {name: stanford-asian-dragon, N: 3600000, D: 3, k: 50, source: "RTNN, Stanford 3D Scanning Repository, near-uniform"}
+        - {name: kitti-frame, N: 1000000, D: 3, k: 50, source: "RTNN, KITTI LiDAR self-driving, near-planar xy distribution", search_mode: "fixed-radius, r per RTNN's own convention"}
+        - {name: millennium-nbody, N: 9000000, D: 3, k: 50, source: "RTNN, Millennium Simulation N-body, highly non-uniform/clustered"}
+        - {name: clover-mesh, N: "per-mesh vertex count", D: 3, k: 128, source: "CLOVER mesh sweep, real graphics point clouds"}
+      dtype: "fp32 point coordinates (universal across all 3 papers)"
+    protocol:
+      preprocessing:
+        reported_separately: >
+          MANDATORY: spatial-index/grid/BVH construction time, once per
+          (dataset, candidate) pair, excluded from the timed search loop —
+          closing X-HD's `-repeat 1`/no-warmup gap and CLOVER's complete
+          absence of a build-vs-search time split.
+      warmup: 5
+      reps: >
+        20 minimum — directly correcting CLOVER's code-verified reps=1-2
+        (the loosest of any paper surveyed in either track of this task)
+        and X-HD's `-repeat 1`.
+      statistic: "median (report min/max); this track's papers report raw per-rep times with no aggregation at all (CLOVER) or a single rep (X-HD), so this spec introduces the statistic rather than correcting an existing but wrong one."
+      timer: "device-side CUDA events for GPU candidates (RTNN/CLOVER/X-HD are all GPU-targeted); std::chrono high-resolution wall clock acceptable for a CPU reference implementation"
+      timing_scope: "search only (or Hausdorff-distance-relevant k-NN calls only, for an X-HD-derived candidate); index construction excluded per preprocessing.reported_separately"
+      batch_and_single_query: "report both all-points-as-queries (CLOVER's and RTNN's own convention: search points double as the query set) and a held-out single-query-at-a-time mode, since the former amortizes index-build benefit across N queries in a way a truly single-query interactive workload would not"
+    metric:
+      primary: "throughput: queries/second (or points/second, for the all-points-as-queries mode), median over reps"
+      secondary: "wall time (ms); index-build time and peak memory as standalone numbers, per protocol.preprocessing"
+    correctness: >
+      MANDATORY, connected to the SAME run as the timed measurement (not a
+      separate, possibly-dead-code sanity script — CLOVER's own
+      `run_test()` has an unconditional early `return true;` before its
+      real assertions, making it structurally unable to fail regardless of
+      correctness, and X-HD ships every reproducibility run with
+      `-check=false`; both are closed by this requirement): exact top-k /
+      radius-set match against a brute-force O(N^2) CPU or GPU reference for
+      at least one small size per dataset family (CLOVER's N<=10000 sizes
+      are cheap enough to brute-force-check every run). For an RTNN-style
+      approximate candidate (relaxed-radius query partitioning), report the
+      MEASURED fraction of queries with an incorrect/incomplete result set
+      against the same brute-force reference — RTNN's own practice (<0.001%
+      at its default setting), adopted here as the required reporting
+      format rather than a fixed numeric gate, since "exact" and "bounded-
+      approximate" are both legitimate submissions to this variant as long
+      as the error rate is measured and disclosed, not assumed.
+
+notes_on_fairness:
+  - "This track's own papers split cleanly into two families that do not share a benchmark, input suite, or accuracy notion: high-dimensional approximate search (SIFT/DEEP/SPACEV, recall@k) vs. low-dimensional exact spatial k-NN (point clouds, exact-match). Pooling them into one variant would force a meaningless recall@k onto exact search or force high-dimensional billion-scale data onto algorithms (CLOVER's grid/hub structures, RTNN's RT-core BVH) designed and only evaluated at 2D/3D. Kept as two fully separate variants, matching this project's precedent of splitting on genuinely different input-suite/accuracy axes (see attention-kernel's GPU-vs-CPU split, sparse-attention-kernel's structured-mask-vs-graph-adjacency split)."
+  - "A bare QPS or speedup number without an accompanying recall value is explicitly disallowed for the high-dim variant (see metric.primary) — this directly implements the task's own stated key axis ('recall@k vs QPS Pareto curve as THE metric, never QPS alone') and fixes UpANNS's released run.sh, which exposes nprobe/topk as tunable parameters but never surfaces or gates the resulting recall in the same script."
+  - "Index-build time and memory are reported separately from search throughput in BOTH variants as a hard requirement — none of DRIM-ANN's, UpANNS's, FANNS's, CLOVER's, or X-HD's released reproducibility scripts do this cleanly (PathWeaver's script structure does it implicitly by running build once outside the search-parameter sweep, but never reports the number); this directly implements the task's own key axis."
+  - "Batch vs. single-query latency is made an explicit, mandatory dual report in both variants, generalizing FANNS's own practice (the only paper in the track that already does this) to every candidate, and closing UpANNS's small-fixed-batch-only gap."
+  - "Correctness/recall verification is made mandatory and connected to the SAME timed run for every candidate in both variants, closing gaps ranging from 'unstated' (DRIM-ANN, UpANNS's recall-gating) to 'disabled by default' (X-HD's -check=false) to 'structurally unfalsifiable' (CLOVER's dead-code early-return in run_test())."
+  - "X-HD's own end-to-end deliverable (a Hausdorff distance VALUE between two point sets) is explicitly OUT of scope for exact-spatial-knn-kernel — only its internal RT-accelerated k-NN routine is a valid candidate submission, since the end-to-end HD computation is a different operation (a max-min reduction over k-NN results), not itself a k-NN search implementation."
+
+open_questions:
+  - "PathWeaver: the multi-GPU headline claim (3.24x geomean over unspecified 'SOTA') and its recall/QPS behavior were not independently confirmed — only the single-GPU harness (single_pathweaver_one.py) was read in depth; the multi-GPU script (multi_pathweaver_one.py) was not fetched."
+  - "DRIM-ANN and UpANNS: neither paper's actual algorithm-level source (the DRIM-ANN/ and dpu/ subdirectories respectively) was read in depth within this survey's time budget — only top-level READMEs and run.sh/citation content were fetched, so exact warmup/repetition/statistic protocol for either paper's own released scripts remains unconfirmed (this spec's protocol section does not inherit either paper's practice as a result, and imposes its own floor instead)."
+  - "RTNN: no warmup/repetition/statistic protocol was recoverable from the fetched arXiv fulltext excerpt; the repo's own benchmark/timing driver source (as opposed to README) was not read in depth."
+  - "X-HD: hardware (GPU model) was not confirmed from the fetched scripts; the internal JSON log schema (what exactly `-json $log` records) was not inspected, so it's unconfirmed whether X-HD's own scripts already separate k-NN-only time from full Hausdorff-distance compute time, which matters for extracting a fair exact-spatial-knn-kernel submission from its rt variant."
+  - "Whether a distance metric other than L2 (cosine similarity, inner product) should be added to the high-dim variant is left open — no paper in this 7-paper track attests a non-L2 metric, so adding one now would be ungrounded in this track's own literature, per the same principle applied to the sparse-attention-kernel track's fp8 decision."
+  - "CLOVER's mesh-sweep dataset (files under a `meshes/` directory, k=128) — the actual mesh identities/sizes were not enumerated from the source read; recommended_subset's clover-mesh entry uses a generic placeholder rather than named files."
+
+evidence:
+  conf/ics/GengYLWZ26: "X-HD: RT-core-accelerated Hausdorff distance via an internal k-NN building block; MRI (BraTS2020)/geospatial(WKT)/graphics(PLY) real datasets; -repeat 1, -check=false (correctness disabled by default in the reproducibility script); vs ITK/CLOVER/rt-hdist/eb/nn; no recall@k concept (HD is a deterministic scalar, not approximate search); 5.3x over ITK."
+  conf/usenix/KimPNHKLL25: "PathWeaver: CAGRA-based multi-GPU graph ANNS with a 2-phase 'ghost' search (1%-subsampled entry-point search then full search); sift-128-euclidean dataset; test_iteration=4, mean-recall@10 + median-latency(ms) both reported per swept config; requires 4 GPUs+NVLink; 3.24x geomean multi-GPU (not independently confirmed from the single-GPU script read)."
+  conf/ics/KamelYC25: "CLOVER: exact GPU kNN via spatio-graph hubs+lower-bounds; synthetic uniform 3D points N=1K-1M k=30 + real mesh point clouds k=128; reps=1-2 (loosest in either track surveyed), correctness check is dead code (early return true before assertions); vs FAISS(3 variants)/Treelogy-kdtree/Arkade; 4-230x vs grid/tree/FAISS on V100."
+  conf/sc/ChenH0LYDY000025: "DRIM-ANN: first UPMEM-DRAM-PIM ANNS engine, lookup-table-replaces-squaring; SIFT/DEEP/SPACEV at 1B and 100M scale, 10K queries; recall@10>=0.8 explicit floor (only paper in track with a named recall gate); IVF-PQ nlist=2^14,nprobe=96,m=16; vs 32-thread CPU (2.46x) and A100 GPU (2.67x); build time/memory not separated from QPS in fetched excerpt."
+  conf/sc/ChenZSLY25: "UpANNS: PIM billion-scale ANNS with data placement + early-pruning topk; same SIFT/DEEP/SPACEV suite as DRIM-ANN; IVF-PQ MS=16,KSUB=256,DSUB=8(m=16),TOPK=10,NPROBS=64,BS=10 (small-batch, unlike FANNS); vs Faiss, 4.3x QPS; no recall gate/report visible in run.sh."
+  conf/sc/JiangLZLHSRZRHA23: "FANNS: FPGA hardware-algorithm co-design, auto-generates accelerator for a USER-GIVEN recall requirement; SIFT100M/Deep100M, 3 explicit recall targets per dataset (R@1/10/100) - best recall-Pareto framing in track; nlist swept 2^10-2^18, m=16 PQ; explicit 10K-batch throughput vs 100K-query latency-distribution split (only paper with this); vs Faiss CPU/GPU, up to 37.2x/23.0x."
+  conf/ppopp/000122: "RTNN: RT-core-mapped exact/bounded-approx low-dim (3D) neighbor search via query scheduling+partitioning; KITTI/Stanford-3D/Millennium-N-body real datasets; exact by default, optional -a{0,1,2} radius-relaxation approximation with a MEASURED <0.001% error rate at default (best-behaved accuracy disclosure in the exact-search family); vs cuNSearch/FRNN/PCLOctree/FastRNN; 2.2-65.0x; no timing protocol recoverable from fetched excerpt."

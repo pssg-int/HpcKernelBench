@@ -1,0 +1,329 @@
+kernel: dynamic-graph-kernel
+summary: >
+  Maintaining or computing a query-able result R over a graph G that
+  evolves through a sequence of timestamped edge batches, covering two
+  distinct problem shapes this track's own papers target: (1) genuine
+  incremental MAINTENANCE of a live result (an SSSP tree) under a stream
+  of edge insertions/deletions, where batch size and insert/delete mix
+  are semantic choices that affect result staleness; and (2) one-shot
+  STREAMING ANALYTICS over an already-complete historical temporal-edge
+  log (temporal motif counting), where "batch"/chunk size is a pure
+  performance-tuning knob with no effect on the (single, final) answer.
+  The two are kept as separate variant families rather than forced onto
+  one shared metric, per notes_on_fairness.
+operation: >
+  Family A (maintenance): R_i = Update(R_{i-1}, B_i) for a sequence of
+  edge-change batches B_1..B_k (each B_i a set of (u,v,w,op) tuples,
+  op in {insert, delete}), where R_i must be observably equivalent to
+  Recompute(G_i) from scratch (G_i = G_0 with B_1..B_i applied), and a
+  point query Q(R_i, s, t) = shortest-path distance/parent from s to t
+  must be answerable after each B_i commits.
+  Family B (streaming analytics): Count_M(G) = number of valid
+  delta-temporal-motif matches for motif template M in a FIXED temporal
+  edge multiset G = {(u_i,v_i,t_i)}, computed once by streaming G through
+  memory in temporal-chunk order; G itself is never mutated during a run.
+
+variants:
+  - id: dgk-incremental-update-latency
+    claim: >
+      update-latency and post-update query-latency of a maintained SSSP
+      result under a stream of edge insertions and deletions, swept
+      across batch size and insert/delete mix — the direct operationalization
+      of this track's "update batch sizes, insert/delete mix,
+      update-throughput vs. query-latency" axes, modeled on Khanda et
+      al.'s incremental-SSSP-maintenance problem.
+    inputs:
+      suite: >
+        real temporal-edge logs replayed in chronological order as an
+        insertion stream — Khanda et al.'s own graph suite could not be
+        confirmed from available sources (see survey.md), so this spec
+        substitutes DTMiner's independently-verified real temporal-graph
+        suite (same source data, different use: here the timestamps
+        drive an actual insertion ORDER rather than a chunking scheme).
+      selection: >
+        graphs with a real per-edge timestamp (so chronological replay
+        is meaningful, not an arbitrary synthetic ordering), large enough
+        that a single edge batch is a small fraction of |E| at the batch
+        sizes below.
+      recommended_subset:
+        - "wikitalk (SNAP, 1,140,149 v / 7,833,140 temporal edges) — small/medium control instance"
+        - "stackoverflow (SNAP, 2,601,977 v / 63,497,050 temporal edges)"
+        - "temporal-reddit-reply (8,901,033 v / 646,044,687 temporal edges) — large instance"
+        - "ethereum (66,323,478 v / 628,810,973 temporal edges) — large, real financial-transaction-graph instance"
+        - "CollegeMsg (SNAP, 1,899 v / 59,835 temporal edges) — tiny debug/CI-size control instance, added since none of the above four are small enough for fast iteration"
+      graph_type: "undirected weighted (edge weights: real graphs above are unweighted natively — see weight assignment in protocol below); replayed as directed-then-symmetrized where the source technique requires undirected"
+      dense_operand: "N/A"
+    protocol:
+      format: >
+        an initial snapshot G_0 is built from the first X% of each
+        graph's chronologically-sorted edges (X in {50, 90}, i.e. two
+        starting-point sizes), CSR/adjacency-list, construction timed
+        once and reported separately (see e2e-preproc variant below);
+        the REMAINING (100-X)% of edges are replayed as the update
+        stream, grouped into batches per the sweep below, preserving
+        their original relative chronological order within and across
+        batches.
+      edge_weights: >
+        REQUIRED disclosure — this axis is not fixed to one value because
+        neither surveyed paper's exact weight distribution was
+        confirmable. Two settings must both be run and reported: (a)
+        UNIT weights (every edge weight = 1, i.e. SSSP degenerates to
+        unweighted-BFS-shortest-path, isolating pure algorithmic/data-structure
+        overhead from weight-comparison cost), and (b) uniform-random
+        integer weights in [1, 255) (matching the convention this repo's
+        mst/spec.yaml documents KaMSTa using), assigned once at G_0
+        construction and inherited by inserted edges deterministically
+        from a fixed-seed generator so re-runs are reproducible.
+      batch_size_sweep: >
+        REQUIRED sweep, reported as a curve not a single point: batch
+        size B in {1 (single-edge-at-a-time), 10, 100, 1000, 0.01%*|E|,
+        0.1%*|E|, 1%*|E|} edge-changes per batch. B=1 is the
+        finest-grained/most-realistic "streaming" setting; the
+        percentage-of-|E| points let large and small graphs be compared
+        on the same relative axis.
+      insert_delete_mix_sweep: >
+        REQUIRED sweep at EACH batch size above: insert:delete ratio in
+        {100:0 (insert-only, the natural mode for a chronological-replay
+        stream since these graphs have no recorded deletions), 90:10,
+        50:50, 10:90}. Deletions beyond insert-only are SYNTHETIC —
+        edges are chosen for deletion uniform-randomly from among
+        previously-inserted edges after a random delay (fixed seed=42)
+        — and MUST be labeled as synthetic in any report, since none of
+        the recommended_subset graphs carry real deletion timestamps.
+        This directly operationalizes the "deletions are slower, needs
+        tree repair" asymmetry noted in this track's survey.
+      warmup: "1 full batch-apply + query cycle (discarded)"
+      reps: "20 repeated batch-apply-then-query cycles per (batch_size, insert_delete_mix) cell, same underlying edge sequence replayed with the same fixed seed for the synthetic-deletion selection"
+      statistic: "median (report min/max/stdev alongside)"
+      timer: "std::chrono/CUDA-event bracket around (a) the batch-apply-to-consistency step alone, and (b) a point query issued immediately after (a) completes"
+      timing_scope: >
+        update_latency_ms = time for R to become observably consistent
+        with G_i after B_i is applied (i.e. time until Recompute(G_i)
+        would agree with R_i, whether the implementation achieves this
+        via full recompute or true incremental update — both are
+        legitimate implementations of this variant and must be labeled
+        which one was run, per algorithm_disclosure below);
+        query_latency_ms = time to answer a single-pair distance query
+        issued immediately after update_latency_ms elapses. Both are
+        reported per batch, not just once.
+      algorithm_disclosure: >
+        REQUIRED: report whether the technique under test performs true
+        incremental maintenance (touches only the affected subgraph, per
+        Khanda et al.'s "rooted tree" approach) or recomputes from
+        scratch every batch — this variant exists precisely to make that
+        distinction visible as a throughput/latency curve rather than a
+        binary claim, since a from-scratch baseline is a legitimate
+        (if slow) point of comparison, not a disqualified one.
+      snapshot_consistency: >
+        REQUIRED disclosure of the consistency model: this spec DEFAULTS
+        TO AND REQUIRES batch-atomic consistency — a query issued between
+        update_latency_ms measurements must never observe a partially-applied
+        batch (either the full pre-batch or full post-batch graph state,
+        never an intermediate one). If a technique only offers a weaker
+        model (e.g. eventual consistency, individual-edge-level
+        visibility mid-batch), that must be disclosed and the
+        query_latency_ms measurement repeated at the START, MIDDLE, and
+        END of batch application to characterize the staleness window,
+        rather than silently reporting only the post-batch number as if
+        it were representative throughout. Neither surveyed paper's
+        artifact-level consistency model could be confirmed (see
+        survey.md open_questions), so this default is this spec's own
+        fairness-driven choice, not derived from either paper.
+      preprocessing_reported: "G_0 construction time reported separately, once per (graph, X%) pair — see dgk-e2e-preproc"
+      precision: "integer edge weights (both unit and [1,255) settings above); distances accumulated in a width sufficient to avoid overflow for the largest graph (>=64-bit for temporal-reddit-reply/ethereum scale)"
+    metric:
+      primary: "update-throughput = batch_size / update_latency_ms (edge-changes/ms), reported as a curve over the batch_size sweep"
+      secondary: "query_latency_ms (median, post-batch); update_latency_ms (median, min/max); staleness-window query_latency_ms at start/middle/end of batch application if snapshot_consistency is weaker than batch-atomic"
+    correctness: >
+      MANDATORY ground-truth gate, stronger than what this spec could
+      confirm either paper's own artifact actually does (see
+      survey.md): after EVERY batch, R_i's distances/parents for a
+      sample of >=1000 uniform-random (s,t) pairs (or all pairs if
+      |V|<=1000) must exactly match (integer weights, so exact match is
+      the correct bar, not a tolerance) an independently computed
+      from-scratch reference (Dijkstra or Bellman-Ford, run once per
+      checked batch on G_i). A technique whose own internal-consistency
+      check (e.g. parent/distance-array agreement without an external
+      reference) passes but whose values disagree with the from-scratch
+      reference does NOT pass this gate — internal consistency alone is
+      insufficient, since the unofficial reimplementation surveyed for
+      this track uses exactly that weaker check and it would not catch
+      a systematically-wrong-but-self-consistent update rule.
+
+  - id: dgk-temporal-batch-throughput
+    claim: >
+      aggregate streaming throughput and end-to-end completion latency
+      for a ONE-SHOT analytics query (temporal motif counting) over a
+      fixed, complete historical temporal-edge log, with chunk/batch
+      size swept as a performance-tuning knob (NOT a semantic
+      insert/delete axis — no mutation occurs in this variant) — the
+      direct operationalization of DTMiner's own evaluation shape, kept
+      separate from dgk-incremental-update-latency because conflating
+      "chunk size for cache locality" with "batch size for update
+      semantics" would misrepresent what either paper actually varies.
+    inputs:
+      suite: "DTMiner's own real temporal-graph suite (verified from fulltext + repo scripts, see survey.md)"
+      selection: "same 4 graphs DTMiner itself uses, all real, all with genuine timestamps spanning multiple years"
+      recommended_subset:
+        - "wikitalk (wi): 1,140,149 v, 7,833,140 temporal edges, delta=24h"
+        - "stackoverflow (so): 2,601,977 v, 63,497,050 temporal edges, delta=24h"
+        - "temporal-reddit-reply (re): 8,901,033 v, 646,044,687 temporal edges, delta=10h"
+        - "ethereum (eth): 66,323,478 v, 628,810,973 temporal edges, delta=1h"
+      motifs: >
+        13 structurally diverse motifs (3-5 edges each), matching
+        DTMiner's own M1-M13 set (Figure 11) exactly, since these are
+        the only motif shapes independently confirmed via both the
+        paper text and the repo's `motifs/M*.txt` files.
+      dense_operand: "N/A"
+    protocol:
+      format: "temporal edge list, sorted by timestamp; loaded and index-structure-built once per (graph, chunk_size)"
+      chunk_size_sweep: >
+        REQUIRED sweep, reported as a curve: chunk size S_c as a
+        fraction of the platform's LLC capacity — {25%, 50%, 100%,
+        200%} of LLC-per-core (DTMiner's own formula sizes S_c to
+        exactly fit the LLC alongside index/reserved space; sweeping
+        around that target, including deliberately-too-large settings,
+        makes the claimed cache-locality benefit falsifiable rather than
+        assumed). LLC capacity and per-core share MUST be reported
+        alongside the sweep since the sweep is defined relative to it.
+      warmup: "1 full mining run per (graph, motif) pair (discarded)"
+      reps: 5
+      statistic: "median (report min/max alongside; DTMiner's own paper does not report a repetition count for its headline numbers, which this spec's median-of-5 requirement fixes)"
+      timer: "wall-clock (host-side) around the full streaming pass, plus a separate bracket around preprocessing (chunk-index construction) alone"
+      timing_scope: >
+        streaming/mining time only for the primary number; preprocessing
+        (locality-aware chunk partition + hierarchical index
+        construction) is a one-shot cost per GRAPH (reusable across all
+        13 motifs, matching DTMiner's own "preprocessed once for
+        different applications" framing) and is reported separately, see
+        preprocessing_reported.
+      preprocessing_reported: >
+        standalone (ms, once per graph, amortized note that it is reused
+        across all 13 motifs) AND folded into an end-to-end number
+        (preprocessing_time + mining_time for a single motif), both
+        reported, matching DTMiner's own Table 2 / Figure 18 practice —
+        one of the few places in either paper's evaluation this spec
+        adopts wholesale rather than tightening.
+      numa_disclosure: >
+        REQUIRED if the platform is multi-socket/NUMA: report whether
+        the technique is NUMA-aware (thread/memory affinity, work
+        stealing hierarchy) since DTMiner's own three-level work-stealing
+        ablation (Figure 15) shows this accounts for a 3.6x-20x
+        difference on its own, independent of the chunking idea itself —
+        a NUMA-naive baseline run on a NUMA machine would otherwise look
+        artificially bad for reasons unrelated to the paper's actual
+        contribution.
+      precision: "N/A (exact integer motif count)"
+    metric:
+      primary: "edges/second = total temporal edges in the graph / streaming_time_seconds (aggregate throughput of the one-shot pass)"
+      secondary: "end-to-end completion time per (graph, motif) pair, ms (preprocessing + mining); LLC miss count or cache-reference count if measurable on the platform (matches DTMiner's own use of this as a mechanism-level metric, not just a speed number)"
+    correctness: >
+      exact match of the reported motif count against an independently
+      computed reference count (a straightforward, unoptimized
+      brute-force temporal-subgraph-search on a SMALL held-out subgraph
+      sample where brute force is tractable, e.g. the first 1% of edges
+      of the smallest graph in the suite) — motif counting is a discrete,
+      exact-answer problem, so "exact match" is the only valid gate, not
+      a numeric tolerance.
+
+  - id: dgk-e2e-preproc
+    claim: >
+      one-shot cost of building the initial data structure — either the
+      SSSP rooted-tree/auxiliary-edge structure (Family A) or the
+      chunk/hierarchical index (Family B) — from a static starting graph,
+      reported standalone rather than folded silently into the first
+      update or the first query, since both papers in this track build a
+      nontrivial structure before any update/query timing begins and
+      neither fully separates that cost from steady-state numbers in
+      their own headline results.
+    inputs:
+      suite: "union of dgk-incremental-update-latency's and dgk-temporal-batch-throughput's suites"
+      selection: "same graphs, at G_0 = the full graph (100% of edges) for this variant, since construction cost is what is being isolated here, not update behavior"
+      recommended_subset: "union of both variants' recommended_subset lists above"
+      dense_operand: "N/A"
+    protocol:
+      format: "raw edge list (CSR/temporal-sorted as appropriate); construction IS the timed operation"
+      warmup: 1
+      reps: 10
+      statistic: "median (report min/max)"
+      timer: "wall-clock around the full construction call"
+      timing_scope: "construction only; no updates or queries/mining performed in this variant"
+      preprocessing_reported: "this ENTIRE variant IS the preprocessing report, matching benchspecs/bfs/spec.yaml's bfs-reordering-cost pattern of promoting a preprocessing cost to a first-class variant rather than a footnote"
+      memory_reported: "peak memory usage during construction (MB), matching DTMiner's own Table 2 practice"
+    metric:
+      primary: "construction_time_seconds (median of 10)"
+      secondary: "peak_memory_MB; construction_time as a multiple of a single downstream update_latency_ms (Family A) or a single motif's mining_time_ms (Family B), i.e. a break-even-style number analogous to benchspecs/bfs/spec.yaml's break_even_reps"
+    correctness: "the constructed structure must pass the same correctness gate as the variant that will consume it (dgk-incremental-update-latency's ground-truth check, or dgk-temporal-batch-throughput's exact-count check, run once against the freshly-built structure before any timing counts)"
+
+notes_on_fairness:
+  - >
+    DTMiner's chunk size and Khanda et al.'s batch size are NOT the same
+    kind of parameter — one is a pure cache-locality tuning knob with no
+    effect on the final answer, the other is a semantic choice that
+    determines how stale a query's view of the graph can be. Treating
+    them as one shared "batch size" axis (as a naive reading of this
+    track's brief might suggest) would misrepresent both papers. This
+    spec keeps them in separate variants with separate sweep semantics.
+  - >
+    The unofficial reimplementation surveyed for Khanda et al. validates
+    updates via internal parent/distance-array consistency, NOT
+    comparison against an independent from-scratch reference. Whether
+    the original paper's own artifact does better is unconfirmed. This
+    spec's correctness gate for dgk-incremental-update-latency requires
+    the stronger ground-truth comparison regardless, since a
+    self-consistent-but-wrong update rule is exactly the failure mode an
+    internal-only check cannot catch.
+  - >
+    Neither paper's own artifact fully discloses its snapshot/consistency
+    model under concurrent query-during-update. This spec makes
+    batch-atomic consistency the required default and mandates disclosure
+    (plus a staleness-window measurement) for anything weaker, rather
+    than silently assuming one model.
+  - >
+    DTMiner's paper does not state a repetition count for its headline
+    speedup numbers (Figures 12-18), unlike the very deliberate 9-repetition-median
+    protocol this repo's mst/spec.yaml documents for ECL-MST in the same
+    general problem space (graph algorithms with highly input-dependent
+    runtime). dgk-temporal-batch-throughput fixes this with an explicit
+    median-of-5 requirement (5 rather than 9, in recognition that a
+    single mining run on the largest graph, e.g. ethereum, already takes
+    minutes per Table 2, making 9 reps proportionally more expensive here
+    than in the mst track).
+  - >
+    None of this track's recommended real-graph datasets carry genuine
+    deletion timestamps, so the insert/delete-mix sweep in
+    dgk-incremental-update-latency necessarily uses SYNTHETIC deletions.
+    This is disclosed explicitly in the protocol rather than presented as
+    if the deletions were drawn from real data, unlike a benchmark that
+    might silently synthesize deletions without flagging them as such.
+
+open_questions:
+  - >
+    Khanda et al.'s own graph suite, exact batch-size values, and
+    weight-distribution choice could not be confirmed (IEEE paywall, no
+    arXiv preprint, no accessible preprint elsewhere found). This spec's
+    dgk-incremental-update-latency substitutes a principled, independently
+    verifiable suite (DTMiner's real temporal graphs, replayed as an
+    insertion stream) rather than guessing at the original paper's
+    unconfirmed choices, and this substitution should be revisited if the
+    paywalled fulltext becomes available.
+  - >
+    Whether DTMiner's hierarchical-index hash table (built for 30% of
+    vertices by default, per its own load-factor formula) introduces
+    seed-dependent performance variance analogous to ECL-MST's filter-threshold
+    seed sensitivity (mst track) is untested by the paper itself and
+    left as a candidate future addition to dgk-temporal-batch-throughput
+    (a random-seed sensitivity sweep) rather than assumed absent.
+  - >
+    Whether a single implementation could reasonably be evaluated under
+    BOTH variant families (e.g. an incremental-SSSP-style structure
+    applied to a temporal-motif-adjacent counting query, or a
+    DTMiner-style chunked streaming approach applied to incremental SSSP
+    maintenance) is an interesting cross-pollination question raised by
+    surveying these two papers together, but is out of scope for this
+    spec, which benchmarks each paper's own problem shape rather than
+    proposing a new hybrid one.
+
+evidence:
+  conf/ppopp/Hou0H00YL00L026: "4 real temporal graphs (wi/so/re/eth, Table 1), 13 motifs (M1-M13) with per-dataset delta (24h/24h/10h/1h); single dual-socket 64-core server; preprocessing timed both standalone and folded into end-to-end (Table 2, Fig 18); baseline Mackey-o (in-house hardened extension of Mackey et al.); metric = speedup (1.14x-11.98x) + LLC misses + thread scalability; no insert/delete mutation, static historical log only."
+  journals/tpds/KhandaSBND22: "abstract + secondary sources only (IEEE paywall, no arXiv); shared-memory (OpenMP) + GPU implementation; rooted-tree affected-subgraph incremental update; edge insert AND delete supported, deletions slower (tree repair) per secondary source; baselines Galois and Gunrock per secondary source; exact suite/batch-size/weight-distribution unconfirmed; unofficial student reimplementation corroborates the affected-vertex + batchSize + post-hoc-consistency-check design pattern but its own numbers are not the paper's."

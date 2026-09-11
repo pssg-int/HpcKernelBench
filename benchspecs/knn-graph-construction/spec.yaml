@@ -1,0 +1,119 @@
+kernel: knn-graph-construction
+summary: >
+  Distributed-memory construction of an approximate k-nearest-neighbor
+  graph (KNNG) over high-dimensional points via a forest of sparse random
+  projection trees (build + query), measured as construction throughput
+  jointly with recall against an exact brute-force KNNG, since this is an
+  approximate algorithm and speed alone is not a legitimate win.
+operation: >
+  KNNG[N,k] = ApproxKNN(X[N,D] point set, ntrees T, target_neighbors k,
+  locality_mode); builds T sparse random-projection trees over X (each a
+  recursive space partition via random sparse hyperplane projections),
+  then queries the forest per point to emit its k approximate nearest
+  neighbors as a directed graph.
+
+variants:
+  - id: knng-kernel-single-node
+    claim: >
+      steady-state single-node build+query throughput on standard
+      ANN-benchmark-style point sets, at a fixed accuracy operating point;
+      the common denominator most ANN/KNNG papers report on before
+      addressing distributed scaling
+    inputs:
+      suite: "ANN-benchmarks-style point-set corpus, ubyte/fbin format"
+      selection: >
+        MNIST (confirmed used by this paper's own repo/README: 60,000
+        points, D=784) plus the standard higher-dimensional ANN-benchmarks
+        staples for size/dimension coverage, since the paper's own full
+        dataset list could not be confirmed from available sources
+      recommended_subset:
+        - "MNIST (60,000 x 784) — confirmed paper/repo instance"
+        - "Fashion-MNIST (60,000 x 784) — same shape, harder structure, standard ANN-benchmarks control"
+        - "SIFT1M (1,000,000 x 128) — standard ANN-benchmarks large instance"
+        - "GloVe-100 (~1,183,514 x 100, angular) — standard ANN-benchmarks text-embedding instance"
+      dense_operand: "N/A (point set IS the input; no separate dense operand)"
+      algorithm_params: "ntrees in {8, 16}, k (target neighbors) in {10, 20}, locality-based data-gathering ON (the paper's stated contribution) — both settings disclosed and held fixed across implementations under test"
+    protocol:
+      format: "raw feature vectors (ubyte/fbin), loaded once, not counted in build time"
+      warmup: "1 full build+query pass, discarded"
+      reps: 5
+      statistic: "median of (build_time, query_time), report min/max"
+      timer: "wall-clock (MPI_Wtime or std::chrono) around build and query phases separately"
+      timing_scope: "tree build + forest query (KNNG construction); input I/O and output-graph serialization excluded but reported separately"
+      preprocessing_reported: "input load time, separately, once per dataset"
+    metric:
+      primary: "points_per_second = N / (build_time + query_time), median"
+      secondary: "build_time_s, query_time_s (each standalone), speedup vs. baseline ANN method at matched recall"
+    correctness: >
+      recall@k >= 0.90 against an exact brute-force KNNG computed once per
+      dataset (independent reference, no approximation); recall MUST be
+      reported alongside throughput on every submission — a faster build
+      at lower recall is a DIFFERENT, not better, result, and must be
+      plotted/reported as a distinct (recall, throughput) operating point
+      rather than compared directly to a higher-recall number.
+
+  - id: knng-distributed-scaling
+    claim: >
+      distributed-memory strong-scaling throughput of the SAME accuracy
+      operating point as knng-kernel-single-node, since this track's
+      paper's central contribution is scaling KNNG construction to
+      thousands of MPI processes on a supercomputer via a communication-
+      reduction (locality-based data-gathering) scheme
+    inputs:
+      suite: "same corpus as knng-kernel-single-node, largest 1-2 instances (SIFT1M, GloVe-100) for scale-sensitivity"
+      selection: "same accuracy operating point (ntrees, k, recall target) as knng-kernel-single-node, fixed across all process counts"
+      recommended_subset: "SIFT1M, GloVe-100"
+      dense_operand: "N/A"
+    protocol:
+      format: "same as knng-kernel-single-node; input distributed once across ranks, not re-timed per process-count point"
+      warmup: 1
+      reps: 3
+      process_counts_required: "1 node baseline, then a strong-scaling ladder disclosed explicitly (e.g. 16, 64, 256, 1024+ MPI ranks) — the paper's abstract claims 'thousands of processes', so the top of the ladder should approach that scale for the claim to be checked, not stop at a token multi-node point"
+      statistic: "median wall time per process-count point, report min/max"
+      timer: "wall-clock (MPI_Wtime) around build+query, barrier-synchronized across ranks before/after timing region"
+      timing_scope: "build + query only; MPI initialization and data distribution/partitioning are one-shot and reported separately"
+      preprocessing_reported: "data distribution/partitioning time, separately, at each process-count point (this cost itself typically grows with process count and is part of the scaling story)"
+    metric:
+      primary: "parallel_efficiency(P) = time(1_node) / (P/P_base * time(P)), and points_per_second(P)"
+      secondary: "communication volume or time (isolating the locality-based data-gathering optimization's effect, since that IS the paper's contribution), recall@k held constant across all points on the scaling curve"
+    correctness: "same recall@k >= 0.90 gate as knng-kernel-single-node, verified at EVERY process-count point (approximate algorithms can lose accuracy under different data partitioning, so this is not a one-time check)"
+
+notes_on_fairness:
+  - >
+    Approximate KNNG construction has a fundamental speed/recall
+    tradeoff; a benchmark that reports only throughput (as a bare "two
+    orders of magnitude faster than its peers" claim, echoing this
+    paper's own abstract framing) without a fixed or disclosed accuracy
+    operating point is not comparable across implementations. Both
+    variants above fix recall>=0.90 as the reporting gate and require
+    recall to be reported alongside every throughput number, not asserted
+    once and assumed stable.
+  - >
+    This track's one paper is explicitly a distributed-memory (MPI)
+    method whose central claim is process-count scalability — a
+    single-node-only benchmark would miss the paper's actual
+    contribution entirely, which is why knng-distributed-scaling is kept
+    as a first-class variant rather than folded into a footnote, unlike
+    how some other singleton tracks in this benchmark set only need one
+    variant.
+
+open_questions:
+  - >
+    The paper's own full dataset list and exact accuracy metric
+    definition (recall@k vs. some other approximation-ratio notion) could
+    not be confirmed — IPDPS 2023 is paywalled and no arXiv mirror was
+    found via WebSearch. recommended_subset above is a reasonable,
+    disclosed stand-in (MNIST confirmed from the repo; the rest are
+    standard ANN-benchmarks staples), not a reproduction of the paper's
+    exact table.
+  - >
+    The specific baseline methods DRPT is compared against ("two orders
+    of magnitude faster than its peers") are unnamed in available
+    sources; likely candidates are other distributed/parallel randomized-
+    partition-tree or graph-based ANN methods, but this was not verified.
+  - >
+    Exact process-count ladder used in the paper's own scaling experiments
+    (beyond the bundled 16-rank SLURM example) was not confirmed.
+
+evidence:
+  conf/ipps/RanawakaRA23: "MNIST (60,000 x 784) confirmed via repo README/CLI example; MPI+OpenMP, sparse random-projection-tree forest, locality-based data-gathering as the stated communication-reduction contribution; abstract claims accuracy comparable to SOTA ANN methods and 2 orders-of-magnitude speedup, scaling to thousands of processes; exact dataset list, accuracy metric, and named baselines unconfirmed (IPDPS paywalled, no arXiv)"

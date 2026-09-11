@@ -1,0 +1,90 @@
+{
+ "kernel": "gemv",
+ "papers": [
+  {
+   "key": "conf/cgo/PegolottiAP26",
+   "title": "QIGen: A Kernel Generator for Inference on Nonuniformly Quantized Large Language Models",
+   "venue": "CGO",
+   "year": 2026,
+   "doi": "10.1109/CGO68049.2026.11395231",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/IST-DASLab/QIGen",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "abstract": "Efficient inference on large language models (LLMs) has become a popular topic in both academia and industry. Roughly speaking, LLMs consist of a collection of weight matrices, and generative inference on these models essentially computes a sequence of matrix-vector products and thus can be heavily memory-bound. Consequently, much work has been devoted to reducing the size of the weights to lower bit-widths through various forms of quantization. In turn, these diverse precision formats complicate both the arithmetic and optimized kernel implementation. So far, the vast majority of implementation work for mixed-precision LLM computation has been done manually. Currently, one of the most powerful and complex scalar LLM compression techniques is nonuniform quantization, in which a matrix is divided unevenly into parts that are quantized with different bit-widths, minimizing the output compr",
+   "one_liner": "QIGen generates CPU matrix-vector kernels for nonuniformly quantized LLM inference"
+  },
+  {
+   "key": "conf/ipps/JiangYLHDJ26",
+   "title": "PackKV: Reducing KV Cache Memory Footprint through LLM-Aware Lossy Compression",
+   "venue": "IPDPS",
+   "year": 2026,
+   "doi": "10.1109/IPDPS65963.2026.00057",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/BoJiang03/PackKV",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Transformer-based large language models (LLMs) have demonstrated remarkable potential across a wide range of practical applications. However, long-context inference remains a significant challenge due to the substantial memory requirements of the KV Cache, which can scale to several gigabytes as sequence length and batch size increase. In this paper, we present PackKV, a generic and efficient KV cache management framework optimized for long-context generation. PackKV introduces novel lossy compression techniques specifically tailored to the characteristics of KV cache data, featuring a careful co-design of compression algorithms and system architecture. Our approach is compatible with the dynamically growing nature of the KV cache while preserving high computational efficiency. Experimental results show that, under the same and minimum accuracy drop as state-of-the-art quantization metho",
+   "one_liner": "LLM-aware lossy KV-cache compression that also accelerates matrix-vector multiply vs cuBLAS"
+  },
+  {
+   "key": "conf/ppopp/FrantarCCHA25",
+   "title": "MARLIN: Mixed-Precision Auto-Regressive Parallel Inference on Large Language Models",
+   "venue": "PPoPP",
+   "year": 2025,
+   "doi": "10.1145/3710848.3710871",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3710848.3710871",
+   "artifact_url": "https://github.com/IST-DASLab/marlin",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "As inference on Large Language Models (LLMs) emerges as an important workload in machine learning applications, model weight quantization has become a standard technique for efficient GPU deployment. Quantization not only reduces model size, but has also been shown to yield substantial speedups for single-user inference, due to reduced memory movement, with low accuracy impact. Yet, it remains a key open question whether speedups are achievable also in batched settings with multiple parallel clients, which are highly relevant for practical serving. It is unclear whether GPU kernels can be designed to remain practically memory-bound, while supporting the substantially increased compute requirements of batched workloads.",
+   "one_liner": "Mixed-precision GPU GEMM kernels enabling memory-bound batched LLM inference speedups"
+  },
+  {
+   "key": "conf/asplos/LamJ0MGLLLRLRW024",
+   "title": "GPU-based Private Information Retrieval for On-Device Machine Learning Inference",
+   "venue": "ASPLOS",
+   "year": 2024,
+   "doi": "10.1145/3617232.3624855",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/facebookresearch/GPU-DPF",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "On-device machine learning (ML) inference can enable the use of private user data on user devices without revealing them to remote servers. However, a pure on-device solution to private ML inference is impractical for many applications that rely on embedding tables that are too large to be stored on-device. In particular, recommendation models typically use multiple embedding tables each on the order of 1--10 GBs of data, making them impractical to store on-device. To overcome this barrier, we propose the use of private information retrieval (PIR) to efficiently and privately retrieve embeddings from servers without sharing any private information. As off-the-shelf PIR algorithms are usually too computationally intensive to directly use for latency-sensitive inference tasks, we 1) propose novel GPU-based acceleration of PIR, and 2) co-design PIR with the downstream ML application to obta",
+   "one_liner": "GPU acceleration of PIR's core matrix-vector-multiply kernel for private embedding retrieval, >100x over CPU."
+  },
+  {
+   "key": "conf/sc/LtaiefHWJRK23",
+   "title": "Scaling the \"Memory Wall\" for Multi-Dimensional Seismic Processing with Algebraic Compression on Cerebras CS-2 Systems",
+   "venue": "SC",
+   "year": 2023,
+   "doi": "10.1145/3581784.3627042",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3581784.3627042",
+   "artifact_url": "https://github.com/ecrc/tlrmvm",
+   "artifact_status": "verified",
+   "platform": [
+    "other"
+   ],
+   "approach": "manual",
+   "abstract": "We exploit the high memory bandwidth of AI-customized Cerebras CS-2 systems for seismic processing. By leveraging low-rank matrix approximation, we fit memory-hungry seismic applications onto memory-austere SRAM wafer-scale hardware, thus addressing a challenge arising in many wave-equation-based algorithms that rely on Multi-Dimensional Convolution (MDC) operators. Exploiting sparsity inherent in seismic data in the frequency domain, we implement embarrassingly parallel tile low-rank matrix-vector multiplications (TLR-MVM), which account for most of the elapsed time in MDC operations, to successfully solve the Multi-Dimensional Deconvolution (MDD) inverse problem. By reducing memory footprint along with arithmetic complexity, we fit a standard seismic benchmark dataset into the small local memories of Cerebras processing elements. Deploying TLR-MVM execution onto 48 CS-2 systems in supp",
+   "one_liner": "Embarrassingly parallel TLR-MVM on 48 Cerebras CS-2 systems for seismic MDD, 92.58 PB/s bandwidth"
+  }
+ ]
+}

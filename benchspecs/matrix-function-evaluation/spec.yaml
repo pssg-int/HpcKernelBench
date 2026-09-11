@@ -1,0 +1,128 @@
+kernel: matrix-function-evaluation
+summary: >
+  Approximate evaluation of a matrix function (density-matrix sign function
+  via Löwdin symmetric orthogonalization) on large sparse matrices from DFT
+  electronic-structure calculations, by converting the global sparse
+  operation into independent local dense submatrix computations that exploit
+  CPU/GPU/FPGA dense floating-point throughput; single surveyed paper
+  (submatrix method for CP2K, SC'20).
+operation: >
+  Given a sparse symmetric matrix H (Hamiltonian/overlap-type, from a CP2K
+  DFT calculation), compute an approximation to f(H) — here the density
+  matrix sign function — by extracting many small, nearly-dense submatrices
+  (one per matrix row/block, up to a fixed truncation threshold eps_filter),
+  evaluating the dense matrix function locally on each, and reassembling the
+  sparse result. Distributed across MPI ranks; the local dense evaluation
+  step is additionally accelerable on GPU (tensor cores) or FPGA.
+
+variants:
+  - id: matfun-submatrix-kernel
+    claim: >
+      Steady-state throughput (TFLOP/s and wall time) of the per-submatrix
+      dense matrix-function evaluation kernel across CPU/GPU/FPGA targets,
+      gated by an eps_filter accuracy sweep against a high-precision
+      reference, with the sparse-to-submatrix extraction step reported
+      separately as preprocessing rather than folded into per-call time.
+    inputs:
+      suite: >
+        CP2K's own standard liquid-water DFT benchmark family: a fixed
+        32-H2O-molecule unit cell repeated NREP times per dimension.
+      selection: "NREP in {2, 4, 6, 8} -> system sizes 768, ~6144(*), ~20736(*), 49152 atoms (the paper's own literal endpoint range; intermediate NREP values interpolated geometrically, exact intermediate atom counts not confirmed from the fetched excerpt — marked (*))"
+      recommended_subset:
+        - "NREP=2, 768 atoms, SZV-MOLOPT-SR-GTH (small/single-node sanity point)"
+        - "NREP=8, 49152 atoms, SZV-MOLOPT-SR-GTH (paper's own largest reported system)"
+        - "NREP=4, DZVP-MOLOPT-SR-GTH (larger-basis-set comparison point, paper's own second basis)"
+      basis_sets: "SZV-MOLOPT-SR-GTH (primary, minimal basis); DZVP-MOLOPT-SR-GTH (larger-basis comparison)"
+      submatrix_size: >
+        fixed, independent of overall system size once the system exceeds
+        ~200 water molecules (the method's own defining linear-scaling
+        property, stated qualitatively by the paper); exact numeric
+        submatrix dimension not recovered from the fetched excerpt — flagged
+        open_question.
+    protocol:
+      warmup: >
+        not stated in the reachable fulltext excerpt. THIS SPEC REQUIRES
+        2 discarded full-system-size passes before timing, since no
+        paper-stated convention exists to follow or contradict.
+      reps: 5
+      statistic: >
+        median (report min/max) — REQUIRED per this benchmark suite's
+        general fairness principle; the paper's own reported numbers (e.g.
+        the 35.2 TFLOP/s GPU headline figure, 83% strong-scaling efficiency)
+        give no indication of repetition count or spread.
+      timer: >
+        wall-clock (MPI_Wtime or equivalent) for the CPU/distributed path;
+        device-side kernel time (separate from host orchestration) for the
+        GPU/FPGA accelerated local dense-evaluation step.
+      timing_scope: >
+        kernel only — the local dense matrix-function evaluation on each
+        extracted submatrix. Sparse-matrix submatrix extraction/indexing and
+        MPI communication for reassembly are EXCLUDED from this timed region
+        and reported separately, never silently amortized in.
+      preprocessing_reported: "separately, once per system size: submatrix extraction/indexing cost."
+      hardware_tracks:
+        cpu: "Intel Xeon Gold 6148 'Skylake', 40 cores/node, 1 thread per MPI rank, scaled 1 to 8 nodes (up to 320 cores) — the paper's own strong-scaling sweep"
+        gpu: "NVIDIA RTX 2080 Ti, FP16/FP32/FP64 tensor-core paths compared as three separate precision sub-cases"
+        fpga: "Intel Stratix 10 GX 2800 (practical ceiling ~3.4 TFLOP/s per the paper's own stated figure)"
+    metric:
+      primary: "TFLOP/s achieved by the local dense matrix-function kernel (paper's own headline: 35.2 TFLOP/s at 250W, GPU FP16 path)"
+      secondary: "strong-scaling parallel efficiency (%) relative to the 2-node CPU baseline (paper's own reported: 83% efficiency scaling 2->8 nodes)"
+      tertiary: "wall time per system size (s), plotted vs. NREP to verify the method's own linear-scaling claim"
+    correctness: >
+      relative error in the computed density-matrix / energy output vs. a
+      reference computed at eps_filter=1e-15, swept over eps_filter in
+      {1e-5, 1e-6, 1e-8, 1e-10, 1e-12} (the paper's own Figure 7 sweep
+      points). Gate: error must remain within the band the paper's own
+      Figure 7 demonstrates as not "negatively impacting the results" —
+      exact numeric threshold (e.g. an absolute energy-error-per-atom bound)
+      was not extracted from the fetched excerpt and is flagged as an open
+      question requiring re-extraction of Figure 7's axis values directly
+      from the PDF/HTML before this gate can be applied as a hard numeric
+      pass/fail.
+    baselines_required:
+      - >
+        2nd-order Newton-Schulz iteration on sparse DBCSR matrices — the
+        paper's own primary baseline, CP2K's existing production method —
+        run at 8 MPI ranks/node x 5 threads/rank (the paper's OWN reported
+        configuration for this baseline, DIFFERENT from the submatrix
+        method's own 1-thread/rank mapping; see notes_on_fairness — this
+        spec reports the baseline as the paper ran it rather than silently
+        re-mapping thread counts to "equalize" the comparison, which would
+        require re-running code not exercised in the surveyed paper).
+
+notes_on_fairness:
+  - >
+    The paper's own baseline (Newton-Schulz/DBCSR) uses a materially
+    different rank x thread mapping (8 ranks/node, 5 threads/rank) than the
+    submatrix method itself (1 thread/rank). This is the paper's own
+    reported configuration for both methods, not something this spec
+    silently equalizes — a submission using this spec MUST report both
+    methods' thread mappings alongside their TFLOP/s numbers so a reader can
+    judge whether the comparison is apples-to-apples.
+  - single paper in this singleton track; no cross-paper divergence to reconcile.
+
+open_questions:
+  - >
+    Exact submatrix size (block dimension) was not recoverable from the
+    fetched ar5iv excerpt — the paper states only that it is fixed and
+    independent of system size beyond ~200 water molecules, not the numeric
+    value itself.
+  - >
+    Warmup/repetition/statistic convention for the paper's own reported
+    timings (35.2 TFLOP/s, 83% efficiency) was not stated anywhere in the
+    reachable text; this spec's protocol values (2 warmup, 5 reps, median)
+    are this spec's own choice, not sourced from the paper.
+  - >
+    Exact numeric correctness tolerance from Figure 7 was described only
+    qualitatively by the fetch tool ("does not negatively impact the results
+    too much") rather than transcribed as an exact bound — re-extract
+    Figure 7's y-axis values directly from the PDF/HTML before relying on a
+    hard numeric gate for this spec's correctness field.
+  - >
+    Intermediate NREP=4,6 atom counts (marked "(*)" in the inputs.selection
+    field above) were computed by this survey as an interpolation of the
+    unit-cell-repetition formula, not independently confirmed from the
+    paper's own text.
+
+evidence:
+  conf/sc/LassSKP20: "Submatrix method for CP2K: density-matrix sign function via Löwdin orthogonalization, liquid-water benchmark NREP=2..8 (768-49152 atoms), SZV/DZVP-MOLOPT-SR-GTH basis, eps_filter sweep 1e-5..1e-12 vs 1e-15 reference, CPU Xeon Gold 6148 up to 8 nodes/320 cores (1 thread/rank) vs Newton-Schulz/DBCSR baseline (8 ranks/node x 5 threads/rank), GPU RTX 2080Ti FP16/32/64 (35.2 TFLOP/s @250W FP16 headline), FPGA Stratix10 GX2800 (~3.4 TFLOP/s ceiling), 83% strong-scaling efficiency 2->8 nodes; exact submatrix size and timing-repetition convention not confirmed from reachable text."

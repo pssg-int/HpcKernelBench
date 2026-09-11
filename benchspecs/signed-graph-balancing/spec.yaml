@@ -1,0 +1,124 @@
+kernel: signed-graph-balancing
+summary: >
+  Parallel discovery and balancing of all fundamental cycles in a large
+  signed graph (edges labeled +/-) via linear-time vertex/edge labeling,
+  measured as fundamental-cycles-balanced-per-second, with the number of
+  edges flipped reported as a solution-quality metric since the algorithm
+  is a linear-time heuristic, not a proven-minimum edge-flip solver.
+operation: >
+  (labels[V], flipped_edges[E']) = graphB_plus(G=(V,E,sign: E -> {+,-}),
+  iterations); builds a spanning tree, computes vertex/edge labels via
+  path-compressed union-find, enumerates all |E|-|V|+1 fundamental cycles
+  from non-tree edges, and flips the minimum-weight edge per imbalanced
+  cycle so the whole graph becomes sign-balanced (every cycle has an even
+  count of negative edges).
+
+variants:
+  - id: balancing-kernel-signed-snap-graphs
+    claim: >
+      steady-state balancing-phase throughput (spanning tree + labeling +
+      cycle detection/traversal/flip) on the union of real signed-graph
+      datasets used by this track's paper; CSV parsing/graph read
+      excluded but reported separately (one-shot, not amortized)
+    inputs:
+      suite: "SNAP signed-graph corpus + SNAP Amazon product-rating graphs (binarized to signed edges), CSV edge-list format"
+      selection: "all datasets acquired by the paper's own published dataset script (input_script.sh): every named source is included, no subset cherry-picking"
+      recommended_subset:
+        - "soc-sign-epinions (SNAP, trust/distrust network)"
+        - "soc-sign-Slashdot090221 (SNAP, friend/foe network)"
+        - "wikiElec.ElecBs3 (SNAP, Wikipedia admin-election votes)"
+        - "Amazon ratings_Books-derived signed graph (largest Amazon-category instance)"
+        - "Amazon ratings_Video_Games or ratings_Digital_Music-derived signed graph (mid-size control instance)"
+        - "10M-vertex/22M-edge Amazon composite graph (paper's own headline scale case, exact category composition to be disclosed by the submitter since it was not independently confirmed)"
+      dense_operand: "N/A (sign-labeled sparse graph is the sole input)"
+    protocol:
+      format: "CSV read once via the algorithm's own reader; NOT counted in the balancing-phase timer (matches the repo's own 'input time' vs. graphBtime separation)"
+      warmup: "1 full balancing run, discarded"
+      reps: 5
+      iterations_param: "fixed at 100 internal balancing rounds (matches the paper's own README usage example on real SNAP-scale graphs), disclosed and held fixed across implementations under test — this is an algorithm-quality knob (more rounds can reduce total flips), NOT a benchmark-repetition knob, and must not be silently varied to produce a favorable number"
+      statistic: "median of graphBtime (sum of labeling+detection+traversal+balancing phases) across the 5 reps, report min/max"
+      timer: "device-side CUDA events (GPUTimer-style: cudaEventRecord/cudaEventElapsedTime) per phase, summed into graphBtime; host wall clock for the 'overall runtime with I/O' cross-check number"
+      timing_scope: "spanning tree + labeling + cycle detect/traverse/balance only; CSV read excluded"
+      preprocessing_reported: "CSV read ('input time') reported separately, once per graph"
+    metric:
+      primary: "MCPS = fundamental_cycles_balanced / graphBtime_seconds / 1e6 (million cycles/sec, matches the paper's own 14M+/s framing)"
+      secondary: "graphBtime_ms (median, min, max), edges_flipped (solution-quality indicator — lower is better for a fixed graph/iterations budget), speedup vs. the repo's own OpenMP CPU implementation (same algorithm, different backend — an apples-to-apples ablation, not a different competing method)"
+    correctness: >
+      the output MUST be a globally sign-balanced graph: for every cycle
+      in G (not just the fundamental cycles enumerated during the run),
+      the number of negative edges after flipping must be even, verified
+      by an independent post-hoc checker that recomputes cycle parity
+      from the final signed adjacency (not by trusting the algorithm's
+      own bookkeeping). A result that is fast but leaves any cycle
+      unbalanced does not count, regardless of throughput. Edges-flipped
+      count is reported as quality (heuristic minimality), never as part
+      of the correctness gate itself, since graphB+ does not claim to
+      find the provably minimum flip set.
+
+  - id: balancing-gpu-vs-cpu-scaling
+    claim: >
+      same-algorithm GPU-vs-CPU comparison across graph scale, isolating
+      the parallelization contribution from the algorithmic contribution
+      (both implementations exist in the paper's own repo) — needed
+      because a bare "our GPU is fast" number is only meaningful against
+      the paper's own CPU baseline of the SAME method, not a black-box
+      "prior work" comparison
+    inputs:
+      suite: "same recommended_subset as balancing-kernel-signed-snap-graphs"
+      selection: "same"
+      recommended_subset: "same"
+      dense_operand: "N/A"
+    protocol:
+      format: "same as balancing-kernel-signed-snap-graphs"
+      warmup: 1
+      reps: 5
+      iterations_param: "same fixed 100, both implementations"
+      statistic: "median graphBtime for GPU (CUDA) and CPU (OpenMP, all available cores disclosed) runs on identical input and iterations_param"
+      timer: "GPU: CUDA events; CPU: std::chrono wall clock around the equivalent phase boundaries"
+      timing_scope: "same balancing-phase-only scope as balancing-kernel-signed-snap-graphs"
+      preprocessing_reported: "same, per implementation"
+    metric:
+      primary: "speedup = CPU_graphBtime_median / GPU_graphBtime_median, per graph"
+      secondary: "MCPS for each of GPU and CPU, CPU core count and thread-pinning configuration disclosed"
+    correctness: "same global-balance gate as balancing-kernel-signed-snap-graphs, checked independently for both the GPU and CPU output (they may take different flip choices under ties but both must be globally balanced)"
+
+notes_on_fairness:
+  - >
+    The algorithm's `iterations` CLI parameter (internal balancing rounds
+    per invocation) is a quality/time knob that could otherwise be tuned
+    per-graph to produce a favorable cycles/sec number on a run that
+    barely reduces total flips, or an unfavorable one on a run that does
+    much more useful work. Fixing it at 100 (the paper's own real-graph
+    usage example) and requiring disclosure prevents silent tuning.
+  - >
+    The abstract's single headline number (0.85s / 14M+ cycles/s on one
+    10M-vertex/22M-edge Amazon graph on a Titan V) is a single-point
+    best-case claim; the spec requires the full recommended_subset
+    (spanning three real orders of magnitude: ~100K-scale Wikipedia votes
+    up to 10M-vertex Amazon composite) so a submission cannot report only
+    the most favorable single instance.
+  - >
+    Because the repo ships both GPU and CPU implementations of the
+    IDENTICAL algorithm, balancing-gpu-vs-cpu-scaling is kept as a
+    first-class variant specifically to prevent conflating "the algorithm
+    is fast" with "GPUs are fast" — the two are separable here and the
+    paper's own artifact makes that separation cheap to measure.
+
+open_questions:
+  - >
+    The paper's PDF (freely hosted at userweb.cs.txstate.edu) could not
+    be parsed as text with tools available in this environment (no
+    pdftotext/PyPDF/pymupdf), so exact per-dataset vertex/edge counts and
+    the paper's own reps/statistic convention beyond what the source code
+    reveals could not be independently confirmed — the recommended_subset
+    and protocol above are reconstructed from the repo's dataset-fetch
+    script and CUDA source's own timer structure, not the paper's results
+    tables directly.
+  - >
+    Exact composition of the paper's headline "10 million vertices and 22
+    million edges" Amazon graph (which product categories were merged to
+    reach that scale) was not confirmed; the spec asks submitters to
+    disclose their own composition rather than assuming a specific one.
+
+evidence:
+  conf/sc/AlabandiTRB21: "SNAP soc-sign-epinions/Slashdot/wikiElec + 15 Amazon-category rating graphs (input_script.sh), CSV format; CUDA GPUTimer (cudaEvent-based) wraps each phase, 'input time' kept separate from graphBtime, algorithm's own 'iterations' CLI arg (e.g. 100) is a quality knob not a benchmark-rep knob; headline metric 14M+ fundamental cycles balanced/sec on 10M-vertex/22M-edge Amazon graph, 0.85s on Titan V; both CUDA and OpenMP(+intrinsics) implementations of the same algorithm shipped, enabling direct GPU-vs-CPU ablation; PDF fulltext not machine-readable in this environment, details reconstructed from repo source"

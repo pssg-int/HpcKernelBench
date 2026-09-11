@@ -1,0 +1,77 @@
+diff --git a/LeSpMV/CMakeLists.txt b/LeSpMV/CMakeLists.txt
+index ce9d25c..ba5c9cc 100644
+--- a/LeSpMV/CMakeLists.txt
++++ b/LeSpMV/CMakeLists.txt
+@@ -1,7 +1,11 @@
+ cmake_minimum_required(VERSION 3.10)
+ 
+-# Set a default C++ compiler if one wasn't provided
+-set(CMAKE_CXX_COMPILER "icx")
++# Set a default C++ compiler if one wasn't provided.
++# UPSTREAM BUG (build-system fix, see ../STATUS.md): the original file did
++# `set(CMAKE_CXX_COMPILER "icx")` unconditionally BEFORE this guard, which
++# defeats the guard's own "if not already set, default to g++" intent and
++# hard-forces the Intel compiler even when it isn't installed. This machine
++# has no icx; restoring the guard's evident intent lets it fall back to g++.
+ if(NOT CMAKE_CXX_COMPILER)
+   set(CMAKE_CXX_COMPILER "g++")
+ endif()
+@@ -41,6 +45,24 @@ include_directories(include)
+ file(GLOB LIB_SOURCES "src/*.cpp")
+ file(GLOB LIB_UTILS   "utils/*.cpp")
+ 
++# BUILD-SYSTEM FIX (see ../STATUS.md): src/spmv_csr5.cpp uses AVX-512
++# intrinsics (_mm512_*) directly, with no #ifdef guard -- CSR5 is documented
++# in this repo's own README as "This format only support the Intel CPU"
++# (AVX-512). This machine's CPU (AMD EPYC 7713) has no AVX-512F, so this
++# file cannot compile here. We only need the plain CSR kernel
++# (LeSpMV_csr, src/spmv_csr.cpp, unaffected), so exclude just this file
++# rather than force -mavx512f (which would compile but SIGILL if ever
++# executed on this hardware -- and would silently affect codegen for the
++# rest of the library since CMAKE_CXX_FLAGS is global).
++list(REMOVE_ITEM LIB_SOURCES "${CMAKE_SOURCE_DIR}/src/spmv_csr5.cpp")
++# utils/test_spmv_csr5.cpp explicitly instantiates a helper that calls
++# LeSpMV_csr5 (see its test_csr5_matrix_kernels<int,uint32_t,double>
++# explicit instantiation); with the definition above excluded this becomes
++# an unresolved symbol at library-load time (shared libs link with
++# undefined symbols allowed at build time, but ctypes.CDLL's dlopen fails
++# on them) -- same AVX-512-unavailable reason, so exclude it too.
++list(REMOVE_ITEM LIB_UTILS "${CMAKE_SOURCE_DIR}/utils/test_spmv_csr5.cpp")
++
+ # Create the static library
+ add_library(LeSPMV_static STATIC ${LIB_SOURCES} ${LIB_UTILS})
+ 
+@@ -67,6 +89,16 @@ file(GLOB TEST_SOURCES "test/*.cpp")
+ # Allow the test executables to find the library headers
+ include_directories(${PROJECT_SOURCE_DIR}/include)
+ 
++# BUILD-SYSTEM FIX (see ../STATUS.md): our adapter only needs LeSPMV_shared
++# (it calls LeSpMV_csr directly via a small ctypes shim); it does not need
++# any of these test executables. One of them (baseline_mkl_csr)
++# unconditionally does find_package(MKL CONFIG REQUIRED), which is not
++# available in this environment and would fail cmake's CONFIGURE step
++# (before any target selection even happens) for the whole project. Gate
++# the whole block behind an option, default OFF, instead of patching around
++# MKL/SYCL/CSR5 toolchain requirements for executables we don't use.
++option(LESPMV_BUILD_TESTS "Build LeSpMV test executables (needs MKL for baseline_mkl_csr)" OFF)
++if(LESPMV_BUILD_TESTS)
+ # Create an executable for each test source
+ foreach(test_src ${TEST_SOURCES})
+   get_filename_component(test_name ${test_src} NAME_WE)
+@@ -75,7 +107,7 @@ foreach(test_src ${TEST_SOURCES})
+   target_compile_options(${test_name} PRIVATE -O3 -Wall)
+ 
+   # target_link_libraries(${test_name} LeSPMV_shared stdc++)
+-  
++
+   # Check if the current source file is the baseline MKL test
+   if(${test_name} STREQUAL "baseline_mkl_csr")
+     # Link with MKL. The method to link may depend on your setup.
+@@ -87,6 +119,7 @@ foreach(test_src ${TEST_SOURCES})
+   endif()
+ 
+ endforeach(test_src)
++endif()
+ 
+ # Message to print out the compiler being used
+ message(STATUS "Using CXX compiler: ${CMAKE_CXX_COMPILER}")

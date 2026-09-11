@@ -1,0 +1,102 @@
+kernel: math-functions
+summary: >
+  Vectorized elementary-math-function (libm) throughput — trig, inverse-trig,
+  exp, log, pow, fmod — for SIMD-vectorized C libraries, benchmarked across
+  accuracy classes (1.0-ULP vs 3.5-ULP) because accuracy trades directly
+  against speed and is treated here as a first-class axis, not an
+  afterthought; SLEEF is the sole surveyed paper in this singleton track.
+operation: >
+  y[i] = f(x[i]) elementwise, f in {sin, cos, tan, asin, acos, atan, exp,
+  log, pow, fmod}, computed on a SIMD vector register of width W lanes
+  (W = ISA vector width / element size), argument reused across a long call
+  loop (register-resident microbenchmark, not a streaming array kernel — see
+  notes_on_fairness).
+
+variants:
+  - id: mathfn-elementwise-kernel
+    claim: >
+      Steady-state reciprocal-throughput per element for a fixed
+      (function, accuracy class, ISA width, dtype), argument swept over
+      SLEEF's own per-function domain buckets, correctness gated by
+      max-ULP-error against an arbitrary-precision reference at the accuracy
+      class's own target ULP bound.
+    inputs:
+      suite: "function set = {sin, cos, tan, asin, acos, atan, exp, log, pow, fmod} (SLEEF's own Table II set)"
+      argument_ranges:
+        sin_cos_tan: "[0, 2*pi] (small domain) AND [0, 1e100] (large domain, forces full Payne-Hanek argument reduction) — BOTH required, not just one, since large-domain behavior is a distinct correctness/speed regime SLEEF's own paper specifically stress-tests"
+        asin_acos: "[-1, 1]"
+        atan_exp: "[-700, 700]"
+        log: "[0, 1e300]"
+        pow: "[-30, 30] x [-30, 30]"
+        fmod: "numerator in [1, 100], denominator = r*d for r swept in [1, 1e25]"
+      accuracy_classes: "{1.0-ULP, 3.5-ULP} — SLEEF's own two shipped variants; BOTH REQUIRED per config, since this track's namesake axis is the accuracy/speed trade-off, not a single fixed accuracy choice"
+      isa_width: "{SSE2/128-bit, AVX2/256-bit, AVX-512/512-bit, NEON/128-bit, SVE/scalable} — SLEEF's own supported target set (repo src/arch); AVX2 is the paper's own primary reported configuration and the only one with quantitative numbers recovered in this survey pass (see open_questions)"
+      dtype: "fp32 and fp64 both (SLEEF ships both; the paper's own Table II reports fp64)"
+    protocol:
+      warmup: "none separately reported; SLEEF's own convention folds warmup into the single long call loop itself"
+      reps: >
+        5 independent repetitions of N=1e8 calls each — THIS SPEC RELAXES
+        SLEEF's own single N=1e10-call run into 5 shorter repetitions
+        specifically to obtain a distribution, since a single measurement
+        (as SLEEF's paper reports) cannot be checked for run-to-run variance.
+      statistic: >
+        median across the 5 repetitions (report min/max). DELIBERATE FIX:
+        SLEEF's own paper reports one measurement per configuration with no
+        repetition and no spread at all.
+      timer: "clock_gettime (host wall clock), SLEEF's own mechanism; one timestamp pair bracketing the entire N-call loop, not per-call"
+      timing_scope: >
+        kernel only; the argument vector is register/cache-resident and
+        reused across the loop (SLEEF's own microbenchmark design) — this
+        measures ALU/vector-unit reciprocal throughput, NOT memory-bandwidth-
+        bound array throughput; see notes_on_fairness.
+      compiler: "reference build gcc-7.3.0, -O3 -mavx2 -mfma for the AVX2 config (SLEEF's own paper build); compiler optimization disabled for the timing loop body only, libraries themselves built at default optimization"
+    metric:
+      primary: "reciprocal throughput, ns/call (elapsed_ns / N) — SLEEF's own Table II metric"
+      secondary: "clock cycles/call (derived from ns/call at the measured clock frequency; SLEEF's own paper states '10ns corresponds to 34 cycles' at ~3.4GHz)"
+    correctness: >
+      max ULP error vs. an arbitrary-precision (e.g. MPFR) reference,
+      evaluated over a dense random + edge-case (domain-boundary, subnormal,
+      NaN/Inf input) sample of the swept argument range; gate = 1.0 ULP for
+      the 1.0-ULP accuracy class, 3.5 ULP for the 3.5-ULP accuracy class.
+      SLEEF's repo ships a dedicated correctness tester (src/libm-tester,
+      not read in this pass) presumed to implement this check; exact sample
+      density/edge-case list not confirmed — flagged open_question.
+
+notes_on_fairness:
+  - >
+    SLEEF's own reciprocal-throughput number reuses the same register-
+    resident argument on every call of the timed loop, so a low ns/call
+    figure does NOT necessarily reflect real array-processing throughput
+    for large streaming inputs (which would be memory-bandwidth-bound for
+    simple functions). This spec keeps SLEEF's own protocol (needed for
+    direct comparability to its own SVML/FDLIBM/Vector-libm baselines) but
+    flags this explicitly rather than presenting ns/call as a streaming-
+    throughput number.
+  - >
+    Requiring both the 1.0-ULP and 3.5-ULP accuracy classes to be reported
+    together (rather than picking whichever makes a library look fastest)
+    is this spec's explicit response to the task's instruction that ULP
+    accuracy be a first-class, not secondary, benchmark parameter.
+  - single paper in this singleton track; no cross-paper divergence to reconcile.
+
+open_questions:
+  - >
+    Exact CPU/compiler versions and quantitative Table II numbers for the
+    SSE2/AVX-512/NEON/SVE configurations were not recovered from the fetched
+    fulltext excerpt (only the AVX2/i7-6700 configuration's protocol and
+    qualitative result — "comparable to SVML" — were extracted); those ISA
+    rows' baseline comparison values are inferred to follow the same
+    protocol but are not independently confirmed from the paper text.
+  - >
+    Table II's exact per-function ns/call values for SLEEF vs. SVML vs.
+    FDLIBM vs. Vector-libm were paraphrased qualitatively by the fetch tool
+    rather than transcribed verbatim; re-extract Table II directly from the
+    PDF before using this spec to set numeric target/reference thresholds.
+  - >
+    SLEEF's correctness-tester sampling methodology (src/libm-tester) was
+    not read in this pass; the "dense random + edge-case" sampling
+    described above is this spec's own reasonable design, not confirmed
+    from SLEEF's own test code.
+
+evidence:
+  journals/tpds/ShibataP20: "SLEEF: 1.0-ULP and 3.5-ULP vectorized libm variants (sin/cos/tan/asin/acos/atan/exp/log/pow/fmod), AVX2/256-bit primary config (fp64), tight-loop 1e10-call reciprocal-throughput in ns via clock_gettime (single measurement, no repetition/spread reported), vs Intel SVML (-fimf-max-error 1.0/4.0) / FDLIBM 5.3 / Vector-libm, i7-6700 @3.4GHz Turbo off, gcc-7.3.0 -O3 -mavx2 -mfma; repo additionally ships SSE2/AVX-512/NEON/SVE backends not quantified in the reachable excerpt."

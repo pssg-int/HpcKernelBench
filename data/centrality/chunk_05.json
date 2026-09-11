@@ -1,0 +1,659 @@
+[
+  {
+    "key": "conf/asplos/DingHZL0Y0P26",
+    "group": "quantized-gemm",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "tile-level DSL generating fused low-precision GEMM (1-8 bit) for real LLM linear layers, decode batches",
+    "gpu_single_card": true,
+    "rationale": "Tilus is a general tile-level GPGPU DSL (arbitrary 1-8 bit types) whose flagship showcase is fused-dequant GEMM, so it fits the compiler/DSL-generates-this-kernel component rule; its own protocol (CUDA events, 50 reps median, L2 cleared, Gemma-2/Qwen2.5/Llama-3.3 shapes) is close kin to the spec's own decode-kernel protocol."
+  },
+  {
+    "key": "conf/asplos/FanYPLLW0026",
+    "group": "quantized-gemm",
+    "centrality": "core",
+    "regime_match": "partial",
+    "regime": "lossless bit-exact weight compression (~30% size reduction) + fused decompress-GEMM (ZipGEMM), real LLM linear-layer shapes, fp16 tensor cores",
+    "gpu_single_card": true,
+    "rationale": "Headline is a fused decompress+GEMM kernel evaluated kernel-level (2.21x cuBLAS) with e2e kept separate, structurally the same fused-dequant-GEMM pattern the spec measures; but it is lossless (bit-exact) compression not lossy weight quantization, so the model-accuracy variant is trivially a zero delta and the spec itself flags its correctness gate should differ from the 1e-3 tolerance."
+  },
+  {
+    "key": "conf/cgo/PegolottiAP26",
+    "group": "quantized-gemm",
+    "centrality": "component",
+    "regime_match": "mismatch",
+    "regime": "CPU/AVX2 nonuniform-quantized matrix-VECTOR (GEMV) kernels for LLM inference, no GPU path",
+    "gpu_single_card": false,
+    "rationale": "QIGen is explicitly a kernel generator (codegen) \u2014 matches the compiler/DSL component rule \u2014 and the spec's own notes_on_fairness names it as out-of-scope for the dense-GPU qgemm-* variants because it targets CPU GEMV, not GPU GEMM."
+  },
+  {
+    "key": "conf/ppopp/ChenZY26",
+    "group": "quantized-gemm",
+    "centrality": "core",
+    "regime_match": "partial",
+    "regime": "non-uniform 3-bit weight-only quantization, fused dequant+matmul, batched LLM inference on GPU",
+    "gpu_single_card": true,
+    "rationale": "Headline is a fused dequant-matmul GPU kernel with kernel-level speedup vs FP16 cuBLAS (4.82x), matching the spec's core operation; regime is only partially confirmed since the spec's own open_questions flag that Quantix's exact shapes/protocol could not be recovered from its paywalled paper/thin README."
+  },
+  {
+    "key": "conf/usenix/ZhangZSZ25",
+    "group": "quantized-gemm",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "Qtile-graph compiler generating quantized LLM GEMM kernels, matrix-size and bit-width sweeps, kernel+e2e split by GPU",
+    "gpu_single_card": true,
+    "rationale": "QFactory is a compilation framework (Qtile/QGraph abstraction) that generates quantized kernels among a transformable search space, fitting the compiler/DSL component rule; its AE README's matrix-size/bit-width ablations and Marlin/BitBLAS baselines closely match the spec's suite."
+  },
+  {
+    "key": "conf/ppopp/FrantarCCHA25",
+    "group": "quantized-gemm",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "weight-only INT4/mixed-precision GEMM, LLaMA/Falcon-180B linear-layer shapes, batched decode regime",
+    "gpu_single_card": true,
+    "rationale": "MARLIN is the canonical hand-written kernel this spec's variant is built around \u2014 its exact per-layer LLaMA/Falcon-180B shapes are copied verbatim into the spec's recommended_subset."
+  },
+  {
+    "key": "conf/sc/WangXY0C25",
+    "group": "quantized-gemm",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "8-bit micro-scaled (MX-FP8/INT8) GEMM library, GPT-Neo/GPT-J/GPT-NeoX/PaLM/T5 shapes",
+    "gpu_single_card": true,
+    "rationale": "MXBLAS is a library whose headline IS the MX-GEMM kernel, evaluated kernel-level; it is the direct source of the spec's qgemm-w8a8-mx variant (including the flush_l2 fairness correction the spec applies to its own default)."
+  },
+  {
+    "key": "conf/usenix/XiaZWCYYBWZZRHS24",
+    "group": "quantized-gemm",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "FP6/arbitrary-bit Tensor-Core GEMM, LLaMA/OPT linear layers, batch {8,16,32}, PPL/zero-shot accuracy reported separately",
+    "gpu_single_card": true,
+    "rationale": "TC-FPx/Quant-LLM is one of only two papers the spec calls out as treating model-level accuracy as first-class alongside kernel speed, and its batch-crossover finding (0.94x slowdown at batch=32) directly motivated the spec's batched-kernel variant."
+  },
+  {
+    "key": "conf/sc/00030DZZLZ24",
+    "group": "quantized-gemm",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "outlier-aware mixed-precision (W8A8/W4A16) quantized GEMM for LLaMA-2/3, Falcon, ChatGLM, Qwen2 decode",
+    "gpu_single_card": true,
+    "rationale": "The spec's own notes_on_fairness explicitly warns MixQ's headline throughput is a full autoregressive HF generate() decode loop, not isolated GEMM kernel time, which is the textbook 'evaluation is end-to-end' component case even though the quantization technique itself is real and substantial."
+  },
+  {
+    "key": "conf/ics/MaWFZXH0Z22",
+    "group": "quantized-gemm",
+    "centrality": "tangential",
+    "regime_match": "mismatch",
+    "regime": "FP32/INT16 precision EMULATION via low-bit Tensor-Core primitives (opposite direction: preserving high precision, not reducing model weight precision)",
+    "gpu_single_card": true,
+    "rationale": "APE emulates high-bitwidth (FP32/INT16) results FROM low-bit hardware primitives for numerical fidelity, the inverse motivation of weight-quantization for LLM serving; the survey itself lists it as out-of-scope ('not GEMM-specific' to this track), and it has no LLM/weight-compression connection at all."
+  },
+  {
+    "key": "conf/ppopp/WangFD22",
+    "group": "quantized-gemm",
+    "centrality": "core",
+    "regime_match": "mismatch",
+    "regime": "bit-serial arbitrary-bitwidth (INT1-decomposed) GEMM/sparse-matmul on synthetic square shapes for quantized GNNs",
+    "gpu_single_card": true,
+    "rationale": "QGTC's headline is a Tensor-Core low-bit GEMM kernel evaluated at kernel level (TFLOPs per bitwidth/shape vs cublasGemmEx), but the spec's own notes_on_fairness explicitly separates this bit-serial INT1-primitive family from the group-scaled dequantization family the mandatory variants target, and its synthetic square shapes have no LLM connection."
+  },
+  {
+    "key": "conf/sc/LiOH22",
+    "group": "quantized-gemm",
+    "centrality": "tangential",
+    "regime_match": "mismatch",
+    "regime": "quantized (int4/int8) SpMM/SDDMM on sparse pruned DNN weight matrices (DLMC), not dense GEMM",
+    "gpu_single_card": true,
+    "rationale": "Magicube's kernel is fundamentally a SPARSE-operand quantized kernel; the spec's own notes_on_fairness lists it as explicitly out of scope for the dense qgemm-* variants and recommends it get its own sparse-quantized-gemm track (it is core to the sddmm group instead)."
+  },
+  {
+    "key": "journals/tpds/WangRLS22",
+    "group": "quantized-gemm",
+    "centrality": "component",
+    "regime_match": "mismatch",
+    "regime": "8-bit integer TRAINING (fwd+bwd+update) with per-layer block scaling on MNIST/CIFAR/ImageNet CNNs, GPU+FPGA",
+    "gpu_single_card": true,
+    "rationale": "NITI's evaluation is a full training loop on small vision CNNs, not isolated inference-GEMM kernel time; the spec's own evidence entry states it is explicitly out of scope for this inference-GEMM track (training, non-LLM shapes)."
+  },
+  {
+    "key": "conf/sc/FengWGLD21",
+    "group": "quantized-gemm",
+    "centrality": "core",
+    "regime_match": "mismatch",
+    "regime": "arbitrary 1-8 bit GEMM/CONV via INT1 Tensor-Core emulation, fixed synthetic shapes (no real LLM/network beyond small CNNs)",
+    "gpu_single_card": true,
+    "rationale": "APNN-TC's headline is a low-precision GEMM/CONV kernel evaluated kernel-level (TOPS vs CUTLASS-INT4/INT1), but per the spec's fairness notes this bit-serial arbitrary-precision family is a fundamentally different implementation strategy from the group-scaled dequant family the mandatory variants cover, and its shapes are synthetic, not LLM-derived."
+  },
+  {
+    "key": "journals/tpds/LiS21",
+    "group": "quantized-gemm",
+    "centrality": "core",
+    "regime_match": "mismatch",
+    "regime": "1-bit XNOR/bit-tensor-core GEMM+convolution for Binarized Neural Networks, ResNet-18/ImageNet",
+    "gpu_single_card": true,
+    "rationale": "TCBNN's headline is a bit-GEMM/bit-conv kernel evaluated kernel-level (ResNet-18 images/sec), but it is native 1-bit XNOR-popcount arithmetic with no dequantize-to-fp16 step at all, the extreme end of the bit-serial family the spec's fairness notes exclude from its mandatory variants (the survey lists it only as APNN-TC's baseline, not deeply surveyed)."
+  },
+  {
+    "key": "conf/cgo/CowanMCBC20",
+    "group": "quantized-gemm",
+    "centrality": "component",
+    "regime_match": "mismatch",
+    "regime": "CPU/ARM automatic generation of ultra-low-bit (bit-serial) quantized GEMM/convolution kernels",
+    "gpu_single_card": false,
+    "rationale": "A codegen/autotuning framework generating quantized kernels \u2014 the compiler/DSL component rule applies directly \u2014 and it is CPU/ARM-only; the survey calls it redundant with QIGen's CPU coverage and it is excluded from the GPU-oriented qgemm-* variants."
+  },
+  {
+    "key": "conf/asplos/WonAAE26",
+    "group": "sddmm",
+    "centrality": "component",
+    "regime_match": "partial",
+    "regime": "unverified \u2014 claims tensor-core sparse GPU kernels (SpMM/SDDMM/sparse einsum) via an indirect-einsum compiler; artifact not yet recoverable",
+    "gpu_single_card": true,
+    "rationale": "Insum is a compiler generating multiple sparse-kernel types (SpMM/SDDMM/general sparse einsum), fitting the DSL-generates-this-kernel component rule; the spec's own evidence/open_questions state the artifact repo is an unrelated demo with no benchmark scripts recoverable since ASPLOS'26 has not yet occurred, so regime fit is genuinely unconfirmed."
+  },
+  {
+    "key": "conf/asplos/JainGC25",
+    "group": "sddmm",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "CPU adaptive-tiling sparse kernels on 47 named SuiteSparse matrices overlapping RoDe's suite",
+    "gpu_single_card": false,
+    "rationale": "RASSM's own abstract frames its headline speedup entirely in SpMM terms with SDDMM as a secondary code path (--kernel sddmm exists but is SpMM-adjacent per the spec's open_questions), so SDDMM is real but not the paper's headline; its SuiteSparse selection matches the general-suite variant's input tradition closely."
+  },
+  {
+    "key": "conf/ics/LiC25",
+    "group": "sddmm",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "fused SDDMM+softmax+SpMM sparse attention on real GNN graphs (cora/pubmed/reddit/ogbn-*), K=128, tensor cores",
+    "gpu_single_card": true,
+    "rationale": "Fused3S is the direct model for both the tensorcore-blocked-fp16 and attention-e2e variants \u2014 the spec calls its protocol 'the cleanest in the track' and reuses its exact warmup/rep/statistic and 3-term FLOP formula."
+  },
+  {
+    "key": "conf/ppopp/ShiLXFWW25",
+    "group": "sddmm",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "SpMM/SDDMM on 515 SuiteSparse matrices + DGL/PyG GNN graphs, fp16/tf32 tensor-core blocked format",
+    "gpu_single_card": true,
+    "rationale": "FlashSparse is named explicitly in the spec's tensorcore-blocked-fp16 claim text ('matches FlashSparse's and Fused3S's own kernel-only tables') and its dual fp16/tf32 rows and format-conversion ablation map directly onto the variant's protocol."
+  },
+  {
+    "key": "conf/ppopp/PangFQZL24",
+    "group": "sddmm",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "row-decomposition CSR SpMM/SDDMM on SuiteSparse matrices selected by rows/cols/nnz thresholds",
+    "gpu_single_card": true,
+    "rationale": "RoDe is the literal source of the sddmm-csr-kernel-f32 variant \u2014 the spec copies RoDe's own ssgetpy filter verbatim for its matrix suite."
+  },
+  {
+    "key": "conf/asplos/YeLSCC23",
+    "group": "sddmm",
+    "centrality": "component",
+    "regime_match": "partial",
+    "regime": "composable sparse tensor compiler generating GNN/SDDMM/sparse-attention/sparse-conv operators vs vendor libraries",
+    "gpu_single_card": true,
+    "rationale": "SparseTIR is a general sparse tensor compiler whose example set includes SDDMM among several kernel types (SpMM, sparse attention, sparse conv), matching the DSL/compiler component rule; it was not one of the 10 papers deep-surveyed for this spec so its exact suite overlap with the SuiteSparse/DLMC/GNN traditions is unconfirmed, only loosely similar (GNN-operator/vendor-library framing)."
+  },
+  {
+    "key": "conf/usenix/WangFWHD23",
+    "group": "sddmm",
+    "centrality": "core",
+    "regime_match": "partial",
+    "regime": "SpMM/SDDMM on real GNN graphs mapped to tensor cores via sparse-graph translation, vs DGL",
+    "gpu_single_card": true,
+    "rationale": "TC-GNN's headline is a manual kernel-translation design for SpMM+SDDMM on tensor cores and it is cited as a standard kernel-level baseline by peer papers in this exact track (FlashSparse's baseline list); it was not deep-surveyed here so its exact graph suite/precision overlap with the tensorcore-blocked-fp16 variant is unconfirmed."
+  },
+  {
+    "key": "conf/ipps/FanWC23",
+    "group": "sddmm",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "hybrid-parallel SpMM/SDDMM for GNN training, 16 named GNN graphs (Yelp/Flickr/.../reddit), K in {32,64,128}",
+    "gpu_single_card": true,
+    "rationale": "Paper/title claim a fused hybrid-parallel SpMM+SDDMM kernel evaluated kernel-level (GFLOPS) on a real-GNN-graph suite matching the tensorcore-blocked-fp16 tradition; flagged as a hard call because the spec's own open_questions note the currently hosted artifact snapshot contains only an SpMM benchmark path, no verifiable SDDMM code despite the paper/repo title."
+  },
+  {
+    "key": "conf/ics/DiasSS022",
+    "group": "sddmm",
+    "centrality": "component",
+    "regime_match": "mismatch",
+    "regime": "unverified \u2014 CPU loop-nest-restructuring compiler (TACO extension) with SDDMM as one example operator",
+    "gpu_single_card": false,
+    "rationale": "SparseLNR is a general sparse-tensor-algebra scheduling/codegen system (compiler/DSL component rule applies) with SDDMM as one of several example kernels; it was not deep-surveyed for this spec, is CPU-only, and TACO-family benchmarks typically diverge from this track's SuiteSparse/DLMC/GNN-graph traditions, so regime is marked mismatch on current evidence."
+  },
+  {
+    "key": "conf/ipps/BharadwajBD22",
+    "group": "sddmm",
+    "centrality": "core",
+    "regime_match": "mismatch",
+    "regime": "distributed-memory 1.5D/2.5D SDDMM+SpMM on synthetic Erdos-Renyi matrices, MPI/CPU cluster",
+    "gpu_single_card": false,
+    "rationale": "FusedMM/HnH's headline IS a distributed communication-eliding SDDMM+SpMM kernel evaluated kernel-level (GFLOP/s vs PETSc/MKL), but the spec's own notes_on_fairness explicitly says its min-wall-time dynamic-repetition protocol on synthetic ER matrices is structurally different from every fixed-rep GPU variant and is NOT folded into any of them."
+  },
+  {
+    "key": "conf/sc/LiOH22",
+    "group": "sddmm",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "quantized (4b/8b/16b) SDDMM on DLMC sparse-DNN weight matrices at controlled sparsity buckets",
+    "gpu_single_card": true,
+    "rationale": "Magicube is the direct source of the sddmm-quantized-dlmc variant \u2014 the spec's sparsity-bucket file lists and precision rows are taken straight from Magicube's own eval_matrices/s*.txt convention."
+  },
+  {
+    "key": "conf/ipps/RahmanSA21",
+    "group": "sddmm",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "unified vectorized SDDMM-SpMM on real graphs (Cora/Pubmed/YouTube/Orkut/OGBprot) for graph embedding, CPU/ARM",
+    "gpu_single_card": false,
+    "rationale": "FusedMM is named explicitly as a source paper for the sddmm-attention-e2e variant (its Force2Vec end-to-end runs) and its real-graph suite closely matches the tensorcore-blocked-fp16 input tradition, though its own correctness check is only an indirect downstream F1-score match, not a numerical tolerance."
+  },
+  {
+    "key": "conf/sc/GaleZYE20",
+    "group": "sddmm",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "DLMC sparse-DNN weights + SuiteSparse, fp32/mixed-fp16, foundational Sputnik kernel library",
+    "gpu_single_card": true,
+    "rationale": "Gale et al./Sputnik is explicitly named as the common-denominator kernel every later paper in this track baselines against, and it spans both the DLMC and general-SuiteSparse traditions the spec's variants are built around."
+  },
+  {
+    "key": "conf/ppopp/Hou0H00YL00L026",
+    "group": "graph-pattern-mining",
+    "centrality": "tangential",
+    "regime_match": "mismatch",
+    "regime": "temporal motif mining with time-window queries on temporal graphs, not fixed-pattern counting on a static graph",
+    "gpu_single_card": false,
+    "rationale": "The spec explicitly excludes DTMiner from all variants, stating it measures a different operation entirely (temporal, time-window motif queries, not counting occurrences of a fixed pattern in a static graph) \u2014 an assignment the spec itself flags as not fitting this track."
+  },
+  {
+    "key": "conf/ppopp/CaoMLT25",
+    "group": "graph-pattern-mining",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "clique-ladder (K4-K7) and pattern counting on SNAP-style graphs (mico/patents/youtube/pokec) via LUT connectivity checks",
+    "gpu_single_card": true,
+    "rationale": "GLumin is one of the 8 in-scope evidence papers this spec's clique_ladder pattern set and small/large-pattern variants are built around (CliqueSolver k=4-7 explicitly named)."
+  },
+  {
+    "key": "conf/sc/BradleyAB25",
+    "group": "graph-pattern-mining",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "GPU subgraph counting with fringe-vertex pruning on named real+synthetic graphs, edges/s throughput",
+    "gpu_single_card": true,
+    "rationale": "Fringe-SGC is the sole surveyed paper reporting a throughput metric and is the direct source of the spec's GEPS (edges-processed-per-second) metric convention."
+  },
+  {
+    "key": "conf/asplos/XieZLCJ024",
+    "group": "graph-pattern-mining",
+    "centrality": "tangential",
+    "regime_match": "mismatch",
+    "regime": "variable-length graph pattern matching (path queries of unbounded/variable length) on billion-edge graphs",
+    "gpu_single_card": false,
+    "rationale": "The spec explicitly excludes VertexSurge from all variants because it measures variable-length path queries, not counting occurrences of a FIXED-shape pattern, which the spec calls a different operation that would misrepresent the comparison if forced in."
+  },
+  {
+    "key": "conf/ppopp/LinMSZXT24",
+    "group": "graph-pattern-mining",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "set-centric GPM with redundancy elimination, clique-ladder + 4-motif census (G2Miner gallery) on 11 graphs",
+    "gpu_single_card": true,
+    "rationale": "GraphFold is one of the 8 in-scope evidence papers and its TC/CF4-7/MC4/P1-8 pattern gallery is directly incorporated into the spec's pattern_set and recommended_subset."
+  },
+  {
+    "key": "conf/ppopp/ParkOK24",
+    "group": "graph-pattern-mining",
+    "centrality": "component",
+    "regime_match": "mismatch",
+    "regime": "large-output triangle LISTING (not counting) via chunked kernel restart on RMAT/real graphs",
+    "gpu_single_card": true,
+    "rationale": "INFINEL's search kernel is closely related (triangle enumeration) but the spec's own notes_on_fairness explicitly calls listing 'architecturally different' from the counting operation its core variants measure (IO-bound on materialized output vs a pure count) and excludes it from the core counting variants."
+  },
+  {
+    "key": "conf/sc/ShiZWCZHYC23",
+    "group": "graph-pattern-mining",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "equivalent-set-transformation compiler for subgraph pattern counting, mico/patents/orkut/livejournal/friendster",
+    "gpu_single_card": true,
+    "rationale": "GraphSet is one of the 8 in-scope evidence papers and the only one with a real automated correctness oracle (gtest hardcoded references), which the spec adopts as its own correctness cross-check."
+  },
+  {
+    "key": "conf/sc/WeiJ22",
+    "group": "graph-pattern-mining",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "stack-based GPU pattern matching, 24 patterns (5-7 vertices) on wiki-Vote/Enron/youtube/LiveJournal",
+    "gpu_single_card": true,
+    "rationale": "STMatch is one of the 8 in-scope evidence papers directly cited in the spec's recommended_subset (mico/cit-Patents/com-youtube usage) and pattern-size framing."
+  },
+  {
+    "key": "conf/sc/JiangZJLZLC22",
+    "group": "graph-pattern-mining",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "view-based multi-GPU subgraph matching, 19 named patterns + k-clique/k-motif sweeps on com-friendster",
+    "gpu_single_card": false,
+    "rationale": "VSGM is one of the 8 in-scope evidence papers and is literally cited by name for both the named_5v_plus pattern definitions and the com-friendster billion-edge graph in the spec's recommended_subset; its headline design is an explicit communication-hiding multi-GPU pipeline, so no meaningful single-GPU path is claimed."
+  },
+  {
+    "key": "conf/sc/XiangKSHS21",
+    "group": "graph-pattern-mining",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "trie-based distributed multi-GPU subgraph isomorphism, 33 patterns on 6 SNAP graphs, cross-diffed vs GSI",
+    "gpu_single_card": false,
+    "rationale": "cuTS is one of the 8 in-scope evidence papers whose 6 SNAP graphs and 33-pattern sweep the spec's suite selection draws on, but it is explicitly a distributed multi-GPU system, not a single-GPU candidate."
+  },
+  {
+    "key": "conf/ics/GengYLWZ26",
+    "group": "ann-search",
+    "centrality": "tangential",
+    "regime_match": "matches",
+    "regime": "MRI/GIS/PLY real 2D-3D point clouds treated as k-NN queries (RT-core accelerated)",
+    "gpu_single_card": true,
+    "rationale": "X-HD's own deliverable is a Hausdorff-distance VALUE (a max-min reduction over k-NN results), which the spec explicitly puts out of scope for the ann-search variants \u2014 only its internal k-NN routine is a valid submission; its real point-cloud domains are, however, literally folded into the exact-spatial-knn-kernel suite."
+  },
+  {
+    "key": "conf/usenix/KimPNHKLL25",
+    "group": "ann-search",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "graph-based (CAGRA) approximate NN search, SIFT-128-euclidean, mean-recall@10 + median-latency per swept config",
+    "gpu_single_card": true,
+    "rationale": "PathWeaver is one of the 4 primary high-dim papers this spec's Pareto-recall/QPS variant is built around; although its headline 3.24x claim requires 4 GPUs+NVLink, the spec's own open_questions confirm a single-GPU harness script (single_pathweaver_one.py) exists and was read."
+  },
+  {
+    "key": "conf/ics/KamelYC25",
+    "group": "ann-search",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "exact GPU k-NN via spatio-graph hubs+lower-bounds, synthetic uniform 3D points + real mesh point clouds",
+    "gpu_single_card": true,
+    "rationale": "CLOVER is the direct source of the exact-spatial-knn-kernel variant \u2014 its own dataset sizes/dimensions are copied into the spec's recommended_subset and its correctness gaps (dead-code check) are what the spec's mandatory correctness requirement fixes."
+  },
+  {
+    "key": "conf/sc/ChenH0LYDY000025",
+    "group": "ann-search",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "IVF-PQ ANNS on SIFT/DEEP/SPACEV at 1B and 100M scale, 10K queries, recall@10>=0.8 floor",
+    "gpu_single_card": false,
+    "rationale": "DRIM-ANN is one of the 4 primary high-dim papers whose SIFT/DEEP/SPACEV suite the spec's recommended_subset is built from directly, but it runs on UPMEM DRAM-PIM hardware, not a GPU."
+  },
+  {
+    "key": "conf/sc/ChenZSLY25",
+    "group": "ann-search",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "PIM billion-scale ANNS with early-pruning top-k, same SIFT/DEEP/SPACEV suite as DRIM-ANN",
+    "gpu_single_card": false,
+    "rationale": "UpANNS is one of the 4 primary high-dim papers sharing the exact SIFT/DEEP/SPACEV suite the spec standardizes on, but it runs on PIM hardware ('other' platform), not a single GPU."
+  },
+  {
+    "key": "conf/sc/JiangLZLHSRZRHA23",
+    "group": "ann-search",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "FPGA hardware-algorithm co-design auto-generating vector-search accelerators for user-given recall targets, SIFT/Deep100M",
+    "gpu_single_card": false,
+    "rationale": "FANNS has the most complete recall-Pareto framing of any surveyed paper and is the direct model for the spec's recall@{1,10,100}-vs-QPS metric and batch/single-query latency-distribution requirement, but it targets FPGA, not GPU."
+  },
+  {
+    "key": "conf/ppopp/000122",
+    "group": "ann-search",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "RT-core-mapped exact/bounded-approximate low-dim (3D) neighbor search on KITTI/Stanford-3D/Millennium-N-body",
+    "gpu_single_card": true,
+    "rationale": "RTNN's three real domains are directly incorporated into the exact-spatial-knn-kernel variant's recommended_subset and its measured-error-rate practice for approximate radius relaxation is adopted as the spec's own reporting requirement."
+  },
+  {
+    "key": "conf/asplos/TangLWSLXZL26",
+    "group": "dnn-operator-fusion",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "automatic fusion of cascaded reductions (softmax+GEMM, MHA/MLA, MoE routing, FP8-quant-GEMM) into single kernels",
+    "gpu_single_card": true,
+    "rationale": "RedFuser is one of the two primary evidence papers this spec is built around, reported at exactly the subgraph granularity the fusion-subgraph variant measures, with 4 of its own pattern types (MHA/MLA/MoE-routing/FP8-quant-GEMM) forming the variant's pattern set."
+  },
+  {
+    "key": "conf/ppopp/DaiDRYLL0CS26",
+    "group": "dnn-operator-fusion",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "sparse-attention kernels plus searched fusion templates across kernel, subgraph, e2e-model, and tuning-time granularities",
+    "gpu_single_card": true,
+    "rationale": "STOF is the other primary evidence paper; its own three benchmark scripts (kernel-level 10/20, end-to-end 10/10, and its Table 4 search-time comparison) map one-to-one onto the spec's fusion-single-kernel, fusion-e2e-model, and fusion-compile-search-time variants."
+  },
+  {
+    "key": "conf/cgo/LopoukhineFVLDD25",
+    "group": "dnn-operator-fusion",
+    "centrality": "tangential",
+    "regime_match": "mismatch",
+    "regime": "unconfirmed \u2014 MLIR compiler backend for RISC-V streaming-register accelerator generating unspecified DNN micro-kernels",
+    "gpu_single_card": false,
+    "rationale": "The spec's own notes_on_fairness admits this paper 'only fits the taxonomy' at one corner and contributes no concrete numeric defaults; its listed artifact repo turned out to be an unrelated protobuf-acceleration project, so no fusion-specific behavior, shapes, or baselines could be confirmed at all, and its platform is a non-GPU RISC-V accelerator."
+  },
+  {
+    "key": "conf/sc/WangWXHQDWL22",
+    "group": "dnn-operator-fusion",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "GPU kernel fusion for Transformer training (operator-level + full-training-model-level), V100/A100",
+    "gpu_single_card": true,
+    "rationale": "LightSeq2 is one of the two hand-written reference papers the spec's fusion-e2e-model variant is modeled on, reporting both an operator-level granularity (e.g. LayerNorm ~4x) and a full-training-model-level number exactly as the variant requires."
+  },
+  {
+    "key": "conf/ics/PrabhakarK0HF21",
+    "group": "dnn-operator-fusion",
+    "centrality": "tangential",
+    "regime_match": "mismatch",
+    "regime": "unconfirmed \u2014 weight-repetition factorization/memoization inside a single quantized conv/GEMM kernel on CPU",
+    "gpu_single_card": false,
+    "rationale": "The spec's own evidence entry states this is 'not a multi-op fusion chain' but a single-kernel redundancy-elimination technique, and calls the paper abstract-only with an empty-stub artifact and a paywalled PDF, so it barely fits the operator-fusion definition this track measures."
+  },
+  {
+    "key": "conf/ppopp/YangNYLDXJ026",
+    "group": "preconditioner",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "diagonal-block matrix-power kernel A^d*x for polynomial preconditioners, SuiteSparse SPD matrices, CPU fp64",
+    "gpu_single_card": false,
+    "rationale": "DBMPK is the direct source of the mpk-kernel-cpu-f64 variant (d=20 default, MKL SpMV baseline, mean-of-50 reps matched exactly)."
+  },
+  {
+    "key": "conf/ipps/NoackKK25",
+    "group": "preconditioner",
+    "centrality": "core",
+    "regime_match": "mismatch",
+    "regime": "full PBiCGStab+ILU solves on Graphcore IPUs, fp32 base with twofloat32/float64 extended precision",
+    "gpu_single_card": false,
+    "rationale": "Graphene's headline is a genuine preconditioned-solver implementation with iteration counts/residuals printed by default, but the spec explicitly excludes it from every variant as an 'incompatible platform' (IPU, no native fp64, Poplar's own opaque timing model)."
+  },
+  {
+    "key": "conf/sc/MaACSH25",
+    "group": "preconditioner",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "sparsified ILU(0)/ILU(k)-preconditioned CG on 113 named SPD SuiteSparse matrices, single A100, fp32",
+    "gpu_single_card": true,
+    "rationale": "SPCG is the direct source of the precond-solve-single-gpu-f32 variant \u2014 its own matrix suite, precision, and setup/PCG-loop timing split are copied into the spec."
+  },
+  {
+    "key": "journals/tpds/BernaschiCVD23",
+    "group": "preconditioner",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "multi-GPU/multi-node AMG-preconditioned Krylov solves on synthetic 3D Poisson grids, strong/weak scaling",
+    "gpu_single_card": false,
+    "rationale": "BootCMatchGX is the direct source of the amg-precond-solve-multigpu-f64 variant (its own strong/weak-scaling grid sizes, AmgX baseline, and setup/solve/iteration-count column discipline are copied verbatim), but it is inherently multi-GPU/multi-node."
+  },
+  {
+    "key": "conf/ipps/ZarebavaniCLSD22",
+    "group": "preconditioner",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "hybrid DAG-aggregation scheduling for SpTRSV/ILU(0)/IC(0) apply on CPU, MKL baseline",
+    "gpu_single_card": false,
+    "rationale": "HDagg is the direct source of the ilu-apply-kernel-cpu-f64 variant, matched down to its FusionDemo median-of-N harness and MKL 3.56x geomean headline baseline."
+  },
+  {
+    "key": "conf/ipps/GeraK23",
+    "group": "pagerank",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "global PageRank (fixed 50-iter cap) on large real web/social graphs (soc-LiveJournal1/orkut/twitter/uk-2007/etc.)",
+    "gpu_single_card": true,
+    "rationale": "PageRank is one of four kernels (BFS/SSSP/PageRank/Elias-Fano compression) this Elias-Fano compressed-graph-traversal paper demonstrates; its graph suite is one of only two sources the spec's global-PageRank suite is built from, but the artifact ships BFS-only code with zero PageRank source recoverable to reproduce its own numbers."
+  },
+  {
+    "key": "journals/tpds/ChenC22",
+    "group": "pagerank",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "PageRank as one target kernel of a cache-aware graph-reordering technique (1-iteration + 20-iteration profiling), large real graphs",
+    "gpu_single_card": true,
+    "rationale": "Corder's headline contribution is graph reordering, evaluated across PageRank (and BFS) as target kernels; it is the direct model for the spec's pagerank-e2e-reorder variant (its own 'N iterations of PR to amortize' argument is operationalized as a first-class metric there)."
+  },
+  {
+    "key": "conf/dac/0003CZLH21",
+    "group": "pagerank",
+    "centrality": "tangential",
+    "regime_match": "mismatch",
+    "regime": "Personalized (single-source, depth-truncated) PageRank on CPU+FPGA, top-k set-overlap correctness, small graphs",
+    "gpu_single_card": false,
+    "rationale": "MELOPPR solves Personalized, not global, PageRank \u2014 a different-enough problem (single-source, depth-truncated, top-k-set correctness notion, different damping factor) that the spec's own open_questions flag it as warranting a separate track rather than being folded into this one's variants."
+  },
+  {
+    "key": "conf/ppopp/Shun20",
+    "group": "pagerank",
+    "centrality": "component",
+    "regime_match": "mismatch",
+    "regime": "PageRank generalized to hypergraphs (bipartite vertex/hyperedge propagation), 1-iteration timing, one algorithm among a general hypergraph suite",
+    "gpu_single_card": false,
+    "rationale": "PageRank is one of several algorithms (betweenness centrality, k-core, SSSP, PageRank) in a general parallel hypergraph-algorithm framework, and the spec's own evidence entry states this is hypergraph PageRank, 'not plain-graph PageRank,' the operation this track's variants actually measure."
+  },
+  {
+    "key": "conf/sc/SuzukiI25",
+    "group": "mixed-precision-solver",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "nested FGMRES/Richardson Krylov cascade (fp64/fp32/fp16) on 28 SuiteSparse/HPCG/synthetic matrices, CPU",
+    "gpu_single_card": false,
+    "rationale": "F3R is the direct source of the mp-krylov-nested-cascade-sparse variant, with same-script paired fp64/32/16 baselines copied into the spec."
+  },
+  {
+    "key": "conf/sc/AbdulahBBCCGKKL24",
+    "group": "mixed-precision-solver",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "one-shot per-tile adaptive-precision (fp64/32/16/fp8) climate-emulator pipeline (SHT->SYRK->Cholesky->SHT->MSE), multi-GPU/multi-node",
+    "gpu_single_card": false,
+    "rationale": "hicma-x is the direct source of the mp-tile-cholesky-onestep-climate-emulator variant, matched down to its per-phase timing split and adaptive_decision precision mechanism."
+  },
+  {
+    "key": "conf/sc/LuMOEJW22",
+    "group": "mixed-precision-solver",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "HPL-AI dense LU (fp32 panel + fp16 Tensor-Core GEMM) with fp64 iterative refinement, weak-scaling on Summit/Frontier",
+    "gpu_single_card": false,
+    "rationale": "OpenMxP is the direct source of the mp-dense-lu-ir-hplai variant, including the official HPL-AI hplerror<16 accuracy gate and the {-1,-1} non-convergence-sentinel bug the spec explicitly fixes."
+  },
+  {
+    "key": "conf/sc/CaoAAPNBDGKLS22",
+    "group": "mixed-precision-solver",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "mixed single/double tile Cholesky (sdmle) inside an outer MLE optimization loop for geostatistics, distributed ARM (Fugaku)",
+    "gpu_single_card": false,
+    "rationale": "ExaGeoStat is the direct source of the mp-tile-cholesky-mle-geostat variant, matched down to its outer NLopt-BOBYQA loop structure and pure-double dmle same-codebase sibling."
+  },
+  {
+    "key": "conf/ipps/SandersS23",
+    "group": "mst",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "distributed Boruvka/Filter-Boruvka MST, weak/strong scaling on synthetic KaGen families + 6 real billion-edge graphs",
+    "gpu_single_card": false,
+    "rationale": "KaMSTa is the direct source of the distributed-scaling MST variant (its own weight distribution, do_check verification, and scaling axes are copied into the spec)."
+  },
+  {
+    "key": "conf/sc/FallinGSB23",
+    "group": "mst",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "single-GPU MST on 17 named real+synthetic graphs (DIMACS/Galois/SNAP/SSMC), Kruskal-verified",
+    "gpu_single_card": true,
+    "rationale": "ECL-MST is the direct source of the single-node/single-GPU real-graph variant \u2014 the spec's suite, weight assignment, and correctness verification are drawn directly from its own evaluation and are extended (not replaced) to align with the sibling bfs benchspec."
+  },
+  {
+    "key": "journals/tpds/ZhangLW20",
+    "group": "svd",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "truncated low-tubal-rank t-SVD called repeatedly inside an ALS tensor-completion loop for tubal-sampling data",
+    "gpu_single_card": true,
+    "rationale": "The paper's headline is tensor COMPLETION (an application/algorithm), using truncated t-SVD as a repeated internal sub-kernel inside its ALS loop, matching the component definition ('one part of a larger system'); it is nonetheless the direct source of the spec's truncated-t-SVD variant since the spec explicitly splits FULL vs TRUNCATED cases across these exact two papers."
+  },
+  {
+    "key": "journals/tpds/ZhangLWW20",
+    "group": "svd",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "full (untruncated) one-shot t-SVD library primitive, synthetic square dense tensors, based/streamed/batched execution strategies",
+    "gpu_single_card": true,
+    "rationale": "cuTensor-Tubal is the direct library-primitive source of the tsvd-full-batched-kernel variant \u2014 its based/streamed/batched CLI convention and m=n/k sweep ranges are copied verbatim into the spec."
+  },
+  {
+    "key": "conf/ics/GengLZ24",
+    "group": "spatial-join",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "RT-core-accelerated line-segment-intersection + point-in-polygon spatial join on real geospatial polygon datasets",
+    "gpu_single_card": true,
+    "rationale": "RayJoin is the sole surveyed paper and the direct, entire basis for this track's spec (grid/lbvh/rt modes, build-vs-query split, cuSpatial baseline all drawn straight from its own artifact)."
+  },
+  {
+    "key": "conf/ipps/0001SS21",
+    "group": "lca-bridge-finding",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "GPU Euler-tour LCA batch queries and bridge-finding on synthetic-tree/graph instances, exact wall-time",
+    "gpu_single_card": true,
+    "rationale": "This is the sole surveyed paper and the entire basis for this track's spec \u2014 its own LCA and bridge sub-benchmarks (synthetic-tree sizes, ground-truth-checked timing) are the spec's only evidence."
+  },
+  {
+    "key": "conf/ipps/ChienAK25",
+    "group": "homotopy-continuation",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "GPU homotopy-continuation path tracking (fixed-work + RANSAC-gated) for trifocal pose estimation, single GPU",
+    "gpu_single_card": true,
+    "rationale": "This is the sole surveyed paper and the entire basis for this track's spec, with every problem constant (Num_Of_Vars, Num_Of_Tracks, GPUHC_Max_Steps, etc.) read verbatim from its own artifact config."
+  },
+  {
+    "key": "conf/sc/AlabandiTRB21",
+    "group": "signed-graph-balancing",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "linear-time vertex/edge-labeling fundamental-cycle balancing on SNAP signed-graphs + Amazon rating graphs, CUDA+OpenMP",
+    "gpu_single_card": true,
+    "rationale": "This is the sole surveyed paper and the entire basis for this track's spec \u2014 its own cycles-balanced/sec metric, GPU-vs-CPU dual implementation, and input-time/algorithm-time split are the spec's only evidence."
+  },
+  {
+    "key": "journals/tpds/ShibataP20",
+    "group": "math-functions",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "SIMD-vectorized libm functions (sin/cos/exp/log/pow/etc.), 1.0-ULP and 3.5-ULP accuracy classes, AVX2 CPU",
+    "gpu_single_card": false,
+    "rationale": "SLEEF is the sole surveyed paper and the entire basis for this track's spec \u2014 its own accuracy-class split and reciprocal-throughput benchmark convention are the spec's only evidence."
+  }
+]

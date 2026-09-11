@@ -1,0 +1,306 @@
+kernel: mst
+summary: >
+  Computing a minimum spanning tree/forest (MST/MSF) of a weighted
+  undirected graph, measured as steady-state throughput on a fixed real
+  graph suite (aligned with benchspecs/bfs/spec.yaml's suite where
+  overlap exists) at the single-node/single-GPU scale, as a distributed
+  weak/strong-scaling curve at cluster scale, and — because this track's
+  two papers between them demonstrate that weight distribution and
+  tie-density materially change which algorithm family wins — as a
+  dedicated weight-distribution sweep. Total-weight verification is a
+  mandatory correctness gate in every variant, not an opt-in flag.
+operation: >
+  MST(or MSF)[|V|-1 edges] = argmin_{T subseteq E, T spans G}
+  sum(w(e) for e in T); G = (V, E, w) undirected, w: E -> weight domain
+  (see weight_distribution below); MSF generalizes to graphs with
+  multiple connected components (one tree per component).
+
+variants:
+  - id: mst-kernel-real-graphs
+    claim: >
+      steady-state kernel throughput on named real-world graphs at the
+      single-node/single-GPU scale (0.4M-180M edges), format given/loaded
+      once, preprocessing excluded from the per-call number but measured
+      and reported separately — the common-denominator claim ECL-MST's
+      own evaluation makes directly, extended with a handful of graphs
+      from benchspecs/bfs/spec.yaml's suite that neither MST paper used,
+      so the two tracks' graph-suite overlap is explicit rather than
+      coincidental.
+    inputs:
+      suite: "union of DIMACS, Galois, SNAP, and SuiteSparse Matrix Collection (SSMC) graphs, same four sources ECL-MST itself draws from"
+      selection: >
+        real+synthetic graphs already used by >=1 of this track's papers,
+        PLUS 3 graphs already standardized in benchspecs/bfs/spec.yaml's
+        real-graph suite that neither MST paper covers (added for explicit
+        cross-track alignment per this track's brief), with an explicit
+        criterion: edges in [1e5, 2e8] (fits comfortably on one GPU or one
+        multi-core node, matching ECL-MST's own ~2-billion-edge GPU-memory
+        ceiling with headroom).
+      recommended_subset:
+        [2d-2e20.sym, amazon0601, as-skitter, citationCiteseer, cit-Patents,
+         coPapersDBLP, delaunay_n24, europe_osm, in-2004, internet,
+         kron_g500-logn21, r4-2e23.sym, rmat16.sym, rmat22.sym,
+         soc-LiveJournal1, USA-road-d.NY, USA-road-d.USA,
+         com-LiveJournal, com-Orkut, wiki-topcats]
+      graph_type: >
+        undirected (self-loops and multi-edges removed; missing
+        back-edges added if the source is directed, matching ECL-MST's
+        own graph-cleaning discipline); connected-component count
+        disclosed per graph (needed for the MSF-vs-MST-only geomean
+        split below, since 3 of ECL-MST's own comparison codes — Jucele,
+        Gunrock — cannot produce a general MSF).
+      weight_distribution: "uniform-random integer in [1, 254], fixed seed=42, assigned once per graph and reused across all repetitions — see mst-weight-distribution-sensitivity for the dedicated sweep of this choice; graphs with native edge weights use them as-is and this field is 'native' instead."
+    protocol:
+      format: >
+        CSR/CSR-equivalent binary format (matching both papers' actual
+        artifacts — KaMSTa's binary 9-byte-edge-record format and
+        ECL-MST's ECLgraph binary CSR), given/converted once; conversion
+        from a raw edge list (if starting there) timed once and reported
+        separately, never inside the per-call number.
+      warmup: "1 run (discarded)"
+      reps: 9
+      statistic: "median (report min/max/stdev alongside) — matches ECL-MST's own protocol exactly, adopted over KaMSTa's weaker mean-of->=3 practice per notes_on_fairness"
+      timer: "device-side events (CUDA/HIP) for GPU implementations, std::chrono/omp_get_wtime for CPU, one timestamp pair per repetition"
+      timing_scope: >
+        MST computation kernel only. Graph-file-read time excluded (both
+        papers exclude this). For GPU implementations: host-device
+        transfer of the input graph and the output MST is EXCLUDED from
+        the primary number but a SEPARATE "including memcpy" number is
+        ALSO required (matching ECL-MST's own dual-reporting practice
+        exactly — this is the one place this spec adopts a surveyed
+        paper's protocol unchanged rather than tightening it, since it
+        already satisfies this repo's fairness principles).
+      preprocessing_reported: "format conversion (raw edge list -> native CSR/binary) timed once, reported separately, same discipline as benchspecs/spmv/spec.yaml"
+      algorithm_family_disclosure: >
+        REQUIRED: report which classic-algorithm lineage the technique
+        under test derives from — Boruvka, Kruskal, Prim, or "converged"
+        (ECL-MST's own finding that a fully-parallelized Kruskal and a
+        parallelized Boruvka become the same code) — as a descriptive
+        label, NOT a filter criterion (a technique is not excluded for
+        being Prim-based; see notes_on_fairness on why Prim-family codes
+        are structurally disadvantaged by a pure-throughput metric and
+        that disadvantage should be visible, not hidden by exclusion).
+      precision: "integer edge weights (see weight_distribution); MST total weight accumulated in a width sufficient to avoid overflow for the largest graph in the suite (>=64-bit)"
+    metric:
+      primary: "Mega-edges/s = |E| / computation_time_seconds / 1e6, matching ECL-MST's own throughput definition exactly (so this spec's numbers are directly comparable to Table/Figure values already published for ECL-MST's own baselines)"
+      secondary: >
+        computation_time_seconds (median, min/max); TWO geomeans over the
+        recommended_subset — "MSF GeoMean" (all graphs, MSF-capable
+        implementations only) and "MST GeoMean" (single-connected-component
+        graphs only, so MST-only-capable baselines can be included fairly)
+        — matching ECL-MST's own split exactly, since it is a genuine
+        fairness mechanism worth preserving rather than reinventing.
+    correctness: >
+      MANDATORY (not opt-in, unlike KaMSTa's own `do_check` CLI default)
+      total-MST-weight verification against an independently computed
+      reference (sequential Kruskal or Boruvka on the same input,
+      exact-integer-arithmetic sum) — exact equality required (integer
+      weights admit no tolerance ambiguity). Per-edge-set identity
+      matching (ECL-MST's own stricter `verify()` check) is OPTIONAL and,
+      if reported, any mismatch must be investigated for whether it is a
+      genuine bug or a valid alternate MST under a tied-weight instance
+      before being counted as a failure — total-weight equality alone is
+      the pass/fail gate, per notes_on_fairness.
+
+  - id: mst-distributed-scaling
+    claim: >
+      weak- and strong-scaling throughput at distributed-cluster scale
+      (up to tens of thousands of cores) on parameterized synthetic
+      generator families, matching KaMSTa's own evaluation shape exactly
+      since it is the only paper in this track's evaluation at this
+      scale — kept as a fully separate variant from mst-kernel-real-graphs
+      rather than trying to force one Mega-edges/s number to span both
+      a single GPU and a 65,536-core cluster.
+    inputs:
+      suite: "KaGen-generated synthetic graph families: 2D-GRID, 2D-RGG, 3D-RGG, RHG (random hyperbolic), GNM, RMAT — same six families KaMSTa's own repo evaluation_suites config uses"
+      selection: >
+        weak scaling: log_n=17, log_m=20 PER CORE as the base unit
+        (2^17 vertices, 2^21 edges per core, scaled up with core count) —
+        KaMSTa's own repo-confirmed default; strong scaling: 6 named
+        real-world instances at fixed total size — friendster, twitter,
+        uk-2007, it-2004, wdc-14, US-road (24M-1.7B vertices, 57M-123B
+        edges), same instances KaMSTa's own paper reports.
+      recommended_subset:
+        weak_scaling_families: [RMAT, GNM, RGG_2D, RGG_3D, RHG, GRID_2D]
+        strong_scaling_graphs: [friendster, twitter, uk-2007, it-2004, wdc-14, US-road]
+      graph_type: "undirected; generated via KaGen with a fixed RNG seed per (family, core-count) cell for reproducibility (not disclosed as fixed in the paper itself — this spec's own addition, since an unseeded generator makes weak-scaling curves non-reproducible run-to-run)"
+      weight_distribution: "uniform-random integer in [1, 254], matching KaMSTa's own confirmed default (max_edge_weight=254 in its repo config) exactly — this is the ONE variant in this track that intentionally does NOT sweep weight distribution, since isolating the scaling axis requires holding weight distribution fixed; see mst-weight-distribution-sensitivity for the dedicated sweep"
+    protocol:
+      format: "graph generated directly in-memory by KaGen (no file I/O in the timed region); local kernelization/contraction preprocessing IS considered part of the algorithm under test for hybridBoruvka/filter_hybridBoruvka specifically (per KaMSTa's own framing) but must still be reported as its own line item, not silently merged into total time"
+      core_count_sweep: "REQUIRED sweep, reported as a curve: 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, and (where available) up to 65536 cores — matching KaMSTa's own repo-confirmed default sweep plus the paper's stated maximum"
+      threads_per_process_sweep: "1 and 8 threads per MPI process, matching KaMSTa's own repo config default; report which combination each core-count point uses"
+      warmup: "1 run (discarded)"
+      reps: "4, matching KaMSTa's own repo-confirmed default (evaluation/graphs.yaml: iterations: 4) — weaker than this spec's 9-rep default elsewhere, but adopted as-is here since a single strong-scaling point on the largest real graph (123B edges, up to 65536 cores) is itself an expensive, multi-machine-hour measurement where 9 reps is not a proportionate ask"
+      statistic: "median (report min/max/stdev alongside) — strengthens KaMSTa's own mean-only reporting per notes_on_fairness, at no extra measurement cost since the reps are already being collected"
+      timer: "wall-clock (MPI_Wtime or equivalent) around the MST computation call on rank 0, synchronized via a barrier immediately before the timed region starts"
+      timing_scope: >
+        MST computation only; graph GENERATION time is excluded and
+        reported separately (KaMSTa's own confirmed practice); the paper's
+        own specific disclosed exclusion — "encoding time not included,
+        decoding [of the compressed edge list] counted twice" — is
+        adopted verbatim as this variant's edge-list-compression timing
+        convention, since it is unusually precise and no reason was found
+        to deviate from it.
+      preprocessing_reported: "graph generation time and any compressed-edge-list decoding time, both reported separately, once per (family/graph, core-count) cell"
+      algorithm_family_disclosure: "hybridBoruvka or filter_hybridBoruvka (KaMSTa's own two named options), reported per data point since the paper itself treats this as a first-class comparison axis, not a fixed choice"
+      precision: "integer edge weights in [1,254] (see weight_distribution above); MST total weight accumulated with a distributed all-reduce sum in >=64-bit"
+    metric:
+      primary: "edges/second = |E| / computation_time_seconds, matching KaMSTa's own throughput unit"
+      secondary: "computation_time_seconds (median, min/max); speedup vs. the two named prior distributed baselines (sparseMatrix [Baer et al.], MND-MST [Panja et al.]) where available; weak-scaling efficiency = time_at_1_core_equivalent / time_at_N_cores (ideal=1.0)"
+    correctness: >
+      MANDATORY (default-enabled, unlike KaMSTa's own opt-in `--checks`
+      CLI flag) distributed total-MST-weight verification: local
+      per-rank partial sums combined via `MPI_Allreduce`-equivalent,
+      compared exactly against a reference MST weight gathered from a
+      sequential computation on the same input (matching KaMSTa's own
+      `check()`/`gather_mst` implementation, just made mandatory rather
+      than opt-in).
+
+  - id: mst-weight-distribution-sensitivity
+    claim: >
+      the dedicated, explicit weight-distribution sweep this track's
+      brief asks for as a first-class axis — motivated directly by
+      ECL-MST's own 99-random-seed study (Section 5.4), which shows up
+      to ~4x throughput variance on high-average-degree scale-free
+      graphs depending purely on which 20 sample edges happen to be
+      picked for its filter threshold, i.e. this track's own literature
+      already demonstrates weight/threshold randomness is NOT a
+      negligible axis, yet neither paper reports it as a swept,
+      first-class benchmark dimension in its own headline numbers.
+    inputs:
+      suite: "same as mst-kernel-real-graphs, restricted to the subset with average degree >= 4 (coPapersDBLP, as-skitter, cit-Patents, kron_g500-logn21, soc-LiveJournal1, rmat22.sym) since this is exactly the regime ECL-MST's own study identifies as sensitive, plus 2 low-average-degree controls (USA-road-d.USA, delaunay_n24) to confirm the expected near-zero sensitivity there"
+      selection: "same criterion as mst-kernel-real-graphs, filtered to avg_degree buckets as above"
+      recommended_subset:
+        [coPapersDBLP, as-skitter, cit-Patents, kron_g500-logn21,
+         soc-LiveJournal1, rmat22.sym, USA-road-d.USA, delaunay_n24]
+      weight_distribution_sweep: >
+        REQUIRED sweep, reported as a curve/box-plot per graph (matching
+        ECL-MST's own box-and-whisker presentation in Figure 6, which is
+        adopted as the required reporting FORMAT for this variant, not
+        just a suggestion): (a) uniform-random integer in [1,254] with 20
+        different fixed seeds (matching ECL-MST's own seed-count order of
+        magnitude, reduced from its 99 for proportionate cost; report
+        median/min/max/quartiles across the 20 seeds), (b) uniform-random
+        integer in [1, 254*100] (a 100x wider range, sharply reducing tie
+        probability), (c) uniform-random integer in [1, 16] (a
+        DELIBERATELY narrow, high-tie-density range — stress-tests the
+        "total weight is the invariant, not edge-set identity" fairness
+        point directly, since high tie density is exactly where MST
+        non-uniqueness becomes common), (d) native/real edge weights
+        where the graph provides them (n/a for all recommended_subset
+        entries here, since none carry native weights — noted as a gap:
+        this track's suite has no real-weighted MST benchmark instance,
+        see open_questions).
+    protocol:
+      format: "same as mst-kernel-real-graphs"
+      warmup: "1 run per (graph, weight_setting, seed) cell, discarded"
+      reps: "9 per (graph, weight_setting, seed) cell, matching mst-kernel-real-graphs's statistical rigor"
+      statistic: "median per cell; then median/min/max/quartiles ACROSS the 20 seeds for setting (a), matching ECL-MST's Figure 6 box-plot convention"
+      timer: "same as mst-kernel-real-graphs"
+      timing_scope: "same as mst-kernel-real-graphs (kernel only, memcpy reported separately if GPU)"
+      preprocessing_reported: "same as mst-kernel-real-graphs, PLUS: if the technique samples edges to pick a filtering/pivot threshold (ECL-MST's own mechanism), report how many edges are sampled and by what method, since this is the specific mechanism whose sensitivity this variant is designed to expose"
+      precision: "integer weights per the weight_distribution_sweep settings above"
+    metric:
+      primary: "Mega-edges/s per (graph, weight_setting) cell; for setting (a), report as a distribution (median/min/max/quartiles across 20 seeds) not a single number"
+      secondary: "coefficient of variation (stdev/mean) of throughput across the 20 seeds in setting (a), a single-number sensitivity summary; tie-count (number of MST edges whose weight equals another edge incident to the same cut) per weight_setting, since this is the mechanistic driver of any observed sensitivity"
+    correctness: >
+      MANDATORY total-weight verification (same as mst-kernel-real-graphs),
+      PLUS an explicit tie-awareness requirement: under weight_setting
+      (c) (narrow [1,16] range, high tie density), an edge-set-identity
+      diagnostic check (if run at all) MUST be evaluated against
+      "produces SOME valid MST of the correct total weight," not against
+      one specific reference implementation's tie-breaking order — this
+      is the concrete fix for the fairness concern raised by ECL-MST's
+      own stricter verify() function (which checks per-edge agreement
+      against one specific serial Kruskal tie-breaking order and could
+      therefore flag a legitimately different, equally-valid MST as
+      wrong under exactly this high-tie-density setting).
+
+notes_on_fairness:
+  - >
+    KaMSTa's own CLI ships its total-weight correctness check
+    (`--checks`) OFF by default, and the paper's own reported numbers do
+    not state whether `--checks` was enabled for the headline
+    performance runs. This spec makes the check mandatory (default-on,
+    not opt-in) for every variant, so no reported throughput number can
+    exist without having passed the correctness gate on that same run.
+  - >
+    ECL-MST's own `verify()` function checks per-edge-set identity
+    against ONE specific serial reference implementation's tie-breaking
+    order, which is stricter than necessary — MST is not unique when
+    edge weights tie, so a valid MST with a different (but equally
+    correct) tie-break could be flagged as wrong by an edge-set-identity
+    check even though its total weight is correct. This spec's mandatory
+    gate is KaMSTa's weaker-but-actually-correct total-weight check;
+    mst-weight-distribution-sensitivity's high-tie-density setting (c)
+    makes this distinction concretely testable rather than theoretical.
+  - >
+    KaMSTa reports MEAN of >=3 runs and explicitly does not report
+    min/max/stdev; ECL-MST reports MEDIAN of 9 runs with explicit
+    variance figures. This spec adopts ECL-MST's stronger convention
+    (median + min/max/stdev) uniformly across all three variants, at
+    reduced rep-count (4 instead of 9) only in mst-distributed-scaling
+    where a single measurement point can already be extremely expensive
+    at full cluster scale.
+  - >
+    Neither paper sweeps weight DISTRIBUTION itself as a first-class
+    reported experimental axis, even though ECL-MST's own random-seed
+    study (a narrower, adjacent question — sensitivity to WHICH edges
+    get sampled for a threshold, at a FIXED weight distribution) already
+    demonstrates up to ~4x variance exists in this general space. This
+    track's brief explicitly asks for weight distribution as a key axis;
+    mst-weight-distribution-sensitivity is this spec's direct answer to
+    that gap, generalizing ECL-MST's seed-sensitivity study into an
+    explicit range/tie-density sweep neither paper ran.
+  - >
+    A pure throughput-vs-algorithm-family framing structurally
+    disadvantages Prim-family codes, which both papers' own related-work
+    discussions describe as inherently serial (Prim relies on the cut
+    property and builds one tree incrementally from a single growing
+    frontier, unlike Boruvka's fully-data-parallel per-component step).
+    This spec does not exclude Prim-family codes, but requires
+    algorithm_family_disclosure precisely so a Prim-based result's lower
+    throughput is legible as an expected structural property of the
+    algorithm family, not silently penalized as if it were an
+    implementation deficiency.
+  - >
+    ECL-MST's MSF-vs-MST-only geomean split (excluding Jucele/Gunrock's
+    single-connected-component limitation from unfairly penalizing them
+    on multi-component graphs, or unfairly crediting MSF-capable codes
+    with "harder" inputs those two can't even attempt) is preserved
+    verbatim in mst-kernel-real-graphs rather than re-derived, since it
+    is already a well-designed fairness mechanism in the source paper.
+
+open_questions:
+  - >
+    Neither KaMSTa nor ECL-MST evaluates a graph with NATIVE (real,
+    non-synthetically-inserted) edge weights — every graph in both
+    papers' suites is either originally unweighted (weights inserted
+    afterward) or weighted only in the sense of a synthetic integer
+    range. This track's suite therefore has no genuinely real-weighted
+    MST benchmark instance (e.g. a road network with real distances, or
+    a network with real cost/capacity edge attributes); adding one is a
+    candidate future extension not resolved here.
+  - >
+    KaMSTa's exact core-vs-hardware-thread accounting for its "up to
+    65,536 cores" claim, and whether the paper's own reported numbers at
+    that scale use 1 or 8 threads per MPI process, could not be
+    disambiguated from the fetched text alone (see survey.md).
+  - >
+    Whether ECL-MST's paper-reported numbers (Tables 2-5) used the exact
+    same weight-generation scheme as the repo's demo `main.cu` hash
+    formula, or a different (perhaps genuinely random) scheme, is
+    unresolved; mst-weight-distribution-sensitivity's setting (a) uses a
+    standard PRNG rather than replicating the repo's specific hash, on
+    the assumption the hash was a demo convenience rather than the
+    paper's actual methodology, but this assumption is not independently
+    confirmed.
+  - >
+    Whether KaMSTa's 6 real-world strong-scaling graphs (friendster,
+    twitter, uk-2007, it-2004, wdc-14, US-road) use the same [1,254]
+    synthetic weight range as its synthetic generators, or carry
+    different (possibly native) weights, could not be confirmed.
+
+evidence:
+  conf/ipps/SandersS23: "6 synthetic KaGen families (2D-GRID/2D-RGG/3D-RGG/RHG/GNM/RMAT) for weak scaling at 2^17v/2^21e per core; 6 real graphs (friendster/twitter/uk-2007/it-2004/wdc-14/US-road, 24M-1.7Bv, 57M-123Be) for strong scaling; weights uniform-random [1,254]; >=3 runs + 1 warmup, MEAN only reported; up to 65536 cores; do_check flag (off by default) verifies total MST weight via distributed allreduce vs. gathered reference; baselines sparseMatrix/MND-MST; up to 800x speedup."
+  conf/sc/FallinGSB23: "17 named real+synthetic graphs (DIMACS/Galois/SNAP/SSMC, Table 2 with exact stats); weights randomly inserted for unweighted graphs; filter threshold sampled from 20 random edges, 99-seed sensitivity study shows up to ~4x variance on high-avg-degree graphs; 9 reps, MEDIAN reported, variance <0.003%/<0.011%; graph-read excluded, GPU memcpy excluded from primary number but reported separately as 'ECL-MST memcpy'; verify() checks total weight AND per-edge-set identity vs. serial Kruskal reference; 8 baselines (4 GPU/3 CPU-parallel/1 CPU-serial); MSF-vs-MST-only geomean split; 4.5-4.6x avg speedup over next-fastest code."

@@ -1,0 +1,159 @@
+{
+ "kernel": "attention-kernel",
+ "papers": [
+  {
+   "key": "conf/asplos/YiZHYSWZZLL26",
+   "title": "PAT: Accelerating LLM Decoding via Prefix-Aware Attention with Resource Efficient Multi-Tile Kernel",
+   "venue": "ASPLOS",
+   "year": 2026,
+   "doi": "10.1145/3779212.3790200",
+   "arxiv": "2511.22333",
+   "oa_url": "https://doi.org/10.1145/3779212.3790200",
+   "artifact_url": "https://github.com/flashserve/PAT",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "LLM serving is increasingly dominated by decode attention, which is a memory-bound operation due to massive KV cache loading from global memory. Meanwhile, real-world workloads exhibit substantial, hierarchical shared prefixes across requests (e.g., system prompts, tools/templates, RAG). Existing attention implementations fail to fully exploit prefix sharing: one-query-per-CTA execution repeatedly loads shared prefix KV cache, while one-size-fits-all tiling leaves on-chip resources idle and exacerbates bubbles for uneven KV lengths. These choices amplify memory bandwidth pressure and stall memory-bound decode attention.",
+   "one_liner": "Prefix-aware multi-tile GPU decode-attention kernel exploiting hierarchical shared-prefix KV reuse."
+  },
+  {
+   "key": "conf/asplos/TangLWSLXZL26",
+   "title": "RedFuser: An Automatic Operator Fusion Framework for Cascaded Reductions on AI Accelerators",
+   "venue": "ASPLOS",
+   "year": 2026,
+   "doi": "10.1145/3779212.3790209",
+   "arxiv": "2603.10026",
+   "oa_url": "https://doi.org/10.1145/3779212.3790209",
+   "artifact_url": "https://github.com/alibaba/redfuser",
+   "artifact_status": "verified",
+   "platform": [
+    "other"
+   ],
+   "approach": "codegen",
+   "abstract": "Operator fusion, as a key performance optimization technique in the deployment of AI models, significantly improves execution efficiency and has been widely adopted in modern AI compilers. However, for cascaded reduction operations involving multiple loops with inter-loop data dependencies, such as the safe softmax followed by GEMM within attention mechanisms, existing compilers lack effective automated fusion and kernel generation capabilities. Although some works have addressed specific instances through hand-crafted fusion strategies, their solutions are limited in generality and difficult to extend to other similar structures. Given the prevalence of such computational patterns in deep learning models, there remains significant untapped potential in achieving general and automated fusion optimization. In this paper, we present a formal theoretical methodology for analyzing cascaded r",
+   "one_liner": "Automatic fusion of cascaded reductions (e.g. softmax+GEMM) into single kernels; 2-5x over AI compilers."
+  },
+  {
+   "key": "conf/cgo/ZhangDSHSP26",
+   "title": "Hexcute: A Compiler Framework for Automating Layout Synthesis in GPU Programs",
+   "venue": "CGO",
+   "year": 2026,
+   "doi": "10.1109/CGO68049.2026.11395194",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/hexcute/hexcute-bench",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "abstract": "Efficient GPU programming is crucial for achieving high performance in deep learning (DL) applications. The performance of GPU programs depends on how data is parallelized across threads and arranged within memory subsystems. The mapping functions describing tensors on GPUs are known as tensor layouts. Low-level programming frameworks, such as CUTLASS and Hidet, provide expressive layout abstractions but often require considerable programming effort to manually specify optimal layouts. High-level GPU programming languages, such as Triton, rely on compiler heuristics to generate dataflow, layouts, and pipelining strategies in GPU programs. However, the heuristics for dataflow and pipelining strategies are not generalizable to complex operators. To balance expressiveness and programmability, we propose Hexcute, a compiler framework that automates layout synthesis while providing explicit c",
+   "one_liner": "Hexcute auto-synthesizes GPU tensor layouts, matching cuBLAS/FlashAttention, 6.46x over Triton on MoE"
+  },
+  {
+   "key": "conf/ppopp/Xu0BXX00000C26",
+   "title": "FlashAttention-T: Towards Fully Tensorized Attention by Exploiting Tensor-Vector Parallelism",
+   "venue": "PPoPP",
+   "year": 2026,
+   "doi": "10.1145/3774934.3786425",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/guoqiao7/FlashAttention-T",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "The attention mechanism is central to modern deep learning, particularly in large language models (LLMs), but suffers from quadratic computational complexity. To accelerate attention computation on GPUs, fused attention techniques (e.g., FlashAttention) consolidate the matrix multiplication (GEMM) and softmax computations into a single kernel. However, these operations remain computationally decoupled: the GEMM leverages high-performance tensor units (Tensor Cores), while the softmax executes on slower vector units (CUDA cores). This imbalance induces severe vector intervals—periods where tensor units sit idle awaiting vector unit completion—significantly underutilizing tensor units. Furthermore, ongoing hardware advancements delivering faster tensor units exacerbate this bottleneck.",
+   "one_liner": "FlashAttention-T: fully tensorized GEMM+softmax attention exploiting tensor-vector parallelism"
+  },
+  {
+   "key": "conf/ppopp/ChenC0XMM0X00W026",
+   "title": "MetaAttention: A Unified and Performant Attention Framework across Hardware Backends",
+   "venue": "PPoPP",
+   "year": 2026,
+   "doi": "10.1145/3774934.3786444",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/SJTU-IPADS/MetaAttention",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu",
+    "amd-gpu"
+   ],
+   "approach": "codegen",
+   "abstract": "Computing attention is the backbone of transformer-based models like large language models. However, the increasing diversity of attention algorithms presents significant challenges for unleashing hardware performance. State-of-the-art variants like FlashAttention target a specific attention algorithm or hardware platform, which fail to generalize to other algorithms and platforms.",
+   "one_liner": "MetaAttention: unified attention-kernel generation framework across hardware backends"
+  },
+  {
+   "key": "conf/ics/FuYDS24",
+   "title": "Optimizing Attention by Exploiting Data Reuse on ARM Multi-core CPUs",
+   "venue": "ICS",
+   "year": 2024,
+   "doi": "10.1145/3650200.3656620",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3650200.3656620",
+   "artifact_url": "https://github.com/HPC4AI/MeAtten",
+   "artifact_status": "verified",
+   "platform": [
+    "arm-cpu"
+   ],
+   "approach": "manual",
+   "abstract": "Transformers reign supreme in natural language processing, representing a milestone innovation in deep learning. For high-performance model inference, optimizing the time-consuming attention module is crucial. Owing to the irregular-shaped matrix workloads and intricate data access patterns, the attention operator is bounded by memory bandwidth. Existing works utilize kernel fusion to reduce memory access overhead, resulting in promising performance enhancements. However, these efforts primarily focus on GPU or X86 architectures, leaving ARM multi-cores, commonly encountered in emerging HPC systems, insufficiently explored. We present MEATTEN, a memory-efficient attention fusion scheme and batched approach to exploit ARM multi-core CPUs effectively. It builds on fused micro-kernels and a new data layout suitable for SIMD vectorization. An analytic model is used to guide loop permutation,",
+   "one_liner": "Memory-efficient fused attention kernels for ARM multi-core CPUs"
+  },
+  {
+   "key": "conf/ipps/ZhaiJWJZCLZ23",
+   "title": "ByteTransformer: A High-Performance Transformer Boosted for Variable-Length Inputs",
+   "venue": "IPDPS",
+   "year": 2023,
+   "doi": "10.1109/IPDPS54959.2023.00042",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/bytedance/ByteTransformer",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Transformers have become keystone models in natural language processing over the past decade. They have achieved great popularity in deep learning applications, but the increasing sizes of the parameter spaces required by transformer models generate a commensurate need to accelerate performance. Natural language processing problems are also routinely faced with variable-length sequences, as word counts commonly vary among sentences. Existing deep learning frameworks pad variable-length sequences to a maximal length, which adds significant memory and computational overhead. In this paper, we present ByteTransformer, a high-performance transformer boosted for variable-length inputs. We propose a padding-free algorithm that liberates the entire transformer from redundant computations on zero padded tokens. In addition to algorithmic-level optimization, we provide architecture-aware optimiza",
+   "one_liner": "Padding-free fused MHA kernel for variable-length transformers, 6.13x over PyTorch on A100"
+  },
+  {
+   "key": "conf/sc/WangWXHQDWL22",
+   "title": "LightSeq2: Accelerated Training for Transformer-Based Models on GPUs",
+   "venue": "SC",
+   "year": 2022,
+   "doi": "10.1109/SC41404.2022.00043",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/bytedance/lightseq",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Transformer-based neural models are used in many AI applications. Training these models is expensive, as it takes huge GPU resources and long duration. It is challenging because typical data like sentences have variable lengths, and Transformer's computation patterns are more complex than convolutional neural networks. Existing systems either only focus on model inference or optimization for only BERT-like encoder models. In this paper, we present LightSeq2, a system to accelerate training for a general family of Transformer models on GPUs. We propose a series of GPU optimization techniques tailored to the specific computation flow and memory access patterns of Transformer models. LightSeq2 supports many model architectures, including BERT (encoder-only), GPT (decoder-only), Transformer (encoder-decoder), and vision Transformer. Our experiments for a variety of models and benchmarks show",
+   "one_liner": "LightSeq2: GPU kernel optimizations for Transformer training compute/memory patterns, 1.4-3.5x speedup"
+  },
+  {
+   "key": "conf/sc/ChenHPLG0D021",
+   "title": "E.T.: re-thinking self-attention for transformer models on GPUs",
+   "venue": "SC",
+   "year": 2021,
+   "doi": "10.1145/3458817.3476138",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/cctry/E.T.",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Transformer-based deep learning models have become a ubiquitous vehicle to drive a variety of Natural Language Processing (NLP) related tasks beyond their accuracy ceiling. However, these models also suffer from two pronounced challenges, that is, gigantic model size and prolonged turnaround time. To this end, we introduce ET. that r<u>E</u>-thinks self-attention computation for <u>T</u>ransformer models on GPUs with the following contributions: First, we introduce a novel self-attention architecture, which encompasses two tailored self-attention operators with corresponding sequence length-aware optimizations, and operation reordering optimizations. Second, we present an attention-aware pruning design which judiciously uses various pruning algorithms to reduce more computations hence achieves significantly shorter turnaround time. For the pruning algorithms, we not only revamp the exist",
+   "one_liner": "E.T.: re-engineered self-attention GPU operators plus pruning, beats TensorRT/FasterTransformer"
+  }
+ ]
+}

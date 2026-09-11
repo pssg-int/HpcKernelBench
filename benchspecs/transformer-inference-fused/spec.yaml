@@ -1,0 +1,97 @@
+kernel: transformer-inference-fused
+summary: >
+  Fully fused transformer encoder layer (QKV projection, multi-head
+  attention, feed-forward network, layer-norm, activation, all in one
+  measured region) for variable-length inputs, executed padding-free so
+  no compute is wasted on pad tokens -- distinct from
+  benchspecs/attention-kernel, which isolates the MHA core alone; this
+  track measures the WHOLE fused layer and requires explicit disclosure
+  of which sub-ops are inside vs. outside the fusion boundary.
+operation: >
+  For a variable-length batch of B sequences with per-sequence lengths
+  L_i <= S_max: Encoder(X)[B,S,H] = LayerNorm(X + FFN(LayerNorm(X +
+  MHA(QKV_proj(X))))), where MHA is computed padding-free (each
+  sequence's real L_i tokens only, no wasted work on padding up to
+  S_max), QKV_proj and FFN are dense GEMMs + bias, and the whole
+  N-layer stack (default N=12, BERT-base) is the timed unit unless a
+  single-layer sub-variant is requested.
+variants:
+  - id: fused-encoder-layer-padfree-fp16
+    claim: >
+      steady-state latency of the padding-free fused BERT-base encoder
+      (12 layers, all sub-ops -- QKV, MHA, FFN, LN -- inside one measured
+      forward pass), fp16, swept across the batch x sequence-length grid
+      that separates memory-bound small-batch decode-adjacent regimes
+      from compute-bound large-batch/long-sequence regimes. Matches
+      ByteTransformer's own bert_bench.sh sweep.
+    inputs:
+      suite: "BERT-base encoder shape (head_num=12, head_size=64, hidden=768); same architecture family the paper also validates against (ALBERT, DistilBERT, DeBERTa -- structurally identical encoder layer, different depth/width)"
+      selection: "full batch x seqlen grid from ByteTransformer's own benchmark/bert_bench.sh"
+      recommended_subset:
+        - {batch: 1,  seqlen: [32, 128, 384, 1024]}
+        - {batch: 8,  seqlen: [32, 128, 384, 1024]}
+        - {batch: 16, seqlen: [32, 128, 384, 1024]}
+      avg_seqlen_ratio: "0.6 (average real sequence length within a padded batch is 60% of the nominal seqlen, matching bert_bench.sh's avg_seqlen_percent=60 -- models realistic length variance, NOT a batch of uniformly-full sequences)"
+      dense_operand: "fp16 activations/weights, N(0,1) init"
+      fusion_scope_required_disclosure: >
+        every candidate MUST state exactly which of {QKV-projection,
+        bias-add, MHA (incl. softmax), FFN (2 GEMMs + activation),
+        layer-norm} are inside the single timed kernel-launch region vs.
+        executed as separate kernel launches still counted in the same
+        wall-clock window -- a "fused" claim that is actually 6 separate
+        launches back-to-back is a legitimate design point but must be
+        labeled as such, not conflated with a true single-kernel fusion.
+    protocol:
+      n_layers: 12 (BERT-base default; report separately if using a different depth)
+      warmup: 20
+      reps: 50
+      statistic: "median (report min/max) -- DEVIATION from ByteTransformer's own bert_bench.sh, which greps a single trailing latency line per config with no visible repeat/median; fixed here for the same reason this project's attn-prefill-kernel-fp16bf16 variant fixes the identical gap in this paper's own attention-only number."
+      timer: "device-side CUDA events, one pair per full 12-layer forward pass"
+      timing_scope: "full fused-encoder forward pass (all sub-ops in operation above); H2D/D2H input transfer and tokenization excluded"
+      preprocessing_reported: "separately, once: any one-shot weight-layout repack the padding-free kernel requires (e.g. computing per-batch valid-token offset/index tables from the length array)"
+    metric:
+      primary: "latency (ms) per (batch, seqlen) cell"
+      secondary: "speedup vs. PyTorch-eager fp16 baseline (dimensionless x); tokens/s (sum of real, non-pad tokens processed / time -- credits padding-free kernels correctly instead of counting padded tokens)"
+    correctness: >
+      max abs error < 1e-2 vs. a padded (non-fused) fp32 reference
+      forward pass through the identical weights (PyTorch eager, fp32) --
+      mandatory pre-timing gate, run in the SAME invocation as the timed
+      benchmark, not a separate disconnected unit-test path (this
+      spec closes the gap where ByteTransformer's own
+      bert_transformer_test.py --export_data correctness check is a
+      distinct binary from bert_bench.sh's timed run).
+
+  - id: fused-encoder-single-layer-kernel
+    claim: >
+      isolates ONE encoder layer (n_layers=1) rather than the stacked
+      12-layer forward pass -- lets the per-layer fusion overhead/benefit
+      be measured independent of model depth, and is directly comparable
+      across BERT-base/ALBERT/DistilBERT/DeBERTa-class models of
+      different depths using the same per-layer number.
+    inputs:
+      suite: same shape grid as fused-encoder-layer-padfree-fp16, but a single layer
+      selection: "recommended_subset: {batch: 8, seqlen: [128, 512]} as the minimal required pair; full grid optional"
+    protocol:
+      n_layers: 1
+      warmup: 20
+      reps: 100
+      statistic: "median (report min/max)"
+      timer: "device-side CUDA events"
+      timing_scope: "single fused encoder layer only"
+      preprocessing_reported: "not separately measured (identical to fused-encoder-layer-padfree-fp16's one-shot cost, amortized negligibly at n_layers=1)"
+    metric: {primary: "latency (us) per layer per (batch, seqlen) cell", secondary: "GFLOP/s (2*B*S_real*(4*H^2 + 2*H*4H) flops per layer, S_real = avg_seqlen_ratio * seqlen)"}
+    correctness: "identical gate as fused-encoder-layer-padfree-fp16 (1e-2 abs error vs fp32 padded reference), applied to the single-layer output"
+
+notes_on_fairness:
+  - "ByteTransformer's own bert_bench.sh reports one latency number per (batch, seqlen) cell with no visible repeat/median at the shell-script level -- this spec requires >=20 device-side-timed repetitions with median + min/max reported, the same fix already applied to this paper's attention-only number in benchspecs/attention-kernel."
+  - "The paper's headline numbers mix a kernel-only MHA claim (6.13x vs PyTorch, out of scope here -- see benchspecs/attention-kernel) with an end-to-end 12-layer encoder claim (the 55-138% faster-than-framework numbers); this track's variants are scoped strictly to the full fused encoder layer to avoid re-litigating the attention-only comparison under a different track name."
+  - "fusion_scope_required_disclosure is added because 'fused transformer kernel' claims in this literature commonly differ in how many separate kernel launches are actually being called 'fused' -- ByteTransformer's own README does not itemize this per sub-op, so a candidate implementation could otherwise silently claim fusion credit for what is really 6 back-to-back unfused launches."
+  - "ByteTransformer's released correctness check (bert_transformer_test.py --export_data + bin/bert_transformer_test) is a separate binary from the timed benchmark path (bert_bench.sh); this spec makes the correctness gate mandatory and part of the SAME run as the timed measurement."
+
+open_questions:
+  - "Whether ByteTransformer's internal bert_transformer_test.py driver (invoked by bert_bench.sh) itself performs multiple internal iterations before printing the final latency line was not determined from the fetched shell script alone; the source of bert_transformer_test.py was not fetched."
+  - "No stated correctness tolerance value was found in the fetched README for the padding-free vs. padded numerical comparison; the 1e-2 abs-error gate here is carried over from this project's attention-kernel precedent for the same paper's MHA-only correctness check, not independently confirmed for the full-encoder case."
+  - "The paper's applicability claim to ALBERT/DistilBERT/DeBERTa is not accompanied by a released benchmark script for those architectures in the fetched top-level listing; fused-encoder-single-layer-kernel's cross-architecture comparability is this spec's own design intent, not a reproduction of a paper-reported ALBERT/DistilBERT/DeBERTa number."
+
+evidence:
+  conf/ipps/ZhaiJWJZCLZ23: "ByteTransformer: padding-free fused 12-layer BERT-base encoder (QKV+MHA+FFN+LN); bert_bench.sh sweeps batch{1,2,4,8,16} x seqlen{32..1024} @ avg_seqlen=60%, fp16; single trailing-latency-line per config, no visible repeat/median; unit-test correctness path (bert_transformer_test.py) disconnected from the timed benchmark; vs PyTorch/TF-XLA/TurboTransformer/DeepSpeed-Inference/FasterTransformer(+/-remove-padding), 55-138% faster end-to-end."

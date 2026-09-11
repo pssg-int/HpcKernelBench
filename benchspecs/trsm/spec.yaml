@@ -1,0 +1,173 @@
+kernel: trsm
+summary: >
+  Triangular solve with multiple right-hand sides (TRSM), covering both a
+  standalone single-call kernel across the full side/uplo/trans/diag layout
+  matrix and a uniform-shape batched-CPU variant — the two claims this
+  track's only TRSM microbenchmark (fBLAS) actually exercises. Distributed
+  mixed-precision TRSM fused inside a Cholesky-based solver (this track's
+  other paper, AbdulahCPBDGKLS22) is out of scope for a single-kernel
+  benchmark spec; see notes_on_fairness and open_questions.
+operation: >
+  solve op(A)[N,N] * X = alpha*B[N,M]  (side=Left)  or  X * op(A)[N,N] =
+  alpha*B[N,M]  (side=Right), A triangular (uplo in {Lower, Upper}), op(A)
+  in {A, A^T} (trans in {NoTrans, Trans}), diag in {NonUnit, Unit}; result X
+  overwrites B in place.
+
+variants:
+  - id: trsm-single-kernel
+    claim: >
+      steady-state throughput of a single (non-batched) TRSM call, reported
+      across the FULL side x uplo x trans layout matrix (diag=NonUnit) —
+      not just the one Left/Lower/NoTrans configuration fBLAS's own paper
+      publishes performance numbers for, even though fBLAS's own artifact
+      already builds and functionally tests all 8 layout combinations per
+      precision (`tests/host_api/trsm.json`). This closes the gap between
+      fBLAS's functional test coverage (8 layouts x 2 precisions = 16
+      configs) and its performance-reporting coverage (1 config).
+    inputs:
+      suite: dense random triangular A + dense random B, no external matrix collection
+      selection: >
+        N=M square RHS problems; the two sizes with a directly-evidenced
+        performance number in this track (fBLAS Table V: N=8192, N=32768),
+        extended with 4 smaller doubling-sequence points by this spec to
+        give a size-scaling curve (this spec's own addition — not evidenced
+        by either paper — since a 2-point curve cannot show scaling
+        behavior; flagged in notes_on_fairness)
+      recommended_subset: "N=M in {1024, 2048, 4096, 8192, 16384, 32768}"
+      operand_init: "A: random triangular, diagonal entries offset by +N to guarantee well-conditioning (avoids a near-singular solve dominating error); B: dense U(-1,1), fixed seed=42"
+    protocol:
+      layout_matrix: "side in {Left, Right} x uplo in {Lower, Upper} x trans in {NoTrans, Trans}, diag=NonUnit fixed (8 combinations, matches fBLAS's own trsm.json coverage); diag=Unit as an optional 9th/10th pair, since fBLAS's own tests never exercise Unit diag (open question, not required)"
+      precision: "fp32, fp64 (both; matches fBLAS's own single/double sweep)"
+      preprocessing: "A/B generation and any FPGA bitstream instantiation / on-chip module setup is one-shot, excluded from per-call timing, reported separately once"
+      warmup: 5
+      reps: 30
+      statistic: "median (report min/max) — fixes fBLAS's own artifact/README practice of reporting only the best (min) execution time across a thread-count sweep, which is optimistic and not representative of typical behavior"
+      timer: "CPU: host wall clock (matches fBLAS's own current_time_usecs() convention); FPGA: on-board kernel-invocation timer, H2D/D2H excluded when operands are generated on-chip (matches fBLAS's own memory-bound-routine convention), reported separately when transfer is required"
+      timing_scope: "kernel only"
+      preprocessing_reported: "separately, once"
+    metric:
+      primary: "GFLOP/s (flops = N^2*M for a single triangular solve with M right-hand sides)"
+      secondary: "us/ms per call"
+    correctness: >
+      relative backward error ||op(A)*X - alpha*B|| / (||A||*||X|| +
+      |alpha|*||B||) < 1e-6 (fp64) / < 1e-3 (fp32), computed against an
+      independent reference solve (LAPACK dtrsm/strsm on CPU). Neither
+      surveyed paper states a numeric TRSM tolerance anywhere (confirmed by
+      two independent searches of fBLAS's fulltext); these values are this
+      spec's own choice, not derived from either paper.
+
+  - id: trsm-batched-kernel
+    claim: >
+      steady-state throughput of uniform-shape batched TRSM (same N, M
+      across the batch, side=Left/uplo=Lower/trans=NoTrans/diag=NonUnit,
+      independent problems), reproducing fBLAS's own CPU/MKL batched
+      benchmark harness (`evaluation/cpu_programs/batched_trsm.cpp`)
+      verbatim in problem shape but replacing its 1-run-discarded / best-of-
+      thread-sweep statistic with a proper warmup+repetition protocol.
+    inputs:
+      suite: "same synthetic triangular/RHS generation as trsm-single-kernel, batched"
+      selection: >
+        N=M in {512, 1024, 2048} (batched problems are conventionally
+        smaller per-element than the standalone-kernel variant, since
+        batching targets many-small-problems workloads — this spec's own
+        choice, since fBLAS's batched CPU harness takes N/M as free CLI
+        parameters with no example values given in the extracted text;
+        flagged as an open question)
+      recommended_subset: "N=M in {512, 1024, 2048}; batch_count (ntrsm) in {1, 8, 32, 128, 512}"
+      operand_init: "same as trsm-single-kernel, independently generated per batch element"
+    protocol:
+      layout: "side=Left, uplo=Lower, trans=NoTrans, diag=NonUnit (fixed, matches fBLAS's batched_trsm.cpp exactly)"
+      precision: "fp32, fp64"
+      thread_sweep: "1 to (physical core count), reported per thread count, not just the best (this spec's fix — fBLAS's own harness sweeps MIN_THREADS=1..MAX_THREADS=10 and keeps only the best, discarding the per-thread-count curve from the final report)"
+      preprocessing: "batch buffer allocation and pointer-array setup is one-shot, excluded from per-call timing, reported separately once"
+      warmup: 1 (matches fBLAS's own "discard the first of runs+1 iterations" practice)
+      reps: 30 (raised from fBLAS's unspecified `runs` CLI value to a fixed, disclosed number, per this project's general timing-protocol fairness principle)
+      statistic: "median (report min/max) — see trsm-single-kernel; fixes fBLAS's own min-of-runs practice"
+      timer: "host wall clock via a monotonic clock (matches fBLAS's own current_time_usecs())"
+      timing_scope: "kernel only; a single batched API call (cblas_?trsm_batch or FPGA-equivalent) covering the whole batch is the timed unit"
+      preprocessing_reported: "separately, once"
+    metric:
+      primary: "GFLOP/s (2's-complement-free flop count: N^2*M*batch_count, consistent with trsm-single-kernel's per-call formula)"
+      secondary: "ms per batched call, reported per thread count"
+    correctness: "same tolerance as trsm-single-kernel, checked per batch element (all elements must pass, not just an aggregate/average)"
+
+notes_on_fairness:
+  - >
+    fBLAS's own README states host benchmark programs "report the lowest
+    execution time" across a thread-count sweep — the single most
+    optimistic statistic available (see the gemm-track spec's identical
+    finding for fBLAS's GEMM harness). Both variants above fix this to
+    median with min/max reported, and additionally require the FULL
+    thread-count curve be disclosed, not just its minimum.
+  - >
+    fBLAS validates TRSM correctness across all 8 side/uplo/trans layout
+    combinations (per precision) via its unit-test JSON, but only ever
+    publishes a performance number for 1 of those 8. trsm-single-kernel
+    requires performance be reported for the full layout matrix a real user
+    could invoke, closing this functional-vs-performance coverage gap.
+  - >
+    Neither surveyed paper states a numeric correctness tolerance for TRSM
+    anywhere in the available sources. This spec fixes a standard
+    backward-error bound (not found in either paper) rather than leaving
+    the gate unspecified, since an ungated throughput number is not a fair
+    benchmark result per this project's general correctness-gate principle.
+  - >
+    AbdulahCPBDGKLS22's TRSM usage (fused into tile-Cholesky + MLE,
+    band-percentage mixed precision, statistical-quality correctness) is
+    real and evidences an important usage pattern this spec's two variants
+    do not cover, but building a faithful "embedded/mixed-precision TRSM"
+    variant would require protocol details (band-size-to-precision mapping,
+    per-band tolerance) that the paper does not disclose at the granularity
+    a benchmark spec needs. Rather than fabricate those details, this usage
+    pattern is left as an open question / future track extension, consistent
+    with how the cholesky-track spec already treats AbdulahCPBDGKLS22's
+    precision-vector axis as a first-class, separately-specified thing (see
+    that spec's cholesky-mixed-precision-kernel variant) rather than folding
+    it into a generic single-kernel spec.
+
+open_questions:
+  - >
+    fBLAS's batched CPU harness (`batched_trsm.cpp`) exposes N, M, and
+    `ntrsm` (batch count) as free CLI parameters with no example invocation
+    or default values recoverable from the extracted paper/repo text; the
+    N/M/batch_count values in trsm-batched-kernel's recommended_subset are
+    this spec's own choice, not evidenced.
+  - >
+    Whether fBLAS's FPGA TRSM templates (trsm_v1..v8.cl) differ in
+    performance from each other (8 distinct implementation *versions*, not
+    just 8 layout variants — the naming is ambiguous from the file listing
+    alone) was not resolved from the sources read; if v1..v8 are competing
+    implementations rather than one-per-layout, trsm-single-kernel's
+    "report all 8 layouts" requirement may need to become "report all 8
+    layouts x all versions."
+  - >
+    No source gives an FPGA-side H2D/D2H breakout number for TRSM
+    specifically (only the general "memory-bound routines generate data
+    on-chip" convention is stated); whether this convention actually
+    applies to the TRSM templates specifically is unconfirmed.
+  - >
+    Whether a dedicated "TRSM fused after Cholesky, mixed/banded precision"
+    variant belongs in this spec or in the cholesky-track spec instead is
+    left open; AbdulahCPBDGKLS22 is the only evidence for this usage
+    pattern in either track's survey, and it is not independently
+    benchmarked in that paper either way.
+
+evidence:
+  conf/sc/MatteisLH20: >
+    TRSM at N=8192/32768, single/double precision, MKL-batched CPU baseline
+    (Xeon E5-2630 v4) vs. FPGA (Arria 10 GX1150 / Stratix 10 GX2800);
+    min-of-thread-sweep statistic, 1-iteration warmup ("remove the first
+    run"); functional correctness tested across 8 side/uplo/trans layouts x
+    2 precisions via a JSON-driven unit test, but performance published for
+    only 1 layout; no numeric correctness tolerance stated. arXiv 1907.07929
+    fulltext + spcl/FBLAS repo (evaluation/cpu_programs/batched_trsm.cpp,
+    tests/host_api/trsm.json).
+  journals/tpds/AbdulahCPBDGKLS22: >
+    TRSM never independently benchmarked; used only as the "triangular
+    solution" step following tile-Cholesky inside a distributed
+    mixed-precision (band-percentage FP64/FP32/FP16) geostatistical MLE
+    pipeline; correctness validated via downstream statistical quality
+    (parameter recovery, MSPE, log-likelihood vs. pure-FP64 reference), not
+    a numeric residual on the solve step itself. netlib.org PDF fulltext +
+    ecrc/exageostat (see benchspecs/cholesky/survey.md section 3 for full
+    detail).

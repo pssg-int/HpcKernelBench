@@ -1,0 +1,29 @@
+# Provenance of source/ (clone) -- the checkout itself is git-ignored (see kernel-papers/.gitignore).
+#
+# RULING (2026-09-06): the paper-table's listed artifact URL,
+# https://github.com/luckylsk34/Sparse-Kernels, is a stripped, renamed,
+# single-commit ("added cmake") derivative of google-research/sputnik: its
+# kernels/sparsekernel/{spmm,sddmm}/*.cu.cc are byte-identical to sputnik's
+# own sputnik/{spmm,sddmm}/*.cu.cc modulo (a) s/sputnik/sparsekernel/ on the
+# namespace/include paths and (b) pure clang-format-style re-wrapping of
+# multi-line template typedefs -- confirmed via `diff` after normalizing the
+# rename (0 semantic differences in cuda_spmm.cu.cc/cuda_spmm.h beyond the
+# rename and formatting). It is however (1) missing sputnik's Apache-2.0
+# license header/notice on every file it kept (no LICENSE file, no per-file
+# copyright block) despite being derived Apache-2.0-licensed Google code,
+# and (2) an incomplete subset (drops CudaSpmmBiasRelu/half-precision
+# overloads, softmax/, depthwise/, bias_relu/ -- kept only spmm/+sddmm/,
+# which happen to be exactly what this integration needs, but that is this
+# fork's own scope choice, not evidence of active maintenance or a
+# from-source rebuild). Given the licensing gap, this integration clones the
+# CANONICAL google-research/sputnik instead (ARTIFACT_GUIDE.md: "prefer the
+# listed URL if it is a faithful copy, else google-research/sputnik ...
+# documenting why") -- same two kernel files, properly licensed, from the
+# authoritative repository. See STATUS.md for the full diff evidence.
+remote=https://github.com/google-research/sputnik.git
+commit=bbf5840ba5efccf01f862855c785f71bcc6ff1f0
+commit_date=2020-11-04T17:42:00Z
+reclone=git clone https://github.com/google-research/sputnik.git source && git -C source checkout bbf5840ba5efccf01f862855c785f71bcc6ff1f0
+patch=none          # tracked files unmodified
+untracked_in_clone=0   # build products / vendored deps left by build.sh; not captured, build.sh recreates them
+listed_url_checked=https://github.com/luckylsk34/Sparse-Kernels (commit 79104ac1f866bea52f32e42e23e90d3a063e7483, 2026-09 pull) -- not used, see ruling above

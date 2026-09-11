@@ -1,0 +1,86 @@
+kernel: membership-filter
+summary: >
+  GPU approximate-membership-query (AMQ) filter data structures (GQF,
+  TCF, RSQF, SQF, Bloom, Blocked Bloom) benchmarked for insert/query/
+  delete throughput, with false-positive rate reported as a MANDATORY
+  joint measurement alongside every throughput number (never speed
+  alone), swept across filter capacity and across uniform vs. skewed
+  key-frequency distributions.
+operation: >
+  A filter F of target capacity N and target false-positive rate epsilon
+  supports: insert(key) -> void (adds key to F, using B bits/key of
+  storage, B a function of epsilon and the filter's design); query(key)
+  -> bool (returns true if key was inserted -- REQUIRED, zero false
+  negatives -- or, for a key never inserted, returns true with
+  probability <= epsilon, a false positive); delete(key) -> void, where
+  supported (GQF, SQF, TCF only -- Bloom/Blocked-Bloom/RSQF as specified
+  here do not support delete).
+variants:
+  - id: filter-insert-query-fpr-gpu
+    claim: >
+      steady-state GPU throughput for insert, positive query, and
+      random/false-positive query, reported JOINTLY with the empirically
+      measured false-positive rate at each capacity -- the common
+      denominator across all six filter types this artifact implements,
+      matching the artifact's own point-test range (2^22 to 2^30 items).
+    inputs:
+      suite: "the artifact's own filter-capacity sweep, at both key-distribution regimes"
+      selection: "capacity N in {2^22, 2^24, 2^26, 2^28, 2^30} items (2^30 via the artifact's own pre-sorted-insert workaround for memory-constrained GPUs, matching its bulk-tcf presorted_template_tests convention); target bits-per-key / epsilon fixed per filter type at its documented default"
+      recommended_subset:
+        - {filter: GQF,            capacity_log2: [22, 24, 26, 28, 30], supports_delete: true}
+        - {filter: TCF,            capacity_log2: [22, 24, 26, 28, 30], supports_delete: true, note: "point + bulk (batched) variants, both required"}
+        - {filter: RSQF,           capacity_log2: [22, 24, 26, 28, 30], supports_delete: false}
+        - {filter: SQF,            capacity_log2: [22, 24, 26, 28, 30], supports_delete: true}
+        - {filter: Bloom,          capacity_log2: [22, 24, 26, 28, 30], supports_delete: false}
+        - {filter: Blocked-Bloom,  capacity_log2: [22, 24, 26, 28, 30], supports_delete: false}
+      key_distribution: >
+        REQUIRED sub-case pair: (a) uniform-random 64-bit keys (the
+        released harness's default, reproducible without external data)
+        and (b) Zipfian/skewed key-frequency distribution (alpha in
+        {1.0, 1.5}) -- flagged as PAPER-CLAIMED-BUT-NOT-INDEPENDENTLY-
+        REPRODUCIBLE from the released artifact alone, since the
+        README states the Zipfian dataset is only available by emailing
+        the author, not bundled or regeneratable from the repo (see
+        survey Divergences); (b) may be substituted with a
+        locally-generated Zipfian key-frequency stream if the exact
+        dataset cannot be obtained, with the substitution reported
+        explicitly.
+      query_mix: "REQUIRED three sub-cases per (filter, capacity, distribution): insert (build from N keys), positive-query (query all N inserted keys), random-query (query N freshly-drawn random keys, measuring both throughput AND the resulting false-positive rate)"
+    protocol:
+      warmup: "1 discarded full insert/build pass (GPU-clock/memory-allocator warm-up) -- not specified in the released orchestration scripts; added since filter construction at N=2^30 items is itself a multi-second operation where a cold first pass is not representative of a subsequent query-only measurement window"
+      reps: 5
+      statistic: "median (report min/max) -- no statistic is stated at the run_full_battery.sh orchestration level in the fetched README; this spec's own choice per this project's general convention"
+      timer: "device-side CUDA events, wrapping each of insert/positive-query/random-query separately (NOT one fused timer for all three)"
+      timing_scope: "kernel only: the insert/query GPU kernel launches; filter-array allocation/zero-initialization on the device is a one-shot cost, reported separately"
+      preprocessing_reported: "separately, once per (filter, capacity): device-side filter-array allocation + initialization wall time; for the bulk-TCF path at capacity 2^30, ALSO report the pre-sort wall time (Thrust sort of the key stream, the artifact's own documented memory-workaround step) since it is a real cost of that specific insertion strategy, not free"
+    metric:
+      primary: "throughput, million operations/s (Mops/s), reported separately for insert, positive-query, random-query, and delete (where supported)"
+      secondary: "bits per key actually consumed (measured filter memory footprint / N, since AMQ filters' real memory efficiency can differ from their nominal target)"
+    correctness: >
+      MANDATORY dual gate, jointly required with every throughput number
+      (never reported separately, per this track's brief): (1) ZERO
+      false negatives -- every one of the N inserted keys' positive
+      queries MUST return true, checked exhaustively (not sampled) for
+      every (filter, capacity, distribution) configuration before its
+      speed number counts; (2) empirical false-positive rate on the
+      random-query test must not exceed the filter's DOCUMENTED target
+      epsilon by more than 20% relative (e.g. a filter targeting
+      epsilon=1/256 must measure FPR <= 1/256 * 1.2 on a random-query
+      set of at least 10x the filter's capacity, for statistical
+      reliability of the FPR estimate itself). A throughput number
+      reported without its paired FPR measurement from the SAME run is
+      INCOMPLETE and must not be cited alone.
+
+notes_on_fairness:
+  - "This track's brief explicitly requires false-positive rate reported JOINTLY with throughput, never as an afterthought; this spec makes that mandatory as a dual gate (zero false negatives + FPR-within-tolerance) rather than a display convention, since a filter could otherwise report a large throughput number while silently exceeding its target FPR under high load or at large capacity (a known failure mode for hash-based AMQ filters as they approach full occupancy)."
+  - "The released artifact's own README explicitly does NOT reproduce a Zipfian/skewed key-frequency test locally (the dataset is available only by emailing the author); this spec still requires a skewed-distribution sub-case since real-world key-frequency distributions are rarely uniform and a filter's collision/eviction behavior (for cuckoo-style or bucketed designs) can differ materially under skew -- but flags the substitution explicitly rather than silently reusing the paper's own unreproducible dataset claim."
+  - "Only GQF/SQF/TCF among the six filter types support delete; this spec does NOT force RSQF/Bloom/Blocked-Bloom into an incomplete delete comparison, avoiding the apples-to-oranges trap of penalizing filters that never claimed delete support."
+  - "The bulk-TCF path's pre-sort workaround at capacity 2^30 (needed to fit within GPU memory) is a real, reportable cost of that specific insertion strategy relative to the point-TCF path's presumably-unsorted insertion; this spec requires it reported separately as a preprocessing cost rather than silently absorbed into either the insert throughput number or ignored entirely."
+
+open_questions:
+  - "No stated warmup/repeat/statistic convention was found at the run_full_battery.sh orchestration level; each sub-tool (GQF/SQF/RSQF's run_all_tests.sh, the pog_warp_tests binary, the bulk-tcf batched_template_tests binary) may have its own internal convention not inspected in this survey -- the protocol specified here is this spec's own construction, not confirmed against the artifact's literal internals."
+  - "Whether the released harness enforces the zero-false-negative / FPR-within-tolerance gate automatically, or only reports raw counts for manual inspection, was not determined from the fetched top-level scripts (run_tests.py orchestrates test binaries but does not itself appear to assert pass/fail)."
+  - "The Warpcore external-baseline comparison is documented only for the point-TCF path (pog_warp_tests); whether a comparable external baseline exists (or is fair to construct) for GQF/RSQF/SQF/Bloom/Blocked-Bloom was not determined -- left as an optional extension rather than forced into this spec's required variant."
+
+evidence:
+  conf/ppopp/McCoyHY023: "GPU AMQ filter family: GQF/TCF(+pog_warp cooperative-group + bulk-tcf batched)/RSQF/SQF/Bloom/Blocked-Bloom; insert/positive-query/random-(FP)-query/delete(GQF,SQF,TCF only), capacity 2^22-2^30 (2^30 via a documented pre-sort memory workaround); Zipfian counting-filter test explicitly NOT reproduced by the released harness (dataset by email request only); no stated warmup/repeat convention at the orchestration-script level; vs Warpcore for the point-TCF path."

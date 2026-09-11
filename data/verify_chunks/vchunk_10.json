@@ -1,0 +1,406 @@
+[
+ {
+  "key": "conf/sc/ParasyrisGRLD23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Scalable Tuning of (OpenMP) GPU Applications via Kernel Record and Replay",
+  "abstract": "HPC is a heterogeneous world in which host and device code are interleaved throughout the application. Given the significant performance advantage of accelerators, device code execution time is becoming the new bottleneck. Tuning the accelerated parts is consequently highly desirable but often impractical due to the large overall application runtime which includes unrelated host parts.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "perf-model",
+   "confidence": "low",
+   "one_liner": "Kernel record-and-replay tool isolating OpenMP GPU device code for autotuning"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/sc/WangGPAT0LHWAT24",
+  "venue": "SC",
+  "year": 2024,
+  "title": "A High-Quality Workflow for Multi-Resolution Scientific Data Reduction and Visualization",
+  "abstract": "Multi-resolution methods such as Adaptive Mesh Refinement (AMR) can enhance storage efficiency for HPC applications generating vast volumes of data. However, their applicability is limited and cannot be universally deployed across all applications. Furthermore, integrating lossy compression with multi-resolution techniques to further boost storage efficiency encounters significant barriers. To this end, we introduce an innovative workflow that facilitates high-quality multi-resolution data compression for both uniform and AMR simulations. Initially, to extend the usability of multi-resolution techniques, our workflow employs a compression-oriented Region of Interest (ROI) extraction method, transforming uniform data into a multi-resolution format. Subsequently, to bridge the gap between multi-resolution techniques and lossy compressors, we optimize three distinct compressors, ensuring their optimal performance on multi-resolution data. These optimizations can improve the compression ratio of SOTA approaches by up to $3.3 \\times$ under the same data quality loss. Lastly, we incorporate an advanced uncertainty visualization method into our workflow to understand the potential impacts of lossy compression. Experimental evaluation demonstrates that our workflow achieves significant compression quality improvements.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "application",
+   "confidence": "low",
+   "one_liner": "Multi-resolution data-reduction/visualization workflow combining ROI extraction and compressor tuning"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/sc/ChenWB24",
+  "venue": "SC",
+  "year": 2024,
+  "title": "A Scalable Algorithm for Active Learning",
+  "abstract": "FIRAL is a recently proposed deterministic active learning algorithm for multiclass classification using logistic regression. It was shown to outperform the state-of-the-art in terms of accuracy and robustness and comes with theoretical performance guarantees. However, its scalability suffers when dealing with datasets featuring a large number of points n, dimensions d, and classes c, due to its $\\mathcal{O}\\left(c^{2} d^{2}+n c^{2} d\\right)$ storage and $\\mathcal{O}\\left(c^{3}\\left(n d^{2}+b d^{3}+b n\\right)\\right)$ computational complexity where b is the number of points to select in active learning. To address these challenges, we propose an approximate algorithm with storage requirements reduced to $\\mathcal{O}\\left(n(d+c)+c d^{2}\\right)$ and a computational complexity of $\\mathcal{O}\\left(b n c d^{2}\\right)$. Additionally, we present a parallel implementation on GPUs. We demonstrate the accuracy and scalability of our approach using MNIST, CIFAR-10, Caltech101, and ImageNet. The accuracy tests reveal no deterioration in accuracy compared to FIRAL. We report strong and weak scaling tests on up to 12 GPUs, for three million point synthetic dataset.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "other",
+   "confidence": "low",
+   "one_liner": "FIRAL approximation: reduced-complexity active-learning algorithm with multi-GPU implementation"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/sc/WangXY0C24",
+  "venue": "SC",
+  "year": 2024,
+  "title": "Accelerating Distributed DLRM Training with Optimized TT Decomposition and Micro-Batching",
+  "abstract": "Deep Learning Recommendation Models (DLRMs) are pivotal in various sectors, yet they are hindered by the high memory demands of embedding tables and the significant communication overhead in distributed training environments. Traditional approaches, like Tensor-Train (TT) decomposition, although effective for compressing these tables, introduce substantial computational burdens. Furthermore, existing frameworks for distributed training are inadequate due to the excessive data exchange requirements.This paper proposes EcoRec, an advanced library designed to expedite the training of DLRMs through a synergistic integration of TT decomposition technology and distributed training. EcoRec introduces a novel computation pattern that eliminates redundancy in TT operations, alongside an efficient multiplication pathway, significantly reducing computational time. Additionally, it provides a unique micro-batching technique with sorted indices to decrease memory demands without additional computational costs. EcoRec also features a novel pipeline training system for embedding layers, ensuring balanced data distribution and enhanced communication efficiency. EcoRec, built on PyTorch and CUDA, has been evaluated on a 32 GPU cluster. The results show EcoRec significantly outperforms the existing ELRec system, achieving up to a $3.1 \\times$ speedup and a 38.5% reduction in memory requirements. EcoRec marks a notable advancement in high-performance DLRM training.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "pure-ml-serving",
+   "confidence": "low",
+   "one_liner": "EcoRec: TT-decomposition, micro-batching, and pipeline training system/library for DLRM embeddings"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/sc/ZhangLCWIHMW24",
+  "venue": "SC",
+  "year": 2024,
+  "title": "Adaptive Patching for High-resolution Image Segmentation with Transformers",
+  "abstract": "Attention-based models are proliferating in the space of image analytics, including segmentation. The standard method of feeding images to transformer encoders is to divide the images into patches and then feed the patches to the model as a linear sequence of tokens. For high-resolution images, e.g. microscopic pathology images, the quadratic compute and memory cost prohibits the use of an attention-based model, if we are to use smaller patch sizes that are favorable in segmentation. The solution is to either use custom complex multi-resolution models or approximate attention schemes. We take inspiration from Adapative Mesh Refinement (AMR) methods in HPC by adaptively patching the images, as a pre-processing step, based on the image details to reduce the number of patches being fed to the model, by orders of magnitude. This method has a negligible overhead, and works seamlessly with any attention-based model, i.e. it is a pre-processing step that can be adopted by any attention-based model without friction. We demonstrate superior segmentation quality over SoTA segmentation models for real-world pathology datasets while gaining a geomean speedup of $6.9 \\times$ for resolutions up to $64 K^{2}$, on up to 2,048 GPUs.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "other",
+   "confidence": "low",
+   "one_liner": "AMR-inspired adaptive image-patching preprocessing reducing tokens for transformer segmentation"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/sc/StocksVYSPKBB24",
+  "venue": "SC",
+  "year": 2024,
+  "title": "Breaking the Million-Electron and 1 EFLOP/s Barriers: Biomolecular-Scale Ab Initio Molecular Dynamics Using MP2 Potentials",
+  "abstract": "The accurate simulation of complex biochemical phenomena has historically been hampered by the computational requirements of high-fidelity molecular-modeling techniques. Quantum mechanical methods, such as ab initio wave-function (WF) theory, deliver the desired accuracy, but have impractical scaling for modeling biosystems with thousands of atoms. Combining molecular fragmentation with MP2 perturbation theory, this study presents an innovative approach that enables biomolecular-scale ab initio molecular dynamics (AIMD) simulations at WF theory level. Leveraging the resolution-of-the-identity approximation for Hartree-Fock and MP2 gradients, our approach eliminates computationally intensive four-center integrals and their gradients, while achieving near-peak performance on modern GPU architectures. The introduction of asynchronous time steps minimizes time step latency, overlapping computational phases and effectively mitigating load imbalances. Utilizing up to $\\mathbf{9, 4 0 0}$ nodes of Frontier and achieving $\\mathbf{5 9 \\%}$ (1006.7 PFLOP/s) of its double-precision floating-point peak, our method enables us to break the million-electron and $1 \\mathrm{EFLOP} / \\mathrm{s}$ barriers for AIMD simulations with quantum accuracy.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "application",
+   "confidence": "medium",
+   "one_liner": "Fragment+MP2 ab initio molecular dynamics scaling to million-electron biomolecules at 1 EFLOP/s"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/sc/PattiNLMK25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Augmenting Simulated Noisy Quantum Data Collection by Orders of Magnitude Using Pre-Trajectory Sampling with Batched Execution",
+  "abstract": "Classically simulating quantum systems is challenging, as even noiseless n-qubit quantum states scale as 2n. The complexity of noisy quantum systems is even greater, requiring 2n × 2n-dimensional density matrices. Various approximations reduce density matrix overhead, including quantum trajectory-based methods, which instead use an ensemble of m ≪ 2n noisy states. While this method is dramatically more efficient, current implementations use unoptimized sampling, redundant state preparation, and single-shot data collection. In this manuscript, we present the Pre-Trajectory Sampling technique, increasing the efficiency and utility of trajectory simulations by tailoring error types, batching sampling without redundant computation, and collecting error information. We demonstrate the effectiveness of our method with both a mature statevector simulation of a 35-qubit quantum error-correction code and a preliminary tensor network simulation of 85 qubits, yielding speedups of up to 106x and 16x, as well as generating massive datasets of one trillion and one million shots, respectively.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "other",
+   "confidence": "low",
+   "one_liner": "Pre-Trajectory Sampling technique speeding up noisy quantum trajectory data collection"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/sc/LeonGSMLSKVMDBH25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Breaking the System Noise Barrier at Exascale",
+  "abstract": "To meet the increasing demands of parallel scientific applications, supercomputers continue to grow in both scale and complexity. The fastest supercomputer in the world, El Capitan, features over a million CPU cores and tens of thousands of GPUs. Applications running on such large-scale systems are particularly susceptible to system noise or interference caused by the operating system (OS) and other services running on the same compute nodes as the application.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "runtime-sched",
+   "confidence": "low",
+   "one_liner": "Mitigating OS/system noise interference at exascale on El Capitan-class systems"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/sc/Deng0ZXL25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Bubble: Towards Scalable Evolving Graph Processing via Mini-Batch Sorting",
+  "abstract": "Evolving graph processing has become a critical component in various applications and is gaining increasing attention. However, existing evolving graph systems suffer from cache contention and workload imbalance between threads, which leads to poor scalability and performance degradation on modern multi-core computers.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "runtime-sched",
+   "confidence": "low",
+   "one_liner": "Bubble: evolving-graph processing system fixing cache contention/workload imbalance via mini-batch sorting"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/sc/FengCZLQWCWHLZZ25",
+  "venue": "SC",
+  "year": 2025,
+  "title": "Million-Atom Ab Initio Electron Dynamics: Discontinuous Galerkin Real-Time Time-Dependent Density Functional Theory",
+  "abstract": "Over the past decades, first-principles real-time time dependent density functional theory(rt-TDDFT) simulations have been limited to systems with only thousands of atoms. We propose a novel method based on the discontinuous Galerkin adaptive local basis, significantly reducing global communication in rt-TDDFT. We further introduce a tensor compression technique that leverages basis locality to avoid repeated evaluation of multi-center integrals in hybrid functionals, greatly reducing computational cost. To overcome the projection bottleneck in our basis sets, we design a fused Gemm-Reduce operation that achieves several times higher floating-point efficiency than standard BLAS combination. Our implementation reaches 34.8% of theoretical peak performance on 524,288 CGs of the New Sunway supercomputer and simulates electronic dynamics of systems with over one million atoms for both local-semi-local and hybrid functionals. This work improves computational scale by two orders of magnitude, opening new possibilities for exploring ultrafast dynamics in large-scale materials and nanophotonic devices.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "application",
+   "confidence": "medium",
+   "one_liner": "DG-basis real-time TDDFT method scaling ab initio electron dynamics to million-atom systems on Sunway"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "journals/tpds/DemirciA20",
+  "venue": "TPDS",
+  "year": 2020,
+  "title": "Cartesian Partitioning Models for 2D and 3D Parallel SpGEMM Algorithms",
+  "abstract": "The focus is distributed-memory parallelization of sparse-general-matrix-multiplication (SpGEMM). Parallel SpGEMM algorithms are classified under one-dimensional (1D), 2D, and 3D categories denoting the number of dimensions by which the 3D sparse workcube representing the iteration space of SpGEMM is partitioned. Recently proposed successful 2D- and 3D-parallel SpGEMM algorithms benefit from upper bounds on communication overheads enforced by 2D and 3D cartesian partitioning of the workcube on 2D and 3D virtual processor grids, respectively. However, these methods are based on random cartesian partitioning and do not utilize sparsity patterns of SpGEMM instances for reducing the communication overheads. We propose hypergraph models for 2D and 3D cartesian partitioning of the workcube for further reducing the communication overheads of these 2D- and 3D- parallel SpGEMM algorithms. The proposed models utilize two- and three-phase partitioning that exploit multi-constraint hypergraph partitioning formulations. Extensive experimentation performed on 20 SpGEMM instances by using upto 900 processors demonstrate that proposed partitioning models significantly improve the scalability of 2D and 3D algorithms. For example, in 2D-parallel SpGEMM algorithm on 900 processors, the proposed partitioning model respectively achieves 85 and 42 percent decrease in total volume and total number of messages, leading to 1.63 times higher speedup compared to random partitioning, on average.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "communication",
+   "confidence": "high",
+   "one_liner": "Hypergraph partitioning models to cut communication in 2D/3D distributed SpGEMM, not a compute kernel."
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "journals/tpds/SzustakWOM20",
+  "venue": "TPDS",
+  "year": 2020,
+  "title": "Correlation of Performance Optimizations and Energy Consumption for Stencil-Based Application on Intel Xeon Scalable Processors",
+  "abstract": "This article provides a comprehensive study of the impact of performance optimizations on the energy efficiency of a real-world CFD application called MPDATA, as well as an insightful analysis of performance-energy interaction of these optimizations with the underlying hardware that represents the first generation of Intel Xeon Scalable processors. Considering the MPDATA iterative application as a use case, we explore the fundamentals of energy and performance analysis for a memory-bound application when exposed to a set of optimization steps that increase the application performance, by improving the operational intensity of code and utilizing resources more efficiently. It is shown that for memory-bound applications, optimizing toward high performance could be a powerful strategy for improving the energy efficiency as well. In fact, for the considered performance optimizations, the energy gain is correlated with the performance gain but with varying degrees. As a result, these optimizations allow improving both performance and energy consumption radically, up to about 10.9 and 8.8 times, respectively. The impact of the Intel AVX-512 SIMD extension on the energy consumption and performance is demonstrated. Also, we discover limitations on the usability of CPU frequency scaling as a tool for balancing energy savings with admissible performance losses.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "perf-model",
+   "confidence": "medium",
+   "one_liner": "Energy-performance correlation study of optimization steps applied to the MPDATA stencil CFD app."
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "journals/tpds/ZhouZSC20",
+  "venue": "TPDS",
+  "year": 2020,
+  "title": "Enabling Runtime SpMV Format Selection through an Overhead Conscious Method",
+  "abstract": "Sparse matrix-vector multiplication (SpMV) is an important kernel and its performance is critical for many applications. Storage format selection is to select the best format to store a sparse matrix; it is essential for SpMV performance. Prior studies have focused on predicting the format that helps SpMV run fastest, but have ignored the runtime prediction and format conversion overhead. This work shows that the runtime overhead makes the predictions from previous solutions frequently sub-optimal and sometimes inferior regarding the end-to-end time. It proposes a new paradigm for SpMV storage selection, an overhead-conscious method. Through carefully designed regression models and neural network-based time series prediction models, the method captures the influence imposed on the overall program performance by the overhead and the benefits of format prediction and conversions. The method employs a novel two-stage lazy-and-light scheme to help control the possible negative effects of format predictions, and at the same time, maximize the overall format conversion benefits. Experiments show that the technique outperforms previous techniques significantly. It improves the overall performance of applications by 1.21X to 1.53X, significantly larger than the 0.83X to 1.25X upper-bound speedups overhead-oblivious methods could give.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "perf-model",
+   "confidence": "medium",
+   "one_liner": "Regression/NN prediction models for overhead-conscious runtime SpMV storage-format selection."
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "journals/tpds/AsriMWBJG21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "Hardware Accelerator Integration Tradeoffs for High-Performance Computing: A Case Study of GEMM Acceleration in N-Body Methods",
+  "abstract": "In this article, we study performance and energy saving benefits of hardware acceleration under different hardware configurations and usage scenarios for a state-of-the-art Fast Multipole Method (FMM), which is a popular N-body method. We use a dedicated Application Specific Integrated Circuit (ASIC) to accelerate General Matrix-Matrix Multiply (GEMM) operations. FMM is widely used in applications and is representative example of the workload for many HPC applications. We compare architectures that integrate the GEMM ASIC next to, in or near main memory with an on-chip coupling aimed at minimizing or avoiding repeated round-trip transfers through DRAM for communication between accelerator and CPU. We study tradeoffs using detailed and accurately calibrated x86 CPU, accelerator and DRAM simulations. Our results show that simply moving accelerators closer to the chip does not necessarily lead to performance/energy gains. We demonstrate that, while careful software blocking and on-chip placement optimizations can reduce DRAM accesses by 2X over a naive on-chip integration, these dramatic savings in DRAM traffic do not automatically translate into significant total energy or runtime savings. This is chiefly due to the application characteristics, the high idle power and effective hiding of memory latencies in modern systems. Only when more aggressive co-optimizations such as software pipelining and overlapping are applied, additional performance and energy savings can be unlocked by 37 and 35 percent respectively over baseline acceleration. When similar optimizations (pipelining and overlapping) are applied with an off-chip integration, on-chip integration delivers up to 20 percent better performance and 17 percent less total energy consumption than off-chip integration.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "Simulation study of GEMM ASIC placement (near/in/on-chip memory) for FMM N-body acceleration"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "journals/tpds/GuptaJCC21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "PQC Acceleration Using GPUs: FrodoKEM, NewHope, and Kyber",
+  "abstract": "In this article, we present the first GPU implementation for FrodoKEM-976, NewHope-1024, and Kyber-1024. These algorithms belong to three different classes of post-quantum algorithms: Learning with errors (LWE), Ring-LWE, and Module-LWE. We show the practical applicability of the algorithms in different scenarios using two different implementation approaches. Moreover, we achieve highly efficient realization of computationally expensive operations such as NTT (Number Theoretic Transform), matrix multiplication, and Keccak. Since, these are the most common operations in lattice-based cryptographic algorithms, the techniques presented in this article will likely benefit other similar algorithms. Using a NVIDIA QUADRO GV100 graphics card, we undertook a detailed experimental study. For NewHope and Kyber we were able to perform approximately 504K and 473K key exchanges per second, demonstrating a speedup of almost 53.1× and 51.05× compared to the reference C implementation. Compared to the optimized AVX2 versions we obtain speedups of 25.7× and 14.6×, respectively. Further, implementation of FrodoKEM resulted in a speedup of 50.6×, 44.2×, and 36.9× for KeyGen, Encaps and Decaps operations. Compared to its AVX2 counterpart, we achieved a speedup of about 7.3×, 4.7× and 4.9×, respectively. We also show that using multiple streams resulted in further speedup of about 28-38 percent.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": null,
+   "excluded_reason": "other",
+   "confidence": "medium",
+   "one_liner": "GPU acceleration of post-quantum KEMs (FrodoKEM/NewHope/Kyber); cryptography application."
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "journals/tpds/AbubakerAA21",
+  "venue": "TPDS",
+  "year": 2021,
+  "title": "True Load Balancing for Matricized Tensor Times Khatri-Rao Product",
+  "abstract": "MTTKRP is the bottleneck operation in algorithms used to compute the CP tensor decomposition. For sparse tensors, utilizing the compressed sparse fibers (CSF) storage format and the CSF-oriented MTTKRP algorithms is important for both memory and computational efficiency on distributed-memory architectures. Existing intelligent tensor partitioning models assume the computational cost of MTTKRP to be proportional to the total number of nonzeros in the tensor. However, this is not the case for the CSF-oriented MTTKRP on distributed-memory architectures. We outline two deficiencies of nonzero-based intelligent partitioning models when CSF-oriented MTTKRP operations are performed locally: failure to encode processors' computational loads and increase in total computation due to fiber fragmentation. We focus on existing fine-grain hypergraph model and propose a novel vertex weighting scheme that enables this model encode correct computational loads of processors. We also propose to augment the fine-grain model by fiber nets for reducing the increase in total computational load via minimizing fiber fragmentation. In this way, the proposed model encodes minimizing the load of the bottleneck processor. Parallel experiments with real-world sparse tensors on up to 1024 processors prove the validity of the outlined deficiencies and demonstrate the merit of our proposed improvements in terms of parallel runtimes.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [
+    "distributed"
+   ],
+   "approach": null,
+   "excluded_reason": "runtime-sched",
+   "confidence": "high",
+   "one_liner": "Hypergraph vertex-weighting/partitioning model for load-balanced distributed MTTKRP."
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "journals/tpds/AljundiAK22",
+  "venue": "TPDS",
+  "year": 2022,
+  "title": "Boosting Graph Embedding on a Single GPU",
+  "abstract": "Graphs are ubiquitous, and they can model unique characteristics and complex relations of real-life systems. Although using machine learning (ML) on graphs is promising, their raw representation is not suitable for ML algorithms. Graph embedding represents each node of a graph as a d-dimensional vector which is more suitable for ML tasks. However, the embedding process is expensive, and CPU-based tools do not scale to real-world graphs. In this work, we present GOSH, a GPU-based tool for embedding large-scale graphs with minimum hardware constraints. GOSH employs a novel graph coarsening algorithm to enhance the impact of updates and minimize the work for embedding. It also incorporates a decomposition schema that enables any arbitrarily large graph to be embedded with a single GPU. As a result, GOSH sets a new state-of-the-art in link prediction both in accuracy and speed, and delivers high-quality embeddings for node classification at a fraction of the time compared to the state-of-the-art. For instance, it can embed a graph with over 65 million vertices and 1.8 billion edges in less than 30 minutes on a single GPU.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "application",
+   "confidence": "low",
+   "one_liner": "GOSH: GPU graph-embedding tool with coarsening and single-GPU decomposition for huge graphs"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "journals/tpds/MoonKJCRK22",
+  "venue": "TPDS",
+  "year": 2022,
+  "title": "Evaluating Spatial Accelerator Architectures with Tiled Matrix-Matrix Multiplication",
+  "abstract": "There is a growing interest in custom spatial accelerators for machine learning applications. These accelerators employ a spatial array of processing elements (PEs) interacting via custom buffer hierarchies and networks-on-chip. The efficiency of these accelerators comes from employing optimized dataflow (i.e., spatial/temporal partitioning of data across the PEs and fine-grained scheduling) strategies to optimize data reuse. The focus of this work is to evaluate these accelerator architectures using a tiled general matrix-matrix multiplication (GEMM) kernel. To do so, we develop a framework that finds optimized mappings (dataflow and tile sizes) for a tiled GEMM for a given spatial accelerator and workload combination, leveraging an analytical cost model for runtime and energy. Our evaluations over five spatial accelerators demonstrate that the tiled GEMM mappings systematically generated by our framework achieve high performance on various GEMM workloads and accelerators.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "medium",
+   "one_liner": "Analytical-model-based dataflow/tile-size mapper for tiled GEMM on spatial DNN accelerators"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "journals/tpds/HoW22",
+  "venue": "TPDS",
+  "year": 2022,
+  "title": "Tensorox: Accelerating GPU Applications via Neural Approximation on Unused Tensor Cores",
+  "abstract": "Driven by the demands of deep learning, many hardware accelerators, including GPUs, have begun to include specialized tensor processing units to accelerate matrix operations. However, general-purpose GPU applications that have little or no large dense matrix operations cannot benefit from these tensor units. This article proposes Tensorox, a framework that exploits the half-precision tensor cores available on recent GPUs for approximable, non deep learning applications. In essence, a shallow neural network is trained based on the input-output mapping of the function to be approximated. The key innovation in our implementation is the use of the small and dimension-restricted tensor operations in Nvidia GPUs to run multiple instances of the approximation neural network in parallel. With the proper scaling and training methods, our approximation yielded an overall accuracy that is higher than naïvely running the original programs with half-precision. Furthermore, Tensorox allows for the runtime adjustment of the degree of approximation. For the 10 benchmarks we tested, we achieved speedups from 2× to 112× compared to the original in single precision floating point, while maintaining the error caused by the approximation to below 10 percent in most applications.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "other",
+   "confidence": "low",
+   "one_liner": "Neural-approximate-computing framework exploiting idle tensor cores for general GPU applications"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "journals/tpds/DengLYDGYZZWLFY24",
+  "venue": "TPDS",
+  "year": 2024,
+  "title": "Acceleration of Multi-Body Molecular Dynamics With Customized Parallel Dataflow",
+  "abstract": "FPGAs are drawing increasing attention in resolving molecular dynamics (MD) problems, and have already been applied in problems such as two-body potentials, force fields composed of these potentials, etc. Competitive performance is obtained compared with traditional counterparts such as CPUs and GPUs. However, as far as we know, FPGA solutions for more complex and real-world MD problems, such as multi-body potentials, are seldom to be seen. This work explores the prospects of state-of-the-art FPGAs in accelerating multi-body potential. An FPGA-based accelerator with customized parallel dataflow that features multi-body potential computation, motion update, and internode communication is designed. Major contributions include: (1) parallelization applied at different levels of the accelerator; (2) an optimized dataflow mixing atom-level pipeline and cell-level pipeline to achieve high throughput; (3) a mixed-precision method using different precision at different stages of simulations; and (4) a communication-efficient method for internode communication. Experiments show that, our single-node accelerator is over 2.7× faster than an 8-core CPU design, performing 20.501 ns/day on a 55,296-atom system for the <italic xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">Tersoff</i> simulation. Regarding power efficiency, our accelerator is 28.9× higher than I7-11700 and 4.8× higher than RTX 3090 when running the same test case.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [
+    "fpga"
+   ],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "medium",
+   "one_liner": "FPGA accelerator with custom dataflow architecture for multi-body MD potentials (Tersoff)"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "journals/tpds/ShiZSLLX24",
+  "venue": "TPDS",
+  "year": 2024,
+  "title": "DyLaClass: Dynamic Labeling Based Classification for Optimal Sparse Matrix Format Selection in Accelerating SpMV",
+  "abstract": "Sparse matrix-vector multiplication (SpMV) is crucial in many scientific and engineering applications, particularly concerning the effectiveness of different sparse matrix storage formats for various architectures, no single format excels across all hardware. Previous research has focused on trying different algorithms to build predictors for the best format, yet it overlooked how to address the issue of the best format changing in the same hardware environment and how to reduce prediction overhead rather than merely considering the overhead in building predictors. This paper proposes a novel classification algorithm for optimizing sparse matrix storage formats, DyLaClass, based on dynamic labeling and flexible feature selection. Particularly, we introduce mixed labels and features with strong correlations, allowing us to achieve ultra-high prediction accuracy with minimal feature inputs, significantly reducing feature extraction overhead. For the first time, we propose the concept of the most suitable storage format rather than the best storage format, which can stably predict changes in the best format for the same matrix across multiple SpMV executions. We further demonstrate the proposed method on the University of Florida’s public sparse matrix collection dataset. Experimental results show that compared to existing work, our method achieves up to 91% classification accuracy. Using two different hardware platforms for verification, the proposed method outperforms existing methods by 1.26 to 1.43 times. Most importantly, the stability of the proposed prediction model is 25.5% higher than previous methods, greatly increasing the feasibility of the model in practical field applications.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [
+    "cpu"
+   ],
+   "approach": null,
+   "excluded_reason": "perf-model",
+   "confidence": "medium",
+   "one_liner": "ML classifier (DyLaClass) predicting the best-performing sparse matrix storage format per hardware for SpMV"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "journals/tpds/MogilevskyZSZYZ26",
+  "venue": "TPDS",
+  "year": 2026,
+  "title": "Quantifying Performance Variability in GPU Clusters",
+  "abstract": "Modern supercomputers are equipped with massive amounts of Graphics Processing Units (GPUs) to meet the growing demands of scientific computing and machine learning. However, GPUs, even of the same type, exhibit performance variability, leading to resource under-utilization and prolonged execution times. In this work, we perform a characterization study on the performance variability of NVIDIA A100 GPUs and GH200 superchips using the GEMM and STREAM micro-benchmarks and seven real-world applications across two supercomputing systems: TACC Vista (GH200) and NERSC Perlmutter (A100). Our results reveal GEMM performance variability ranging from 0.1% to 8.8%, though outliers can push deviations significantly higher. For scientific applications, the variability ranges from 1.0% to 12.2% on Vista. The variability of single-GPU GPT 4.8B and Llama 3B training is 10.4% and 8.9%, respectively. We further extend this study by training a GPT 19B model using eight GH200s in the 3D parallel configuration, observing up to 3.6% throughput variability and 8.5% slowdown in the worst case. By comparing the variability across GPU types, compute paths, data precisions, and applications, we observe that applications that use Tensor Cores and FP64 on CUDA cores show higher variability than other applications. Supercomputer users can leverage the observed variability to diagnose performance issues and enhance execution efficiency. Computing centers can design variability-aware scheduling approaches to achieve higher machine utilization without sacrificing individual application performance.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "perf-model",
+   "confidence": "high",
+   "one_liner": "Characterization study of GEMM/STREAM/application performance variability on GPU clusters"
+  },
+  "mode": "confirm-exclude"
+ }
+]

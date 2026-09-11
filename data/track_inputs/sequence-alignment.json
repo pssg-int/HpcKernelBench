@@ -1,0 +1,111 @@
+{
+ "kernel": "sequence-alignment",
+ "papers": [
+  {
+   "key": "conf/ppopp/ZhangLMZT26",
+   "title": "Faster and Cheaper: Pushing the Sequence Alignment Throughput with Commercial CPUs",
+   "venue": "PPoPP",
+   "year": 2026,
+   "doi": "10.1145/3774934.3786421",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/zzhofict/BWA-FastAlign",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "manual",
+   "abstract": "This paper proposes FastAlign, a faster, cheaper, and practical end-to-end solution for sequence alignment using commercial CPUs. It introduces two key innovations: a multi-stage seeding algorithm that improves search performance while maintaining low memory consumption, and an intra-query parallel seed-extension algorithm that eliminates redundancy and increases SIMD utilization. Evaluation results show that FastAlign achieves 2.27× ∼ 3.28× throughput speedup and 2.54× ∼ 5.65× cost reduction compared to state-of-the-art CPU and GPU baselines while guaranteeing 100% identical output to the de facto software BWA-MEM. FastAlign is open-sourced at https://github.com/zzhofict/BWA-FastAlign.git.",
+   "one_liner": "FastAlign: SIMD intra-query seed-extension sequence-alignment kernel, 2.3-3.3x over BWA-MEM baselines"
+  },
+  {
+   "key": "conf/sc/MunksgaardHSO22",
+   "title": "Memory Optimizations in an Array Language",
+   "venue": "SC",
+   "year": 2022,
+   "doi": "10.1109/SC41404.2022.00036",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/diku-dk/futhark-mem-sc22",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "abstract": "We present a technique for introducing and op-timizing the use of memory in a functional array language, aimed at GPU execution, that supports correct-by-construction parallelism. Using linear memory access descriptors as building blocks, we define a notion of memory in the compiler IR that enables cost-free change-of-layout transformations (e.g., slicing, transposition), whose results can even be carried across control flow such as ifs/loops without manifestation in memory. The memory notion allows a graceful transition to an unsafe IR that is automatically optimized (1) to mix reads and writes to the same array inside a parallel construct, and (2) to map semantically different arrays to the same memory block. The result is code similar to what imperative users would write. Our evaluation shows that our optimizations have significant impact (1.1 x -2 x) and result in performance competi",
+   "one_liner": "Functional array-language compiler with cost-free layout memory optimizations for GPU kernels"
+  },
+  {
+   "key": "journals/tpds/FigueiredoNSTM21",
+   "title": "Parallel Fine-Grained Comparison of Long DNA Sequences in Homogeneous and Heterogeneous GPU Platforms With Pruning",
+   "venue": "TPDS",
+   "year": 2021,
+   "doi": "10.1109/TPDS.2021.3084069",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/edanssandes/MASA-CUDAlign",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu",
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "abstract": "The parallelization of Smith-Waterman (SW) sequence comparison tools for long DNA sequences has been a big challenge over the years, requesting the use of several devices and sophisticated optimizations. Pruning is one of these optimizations, which can reduce considerably the amount of computation. This article proposes MultiBP, a sequence comparison solution in multiple GPUs with block pruning. Two MultiBP strategies are proposed. In static score-sharing, workload is statically distributed to the GPUs, and the best score is sent to neighbor GPUs to simulate a global view. In the dynamic strategy, execution is divided into cycles and workload is dynamically assigned, according to the GPUs processing rate. MultiBP was integrated to MASA-CUDAlign and tested in homogeneous and heterogeneous platforms, with different NVidia GPU architectures. The best results in our homogeneous and heterogen",
+   "one_liner": "Multi-GPU Smith-Waterman DNA alignment with block pruning; 82,822 GCUPS on 512 V100s."
+  },
+  {
+   "key": "conf/ipps/MullerS0MLKH20",
+   "title": "AnySeq: A High Performance Sequence Alignment Library based on Partial Evaluation",
+   "venue": "IPDPS",
+   "year": 2020,
+   "doi": "10.1109/IPDPS47924.2020.00109",
+   "arxiv": "2002.04561",
+   "oa_url": "https://arxiv.org/pdf/2002.04561",
+   "artifact_url": "https://github.com/AnyDSL/anyseq",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu",
+    "nvidia-gpu",
+    "fpga"
+   ],
+   "approach": "codegen",
+   "abstract": "Sequence alignments are fundamental to bioinformatics which has resulted in a variety of optimized implementations. Unfortunately, the vast majority of them are hand-tuned and specific to certain architectures and execution models. This not only makes them challenging to understand and extend, but also difficult to port to other platforms. We present AnySeq-a novel library for computing different types of pairwise alignments of DNA sequences. Our approach combines high performance with an intuitively understandable implementation, which is achieved through the concept of partial evaluation. Using the AnyDSL compiler framework, AnySeq enables the compilation of algorithmic variants that are highly optimized for specific usage scenarios and hardware targets with a single, uniform codebase. The resulting domain-specific library thus allows the variation of alignment parameters (such as alig",
+   "one_liner": "Partial-evaluation sequence-alignment library matching SeqAn/NVBio across CPU/GPU/FPGA"
+  },
+  {
+   "key": "conf/ipps/ZeniGEDSHBOY20",
+   "title": "LOGAN: High-Performance GPU-Based X-Drop Long-Read Alignment",
+   "venue": "IPDPS",
+   "year": 2020,
+   "doi": "10.1109/IPDPS47924.2020.00055",
+   "arxiv": "2002.05200",
+   "oa_url": "https://arxiv.org/pdf/2002.05200",
+   "artifact_url": "https://github.com/albertozeni/LOGAN",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Pairwise sequence alignment is one of the most computationally intensive kernels in genomic data analysis, accounting for more than 90% of the runtime for key bioinformatics applications. This method is particularly expensive for third-generation sequences due to the high computational cost of analyzing sequences of length between 1Kb and 1Mb. Given the quadratic overhead of exact pairwise algorithms for long alignments, the community primarily relies on approximate algorithms that search only for high-quality alignments and stop early when one is not found. In this work, we present the first GPU optimization of the popular X-drop alignment algorithm, that we named LOGAN. Results show that our high-performance multi-GPU implementation achieves up to 181.6 GCUPS and speed-ups up to 6.6× and 30.7× using 1 and 6 NVIDIA Tesla V100, respectively, over the state-of-the-art software running on ",
+   "one_liner": "Multi-GPU X-drop long-read alignment kernel (LOGAN), up to 30.7x over CPU baseline"
+  },
+  {
+   "key": "conf/sc/GoenkaTPH20",
+   "title": "SegAlign: a scalable GPU-based whole genome aligner",
+   "venue": "SC",
+   "year": 2020,
+   "doi": "10.1109/SC41405.2020.00043",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/gsneha26/SegAlign",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu",
+    "distributed"
+   ],
+   "approach": "manual",
+   "abstract": "Pairwise Whole Genome Alignment (WGA) is a crucial first step to understanding evolution at the DNA sequence-level. Pairwise WGA of thousands of currently available species genomes could help make biological discoveries, however, computing them for even a fraction of the millions of possible pairs is prohibitive - WGA of a single pair of vertebrate genomes (human-mouse) takes 11 hours on a 96-core Amazon Web Services (AWS) instance (c5.24xlarge). This paper presents SegAlign - a scalable, GPU-accelerated system for computing pairwise WGA. SegAlign is based on the standard seed-filter-extend heuristic, in which the filtering stage dominates the runtime (e.g. 98% for human-mouse WGA), and is accelerated using GPU(s). Using three vertebrate genome pairs, we show that SegAlign provides a speedup of up to 14× on an 8-GPU, 64-core AWS instance (p3.16xlarge) for WGA and nearly 2.3× reduction in",
+   "one_liner": "SegAlign: GPU-accelerated seed-filter-extend whole-genome aligner, up to 14x speedup."
+  }
+ ]
+}

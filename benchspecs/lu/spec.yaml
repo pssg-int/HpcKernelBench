@@ -1,0 +1,525 @@
+kernel: lu
+summary: >
+  Dense tile LU factorization of a general (non-symmetric) matrix, spanning
+  three claims this track's own literature treats as genuinely different:
+  single-node/single-GPU blocked LU with the pivoting strategy itself
+  (partial / tournament / none) as a required, disclosed parameter;
+  distributed communication-optimal LU built on 2.5D tournament pivoting;
+  and extreme-scale mixed-precision (FP16/FP32 factorization + FP64
+  iterative-refinement correction) no-pivoting LU in the HPL-AI benchmark
+  family. Unlike Cholesky, LU's pivoting choice is not a minor implementation
+  detail — it changes both asymptotic communication cost and the numerical
+  safety argument, and none of this track's own papers report a growth
+  factor despite pivoting strategy being exactly what growth factor is
+  designed to diagnose.
+operation: >
+  A[N,N] (general, non-symmetric) = P[N,N] * L[N,N] * U[N,N], tile-blocked
+  (block size NB, tile count N/NB per dimension), where P is a permutation
+  determined by the run's pivoting strategy: partial pivoting (row-swap,
+  LAPACK/ScaLAPACK-style, P re-derived at every column), tournament pivoting
+  (block-recursive candidate-pivot selection via a butterfly/playoff
+  reduction, P propagated as row-mask indices rather than physical swaps),
+  or no pivoting (P = I, correctness relies on the input matrix being
+  engineered well-conditioned and/or on post-hoc iterative-refinement
+  correction rather than on P). Mixed-precision variants additionally cast
+  the factorization to FP16/FP32 and correct the result to FP64 accuracy via
+  iterative refinement (IR): r = b - A*x̃ (FP64), Ad̃ = r solved via the
+  existing FP32/FP16 L,U factors, x̃ <- x̃ + d̃, repeated to convergence.
+
+variants:
+  - id: lu-dense-single-node-pivot-kernel
+    claim: >
+      steady-state single-node (shared-memory or single-GPU) dense/blocked
+      LU factorization time, with PIVOTING STRATEGY (partial / tournament /
+      none) as a required, per-run-disclosed parameter alongside tile size —
+      the central lesson of this track: KwasniewskiKBZS21's own baselines
+      (MKL, SLATE) use partial pivoting while its own COnfLUX uses tournament
+      pivoting, and MunksgaardHSO22's Rodinia-derived LUD case study uses no
+      pivoting at all, relying instead on a specially-constructed
+      well-conditioned input matrix. Reporting a bare GFLOP/s number without
+      the pivoting strategy that produced it is the LU-specific analogue of
+      Cholesky's undisclosed-tile-size problem (see cholesky/spec.yaml
+      notes_on_fairness) and is treated with the same required-disclosure
+      rule here.
+    inputs:
+      suite: >
+        two generators, matched to what this track's own no-pivot papers
+        use, since a single arbitrary-random generator would make the
+        no-pivot arm of this variant numerically meaningless: (a) a general
+        random dense matrix U(-1,1) for the partial- and tournament-pivoting
+        arms (pivoting makes this arm robust to an arbitrary matrix, so no
+        special conditioning is required); (b) the Rodinia/Futhark
+        well-conditioned generator (10*exp(-0.001*i) diagonal-decay
+        construction, matches MunksgaardHSO22's lud-input.fut exactly) for
+        the no-pivoting arm, since running no-pivot LU on an arbitrary
+        random matrix would conflate "no pivoting is unsafe" with "this
+        implementation is broken" rather than isolating the pivoting-choice
+        comparison this variant is designed to make.
+      selection: >
+        square general (non-symmetric) matrices, single-node/single-GPU-
+        feasible sizes (fit in one node's RAM or one GPU's HBM at the run's
+        working precision); union of MunksgaardHSO22's three tested sizes
+        and a size matched to KwasniewskiKBZS21's smallest reported point.
+      recommended_subset: "N in {2048, 8192, 16384, 32768}"
+      dense_operand: >
+        fp64 for the partial-/tournament-pivoting arms (matches
+        KwasniewskiKBZS21's precision); fp32 for the no-pivoting arm (matches
+        MunksgaardHSO22's LUD case study exactly, so the no-pivot arm is
+        directly comparable to its own literature source rather than to an
+        invented fp64 no-pivot baseline this track's papers don't test)
+    protocol:
+      pivoting_strategy: >
+        required, disclosed per run: one of {partial, tournament, none}.
+        Tile size (see below) MUST be reported alongside it, since
+        tournament pivoting's cost is itself a function of the block size
+        (see KwasniewskiKBZS21's Table 1: TournPivot communication cost
+        v^2*ceil(log2(sqrt(P)+1)) is block-size-dependent even at P=1
+        conceptually, as v is the tunable reduction-block parameter).
+      tile_size: >
+        required, disclosed per run; sweep NB in {256, 512, 1024} for the
+        partial-/tournament-pivoting arms (matches
+        cholesky-dense-single-node-fp64-kernel's sweep for direct
+        cross-track comparability); for the no-pivoting arm, additionally
+        report the literature-matched block size NB=32 (MunksgaardHSO22's
+        Futhark default) alongside the swept values, since the reference
+        Rodinia implementation MunksgaardHSO22 itself compares against uses
+        a DIFFERENT default (BLOCK_SIZE=16) — this spec requires the same
+        NB be used for whatever two things are being compared in a given
+        run, closing the block-size-mismatch gap documented in survey.md.
+      preprocessing: >
+        one-shot: matrix generation/allocation, and any library-internal
+        tile-layout setup, happen once before the timed region and are
+        reported separately, never amortized into per-call time (matches
+        this track's Cholesky-spec convention).
+      warmup: 1 full factorization (no surveyed paper in this arm states a
+        warmup count; MunksgaardHSO22's own harness does not separate
+        warmup from its 10 measured runs, so this is a spec addition to keep
+        first-touch/JIT effects out of the measured statistic).
+      reps: 10 (matches MunksgaardHSO22's RUNS=10 default, the only rep
+        count with a stated, concrete provenance found anywhere in this
+        track).
+      statistic: >
+        median (report min and max alongside) — deviates from
+        MunksgaardHSO22's own stated practice (arithmetic mean of 10 runs),
+        per this project's general fairness principle preferring median
+        over mean/best-of-N (mean is less optimistic than best-of-N but
+        still more sensitive to a single slow/fast outlier run than median).
+      timer: >
+        device-side event timer on GPU runs (matches MunksgaardHSO22's
+        Futhark/OpenCL-event-timer arm); host wall-clock (std::chrono or
+        equivalent monotonic clock) on CPU runs (matches
+        KwasniewskiKBZS21's timer choice). The two MUST NOT be mixed within
+        a single reported comparison — this spec closes the
+        device-timer-vs-host-timer mismatch documented in survey.md's
+        Divergences section for MunksgaardHSO22's own Futhark-vs-reference
+        comparison.
+      timing_scope: >
+        kernel-only factorization time; excludes matrix generation and, for
+        the no-pivoting arm, excludes any input-matrix well-conditioning
+        setup (counted as preprocessing, not factorization).
+      preprocessing_reported: separately, once, before the steady-state loop.
+    metric:
+      primary: "GFLOP/s ((2/3)*N^3 flops, standard dense-LU FLOP count,
+        excluding the RHS solve — see notes_on_fairness for why this
+        deviates from LuMOEJW22's own (2/3*N^3 + 3/2*N^2)-including-solve
+        convention)"
+      secondary: "ms (median, min, max)"
+    correctness: >
+      TWO required, disclosed measurements, not one — this is a deliberate
+      spec addition beyond what any of this track's 3 papers themselves
+      report (none reports a numerical correctness signal for LU at all: see
+      survey.md's Divergences section): (1) normalized backward-error
+      residual ||PA - LU||_F / (||A||_F * N * eps) < 30 (same
+      LAPACK/ScaLAPACK-testsuite-style threshold and normalization as this
+      track's cholesky/spec.yaml, adapted to the PA=LU factorization
+      residual since P is not always the identity here); (2) **growth
+      factor** rho_N = max|u_ij| / max|a_ij|, REPORTED (not gating, since no
+      surveyed paper states a numeric growth-factor threshold and the
+      field-standard worst-case bound of 2^(N-1) for partial pivoting is
+      almost never approached in practice, making a hard numeric gate
+      uninformative) but MANDATORY to disclose per run, since growth factor
+      is exactly the quantity that differentiates the risk profile of the
+      three pivoting strategies this variant sweeps — a benchmark that
+      reports only the residual (which will look fine on a well-conditioned
+      test matrix regardless of pivoting strategy) would hide the entire
+      point of this variant's pivoting-strategy axis. A run whose residual
+      test fails does not count toward reported throughput; a run whose
+      growth factor is anomalously large (rho_N > sqrt(N), a standard
+      practical rule-of-thumb threshold, itself a spec addition not
+      evidenced by any surveyed paper) is flagged in the report but not
+      excluded, since growth factor alone does not certify or refute
+      correctness.
+
+  - id: lu-dense-distributed-tournament-pivot
+    claim: >
+      distributed (multi-node) dense tile LU at scale using 2.5D
+      communication-optimal tournament pivoting, reporting time-to-solution,
+      aggregate communication volume, AND the extra communication/
+      computation cost pivoting itself imposes (separable from the rest of
+      the factorization per KwasniewskiKBZS21's own Table 1 cost model) —
+      this is the variant KwasniewskiKBZS21's COnfLUX is purpose-built for,
+      directly paired with cholesky-dense-distributed-fp64 (same paper, same
+      2.5D decomposition, same artifact repo) but with pivoting as LU's one
+      genuinely extra axis over Cholesky.
+    inputs:
+      suite: same random-dense generator as
+        lu-dense-single-node-pivot-kernel's partial-/tournament-pivoting arm
+      selection: >
+        square general matrices, weak-scaling sizes spanning
+        single-node-infeasible up to a multi-node-but-not-full-machine
+        range, matching cholesky-dense-distributed-fp64's own capped range
+        for direct cross-track comparability (deliberately below
+        KwasniewskiKBZS21's own N=524,288/P=512-node ceiling, since this
+        project's Phase 2 does not require full-machine allocations).
+      recommended_subset: >
+        N in {16384, 65536, 131072, 262144}; process counts P in
+        {2, 4, 8, 16, 32, 64} nodes, 2 MPI ranks/node (identical grid to
+        cholesky-dense-distributed-fp64); a "large-scale" tier at N=524288,
+        P up to 512 included as an optional stretch point matching
+        KwasniewskiKBZS21's own headline sweep.
+      dense_operand: same as lu-dense-single-node-pivot-kernel's
+        partial-/tournament-pivoting arm, fp64
+    protocol:
+      pivoting_strategy: >
+        tournament (COnfLUX's own scheme); partial pivoting is reported as
+        the baseline comparison point (MKL/SLATE's own scheme per
+        KwasniewskiKBZS21's own text: "Both MKL and SLATE base on the
+        standard partial pivoting algorithm using the 2D decomposition") —
+        both arms are run so the pivoting-strategy comparison this track's
+        own headline result is built on is reproduced, not just cited.
+      tile_size: required, disclosed per (N,P) combination; sweep 4 block
+        sizes per combination (matches KwasniewskiKBZS21's own artifact
+        protocol) and report which one is used for the headline number.
+      process_grid: "P x Q, P <= Q, as square as possible, matches
+        cholesky-dense-distributed-fp64's convention; disclosed per run"
+      preprocessing: one-shot process-grid setup and matrix generation;
+        excluded from the timed region, reported separately once.
+      warmup: 1 full factorization per (N, P, block-size) combination
+        (matches eth-cscs/conflux's own "mandatory warm up round" documented
+        in its README).
+      reps: >
+        5 per combination (matches eth-cscs/conflux's README's "-r 5" flag,
+        described there as "the number of repetitions").
+      statistic: >
+        median (report min and max alongside) — deviates from this track's
+        only stated-statistic evidence point (MunksgaardHSO22's mean-of-10),
+        per this spec's general fairness principle; KwasniewskiKBZS21's own
+        artifact states no statistic at all over its 5 runs (open question,
+        matches the identical open question already flagged for this
+        paper's Cholesky half).
+      timer: "max wall-clock time across all MPI ranks (matches
+        KwasniewskiKBZS21's own reporting convention, identical to
+        cholesky-dense-distributed-fp64)"
+      timing_scope: >
+        kernel-only factorization time; separately, aggregate communication
+        volume (elements moved per processor) is measured via a profiler
+        (Score-P or equivalent) and reported alongside a theoretical
+        I/O-cost lower bound, following KwasniewskiKBZS21's own methodology
+        for BOTH factorizations (validated to within +/-3% of measured for
+        MKL/SLATE/COnfLUX/COnfCHOX in the paper's own results). ADDITIONALLY
+        for this LU-specific variant: the pivoting step's own
+        communication/computation cost is reported as a separate breakdown
+        from the rest of the factorization (per-step cost model:
+        TournPivot = v^2*ceil(log2(sqrt(P)+1)) communication,
+        v^3/3*ceil(log2(sqrt(P)+1)) computation, from the paper's own
+        Table 1), since this is the one cost component that has no Cholesky
+        analogue and is otherwise invisible in an aggregate time-to-solution
+        number.
+      preprocessing_reported: separately, once.
+    metric:
+      primary: "aggregate GFLOP/s ((2/3)*N^3 / time, summed across the run)"
+      secondary: "ms; communication volume (elements/processor), split into
+        pivoting and non-pivoting components; theoretical I/O-cost-model
+        comparison (% deviation from the N^3/(P*sqrt(M)) bound, +
+        the pivoting-specific O(N^2/P) term KwasniewskiKBZS21's own
+        derivation adds on top of the shared Cholesky/LU leading term)"
+    correctness: >
+      same two-part residual + growth-factor test as
+      lu-dense-single-node-pivot-kernel (||PA - LU||_F / (||A||_F * N *
+      eps_fp64) < 30, gating; growth factor rho_N reported, non-gating),
+      computed on a gathered or distributed-checked residual. This is a spec
+      addition relative to the track's own practice for this paper: like its
+      Cholesky half, KwasniewskiKBZS21's own paper validates only the
+      I/O-cost *model*, not the numerical factorization result, for either
+      factorization.
+    artifact_note: >
+      target eth-cscs/conflux (maintained, BSD-3-Clause successor), not
+      anonymousSC21/SC21 (unmaintained, unlicensed anonymized-submission
+      snapshot) — identical artifact-targeting decision already made for
+      this paper's Cholesky half; see cholesky/survey.md.
+
+  - id: lu-mixed-precision-nopivot-ir-kernel
+    claim: >
+      extreme-scale mixed-precision (FP16 GEMM / FP32 panel-TRSM) no-pivot
+      LU factorization, corrected to FP64 accuracy via iterative refinement
+      (IR) rather than by pivoting — the HPL-AI benchmark family
+      (LuMOEJW22's OpenMxP), a genuinely different claim from either
+      pivoted-LU variant above: correctness here is a POST-HOC convergence
+      property of the IR loop, not an a-priori pivoting-derived bound, and
+      the metric convention (GFLOPS/GCD, EFLOPS at scale) and precision
+      recipe (three distinct precisions, named per algorithmic stage) have
+      no analogue in the other two variants.
+    inputs:
+      suite: >
+        Higham-generator well-conditioned synthetic dense matrix (matches
+        OpenMxP's higham_mat_impl.cpp exactly) — deliberately NOT the same
+        generator as lu-dense-single-node-pivot-kernel's no-pivoting arm
+        (which uses the simpler Rodinia diagonal-decay formula), since this
+        variant's correctness mechanism additionally depends on IR
+        convergence and should be evaluated against the literature's own
+        matrix construction rather than a substituted one.
+      selection: >
+        multi-node/multi-GPU sizes spanning what fits per-GCD memory up to a
+        tier tractable without a full-machine allocation, with a stretch
+        tier matching the paper's own near-full-machine points.
+      recommended_subset: >
+        N in {131072, 524288, 1368570 (LuMOEJW22's own headline
+        Summit-partition size)}, with an optional stretch point matching
+        the paper's Frontier-fraction scale.
+      dense_operand: >
+        three named precisions per algorithmic stage (not a bare fraction):
+        diagonal-block factorization and panel TRSM in FP32; trailing-matrix
+        GEMM in FP16 (accumulate FP32); residual computation and
+        iterative-refinement correction in FP64 — matches OpenMxP's own
+        recipe exactly (main.cpp's FHIGH=float/FLOW=__half convention).
+    protocol:
+      pivoting_strategy: none (by design; see operation and claim above).
+      tile_size: >
+        required, disclosed per run; report both the literature-matched
+        default (B=2560, per OpenMxP's own README "Tuning Parameters"
+        guidance: "the best B tends to be 2560") and one off-default
+        comparison point, matching this track's general
+        tile-size-sensitivity-disclosure requirement.
+      process_grid: "P x Q GPU grid, disclosed per run, PxQ = #GPUs (matches
+        OpenMxP's own constraint documented in its README)"
+      iterative_refinement: >
+        required, disclosed per run: convergence threshold on the solution
+        discrepancy (NOT confirmed from LuMOEJW22's own text — this spec
+        provisionally adopts the standard HPL/HPL-AI residual-based
+        stopping-test convention, flagged as unconfirmed in open_questions
+        below) and the realized iteration count to convergence (a run-time
+        outcome, not a fixed input, per the paper's own 3-step IR
+        description).
+      preprocessing: >
+        one-shot: matrix generation (via the Higham generator) and any
+        precision-cast setup happen once before the timed region and are
+        reported separately, never amortized into per-call time.
+      warmup: >
+        one full application-scale warm-up run (matches LuMOEJW22's own
+        documented practice: a dedicated warm-up mini-benchmark on Summit,
+        or embedded small GEMM kernels at the start of the run on Frontier,
+        per the paper's own "Warm up" subsection and Finding 10) — this is
+        the one variant in this track's spec where warmup is a
+        literature-evidenced, not spec-invented, requirement.
+      reps: >
+        1 full-scale run (matches the paper's own practice: EFLOPS headline
+        numbers are single full-machine-scale runs, not a repeated-timing-
+        loop protocol, per survey.md; a repeated-timing-loop protocol is
+        NOT required for reproduction at this variant's largest
+        recommended_subset points, though it SHOULD be used at the smaller
+        points where repetition is affordable — see reps convention for
+        lu-dense-single-node-pivot-kernel).
+      statistic: >
+        not applicable at the largest scale (single run); median (report
+        min/max) at smaller, repeatable scales, matching this track's
+        general convention.
+      timer: >
+        host wall-clock around the full IR loop (not confirmed as the exact
+        timer API from the extracted paper text; flagged in
+        open_questions).
+      timing_scope: >
+        the reported EFLOPS/GFLOPS number covers factorization + IR
+        correction together (per the paper's own metric definition, which
+        already includes the RHS-solve term in its FLOP count); matrix
+        generation and any warm-up runs are excluded and reported
+        separately.
+      preprocessing_reported: separately, once.
+    metric:
+      primary: "GFLOPS/GCD = ((2/3)*N^3 + (3/2)*N^2)/time (matches
+        LuMOEJW22's own formula exactly, INCLUDING the RHS-solve term -
+        this is the one variant in this spec that keeps the paper's own
+        FLOP convention rather than normalizing to the (2/3)*N^3-only
+        convention used elsewhere in this track, since the RHS solve is not
+        a separable optional step here but an integral part of what IR
+        needs to run)"
+      secondary: "EFLOPS at full-system/partition scale; memory footprint
+        per GCD"
+    correctness: >
+      PRIMARY (required) gate: the IR loop's own convergence criterion —
+      solution discrepancy below the run-declared threshold (see
+      iterative_refinement above) — is itself the correctness gate for this
+      variant, unlike the other two variants where residual is measured
+      independently of how the factorization was computed. ADDITIONALLY,
+      matching this track's general growth-factor-disclosure requirement:
+      growth factor of the underlying (pre-IR-correction) no-pivot FP32/FP16
+      factorization is measured and REPORTED (not gating, since IR is the
+      variant's actual safety net, not growth-factor control) — this
+      isolates how much of the final accuracy is "the factorization was
+      already fine" vs. "IR did the work," a distinction LuMOEJW22's own
+      paper does not report but which this track's fairness principle
+      (disclose the mechanism, not just the outcome) requires. NOTE: the
+      artifact's own `panel_check.hpp` `--checksum` correctness path is
+      construction-specific (only valid for the Higham generator) and is
+      NOT enabled by default (see survey.md) — this spec requires it be run
+      at least once per configuration to validate the harness itself, even
+      though it is not part of the timed region.
+
+notes_on_fairness:
+  - >
+    Pivoting strategy is treated as a required, disclosed, three-valued
+    parameter (partial / tournament / none) in every variant, never a
+    silently fixed implementation detail. This is the LU-specific analogue
+    of this project's cholesky/spec.yaml tile-size-disclosure principle,
+    directly motivated by KwasniewskiKBZS21's own text: its baselines
+    (MKL, SLATE) use partial pivoting while its own COnfLUX uses tournament
+    pivoting, and neither choice is a performance-neutral implementation
+    detail — tournament pivoting has an explicit, non-zero, block-size-
+    dependent extra communication/computation cost (Table 1 in the paper)
+    that a bare GFLOP/s number would otherwise hide.
+  - >
+    Growth factor is REQUIRED, DISCLOSED reporting (though not a hard gate)
+    in every variant in this spec, despite NO surveyed paper in this track
+    reporting it. This is a deliberate spec addition: the task's own design
+    brief for this track calls out "residual+growth-factor correctness" as
+    a key axis, and growth factor is precisely the quantity that would
+    reveal whether a no-pivot run's apparent correctness (on a specially
+    engineered, well-conditioned test matrix) would generalize to an
+    arbitrary input — which none of this track's own 3 papers test, since
+    both no-pivot papers (LuMOEJW22, MunksgaardHSO22) sidestep the question
+    by construction rather than by measurement.
+  - >
+    Timing statistic is fixed to median (with min/max also reported) in the
+    two repeatable-scale variants, matching this track's Cholesky-spec
+    convention and diverging from this track's only two stated-statistic
+    evidence points: MunksgaardHSO22's explicit mean-of-10, and
+    KwasniewskiKBZS21's stated-but-unspecified 5-run protocol. The
+    extreme-scale mixed-precision variant is the one exception (single-run
+    at its largest points), since LuMOEJW22's own paper documents that a
+    repeated-timing-loop protocol is not what is measured at that scale.
+  - >
+    Tile/block size must match between whatever two things are being
+    compared in a single reported number, closing a specific gap found in
+    MunksgaardHSO22's own artifact: its Futhark LUD implementation defaults
+    to block size 32 while the Rodinia reference it is compared against
+    defaults to block size 16, and the artifact runs each at its own
+    default rather than a matched value.
+  - >
+    Timer provenance (device-side event timer vs. host-side wall-clock) must
+    be consistent within a single reported comparison, closing a second gap
+    found in the same MunksgaardHSO22 artifact (OpenCL device-event timer
+    for the Futhark arm, gettimeofday host timer for the Rodinia reference
+    arm, feeding the same reported speedup ratio).
+  - >
+    FLOP-count convention differs deliberately between variants: the
+    plain-pivoted variants normalize to the RHS-solve-EXCLUDED (2/3)*N^3
+    convention (matches this track's cholesky/spec.yaml precedent and most
+    LU-factorization-only literature), while the mixed-precision/IR variant
+    keeps LuMOEJW22's own RHS-solve-INCLUDED convention, since the solve is
+    an integral, non-optional part of what that variant's IR loop measures,
+    not a separable add-on. Reported GFLOP/s numbers across variants are
+    therefore NOT directly comparable without adjusting for this — flagged
+    explicitly here rather than silently normalized away, since forcing a
+    single convention would misrepresent what the mixed-precision variant's
+    own metric is actually counting.
+
+open_questions:
+  - >
+    CANDMC/CAPITAL's (KwasniewskiKBZS21's baseline libraries) pivoting
+    strategy for LU is not stated in the extracted arXiv text - needed to
+    complete this variant's pivoting-strategy comparison; the paper only
+    gives author-supplied communication-cost models for these two
+    libraries, not a described pivoting algorithm.
+  - >
+    Exact statistic (mean/median/min) computed over KwasniewskiKBZS21's
+    artifact-documented "5 runs" is not stated in the paper text or the
+    eth-cscs/conflux README - identical open question already flagged in
+    the cholesky spec for this paper's Cholesky half.
+  - >
+    LuMOEJW22's iterative-refinement convergence threshold (the numeric
+    value the solution discrepancy must fall below before IR stops) is not
+    stated in the extracted OSTI PDF text. This spec provisionally assumes
+    the standard HPL/HPL-AI residual-based stopping convention but this is
+    NOT confirmed from the paper's own text or the OpenMxP source
+    (iterative_refinement.hpp was not fetched during this survey pass) -
+    should be resolved before lu-mixed-precision-nopivot-ir-kernel's
+    correctness gate is used for real reproduction runs.
+  - >
+    Whether LuMOEJW22's own reported EFLOPS headline numbers were measured
+    with the `panel_check.hpp` `--checksum` correctness path enabled or
+    disabled was not confirmed from the extracted text - the CLI flag
+    exists and is construction-specific (only valid for the Higham
+    generator), but the paper doesn't state whether it was active during
+    the timed runs it reports.
+  - >
+    MunksgaardHSO22's LUD case study has no correctness check anywhere in
+    its shipped benchmark harness (Makefiles, .fut source, reference C++);
+    whether the underlying Futhark/Rodinia implementations were separately
+    validated (e.g. via `futhark test`) before the performance numbers in
+    the paper were collected was not confirmed from the artifact alone.
+  - >
+    The practical growth-factor stability threshold (rho_N > sqrt(N)) used
+    as this spec's non-gating flag-for-review criterion is this spec's own
+    choice, not derived from any of the 3 surveyed papers (none reports a
+    growth factor at all) - should be revisited against real reproduction
+    runs across all three pivoting strategies once the harness exists.
+
+evidence:
+  conf/sc/KwasniewskiKBZS21: >
+    Random dense general matrix, N=2048-524288, P=2-512 nodes; COnfLUX uses
+    row-masking tournament pivoting (cited as "as stable as partial
+    pivoting"), vs. MKL/SLATE's standard partial pivoting (CANDMC/CAPITAL's
+    pivoting scheme unstated); max-time-across-ranks std::chrono; 4 block
+    sizes x 5 runs, statistic unstated; time + communication-volume metrics,
+    with pivoting's own extra comm/comp cost given as a closed-form
+    per-Table-1; no numerical residual or growth-factor check (I/O-cost
+    model validated instead, same as this paper's Cholesky half). arXiv
+    2108.09337 fulltext (pypdf-extracted) + eth-cscs/conflux README.
+  conf/sc/LuMOEJW22: >
+    HPL-AI mixed-precision LU (OpenMxP), no pivoting by design (explicit
+    "[to] omit the pivoting step"), FP32 panel/TRSM + FP16 GEMM +
+    FP64-regenerated residual and iterative refinement to FP64 accuracy;
+    Higham-generator well-conditioned input matrix; N up to 1,368,570 (1.411
+    EFLOPS Summit partition, 2.387 EFLOPS Frontier fraction); metric
+    GFLOPS/GCD = ((2/3)N^3+(3/2)N^2)/time; documented warm-up methodology
+    (20% Summit first-run penalty) but no fixed rep/statistic for headline
+    EFLOPS numbers; construction-specific `--checksum` correctness path not
+    enabled by default. OSTI servlets/purl/1997799 PDF fulltext
+    (pypdf-extracted) + at-aaims/OpenMxP README and src/ listing.
+  conf/sc/MunksgaardHSO22: >
+    Futhark memory-optimization compiler paper; LUD (Rodinia-derived blocked
+    LU decomposition, one of 7 case-study kernels) is its LU-shaped result.
+    No pivoting; well-conditioned-by-formula input matrix
+    (10*exp(-0.001*i)); FP32 only; N in {8192,16384,32768}; RUNS=10 default,
+    explicit arithmetic-mean statistic; device-event timer (Futhark arm) vs.
+    host wall-clock timer (Rodinia reference arm) mismatch; block size 32
+    (Futhark) vs. 16 (reference) mismatch; no correctness check in the
+    shipped harness. No arXiv/OA source available - artifact repo
+    diku-dk/futhark-mem-sc22 (README + benchmarks/lud/{futhark,reference}/
+    Makefiles and source) only.
+
+artifact_repos:
+  eth-cscs/conflux: >
+    C++, BSD-3-Clause. Same repo as cholesky/spec.yaml's target for this
+    paper's Cholesky half; `examples/conflux_miniapp` is the LU-specific
+    binary (`-N` matrix dim, `-r` repetitions excluding mandatory warmup,
+    `--p_grid`, `-b` tile size). Profiler trace output (with
+    `-DCONFLUX_WITH_PROFILING=ON`) names a `pivoting` region explicitly,
+    confirming pivoting cost is separable in the implementation, matching
+    this spec's requirement to report it as its own breakdown.
+  at-aaims/OpenMxP: >
+    C++/CUDA/HIP, BSD-style license (LICENSE + LICENSE.Fugaku). Primary
+    source for lu-mixed-precision-nopivot-ir-kernel. `src/getrf_nopiv.hpp`/
+    `sgetrf_nopiv.cpp` (no-pivot factorization), `src/iterative_refinement
+    .hpp` (IR loop), `src/higham_mat_impl.cpp`/`highammgen.hpp` (test-matrix
+    generator), `src/panel_check.hpp` (construction-specific correctness
+    check, `--checksum` CLI flag, not default-enabled). Tuning parameters
+    (`-alt`, `-comm`, `--numa`, block size B) documented directly in the
+    README.
+  diku-dk/futhark-mem-sc22: >
+    Futhark + C/OpenCL, artifact for MunksgaardHSO22; MIT-family license
+    (not independently confirmed during this pass). `benchmarks/lud/`
+    contains both the Futhark implementation (`lud.fut`, block size 32
+    hardcoded) and the Rodinia-derived OpenCL reference (`lud.cpp`, block
+    size 16 default). `benchmarks/result-table.py` is the statistic-
+    computation source (`mean()`, confirmed via direct source read). Primary
+    source for lu-dense-single-node-pivot-kernel's no-pivoting arm.

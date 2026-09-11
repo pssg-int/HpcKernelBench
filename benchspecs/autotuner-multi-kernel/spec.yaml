@@ -1,0 +1,188 @@
+kernel: autotuner-multi-kernel
+summary: >
+  Unlike the other tracks in this project, the "kernel" under test here is a
+  compiler/autotuner SYSTEM, not a single fixed operation: the system is
+  given a fixed, named multi-kernel suite (dense DL/HPC linear algebra,
+  sparse linear algebra, and PolyBench affine loops) plus a search budget,
+  and is scored on BOTH the wall-clock cost to reach a schedule/kernel AND
+  the steady-state performance of the kernel that schedule produces — since
+  the surveyed literature reports these two axes with wildly inconsistent
+  rigor (see survey.md "Divergences"), and this track's own name
+  ("multi-kernel") signals that suite breadth, not single-kernel depth, is
+  the point.
+operation: >
+  system-under-test S (a compiler, autotuner, or scheduling-language
+  instance) is given each kernel k in the fixed suite K below, as source/IR,
+  plus a wall-clock search budget; S produces optimized executable code for
+  k; both the search trajectory (time -> best-found performance) and the
+  final produced code's steady-state performance are measured. K spans three
+  disjoint kernel families (dense/sparse tensor ops, PolyBench affine loops)
+  because the surveyed papers target genuinely different substrates and
+  optimizing across them is not a single comparable operation.
+
+kernel_suite:
+  dense_sparse_tensor_kernels:
+    - {id: gemm_square, op: "C[M,N]=A[M,K]*B[K,N]", shapes: [[1024,1024,1024],[4096,4096,4096],[8192,8192,8192]]}
+    - {id: gemm_llm_ffn, op: "C[M,N]=A[M,K]*B[K,N]", shapes: [[4096,4096,11008]], note: "Llama-2-7B FFN up-proj shape, matches CuAsmRL/Pruner's LLM-kernel framing"}
+    - {id: conv2d_resnet50, op: "NCHW conv, 5 canonical ResNet-50 layer shapes", batch: [1, 8]}
+    - {id: depthwise_conv2d_mbv2, op: "MobileNetV2 depthwise-separable conv shape", batch: [1, 8]}
+    - {id: batched_attention, op: "QK^T softmax V, seq_len=2048, heads=32, head_dim=128 (Llama-2-7B scale)"}
+    - {id: spmm, op: "C[M,N]=A[M,K](sparse)*B[K,N](dense)", matrices: "same 10-matrix cross-track subset as benchspecs/spmm: [cora, citeseer, pubmed, amazon, youtube, pdb1HYS, cant, consph, dc2, rma10]", dense_n: [32, 128, 256]}
+    - {id: sddmm, op: "sampled dense-dense matmul on the same sparsity mask", matrices: "same subset as spmm", dense_n: [32, 128]}
+    - {id: mttkrp, op: "matricized tensor times Khatri-Rao product", tensors: "FROSTT nell-2, delicious-4d, vast (3 named sparse tensors, per WACO's algorithm set)"}
+  polybench_affine_kernels:
+    suite: "PolyBench/C 4.2.1, full 30-kernel set, LARGE_DATASET size class"
+    list:
+      datamining: [correlation, covariance]
+      linear-algebra/blas: [gemm, gemver, gesummv, symm, syr2k, syrk, trmm]
+      linear-algebra/kernels: [2mm, 3mm, atax, bicg, doitgen, mvt]
+      linear-algebra/solvers: [cholesky, durbin, gramschmidt, lu, ludcmp, trisolv]
+      medley: [deriche, floyd-warshall, nussinov]
+      stencils: [adi, fdtd-2d, heat-3d, jacobi-1d, jacobi-2d, seidel-2d]
+
+variants:
+  - id: tensor-kernel-steady-state-f32
+    claim: >
+      post-tuning steady-state kernel throughput of the dense+sparse tensor
+      kernel suite, fp32, using whichever schedule the system under test
+      found within the tensor-kernel-tuning-cost variant's 3600s checkpoint
+      (search time is EXCLUDED from this number but its cap is enforced —
+      unlike GMC/PrecTuner/WACO/FlexTensor, which report post-tuning
+      numbers with no reported/bounded search budget at all).
+    inputs:
+      suite: dense_sparse_tensor_kernels (see kernel_suite above)
+      selection: "fixed list above; SpMM/SDDMM matrix subset intentionally reuses benchspecs/spmm's recommended_subset for cross-track consistency within this project"
+      dense_operand_init: "U(-1,1), fp32"
+    protocol:
+      format: "SpMM/SDDMM: CSR given, conversion not timed (matches SparseTIR/WACO's own framing that the compiled operator is reused many times)"
+      warmup: 20
+      reps: 100
+      statistic: "median (report min/max)"
+      timer: "per-iteration device-side events (CUDA events on GPU; std::chrono steady_clock on CPU), one timestamp pair per repetition — NOT a single timer around a batch of iterations"
+      l2_cache: "flushed between iterations on GPU (matches the two most rigorous surveyed protocols: SparseTIR, CuAsmRL)"
+      timing_scope: "kernel only; H2D/D2H, format conversion, and any JIT/codegen dispatch overhead excluded"
+      deviation_from_surveyed_practice: >
+        Pruner's own reported latencies come from a 500-iteration PyTorch-level
+        mean that includes Python dispatch overhead; this spec requires a pure
+        device-side per-iteration timer instead, since dispatch overhead is not
+        part of "kernel throughput" and would penalize systems that don't emit
+        a PyTorch custom-op wrapper.
+    metric: {primary: "GFLOP/s (2*FLOPs/kernel per elapsed time; GOP/s for MTTKRP)", secondary: "ms; % of the per-kernel vendor-library baseline"}
+    baselines:
+      - "vendor library: cuBLAS/cuDNN (GEMM/conv/attention), cuSPARSE (SpMM/SDDMM), a reference MTTKRP library"
+      - "no-tuning floor: framework-eager op (PyTorch eager) or -O3 compiled reference, whichever the system's language targets"
+      - "SOTA-autotuner reference: Ansor or AutoTVM given the SAME 3600s budget as the tuning-cost variant's largest checkpoint (the 'expert schedule' baseline most of these papers already use each other as)"
+    correctness: "max relative error vs. fp64 CPU reference < 1e-4 (matches this project's spmm/sddmm track convention for cross-track comparability)"
+
+  - id: tensor-kernel-tuning-cost
+    claim: >
+      the search/tuning cost required to reach the steady-state variant's
+      result, reported as a Pareto curve (time -> best-found performance) at
+      fixed checkpoints — mandatory and primary as WALL-CLOCK time, because
+      the track's own papers use incommensurable units (Pruner: trial count;
+      TPP-mlir: wall time; CuAsmRL: "one-time training cost"; WACO/GMC:
+      unreported despite search/model-solve being their core contribution).
+    inputs:
+      suite: "same as tensor-kernel-steady-state-f32, one kernel at a time (budget is PER KERNEL, not per whole suite)"
+    protocol:
+      budget_checkpoints_seconds: [60, 600, 3600]
+      device: "single reference device, same as tensor-kernel-steady-state-f32 (see notes_on_fairness on hardware scope)"
+      measured_at_each_checkpoint: "best-found kernel performance so far (GFLOP/s, per tensor-kernel-steady-state-f32's protocol), AND number of trials/candidates evaluated so far (secondary, non-comparable across systems but reported for context)"
+      final_report: "time-to-within-5%-of-best (interpolated from the checkpoint curve) as the single headline number, plus the full 3-point curve"
+      deviation_from_surveyed_practice: >
+        Only Pruner (matched n-trials table) and TPP-mlir (explicit wall-time
+        comparison) report anything resembling this today, and neither uses
+        fixed checkpoints — this spec fixes 60s/600s/3600s so a closed-form
+        solver (GMC, PrecTuner) that finishes in well under 60s and an
+        RL-based search (CuAsmRL) that needs hours are both placed on the
+        same curve rather than compared via cherry-picked, differently-sized
+        budgets.
+    metric: {primary: "wall-clock seconds to reach within 5% of best-found GFLOP/s", secondary: "GFLOP/s at each of the 3 checkpoints (Pareto table); trial/candidate count at each checkpoint"}
+    baselines:
+      - "Ansor/AutoTVM at the same 3 checkpoints, as the common enumerative-search reference every DNN-operator paper in this track already baselines against"
+    correctness: "same gate as tensor-kernel-steady-state-f32, applied to the checkpointed best-found candidate, not just the final one (a candidate that fails correctness does not count as 'best-found')"
+
+  - id: polybench-affine-kernel-f64
+    claim: >
+      steady-state execution time of the PolyBench/C 4.2.1 suite (fixed
+      30-kernel list, LARGE_DATASET), the one input family this track's
+      literature is directly and confirmably anchored to (PrecTuner/LnLAMP) —
+      kept as its own variant rather than folded into the tensor-kernel
+      variants because PolyBench's kernels (stencils, DP recurrences like
+      nussinov/floyd-warshall, solvers) are not FLOP-throughput-comparable to
+      GEMM/conv, and PolyBench papers customarily report raw time + speedup,
+      not GFLOP/s.
+    inputs:
+      suite: "PolyBench/C 4.2.1, full 30-kernel list (see kernel_suite.polybench_affine_kernels above)"
+      dataset_size: "LARGE_DATASET (PolyBench's standard research-paper convention; EXTRALARGE optional/reported if the system supports it)"
+      precision: "PolyBench default (fp64) EXCEPT as swept in polybench-affine-mixed-precision below"
+    protocol:
+      warmup: 5
+      reps: 20
+      statistic: "median (report min/max)"
+      timer: "std::chrono steady_clock (or PolyBench's own polybench_timer_start/stop), one timestamp pair per repetition, kernel invoked directly with no framework dispatch"
+      timing_scope: "kernel loop nest only; PolyBench's init/print routines excluded"
+      deviation_from_surveyed_practice: >
+        GMC (the closest analogue, though not itself a PolyBench paper) states
+        only "median of 10, no stated warmup." This spec adds explicit warmup
+        and raises reps to 20 for a tighter median, since polyhedral-compiler
+        papers' own timing protocols were the least specified of any cluster
+        surveyed (see Divergences).
+    metric: {primary: "wall-clock ms per kernel", secondary: "speedup vs. -O3 baseline"}
+    baselines:
+      - "-O3 (gcc/clang, no polyhedral transformation) — the floor"
+      - "Pluto (state-of-the-art polyhedral CPU optimizer, PrecTuner's own baseline)"
+      - "PPCG (GPU polyhedral baseline, for systems that target GPU)"
+    correctness: "max relative error vs. -O3 unoptimized reference < 1e-6 (tight: same architecture, no atomics/reduction-order nondeterminism expected at fp64)"
+
+  - id: polybench-affine-mixed-precision
+    claim: >
+      precision-vs-speed Pareto frontier for the subset of PolyBench kernels
+      amenable to mixed/reduced precision (PrecTuner's own target: nussinov,
+      fdtd-2d, heat-3d, seidel-2d, plus any kernel the system under test
+      chooses to lower) — reported as a FRONTIER, not gated by a single fixed
+      tolerance, because PrecTuner's own design explicitly trades accuracy
+      for speed under a tunable error budget, unlike the fixed-dtype
+      half-precision variants used elsewhere in this track (Pruner/CuAsmRL/
+      TPP-mlir simply run a kernel in fp16; PrecTuner tunes A CONTINUOUS
+      precision-selection parameter).
+    inputs:
+      suite: "[nussinov, fdtd-2d, heat-3d, seidel-2d] mandatory (matches PrecTuner's own confirmed test set); remaining PolyBench kernels optional"
+      error_budgets_swept: [1e-2, 1e-4, 1e-6]
+    protocol: "same timing protocol as polybench-affine-kernel-f64"
+    metric: {primary: "speedup vs. fp64 -O3 baseline at each error budget", secondary: "achieved relative error at each budget (must not exceed the budget — points that violate their budget are excluded from the frontier, not silently kept)"}
+    baselines:
+      - "Pluto/PPCG at fp64 (same as polybench-affine-kernel-f64)"
+      - "LuIs (fixed 16-bit fixed-point competitor, single-threaded only — reported where the system under test supports single-threaded comparison)"
+    correctness: "relative error <= the swept budget, measured against a fp64 -O3 reference; this IS the metric, not a pass/fail gate (see metric above)"
+
+notes_on_fairness:
+  - "PolyBench is confirmed as the target suite for only 1 of 11 papers (PrecTuner/LnLAMP). A spec that made PolyBench the ONLY kernel family, as this track's naming might suggest, would misrepresent 10/11 papers' actual practice. This spec keeps PolyBench as two dedicated variants and adds the dense/sparse tensor-kernel suite (three variants) as the dominant real practice in this track."
+  - "Search/tuning cost is reported by only 3 of 11 papers (Pruner, TPP-mlir, CuAsmRL), each in a different unit (trial count, ad-hoc wall-time comparison, 'one-time cost' framing). This spec makes wall-clock time at 3 FIXED checkpoints (60s/600s/3600s) mandatory and primary for every system, with trial/candidate count reported only as non-comparable context — this is the single biggest fix relative to current practice, since it is the axis the task brief explicitly flagged as crucial."
+  - "WACO and GMC's core contribution is a fast/cheap search strategy (ANN retrieval; closed-form performance-model solve) that largely sidesteps the 'expensive search' problem other autotuners have, yet neither paper reports a quantified search-time number. Forcing them through the same 3-checkpoint budget table as an RL-based search (CuAsmRL) or enumerative search (Ansor) makes their near-zero search cost directly visible and verifiable, rather than left as an unquantified design claim."
+  - "Several surveyed protocols never state warmup counts (GMC, Gensor, WACO, Ivanov, Exo 2 as read) or batch many iterations behind a single timer call (Pruner's 500-iteration PyTorch-level mean, which includes framework dispatch). This spec fixes per-iteration device-side timers with explicit warmup for every variant, and explicitly excludes framework dispatch overhead from the kernel-only timing scope."
+  - "Correctness gates are undocumented for 4 of 11 papers in the accessible sources (GMC, Gensor, WACO, FlexTensor). This spec makes a numeric correctness check mandatory before any timing counts, and — for the tuning-cost variant specifically — applies the gate to EVERY checkpointed candidate, not just the final reported one, so a system cannot 'find' a fast-but-wrong kernel early and let it count toward the Pareto curve."
+  - "PrecTuner treats precision as a continuously tuned parameter under an error budget, a fundamentally different claim from 'run this kernel in fp16' (Pruner/CuAsmRL/TPP-mlir's fixed-dtype half-precision runs). This spec keeps PrecTuner's frontier framing for the PolyBench mixed-precision variant, while the dense/sparse tensor-kernel suite's precision is fixed at fp32 (a separate fp16/bf16 variant is left as an open question below rather than forced into this version, to keep the spec to 4 variants per the instructions)."
+  - "Hardware portability claims range from a single A100 (CuAsmRL) to 4 CPU microarchitectures (TPP-mlir) to cross-vendor GPU (Ivanov) to GPU+CPU+FPGA (FlexTensor). This spec designates ONE reference GPU (A100-class) and ONE reference CPU (current server-class x86 with AVX-512, matching TPP-mlir's SPR node) as mandatory; additional platforms are optional/reported-if-available rather than required, since matching every paper's full portability claim is out of scope for a reproducible single-lab benchmark run."
+  - "The SpMM/SDDMM matrix subset intentionally reuses benchspecs/spmm's recommended_subset (cora, citeseer, pubmed, amazon, youtube, pdb1HYS, cant, consph, dc2, rma10) rather than inventing a new list, so results for a system that appears in both tracks (e.g. a sparse tensor compiler tested here and a hand-written SpMM kernel tested in the spmm track) are directly comparable within this project."
+
+open_questions:
+  - "Exact timing/warmup/repetition protocol for Exo 2, Ivanov/Polygeist, WACO, FlexTensor, PrecTuner/LnLAMP, and Gensor could not be confirmed from accessible sources (ACM paywalls, corrupted PDF extraction for WACO, no arXiv preprint located for FlexTensor, HTML mirror 404s for Exo 2). The protocol values in this spec for those systems' likely kernel families are this spec's own fixed choice, not verified against what those specific papers did — flagged per-variant above via 'deviation_from_surveyed_practice' where a comparison was possible."
+  - "Whether a dedicated fp16/bf16 variant of the dense/sparse tensor-kernel suite (distinct from PolyBench's continuous-budget mixed precision) should be a 5th variant given Pruner/CuAsmRL/TPP-mlir all test fixed half precision; left out to keep the spec to 4 variants per the task instructions, but is the most likely candidate for a 5th if Phase 2 wants finer precision coverage."
+  - "Whether the 3 fixed tuning-budget checkpoints (60s/600s/3600s) are well-calibrated across ALL system types in this track once real runs are attempted — a closed-form solver may finish in well under 60s (making the curve mostly flat/uninformative for it) while an RL-based search may need hours of training before its FIRST valid candidate; checkpoint spacing may need revisiting after a pilot run."
+  - "Whether FPGA (FlexTensor) and AMD-GPU (Ivanov's retargeting target) platforms belong in this spec at all, given the project's Phase 2 hardware constraint is 'any machine' but FPGA/AMD-GPU access may not be available on the eventual measurement machine — left as optional rather than mandatory."
+  - "GMC and Exo 2 primarily perform compile-time multi-versioning / library generation rather than an online search loop; whether their code-generation time should count toward the tuning-cost variant's budget checkpoints, or should be reported as a separate near-instant 'compile time' outside the search-cost framing entirely, is unresolved — this spec currently asks for it to be reported if measurable, without asserting which bucket it belongs in."
+  - "WACO's exact 726-sparsity-pattern dataset (cited only in secondary sources) was not found checked into the public repo in full — only ~20 example .csr files are present. Its exact provenance (which SuiteSparse selection criterion, if any) was not traced and could not be cross-checked against this spec's own SpMM/SDDMM matrix subset."
+
+evidence:
+  conf/cgo/LopezKB26: "10^3 synthetic symbolic-size matrix-chain shapes; Xeon Gold 6132, 14 cores; median-of-10; vs Armadillo/OpenBLAS; no separate codegen-time or correctness reporting found."
+  conf/asplos/IkarashiQDRBR25: "80+ hand-scheduled kernels (BLAS L1-L2, GEMM), claimed 3 platforms incl. Gemmini; fulltext unreachable, abstract-level only."
+  conf/asplos/Qiao0HFZZZCATLY25: "14 DNN models + TenSet(2308 subgraphs); A100/TitanV/Orin-AGX; matched n-trials=2000 search-time-AND-latency table vs Ansor/TenSetMLP/MetaSchedule; PyTorch 500-iter mean timing."
+  conf/cgo/HeY25: "6 LLM kernels fp16; single A100; 100 warmup+100 reps CUDA events, L2 flush; RL training <5h one-time cost reported separately from throughput; probabilistic correctness testing."
+  conf/ipps/LiuDYC0025: "32 operator configs + 4 DNN models, cloud(RTX4090)+edge(OrinNano); compile-time and FLOPS in separate figures; vs Ansor/Roller/cuBLAS/DietCode; no stated warmup/reps."
+  conf/cgo/IvanovZDEM24: "Rodinia 24 benchmarks (9 excluded); NVIDIA+AMD granularity autotuning; 27% geomean; protocol details unrecoverable (abstract-level only)."
+  conf/ipps/GeorganasKVKNPB24: "GEMM/MLP/ResNet50-conv/block-sparse-matmul + BERT/GPT-J/Llama2 e2e; 4 CPU archs (SPR/Graviton3/Zen4/ADL); explicit TVM-Ansor-vs-PARLOOPER autotuning wall-time comparison (17-50min vs 2s-22min); vs oneDNN/ACL/TVM/Mojo/AOCL."
+  conf/ppopp/XuSZLH024: "PolyBench 4.2.1 (confirmed via repo submodule); i5 CPU + RTX2070; closed-form r-parameter solve instead of enumerative search; vs Pluto/PPCG/LuIs; quality-degradation error budget."
+  conf/asplos/YeLSCC23: "SpMM/SDDMM/sparse-attention/sparse-conv/RGMS on 7 GNN graphs+5 hetero graphs+SemanticKITTI+PrunedBERT; RTX3070/V100; 10 warmup+100 reps CUDAEvent+L2 flush; vs cuSPARSE/dgSPARSE/TACO/DGL/Sputnik/Triton."
+  conf/asplos/WonMEA23: "SpMV/SpMM/SDDMM/MTTKRP over 726 sparsity patterns (secondary source); repo confirms ~20 example SuiteSparse-style .csr matrices; vs MKL/ASpT; PDF unreadable, low-confidence protocol details."
+  conf/asplos/Zheng0WCS20: "broad synthetic DL-op suite (conv1-3d/depthwise/grouped/gemm/gemv/etc., confirmed via repo baselines dir); GPU+CPU+FPGA(Xilinx VU9P); vs AutoTVM/cuDNN/MKL/cuBLAS/TACO; no fulltext located, protocol unrecoverable."

@@ -1,0 +1,181 @@
+kernel: homotopy-continuation
+summary: >
+  Throughput of GPU homotopy-continuation path tracking for polynomial systems,
+  separated into a fixed-work kernel measure (all paths tracked, so efficiency
+  gains cannot be confused with work reduction) and an application-level RANSAC
+  measure where solution quality gates the time.
+operation: >
+  Given a polynomial system F(x; p_target) = 0 with n unknowns and a start system
+  G(x; p_start) = 0 with known solutions, track T homotopy paths
+  H(x, t) = (1-t) G + t F from t=0 to t=1 by predictor-corrector stepping,
+  yielding candidate solutions of F. For trifocal_2op1p_30x30: n = 30 variables,
+  33 parameters, T = 312 paths.
+
+variants:
+  - id: hc-solver-kernel-fixed-paths
+    claim: >
+      path-tracking kernel efficiency at FIXED work — every path tracked to
+      completion, pruning and early termination disabled — so that
+      implementation speed is measured rather than algorithmic work reduction
+    inputs:
+      problem: >
+        trifocal_2op1p_30x30 as shipped in the artifact:
+        Num_Of_Vars 30, Num_Of_Params 33, Num_Of_Tracks 312,
+        dHdx_Max_Terms 8, dHdx_Max_Parts 5, dHdt_Max_Terms 16,
+        dHdt_Max_Parts 6, Max_Order_Of_T 2, Num_Of_Coeffs_From_Params 37
+      start_system: "start_params.txt + start_sols.txt from the artifact (fixed)"
+      targets: >
+        256 target-parameter instances drawn from the noiseless synthetic curve
+        dataset (synthcurves-multiview-3d-dataset), fixed list published with
+        the result
+      step_control:
+        GPUHC_Max_Steps: 80
+        GPUHC_Max_Correction_Steps: 3
+        GPUHC_Num_Of_Steps_to_Increase_Delta_t: 4
+        note: "all three pinned; they bound work per path and must not be retuned per submission"
+      pruning: "DISABLED — all 312 paths tracked"
+      early_termination: "Abort_RANSAC_by_Good_Sol: false"
+      precision: "fp64 complex required; fp32 complex optional and reported separately"
+      gpus: "Num_Of_GPUs = 1 required; multi-GPU reported as a separate scaling number"
+    protocol:
+      warmup: 5
+      reps: 20
+      statistic: "median over instances and reps; min and max also reported"
+      timer: "CUDA events around the solve; host clock acceptable above 1 ms"
+      timing_scope: >
+        path tracking only. Problem-formulation load (dHdx/dHdt index tables,
+        start solutions), device allocation and MAGMA initialization are excluded
+        from the window and reported once as 'setup_ms'.
+    metric:
+      primary: "ms per solve (all 312 paths)"
+      secondary:
+        - "paths/s = 312 * solves / total_time"
+        - "us per path"
+        - "achieved occupancy and register count per kernel (the paper's own efficiency axes)"
+    correctness:
+      gate: >
+        path success rate must be reported and must not fall below the reference
+        implementation's rate on the same instances. A path counts as successful
+        if it terminates within GPUHC_Max_Steps with corrector residual
+        ||F(x)||_inf < 1e-6 (fp64). Recovered finite solutions must match a CPU
+        reference (CPU-HC, or Julia HomotopyContinuation.jl) to 1e-6 relative
+        after solution-set matching. Faster at a lower success rate is not a win.
+  - id: hc-ransac-e2e
+    claim: >
+      end-to-end pose-estimation latency with pruning and early termination
+      enabled — the configuration a SLAM/VO system deploys — with pose accuracy
+      reported jointly so that work reduction cannot be cashed in as speed
+    inputs:
+      problem: "trifocal_2op1p_30x30 (as above)"
+      dataset: >
+        noiseless synthetic curve dataset (the artifact's RANSAC_Dataset:
+        Synthetic); a noisy variant MUST be added when the authors release the
+        real-world dataset, and results on clean data may not be extrapolated
+        to the noisy regime
+      ransac: >
+        fixed hypothesis budget and inlier threshold, both published with the
+        result; both pruning and Abort_RANSAC_by_Good_Sol enabled
+      scenes: "100 scenes, fixed published list, fixed RNG seed for hypothesis sampling"
+    protocol:
+      warmup: 3
+      reps: 10
+      statistic: "median per scene, then median over scenes; min and max reported"
+      timer: "host clock with device synchronization, whole RANSAC loop"
+      timing_scope: >
+        the full RANSAC loop including all HC solves and hypothesis verification.
+        Data loading and one-time setup excluded and reported as 'setup_ms'.
+    metric:
+      primary: "ms to converged pose per scene"
+      secondary:
+        - "number of HC solves actually executed (exposes how much work early termination removed)"
+        - "number of paths actually tracked (exposes pruning)"
+    correctness:
+      gate: >
+        rotation error < 1 degree and translation direction error < 1 degree
+        against the synthetic dataset's exact ground truth, on at least 95% of
+        scenes. A result reporting time without both error statistics and the
+        success fraction is inadmissible.
+  - id: hc-ablation-work-vs-efficiency
+    claim: >
+      attribution of a speedup to work reduction versus kernel efficiency, which
+      a single wall-clock ratio cannot distinguish
+    inputs:
+      problem: "trifocal_2op1p_30x30 (as above)"
+      configurations: >
+        cross product of {pruning off, pruning on} x {early termination off,
+        early termination on}, all four measured; the artifact's own
+        arxived_GPU_code/ kernel variants provide the efficiency-axis baseline
+    protocol:
+      warmup: 5
+      reps: 20
+      statistic: "median"
+      timer: "CUDA events"
+      timing_scope: "same as hc-solver-kernel-fixed-paths"
+    metric:
+      primary: "ms per solve for each of the four configurations"
+      secondary:
+        - "paths tracked per configuration (the work axis)"
+        - "us per tracked path (the efficiency axis) — this is what a kernel-level claim must move"
+    correctness:
+      gate: "same success-rate and solution-matching gate as hc-solver-kernel-fixed-paths, per configuration"
+
+notes_on_fairness:
+  - >
+    The track's four claimed speedup sources split into two incomparable kinds:
+    direct parameter-homotopy evaluation and GPU-utilization work make the same
+    work faster; path pruning and RANSAC early termination make the solver do
+    less work. The headline 9-17x figures mix them. Variants 1 and 3 exist
+    specifically to keep them apart — a kernel-level claim must move us-per-
+    tracked-path, not just wall clock.
+  - >
+    Success rate is a first-class gate, not a footnote. Homotopy path tracking
+    fails by diverging or exhausting GPUHC_Max_Correction_Steps; a submission
+    that prunes harder will be faster and worse, and nothing in the artifact
+    currently makes that visible.
+  - >
+    The public dataset is NOISELESS synthetic data. RANSAC and early termination
+    are cheapest exactly there. Results on this data may not be presented as
+    evidence about the noisy real-world regime, which is the regime RANSAC exists
+    for and whose dataset is not yet released.
+  - >
+    GPUHC_Max_Steps (80) and GPUHC_Max_Correction_Steps (3) are pinned by this
+    spec. They trade time against success rate directly; letting each submission
+    retune them turns the benchmark into a race to the loosest tolerance.
+  - >
+    The artifact exposes no warmup/repetition/statistic constants, so this spec
+    sets them rather than inheriting them, and says so.
+
+open_questions:
+  - >
+    The paper's own timing protocol (warmup, repetitions, statistic) could not be
+    recovered: IPDPS'25 is paywalled with no arXiv mirror, and the constants are
+    not in gpuhc_settings.yaml or the README. Reading cmd/magmaHC-main.cpp in
+    depth would settle it.
+  - >
+    The real-world (noisy) RANSAC dataset is announced as "coming soon" in the
+    README. Until it ships, the e2e variant covers only the clean regime.
+  - >
+    Single-implementation track with a self-referential baseline (the authors'
+    prior GPU-HC). Candidate external baselines for genuine comparison:
+    HomotopyContinuation.jl, Bertini, PHCpack, and the original
+    Homotopy-Continuation-Tracker-on-GPU repository.
+  - >
+    Whether the multi-GPU path partitions homotopy paths or RANSAC hypotheses is
+    not documented; it changes what a scaling number means.
+
+evidence:
+  conf/ipps/ChienAK25: >
+    Improved GPU-HC (IPDPS'25). Artifact
+    Brown-LEMS/Trifocal_Pose_Estimation_using_Improved_GPUHC verified (README
+    names the IPDPS'25 and BMVC'24 papers). All problem constants read verbatim
+    from problems/trifocal_2op1p_30x30/gpuhc_settings.yaml: Num_Of_Vars 30,
+    Num_Of_Params 33, Num_Of_Tracks 312, GPUHC_Max_Steps 80,
+    GPUHC_Max_Correction_Steps 3, Num_Of_Steps_to_Increase_Delta_t 4,
+    Abort_RANSAC_by_Good_Sol false (default), RANSAC_Dataset Synthetic,
+    Num_Of_GPUs 1, Num_Of_Cores 4. README states the four speedup sources
+    (direct parameter homotopy evaluation, GPU utilization, path pruning, RANSAC
+    early termination), the 9.17/13.75/17.06/17x speedups on V100/A100/H100/GH200
+    over the authors' prior GPU-HC, that the released dataset is the noiseless
+    synthetic curve dataset with the real-world one pending, and that
+    arxived_GPU_code/ retains earlier kernel variants for ablation. No
+    warmup/repetition/statistic constants are exposed.

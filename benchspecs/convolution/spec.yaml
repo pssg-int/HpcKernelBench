@@ -1,0 +1,224 @@
+kernel: convolution
+summary: >
+  Forward 2D convolution (NCHW) for CNN-inference-shaped workloads, covering four
+  legitimately different algorithm classes found in the surveyed literature — dense
+  direct/im2col-implicit-GEMM, sparse structured-pruned, sub-8-bit/binary quantized,
+  and autotuning-search cost — each measured with a fixed protocol so GFLOP/s numbers
+  across algorithm classes stay comparable rather than being inflated by a smaller
+  executed-op count.
+operation: >
+  Y[N,Cout,Hout,Wout] = conv2d(X[N,Cin,Hin,Win], W[Cout,Cin/groups,Kh,Kw],
+  stride=(Sh,Sw), pad=(Ph,Pw), groups=g); groups=1 for standard conv,
+  groups=Cin=Cout for depthwise. Reference (algorithm-invariant) FLOP count used for
+  the primary GFLOP/s metric in every variant:
+  flops_ref = 2 * N * Cout * (Cin/groups) * Kh * Kw * Hout * Wout
+  — this is the "problem size" FLOP count (same formula regardless of whether the
+  implementation is direct, im2col-GEMM, Winograd, FFT-conv, or sparse/pruned), so an
+  algorithm that does fewer *executed* multiply-adds (Winograd, sparse) can legitimately
+  show GFLOP/s above the executed-op rate; that is expected and must not be hidden — see
+  metric definitions per variant below.
+
+layer_shape_suite:
+  description: >
+    Union of the exact layer shapes read out of two artifact repos in the survey
+    (ASPLOS_artifact's TileLoopGenerator/{resnet,yolo,deepwise}.txt and Odyssey's
+    tests/conv_all.json), trimmed to 30 named instances to stay within budget. All
+    N=1 (single-image inference latency, matching how every CPU/FPGA paper in the
+    survey benchmarks) unless a variant's protocol overrides N (V2/sparse uses N in
+    {1,4,8,16} per Tetris).
+  format: "name: Cout, Hin=Hout(input=output spatial for these strides)/actually see Hout,Wout columns; Cin; Kh x Kw; stride; groups"
+  instances:
+    # ResNet-18-style (source: ASPLOS_artifact TileLoopGenerator/resnet.txt, 11/11 kept)
+    - {name: resnet18_1, Cout: 64,  Hout: 56, Wout: 56, Cin: 64,  Kh: 3, Kw: 3, stride: 1, groups: 1}
+    - {name: resnet18_2, Cout: 64,  Hout: 56, Wout: 56, Cin: 64,  Kh: 1, Kw: 1, stride: 1, groups: 1}
+    - {name: resnet18_3, Cout: 128, Hout: 28, Wout: 28, Cin: 64,  Kh: 3, Kw: 3, stride: 2, groups: 1}
+    - {name: resnet18_4, Cout: 128, Hout: 28, Wout: 28, Cin: 64,  Kh: 1, Kw: 1, stride: 2, groups: 1}
+    - {name: resnet18_5, Cout: 128, Hout: 28, Wout: 28, Cin: 128, Kh: 3, Kw: 3, stride: 1, groups: 1}
+    - {name: resnet18_6, Cout: 256, Hout: 14, Wout: 14, Cin: 128, Kh: 3, Kw: 3, stride: 2, groups: 1}
+    - {name: resnet18_7, Cout: 256, Hout: 14, Wout: 14, Cin: 128, Kh: 1, Kw: 1, stride: 2, groups: 1}
+    - {name: resnet18_8, Cout: 256, Hout: 14, Wout: 14, Cin: 256, Kh: 3, Kw: 3, stride: 1, groups: 1}
+    - {name: resnet18_9, Cout: 512, Hout: 7,  Wout: 7,  Cin: 256, Kh: 3, Kw: 3, stride: 2, groups: 1}
+    - {name: resnet18_10,Cout: 512, Hout: 7,  Wout: 7,  Cin: 256, Kh: 1, Kw: 1, stride: 2, groups: 1}
+    - {name: resnet18_11,Cout: 512, Hout: 7,  Wout: 7,  Cin: 512, Kh: 3, Kw: 3, stride: 1, groups: 1}
+    # YOLO/Darknet-style (source: ASPLOS_artifact TileLoopGenerator/yolo.txt, 6/11 kept:
+    # one per spatial scale, plus the extreme-Cout detection-head layer as a stress case)
+    - {name: yolo_1, Cout: 32,   Hout: 544, Wout: 544, Cin: 3,    Kh: 3, Kw: 3, stride: 1, groups: 1}
+    - {name: yolo_3, Cout: 128,  Hout: 136, Wout: 136, Cin: 64,   Kh: 3, Kw: 3, stride: 1, groups: 1}
+    - {name: yolo_5, Cout: 256,  Hout: 68,  Wout: 68,  Cin: 128,  Kh: 3, Kw: 3, stride: 1, groups: 1}
+    - {name: yolo_7, Cout: 512,  Hout: 34,  Wout: 34,  Cin: 256,  Kh: 3, Kw: 3, stride: 1, groups: 1}
+    - {name: yolo_9, Cout: 1024, Hout: 17,  Wout: 17,  Cin: 512,  Kh: 3, Kw: 3, stride: 1, groups: 1}
+    - {name: yolo_11_head_stress, Cout: 28272, Hout: 17, Wout: 17, Cin: 1024, Kh: 1, Kw: 1, stride: 1, groups: 1}
+    # MobileNet depthwise-separable (source: ASPLOS_artifact TileLoopGenerator/deepwise.txt, 9/9 kept)
+    - {name: mbnet_dw_1, Cout: 32,   Hout: 112, Wout: 112, Cin: 32,   Kh: 3, Kw: 3, stride: 1, groups: 32}
+    - {name: mbnet_dw_2, Cout: 64,   Hout: 56,  Wout: 56,  Cin: 64,   Kh: 3, Kw: 3, stride: 2, groups: 64}
+    - {name: mbnet_dw_3, Cout: 128,  Hout: 56,  Wout: 56,  Cin: 128,  Kh: 3, Kw: 3, stride: 1, groups: 128}
+    - {name: mbnet_dw_4, Cout: 128,  Hout: 28,  Wout: 28,  Cin: 128,  Kh: 3, Kw: 3, stride: 2, groups: 128}
+    - {name: mbnet_dw_5, Cout: 256,  Hout: 28,  Wout: 28,  Cin: 256,  Kh: 3, Kw: 3, stride: 1, groups: 256}
+    - {name: mbnet_dw_6, Cout: 256,  Hout: 14,  Wout: 14,  Cin: 256,  Kh: 3, Kw: 3, stride: 2, groups: 256}
+    - {name: mbnet_dw_7, Cout: 512,  Hout: 14,  Wout: 14,  Cin: 512,  Kh: 3, Kw: 3, stride: 1, groups: 512}
+    - {name: mbnet_dw_8, Cout: 512,  Hout: 7,   Wout: 7,   Cin: 512,  Kh: 3, Kw: 3, stride: 2, groups: 512}
+    - {name: mbnet_dw_9, Cout: 1024, Hout: 7,   Wout: 7,   Cin: 1024, Kh: 3, Kw: 3, stride: 1, groups: 1024}
+    # VGG16 (source: Odyssey tests/conv_all.json "vgg16", 4/4 kept)
+    - {name: vgg16_1, Cout: 128, Hout: 112, Wout: 112, Cin: 64,  Kh: 3, Kw: 3, stride: 1, groups: 1}
+    - {name: vgg16_2, Cout: 512, Hout: 28,  Wout: 28,  Cin: 256, Kh: 3, Kw: 3, stride: 1, groups: 1}
+    - {name: vgg16_3, Cout: 64,  Hout: 224, Wout: 224, Cin: 64,  Kh: 3, Kw: 3, stride: 1, groups: 1}
+    - {name: vgg16_4, Cout: 512, Hout: 14,  Wout: 14,  Cin: 512, Kh: 3, Kw: 3, stride: 1, groups: 1}
+
+variants:
+  - id: conv-dense-kernel-fp32
+    claim: >
+      Steady-state kernel throughput of a dense conv (direct, im2col-implicit-GEMM,
+      Winograd, or FFT-conv — algorithm class must be disclosed), fp32, single layer,
+      preprocessing (schedule search / weight-layout transform) excluded from timed
+      calls and reported separately, once.
+    inputs:
+      suite: layer_shape_suite (see above; 30 named instances)
+      selection: >
+        union of ResNet-18 (ASPLOS_artifact resnet.txt), YOLO/Darknet (ASPLOS_artifact
+        yolo.txt, subset), MobileNet-depthwise (ASPLOS_artifact deepwise.txt), VGG16
+        (Odyssey conv_all.json) — the only two artifact repos in the track survey that
+        publish an explicit, machine-readable layer-shape list.
+      recommended_subset: [resnet18_1..resnet18_11, yolo_1, yolo_3, yolo_5, yolo_7, yolo_9,
+        yolo_11_head_stress, mbnet_dw_1..mbnet_dw_9, vgg16_1..vgg16_4]
+      batch: "N=1 (inference-latency default, matches ASPLOS/Odyssey); N=8 optional second point (Tetris/DSXplore precedent)"
+      weights_activations: "fp32, initialized U(-1,1); weight layout may be pre-transformed (e.g. KRSC) once, outside the timed region"
+    protocol:
+      hardware_track_gpu:
+        warmup: 30
+        reps: 100
+        statistic: median (report min/max)
+        timer: "device-side events (CUDA events or equivalent); EACH rep individually bracketed so a distribution exists (Tetris's own artifact only records one aggregate bracket over all REPEAT calls, giving a mean with no spread — this spec requires per-rep timestamps)"
+        timing_scope: "kernel only; H2D/D2H and any algorithm-selection/autotuning search excluded"
+        preprocessing_reported: "separately, once: weight-layout transform time, algorithm/schedule-selection time (e.g. cudnnFindConvolutionForwardAlgorithm, or an Ansor/AutoTVM schedule lookup if pre-tuned)"
+      hardware_track_cpu:
+        warmup: 5
+        reps: 30
+        statistic: median (report min/max)
+        timer: "host wall clock (std::chrono / omp_get_wtime)"
+        timing_scope: "kernel only, single-threaded call region timed; thread count fixed and reported"
+        cache_state: "MANDATORY: flush >=32MB dirty buffer immediately before every timed rep (ASPLOS_artifact's testbed.cpp practice, generalized to a fixed 32MB floor since target LLC sizes vary); a paper's own warm-cache number MUST be reported as a separate, explicitly-labeled 'warm-cache' data point, never substituted for the flushed number"
+        preprocessing_reported: "separately, once: any offline tiling/schedule search (analytical or autotuned) wall-clock time"
+    metric:
+      primary: "GFLOP/s using flops_ref (the algorithm-invariant formula above) — comparable across direct/im2col/Winograd/FFT-conv algorithm classes by construction"
+      secondary: "algorithm-effective GFLOP/s using the algorithm class's own executed-op count (e.g. Winograd's ~2.25x-reduced MAC count for F(2,3)) — for within-algorithm-class comparison only, never for cross-class ranking"
+      tertiary: ms per call
+    correctness: >
+      max relative error vs a CPU fp64 reference direct convolution < 1e-3 (relaxed
+      10x vs. a typical SpMM-spec tolerance of 1e-4, because conv's reduction extends
+      over Cin*Kh*Kw which reaches 4608 for the largest instance here — an order of
+      magnitude larger accumulation than a typical sparse-matrix row); algorithm_class
+      field (direct | im2col-implicit-gemm | winograd | fft) is mandatory metadata on
+      every submitted result.
+
+  - id: conv-sparse-pruned-kernel-fp32
+    claim: >
+      Steady-state kernel throughput of a structured/unstructured-pruned sparse conv,
+      fp32, reported both as a same-shape apples-to-apples comparison against dense
+      baselines run on the identical pruned shape, AND as an end-user speedup against
+      the dense baseline run on the ORIGINAL unpruned shape (these are different
+      questions and both are needed — see notes_on_fairness).
+    inputs:
+      suite: "layer_shape_suite base shapes (conv-dense-kernel-fp32's 30 instances) as the pre-pruning/original shape, with the Cout dimension reduced by a fixed sparsity fraction to obtain the pruned shape actually multiplied"
+      selection: "reuses the dense suite rather than inventing a new one, since Tetris's own benchmark methodology (README + conv2d_timing.py) is: take a base dense CNN layer (from VGG19/ResNet50/YOLOv3/MobileNet checkpoints), prune it, and time the pruned shape"
+      sparsity_levels: "{50%, 75%, 90%, 95%} structured out-channel pruning (Tetris's own artifact example uses 92%, within this range)"
+      batch: "N in {1, 4, 8, 16} (Tetris's exact batch sweep)"
+    protocol:
+      warmup: 30
+      reps: 100
+      statistic: median (report min/max)
+      timer: "device-side events (CUDA events), per-rep bracketed (see conv-dense-kernel-fp32 GPU protocol)"
+      timing_scope: "kernel only; sparse-format construction (SPF/CSR-style packing of the pruned weights) excluded from per-call time"
+      preprocessing_reported: "separately, once: sparse-format construction/packing time for the pruned weight tensor"
+      baselines_required: ["dense cuDNN implicit-GEMM on the pruned shape", "dense cuDNN implicit-GEMM on the ORIGINAL unpruned shape", "a general sparse-GEMM-via-im2col baseline (e.g. sputnik)"]
+    metric:
+      primary: "same-shape GFLOP/s: flops_ref computed on the PRUNED shape actually multiplied, divided by time — comparable among all baselines fed that same reduced shape (this matches Tetris's own accounting)"
+      secondary: "end-user speedup: time(dense cuDNN on ORIGINAL unpruned shape) / time(sparse kernel on pruned shape) — captures the actual benefit a user sees from pruning+sparse-kernel together, which same-shape GFLOP/s alone cannot show"
+      tertiary: ms per call
+    correctness: "max relative error vs a CPU fp64 reference direct convolution on the pruned (dense-equivalent) shape < 1e-3; exact tolerance Tetris itself uses in its TensorEqual gate was not recoverable from the code excerpt read — flagged in open_questions"
+
+  - id: conv-quantized-kernel
+    claim: >
+      Steady-state kernel throughput of a sub-8-bit or binary/XNOR quantized conv,
+      reported per (weight_bits, activation_bits) precision class; correctness is
+      defined against a reference computation AT THE SAME PRECISION (quantization is
+      intentionally lossy vs. fp32, so an fp32-relative tolerance is the wrong gate).
+    inputs:
+      suite: "resnet18_1..resnet18_11 from layer_shape_suite (cgo's own artifact already benchmarks ResNet-18 layer-by-layer at this precision; reused rather than inventing a new list)"
+      precision_classes:
+        primary: ["w1a1 (binary/XNOR-popcount)", "w1a2", "w2a2"]
+        ablation_first_layer_only: ["w2a1", "w3a1", "w1a3"]
+      hardware_tracks: ["ARM CPU (cgo's Raspberry-Pi-class target)", "GPU bit-tensor-core (TCBNN's Turing sm_75 target, w1a1 only)"]
+      batch: "N=1"
+    protocol:
+      arm_cpu:
+        warmup: none (cgo's own script has no separate warmup phase)
+        reps: 10 (cgo's own artifact value; kept as-is since it is the only paper in this track disclosing both mean AND std-dev)
+        statistic: "mean + std-dev (as cgo itself reports) AND median (spec addition, since raw per-rep values are cheap to keep once repeats>=10)"
+        timer: "host wall clock"
+        preprocessing_reported: "separately, once: ARM micro-kernel synthesis time (cgo's synthesize.sh step)"
+      gpu_bit_tensor_core:
+        warmup: 30
+        reps: 100
+        statistic: median (report min/max)
+        timer: "device-side events (CUDA events)"
+    metric:
+      primary: "GOP/s (integer/bit ops, not FLOPs) using flops_ref's formula with 'op' substituted for 'flop' — same problem-size-based, algorithm-invariant accounting principle as the fp32 variants"
+      secondary: "images/sec for the full-network end-to-end case (TCBNN's own headline unit; only meaningful as a whole-network number, not a single-layer one)"
+      tertiary: ms per call
+    correctness: >
+      bit-exact match against a reference implementation at the SAME (weight_bits,
+      activation_bits) precision, computed with a wide (>=int32) accumulator — not
+      compared to an fp32 reference. REQUIRED secondary report (not a hard kernel-gate,
+      but mandatory to disclose): downstream top-1 accuracy delta vs. the fp32 model on
+      a standard eval set (ImageNet val for ResNet-18/ImageNet-scale cases, CIFAR-10
+      test otherwise), flagged if the drop exceeds 1% absolute.
+
+  - id: conv-tuning-cost
+    claim: >
+      Time-to-reach-target-performance from a cold start (no cached schedule/tuning
+      database) — a distinct, non-per-call metric that is the actual subject of
+      Ansor-AF-DS's contribution and is implicitly claimed to be near-zero by the
+      analytical-tiling paper (ASPLOS'21); NOT blended into the steady-state GFLOP/s
+      of conv-dense-kernel-fp32.
+    inputs:
+      suite: "resnet18_1..resnet18_11 and yolo_1/yolo_3/yolo_5/yolo_7/yolo_9 from layer_shape_suite (matches Ansor-AF-DS's own ResNet/YOLO network task sets)"
+      target_definition: "reach >=95% of a one-time 'oracle' reference GFLOP/s obtained from a generous 1000-trial Ansor autotuning run, recorded once per layer shape and reused across submissions"
+    protocol:
+      search_budget_cap: "30 minutes wall-clock OR 1000 compile-execute trials, whichever is reached first (matches Ansor-AF-DS's own 1000-trial ceiling for its 'plain Ansor' baseline)"
+      timer: "host wall clock around the entire search loop (compile+execute+model-update), including all trial overhead"
+      statistic: "median wall-clock-to-target over 5 independent search runs (search algorithms are often stochastic — a single run understates variance; Ansor-AF-DS's own cal_var/ tooling exists specifically because tuning time is highly variable)"
+      pass_condition: "the FIRST schedule that both (a) reaches the 95% target and (b) passes conv-dense-kernel-fp32's correctness gate"
+    metric:
+      primary: "wall-clock seconds to first reach target (or 'DNF' plus the best GFLOP/s achieved, if the budget is exhausted first)"
+      secondary: "number of compile-execute trials consumed to reach target"
+    correctness: "identical gate to conv-dense-kernel-fp32; a schedule that reaches the GFLOP/s target but fails correctness does not count as having reached the target"
+
+notes_on_fairness:
+  - "Tetris's own artifact times ALL REPEAT=100 calls inside one aggregate CUDA-event bracket (elapsedTime/REPEAT = mean, no distribution) — this spec requires per-rep timestamps instead, so median/min/max (the instructions' preferred statistic) can actually be computed, not just a single mean."
+  - "Tetris applies the same post-pruning Cout to every baseline (including dense cuDNN) before computing FLOPS, which is fair among those baselines but conflates 'is my sparse kernel fast at this small shape' with 'did pruning+sparse-kernel actually help the end user' — conv-sparse-pruned-kernel-fp32 requires both a same-shape GFLOP/s number and a speedup-vs-original-unpruned-shape number to separate these."
+  - "ASPLOS_artifact (0033XSRS21) is the only CPU-relevant paper in the survey that explicitly states a cache-flush policy (100M-float flush before every one of 50 iterations) — adopted as the CPU-variant default here, generalized to >=32MB, rather than left unspecified as in the other CPU-adjacent papers."
+  - "No paper in this survey reports median or min/max — Tetris and ASPLOS both report only a mean, cgo reports mean+std-dev. Per the instructions' fairness principle, this spec fixes median (report min/max) as the required statistic across all variants, which is a strictly stronger disclosure than any paper's own practice."
+  - "Ansor-AF-DS's entire contribution is autotuning-search wall-clock time to match (not beat) plain Ansor's steady-state kernel quality — folding this into conv-dense-kernel-fp32's per-call GFLOP/s would erase the paper's actual claim, so it gets its own variant (conv-tuning-cost) instead."
+  - "cgo-artifact-2020's own repo already separates kernel-only (convolutions.sh) from end-to-end (end_to_end.sh, with a --nokernel ablation) — this split is the direct precedent for keeping conv-dense-kernel-fp32 (and its siblings) kernel-only while requiring preprocessing/synthesis time to be reported, never silently amortized in."
+  - "DSXplore's own artifact (main.py) has no isolated forward-conv timing path — it is a 350-epoch training loop. This spec does not treat DSXplore's artifact as directly reproducible evidence for any kernel-only number; it is cited in the survey but not load-bearing for any protocol value in this spec."
+  - "Odyssey's reported numbers are an HLS/AutoSA cost-model estimate from a design-space search, not a profiled wall-clock run — it is excluded from the GFLOP/s-based variants entirely rather than being force-fit into the same units as the GPU/CPU papers; see open_questions."
+
+open_questions:
+  - "Tetris's exact numerical tolerance inside TensorEqual (the CPU-reference correctness gate in cudnn_test.cc) was not recoverable from the code excerpt read — the 1e-3 relative tolerance in this spec is this survey's own choice, not copied from Tetris."
+  - "Ansor-AF-DS's actual per-call timing implementation lives inside its forked TVM's time_evaluator runtime, which was not read in full; the exact warmup/repeat/statistic TVM uses by default (and whether Ansor-AF-DS changes it) is unconfirmed — conv-tuning-cost's protocol is this spec's own design, not extracted from their code."
+  - "TCBNN's per-kernel timing loop (in the 36KB kernel.cuh and the per-network .cu drivers) was not read in full — the 5.6K images/sec headline number's exact warmup/repetition/statistic is unconfirmed; conv-quantized-kernel's GPU protocol numbers are carried over from the Tetris precedent (WARM=30/REPEAT=100 pattern), not extracted from TCBNN itself."
+  - "Hidet and VeGen were surveyed at abstract level only (their repos' current HEAD is a post-paper product / general-purpose vectorizer without an accessible original-artifact benchmark script); neither contributed a protocol value to this spec."
+  - "No paper in the 9-paper track input targets 3D/stencil/PDE-style scientific convolution, despite the track's general framing mentioning it — this spec covers only CNN-inference (2D, image-shaped) convolution, since that is what every surveyed paper actually does. A scientific-conv variant (3D grid, larger stencil radius, likely FFT-conv-dominant regime) is left as a genuinely open gap, not fabricated from unsupported assumptions."
+  - "Odyssey's FPGA HLS-cost-model numbers are excluded from all four variants above (see notes_on_fairness) rather than converted into a comparable GFLOP/s figure — whether/how to fold FPGA systolic-array conv into a future variant (measured against actual bitstream execution, not the AutoSA cost model) is unresolved."
+  - "Exact GPU model used in TCBNN's paper-reported evaluation (vs. just the sm_75 compute-capability floor in the Makefile) was not confirmed from the files read."
+
+evidence:
+  conf/ics/LiXSS24: "Ansor-AF-DS: autotuning-search-cost is the real metric (order-of-magnitude fewer trials for same GFLOP/s as plain Ansor), conv2d+matmul on YOLO/ResNet task sets, RTX 3090/4090, vs. cuDNN and plain Ansor; exact per-call timer protocol not confirmed."
+  conf/ppopp/LiuZYLQ24: "Tetris: WARM=30/REPEAT=100 CUDA-event mean, VGG19/ResNet50/YOLOv3/MobileNet pruned layers, batch {1,4,8,16}, V100, vs. cuDNN/sputnik(+/-im2col)/cuSPARSE/TACO-UCF, FLOPS computed on post-pruning shape for all baselines uniformly, CPU-reference Pass/Error correctness gate."
+  conf/asplos/0033XSRS21: "ASPLOS analytical CNN loop-tiling: exact ResNet-18/YOLO/MobileNet-depthwise layer-shape lists, 50-iteration mean GFLOPS with mandatory 100M-float cache flush before every iteration, omp_get_wtime, vs. oneDNN/AutoTVM, CPU-only (i7-9700K AVX2 / i9-10980XE AVX512)."
+  conf/dac/BasalamaWC23: "Odyssey: FPGA HLS/AutoSA design-space-exploration tool; 'performance' is a cost-model estimate from genetic+IPOPT search over VGG16/MobileNetV2/ResNet50/152 conv-layer samples, not a directly profiled wall-clock kernel run — excluded from this spec's GFLOP/s variants."
+  conf/asplos/ChenMCA21: "VeGen: vectorizer generator for non-SIMD ISAs; convolution is one of several target kernels, not the paper's primary subject; abstract-level only, not load-bearing for spec values."
+  conf/ipps/WangFD21: "DSXplore: sliding-channel convolution as a custom PyTorch/CUDA op across VGG/ResNet/MobileNet on CIFAR-10; the artifact's own benchmark entry point is a full 350-epoch training loop with no isolated kernel-only timing path — cited but not load-bearing evidence."
+  journals/tpds/LiS21: "TC-BNN: 1-bit XNOR-popcount bit-tensor-core GEMM+conv on Turing GPUs (sm_75), headline metric is whole-network images/sec (5.6K img/s ResNet-18/ImageNet, +77% vs. prior bit-serial baseline); per-call timing protocol not confirmed from files read."
+  conf/cgo/CowanMCBC20: "cgo quantized-kernel codegen: ResNet-18 layer-by-layer on Raspberry Pi 3B+ ARM CPU, weight/activation bit-widths {1x1,1x2,2x2}+ablations, repeats=10 mean+std-dev explicitly logged, own artifact already splits kernel-only vs. end-to-end (with a --nokernel ablation), synthesis time reported as a separate one-shot cost."
+  conf/asplos/DingYZLWP23: "Hidet: task-mapping DL compiler targeting GPU/TPU tensor programs incl. conv; abstract-level only (current repo HEAD is the post-paper production compiler, original AE benchmark scripts not found at root)."

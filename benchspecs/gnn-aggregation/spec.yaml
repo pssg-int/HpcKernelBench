@@ -1,0 +1,318 @@
+kernel: gnn-aggregation
+summary: >
+  Sparse-times-dense-matrix neighbor aggregation as used in GNN message
+  passing (C = A_sparse @ X_dense, optionally symmetrically normalized by
+  degree), measured at three DIFFERENT scopes the surveyed literature
+  conflates under one "SpMM"/"aggregation" label — isolated kernel,
+  single-layer forward with real feature dims, and full training epoch — plus
+  an explicit preprocessing-amortization split, since several artifacts'
+  headline numbers move visibly (EPPGCN: 1.48-5.65x kernel-only vs
+  1.03-1.37x end-to-end) depending on which scope and preprocessing
+  treatment is chosen.
+operation: >
+  Forward: H'[V,F] = A_hat[V,V](sparse, given CSR) @ H[V,F](dense row-major),
+  where A_hat is either the raw binary/weighted adjacency or its symmetric
+  degree-normalization D^-1/2 A D^-1/2 (both appear as first-class targets
+  in the surveyed papers, e.g. CBM benchmarks all three of A@X, A@D^-1/2@X,
+  D^-1/2@A@D^-1/2@X separately). Backward (where in scope): grad_H[V,F] =
+  A_hat^T @ grad_H'[V,F] (same operation shape, transposed sparse operand).
+
+variants:
+  - id: gnn-agg-kernel-f32
+    claim: >
+      steady-state isolated-kernel throughput of one aggregation call, given
+      CSR (no format conversion timed), synthetic dense features swept over
+      N — the common denominator of GE-SpMM, MaxK-GNN's kernel benchmark,
+      TLPGNN, and CBM's benchmark_matmul.py. THIS variant intentionally does
+      NOT include any Python/framework dispatch overhead, backward pass, or
+      other GCN layers (unlike TC-GNN/QGTC/EPPGCN's epoch numbers below).
+    inputs:
+      suite: >
+        SuiteSparse/SNAP general-graph collection ∪ the recurring
+        "GNNAdvisor-lineage" GNN benchmark suite (the set shared, with
+        partial overlap, by TC-GNN/EPPGCN/QGTC)
+      selection: >
+        real (non-synthetic) adjacency matrices, 1e4 <= nnz <= 2e8, treated
+        as square (self-loops added if not already present); union of (a)
+        every graph named in >=2 of the surveyed papers' code-verified
+        benchmark suites (closes the "no paper states a criterion" gap noted
+        in survey.md Divergence 5) and (b) the SNAP category GE-SpMM mirrors
+        in full, capped to the same nnz range for comparability across the
+        suite.
+      recommended_subset:
+        [cora, citeseer, pubmed, ppi, artist, "soc-BlogCatalog",
+         "com-amazon", amazon0505, amazon0601, "OVCAR-8H", Yeast, YeastH, DD,
+         "PROTEINS_full", "ca-HepPh", "ca-AstroPh", "web-Google",
+         "roadNet-CA", "as-Skitter", "wiki-Talk", "cit-Patents",
+         "com-DBLP", COLLAB, "coPapersCiteseer"]
+      dense_operand: "N in {32, 128, 256, 512}, fp32, initialized U(-1,1)"
+      operand_variant: >
+        both plain A@X and normalized D^-1/2 A D^-1/2 @X reported (CBM
+        treats these as genuinely different benchmark targets; most other
+        papers only test one — report both here rather than picking one)
+    protocol:
+      format: "CSR (given, conversion not timed)"
+      warmup: 20
+      reps: 100
+      statistic: "median (report min/max alongside)"
+      timer: "device-side events (CUDA events / equivalent), ONE event pair per iteration"
+      timing_scope: "kernel only; H2D/D2H and format conversion excluded"
+      preprocessing_reported: "separately, once (CBM's compression_metrics.sh pattern)"
+      deviation_from_surveyed_practice: >
+        GE-SpMM wraps its entire 200-iteration loop in a single CUDA-event
+        pair (batched mean only, no variance obtainable); MaxK-GNN uses only
+        4 warmup + 4 measured samples with no variance reported either. This
+        spec requires per-iteration device timestamps and a 100-sample
+        measured window so median/min/max are actually computable, closing
+        both papers' statistical gaps identified in survey.md Divergence 2.
+    metric: {primary: "GFLOP/s (2*nnz*N flops)", secondary: "ms"}
+    correctness: >
+      max relative error vs. a CPU double-precision scipy.sparse reference
+      < 1e-4, checked BEFORE any timed iteration counts (mandatory gate,
+      closing GE-SpMM's disabled-by-default #ifdef VALIDATE and MaxK-GNN's
+      commented-out check_err() call site — see survey.md Divergence 3)
+
+  - id: gnn-agg-e2e-preproc-f32
+    claim: >
+      end-to-end throughput including one-shot preprocessing (sparse-format
+      conversion to the kernel's native layout, e.g. CBM's compression,
+      MaxK-GNN's CBSR meta-data generation, TC-GNN's dense-tile graph
+      translation), amortized over k=200 repeated aggregation calls — 200
+      matches TC-GNN's own full-training epoch count, the most common
+      "realistic reuse count" a GNN aggregation kernel actually sees before
+      the graph structure would plausibly change.
+    inputs:
+      suite: "same as gnn-agg-kernel-f32"
+      selection: "same as gnn-agg-kernel-f32"
+      recommended_subset: "same as gnn-agg-kernel-f32"
+      dense_operand: "N in {128, 256, 512}, fp32"
+    protocol:
+      format: "input is raw CSR/COO; conversion to the kernel's native format IS timed, once"
+      warmup: 10
+      reps: "k=200 post-conversion aggregation calls; report both amortized (incl. 1/k of conversion) and pure-kernel time"
+      statistic: median
+      timer: "device-side events for the kernel calls; std::chrono/CUDA events for the one-shot conversion"
+      timing_scope: >
+        conversion + k kernel calls; this is the split EPPGCN itself reports
+        (1.05-1.37x with-preprocessing vs 1.03-1.35x on-the-fly) — this
+        variant forces every artifact in the track to report both numbers
+        the same way instead of only the more favorable one
+      preprocessing_reported: "both standalone (ms, once) AND amortized-per-call (conversion_ms / k added to each call)"
+    metric: {primary: "GFLOP/s (amortized)", secondary: "ms (conversion, standalone); ms (per-call, pure kernel)"}
+    correctness: "same tolerance as gnn-agg-kernel-f32, checked post-conversion"
+
+  - id: gnn-agg-layer-forward-real-features
+    claim: >
+      one GCN-layer forward pass (aggregation immediately followed by the
+      dense weight GEMM) on STANDARD datasets using each dataset's REAL
+      input/hidden feature width, not a synthetic N sweep — isolates what
+      TLPGNN/FeatGraph measure (a single aggregation call inside a real
+      model configuration) from the raw kernel-only variant above, and
+      reports the aggregation-kernel fraction of the layer separately from
+      the GEMM fraction (a breakdown none of the surveyed papers isolate
+      cleanly at this granularity).
+    inputs:
+      suite: "standard node-classification GNN benchmark datasets (fixed list, not swept by paper convenience)"
+      recommended_subset:
+        - {name: Cora, nodes: 2708, edges: 10556, features: 1433, classes: 7}
+        - {name: Citeseer, nodes: 3327, edges: 9104, features: 3703, classes: 6}
+        - {name: PubMed, nodes: 19717, edges: 88648, features: 500, classes: 3}
+        - {name: Reddit, nodes: 232965, edges: 114615892, features: 602, classes: 41}
+        - {name: "ogbn-arxiv", nodes: 169343, edges: 1166243, features: 128, classes: 40}
+        - {name: "ogbn-products", nodes: 2449029, edges: 61859140, features: 100, classes: 47}
+        - {name: Flickr, nodes: 89250, edges: 899756, features: 500, classes: 7}
+        - {name: Yelp, nodes: 716847, edges: 6977410, features: 300, classes: 100}
+      hidden_dim: "16 (matches TC-GNN/EPPGCN's --hidden 16 GNNAdvisor-lineage convention) AND 128 (matches ogbn-arxiv leaderboard convention) — both reported"
+      model: "2-layer GCN, D^-1/2 A D^-1/2 normalization"
+    protocol:
+      warmup: 20
+      reps: 50
+      statistic: "median (min/max alongside)"
+      timer: >
+        device-side profiler (PyTorch profiler / Nsight Systems kernel-level
+        trace) so the aggregation-kernel slice can be isolated from the
+        dense-GEMM slice within the same forward call; a single host-side
+        timer around the whole layer (TLPGNN's pattern) is NOT sufficient
+        for this variant's breakdown claim
+      timing_scope: "one forward pass of one GCN layer; preprocessing (adjacency normalization) excluded, reported once"
+      breakdown_required: "aggregation-kernel time vs dense-GEMM time vs (if present) other framework overhead, as separate line items"
+    metric: {primary: "ms (aggregation-kernel slice)", secondary: "ms (full layer); % of layer time spent in aggregation"}
+    correctness: "output matches a reference PyG/DGL layer forward within 1e-4 max relative error"
+
+  - id: gnn-agg-epoch-training-e2e
+    claim: >
+      full training-epoch time (forward + backward + optimizer step) for a
+      standard 2-layer GCN — the headline number TC-GNN, QGTC, and the
+      EPPGCN/GNNAdvisor lineage actually report and compare against. Kept as
+      its own variant, explicitly labeled as NOT kernel-isolated, because
+      most of this track's papers report exactly this number and a fair
+      benchmark spec must let their claims be reproduced on the SAME
+      dataset/model instead of only comparing incommensurable kernel-only
+      numbers (see survey.md Divergence 1).
+    inputs:
+      suite: "same recommended_subset as gnn-agg-layer-forward-real-features, plus the amazon0601/artist/soc-BlogCatalog/com-amazon large-graph cluster common to TC-GNN/EPPGCN"
+      model: "2-layer GCN, hidden=16, Adam lr=0.01"
+      dense_operand: "real per-dataset feature width (no synthetic N)"
+    protocol:
+      warmup: "9 dry-run epochs, untimed (TC-GNN's own convention)"
+      reps: "200 measured epochs"
+      statistic: "mean AND median reported (papers in this track report mean-only; this spec additionally requires median so a few slow/pathological epochs can't be hidden by an average, and per-epoch times must be retained, not just the aggregate)"
+      timer: "torch.cuda.synchronize() + host wall clock, bracketing each epoch individually (not one bracket around all 200, unlike CAGNET's coarse pattern)"
+      timing_scope: "full epoch: forward + backward + optimizer.step(); excludes data loading (data resident on GPU before the timed region)"
+      warmup_note: >
+        epoch 1 of the MEASURED window must never be included in the
+        reported statistic even if a paper's own harness includes it
+        (CAGNET's gcn_distr.py starts its coarse timer at epoch 1 with no
+        warmup exclusion — this spec does not repeat that gap)
+    metric: {primary: "ms/epoch", secondary: "epochs/s"}
+    correctness: "final validation accuracy within 1 pp of a reference PyG/DGL GCN trained identically (catches silently-wrong aggregation that a per-call numerical check might miss due to error cancellation across many calls)"
+
+notes_on_fairness:
+  - >
+    GE-SpMM's and MaxK-GNN's correctness checks are compiled out / commented
+    out by default in the shipped benchmark path (survey.md Divergence 3);
+    this spec makes the correctness gate mandatory and pre-timing in every
+    variant, never opt-in.
+  - >
+    GE-SpMM (single CUDA-event pair around a 200-call loop) and MaxK-GNN (4
+    warmup + 4 measured samples) cannot report median/min/max from their own
+    protocols. This spec requires per-iteration device timestamps and a
+    >=100-sample measured window in gnn-agg-kernel-f32 specifically so those
+    statistics are always computable.
+  - >
+    No surveyed paper states an explicit dataset-inclusion criterion; every
+    suite is inherited by citation from GNNAdvisor/SNAP popularity, and no
+    two papers' suites are identical (survey.md Divergence 5). This spec
+    fixes one explicit union-based criterion and a single named subset
+    instead of letting each reproduction pick its own convenient graphs.
+  - >
+    EPPGCN is the only surveyed paper reporting both a with-preprocessing
+    and a without-preprocessing end-to-end number, and they differ
+    materially (1.05-1.37x vs 1.03-1.35x). This spec's
+    gnn-agg-e2e-preproc-f32 variant makes that split, with an explicit
+    amortization count (k=200), a REQUIRED report for every artifact, not an
+    optional extra the way EPPGCN alone currently provides it.
+  - >
+    CAGNET's coarse end-to-end timer starts at epoch 1 with no warmup
+    exclusion, which risks inflating the reported per-epoch time with
+    first-touch/allocation overhead. gnn-agg-epoch-training-e2e explicitly
+    forbids counting the first measured epoch, regardless of what a given
+    artifact's own harness does.
+  - >
+    MaxK-GNN's backward SSpMM (structured top-k sparsity) and QGTC's
+    sub-8-bit quantized aggregation are NOT pooled into the fp32 dense-N
+    metric above — they measure genuinely different arithmetic (fewer
+    nonzeros per row by construction; integer MACs instead of FMAs) and
+    reporting them on the same GFLOP/s axis as e.g. GE-SpMM would imply a
+    false apples-to-apples comparison. Left as open questions below rather
+    than forced into one of the four variants.
+  - >
+    FASTEN's segmented matmul for heterogeneous GNNs and CAGNET's
+    distributed 1D/1.5D/2D/3D decompositions are structurally different
+    problems (grouped-by-relation-type GEMM; communication-bound
+    multi-GPU/multi-node scheduling) from the single-adjacency-matrix,
+    single-device aggregation this spec's four variants target. Neither is
+    folded in; see open_questions.
+
+open_questions:
+  - >
+    Whether a 5th "heterogeneous segmented aggregation" variant should be
+    added to cover FASTEN's relation-type-grouped GEMM — its inputs (AIFB/
+    MUTAG/BGS/AM/DBLP/Freebase) and operator shape (segmented/grouped GEMM,
+    not a single sparse adjacency @ dense) don't fit any of the four
+    variants above without stretching "aggregation" past its usual meaning
+    in this track's other 10 papers.
+  - >
+    Whether a 6th "distributed-scale" variant (communication volume + weak/
+    strong scaling vs. GPU count) should be added to cover CAGNET's 1D/1.5D/
+    2D/3D decompositions, given Phase 2's measurement machine is not fixed
+    to a single node. Left out here since it needs a fundamentally different
+    metric (words moved / comm time, not GFLOP/s) and multi-GPU access most
+    of this track's artifacts (single-GPU/single-CPU kernels) don't require.
+  - >
+    StraGCN's actual timing protocol (warmup/rep counts, timer) was not
+    extracted — the README documents only how to launch full training
+    (`python gcn.py`), and the timing loop presumably lives inside
+    `StraGCN/gcn.py`/`dgl/gcn.py`, which was not read within this survey's
+    scope. Needs a follow-up code read before StraGCN's artifact can be
+    slotted into gnn-agg-epoch-training-e2e with confidence.
+  - >
+    QGTC's exact warmup/repetition counts for its epoch-level "Epoch (ms)"
+    table and its raw-GEMM TFLOPs table were not extractable from the README
+    alone (arXiv fulltext 404'd); would need `0_7a_eval_QGTC_cluster_GCN.py`
+    and `2_7c_QGTC_GEMM_INT8.py` read directly.
+  - >
+    CBM's own harness reports raw seconds, not GFLOP/s or a normalized
+    throughput metric — this spec's gnn-agg-kernel-f32 requires GFLOP/s,
+    meaning a CBM reproduction needs an added normalization step (2*nnz*N,
+    trivial, but CBM's artifact does not do this itself).
+  - >
+    TC-GNN's dense-tile graph-translation preprocessing latency (as opposed
+    to the resulting tile COUNT, which IS reported by
+    `3_cnt_TC_blk_SpMM.py`) was not found in any shipped script; unclear
+    whether it is measurable from the artifact as-is or requires
+    instrumenting the translation code directly for
+    gnn-agg-e2e-preproc-f32.
+
+evidence:
+  conf/ipps/AlvesMBFGR25: >
+    8 named CPU graphs (SNAP/Planetoid/TUDataset/OGB), MKL-CSR baseline;
+    warmup=10 + iterations=250 (script default), mean/std/min/max via Python
+    time.time(); compression time reported by a SEPARATE script; validate.sh
+    correctness gate with explicit rtol/atol, run separately from timing;
+    metric is raw seconds, not GFLOP/s.
+  conf/sc/HeLDL0M025: >
+    RTX 4090 GPU; graphs via Zenodo (names not machine-readable from
+    README); vs GNNA/PyG/DGL; only full-training entry points documented,
+    timing-loop internals not surveyed (open question).
+  conf/asplos/PengXSHZHKKD24: >
+    custom 24-graph kernel suite + 5 OGB/GraphSAGE datasets for full
+    training; k-sparsity swept {16..192} vs fixed dim=256; 4 warmup + 4
+    measured device-timestamped iterations, mean only; correctness-check
+    function present but its call site is commented out; vs cuSPARSE/
+    GNNAdvisor, up to 6.93x/9.57x.
+  conf/ics/0001SLFY024: >
+    segmented matmul (heterogeneous-graph relation-grouped GEMM, not plain
+    SpMM); AIFB/MUTAG/BGS/AM/DBLP/Freebase; Triton `proton` profiler with
+    explicit forward+backward warmup passes; vs CUTLASS/cuBLAS, avg
+    13.65x/4.72x operator-wise.
+  conf/usenix/WangFWHD23: >
+    14 named graphs (GNNAdvisor-lineage); epoch-level: 9-epoch untimed dry
+    run then 200 measured epochs, torch.cuda.synchronize + perf_counter,
+    ms/epoch; ALSO ships a separate single-kernel benchmark path; 6
+    baselines (DGL/PyG/cuSPARSE-bSpMM/tSparse/Triton); dense-tile
+    translation cost itself not reported, only resulting tile count.
+  conf/hpdc/FuJH22: >
+    V100; dataset-agnostic loader (citeseer shown as example); kernel-only,
+    1 untimed warmup call + 10 measured reps, host perf_counter +
+    cuda.synchronize, mean only; --size feature-dim sweep (default 32).
+  conf/ppopp/WangFD22: >
+    quantized (1/2/4/8-bit) Tensor-Core aggregation; artist/soc-BlogCatalog/
+    ppi/ogbn-arxiv Cluster-GCN epoch benchmark + a shape-only (not
+    graph-tied) raw-GEMM TFLOPs comparison vs cuBLAS INT8; exact warmup/rep
+    counts not extracted from README (open question).
+  journals/tpds/XuSYLJ22: >
+    10 named graphs (GNNAdvisor-lineage, different large-graph members than
+    TC-GNN's); sweeps active-vertex train_ratio {0.1,0.3,0.5,0.8} x layers
+    {3,4,5,6}; timing harness inherited from GNNAdvisor (OSDI'21), not
+    redefined; ONLY paper reporting both with-preprocessing (1.05-1.37x) and
+    on-the-fly (1.03-1.35x) end-to-end numbers side by side; vs GNNAdvisor.
+  conf/sc/HuYWYZL0ZW20: >
+    CPU (TVM x86) AND GPU (TVM CUDA) in one harness; dataset-agnostic
+    (scipy CSR .npz), Reddit the worked example; TVM measure_average_time,
+    5 runs, mean only; benchmark IS an autotuning sweep over schedule
+    params (col/feat partitions or block/thread counts) at fixed feat_len=
+    128, not a single steady-state config.
+  conf/sc/HuangD0Y20: >
+    ~66 SNAP-collection graphs (whole-category mirror) + misc .mtx; ITER=200
+    device-warmup launches + a single-CUDA-event-pair batched-mean region
+    over 200 calls (no per-iteration stats possible); B_ncols in
+    {128,256,512}; correctness gated behind a disabled-by-default #ifdef
+    VALIDATE; vs cuSPARSE/merge-spmm/GunRock, up to 1.41x.
+  conf/sc/TripathyYB20: >
+    distributed 1D/1.5D/2D/3D SpMM decompositions on torch.distributed,
+    16-100+ GPUs (OLCF Summit); Reddit/Amazon/Protein(>1B edges); host
+    time.time() at both fine-grained comm/comp-phase and coarse
+    whole-training-loop granularity; coarse timer includes epoch 1 with no
+    warmup exclusion; comm time reported as a first-class metric, not
+    folded into a single throughput number.

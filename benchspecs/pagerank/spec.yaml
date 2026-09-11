@@ -1,0 +1,293 @@
+kernel: pagerank
+summary: >
+  Global PageRank via power iteration over a directed graph in CSR/CSC form,
+  measured both as steady-state per-iteration throughput at a fixed
+  iteration budget and as time-to-convergence under an explicit epsilon,
+  with preprocessing (format conversion, any reordering) strictly separated
+  from iteration time and correctness gated against an independent fp64
+  reference rank vector.
+operation: >
+  r_{t+1}[v] = (1-alpha)/N + alpha * sum_{u: (u,v) in E} r_t[u] / outdeg(u),
+  for all v in V, iterated from r_0[v] = 1/N until either a fixed iteration
+  budget k is exhausted or ||r_t - r_{t-1}||_1 < epsilon; A[V,V] is the
+  (unweighted, direction-preserving) sparse adjacency, dangling nodes
+  (outdeg(u)=0) redistribute their mass uniformly over all V; damping
+  alpha = 0.85, personalization vector uniform (global PageRank, not
+  personalized/single-source).
+
+variants:
+  - id: pagerank-fixed-iter-kernel-f32
+    claim: >
+      steady-state per-iteration kernel throughput at a fixed iteration
+      budget k=20, preprocessing excluded but reported separately —
+      reconciles the track's two competing fixed-count conventions
+      (Corder/Shun20's 1-iteration microbenchmark and GeraK23's 50-iteration
+      cap) at a middle value the track itself already uses for profiling
+      (Corder's own 20-iteration L2-cache-miss figure)
+    inputs:
+      suite: >
+        union of SNAP and LAW/WebGraph real directed/undirected graphs used
+        by the 2 surveyed papers that measure global PageRank (GeraK23,
+        ChenC22/Corder), disambiguated by exact vertex/edge counts, plus
+        GAP-Benchmark-Suite-style synthetic fill-ins for size-class
+        coverage — same disambiguation convention as the sibling `bfs`
+        benchspec, which surveys the same two papers for BFS
+      selection: >
+        named real graphs appearing in >=1 of the 2 global-PageRank papers'
+        own suites (union, not intersection, since overlap is only
+        partial), |E| spanning ~1e6 to ~4e9 to cover both papers' size
+        ranges; synthetic Graph500 kron/uniform-random generators included
+        since both papers use them as a "non-power-law control" graph
+      recommended_subset:
+        - "soc-LiveJournal1 (SNAP, ~4.85M v / 68.9M e, directed) — GeraK23's 'soc-lj'; matches ChenC22's 'live' (4.8M v / 68.5M e) closely enough to plausibly be the same underlying graph (unconfirmed, see open_questions)"
+        - "com-Orkut (SNAP, ~3.07M v / 234.3M e, undirected) — GeraK23's 'orkut'"
+        - "twitter-2010-efg (Kwak et al. crawl as packaged by GeraK23's efg repo, 41.6M v / 1.47B e, directed) — NOT confirmed identical to ChenC22's 'twitter' (41.7M v / 1.5B e); kept as a separate disambiguated instance pending verification"
+        - "com-Friendster (SNAP, ~65.61M v / 3.61B e, undirected) — GeraK23's 'frndster'"
+        - "uk-2007-05 (LAW webgraph, 105.22M v / 3.74B e, directed) — GeraK23's 'uk-07-05'"
+        - "sk-2005 (LAW webgraph, 65.61M v / 1.95B e, directed) — GeraK23's 'sk-05'"
+        - "gsh-2015-host (LAW webgraph, 68.66M v / 1.8B e, directed) — GeraK23's 'gsh-15-h'"
+        - "kron_g500-logn23 (Graph500 Kronecker generator, scale 23, ~63-67M v / ~2.1-2.12B e) — GeraK23's 'kron27' and ChenC22's 'kron' target the same generator family at the same scale; pin the exact seed/parameterization used, do not assume identical output files"
+        - "urand-scale26 (Graph500 uniform-random generator, scale 26, ~67.1M v / 1.07-2.14B e) — GeraK23's 'urnd26' and ChenC22's 'urand'; the non-skewed control graph BOTH papers use, and ChenC22 explicitly excludes it from its own averages as 'not skewed' — this spec's suite keeps it IN every variant (see notes_on_fairness)"
+        - "pld (ChenC22, pay-level-domain web hyperlink graph, 42.9M v / 0.6B e, directed) — exact public source not confirmed from the accessible text, flagged in open_questions"
+        - "wiki-links-corder (ChenC22's 'wiki', hyperlink graph, 18.3M v / 0.2B e, directed) — small/medium control instance; NOT the same instance as the `bfs` benchspec's 'wiki-topcats', disambiguated by name"
+        - "mpi (ChenC22, highly-skewed social/influence graph, 52.6M v / 2.0B e) — ChenC22's own extreme-skew stress test, kept as-is since no public canonical source name was confirmed"
+        - "com-dblp (SNAP, 317,080 v / 1,049,866 e) — small-size control instance; also one of MeLoPPR's 6 graphs, bridging the two papers' size ranges"
+        - "com-amazon (SNAP, 334,863 v / 925,872 e) — small-size control instance, also one of MeLoPPR's graphs"
+        - "com-youtube (SNAP, 1,134,890 v / 2,987,624 e) — small/medium control instance, also one of MeLoPPR's graphs"
+      correctness_reference_subset: >
+        citeseer (3,327 v / 4,676 e), cora (2,708 v / 5,278 e), pubmed
+        (19,717 v / 44,327 e) — MeLoPPR's 3 smallest graphs, cheap enough
+        to brute-force an independent fp64 reference rank vector on a
+        laptop; RECOMMENDED as the first correctness check for any new
+        implementation before trusting it on the multi-billion-edge
+        instances above, since a wrong kernel is far cheaper to catch here
+      dense_operand: "N/A — no dense operand; rank vector length N, fp32 for the timed kernel, fp64 for the correctness reference (see correctness below)"
+      size_classes: "small: <2M vertices (com-dblp, com-amazon, com-youtube); medium: 2-70M vertices (com-Orkut, soc-LiveJournal1, wiki-links-corder, pld, twitter-2010-efg, kron_g500-logn23, urand-scale26, mpi); large: >70M vertices (com-Friendster, uk-2007-05, sk-2005, gsh-2015-host)"
+    protocol:
+      format: "CSR (push/CSC pull, per direction disclosure below) given/converted once; conversion NOT timed here (see pagerank-e2e-reorder for the amortized version)"
+      warmup: "1 full k=20-iteration run, discarded"
+      reps: 5
+      iterations: "fixed k=20 (see claim rationale above); every rep runs exactly k=20 iterations regardless of when/whether the rank vector would have converged"
+      damping: "alpha = 0.85 — the Page & Brin original constant and the de facto library default (cuGraph, Ligra, NetworkX); NONE of the 2 surveyed global-PageRank papers state a numeric alpha, so this value is asserted by the spec, not drawn from either paper (see survey.md Divergences #5)"
+      dangling_node_handling: "redistribute dangling mass uniformly over all V each iteration (standard treatment); an implementation that instead drops dangling mass (a common shortcut) must disclose this, since it changes the converged fixed point"
+      statistic: "median of 5 reps; report min/max"
+      timer: "device-side events (CUDA/HIP events) for GPU implementations, std::chrono for CPU, wrapping only the k-iteration loop"
+      timing_scope: "kernel only (the k=20-iteration loop); graph load, CSR/CSC build, and any reordering are one-shot and excluded, reported separately"
+      preprocessing_reported: "separately, once per graph instance: CSR/CSC build time, and — if a reordering method is applied — its wall time (following ChenC22/Corder's own amortization-argument convention, made explicit rather than folded silently into iteration time)"
+      direction_disclosure: >
+        REQUIRED: report whether the implementation is push (CSR, source
+        scatters to destinations, typically atomic destination updates —
+        GeraK23's and ChenC22's Ligra-backend convention), pull (CSC,
+        destination gathers from in-neighbors, no atomics needed since
+        PageRank has no frontier — every vertex is active every iteration
+        unlike BFS), or hybrid/direction-optimized (state the switch
+        threshold or criterion, following Shun20's disclosed default of
+        1/20 fraction of in-degree sum — the only one of the 4 surveyed
+        papers to disclose this)
+    metric:
+      primary: "ms per iteration = total_time_for_k_iterations / k"
+      secondary: >
+        total_time_ms for the k=20-iteration run; GTEPS = (nnz * k) /
+        total_time_seconds / 1e9 (same throughput unit GeraK23 uses for
+        BFS/SSSP/PageRank, for cross-kernel comparability within this
+        project's benchmark suite)
+    correctness: >
+      compute an independent fp64 reference rank vector once per graph via
+      a trusted power-iteration implementation (e.g. scipy.sparse or
+      networkx.pagerank) run to a tight epsilon=1e-12, same alpha=0.85,
+      same dangling-node handling, for the SAME k=20 iterations (not to
+      full convergence — this isolates numerical-precision/implementation
+      correctness from "how close a 20-iteration snapshot is to the true
+      fixed point," which is a separate, expected, non-zero gap for a
+      fixed-iteration variant). Required gate: L1 distance between the
+      timed fp32 rank vector and this fp64/k=20 reference must be < 1e-4
+      (relative to the rank vector summing to 1.0). Additionally report,
+      as an informational (non-gating) number, the L1 distance between the
+      k=20 rank vector and a FULLY CONVERGED (epsilon=1e-10) fp64
+      reference, to make explicit how far from the true fixed point a
+      fixed-iteration snapshot actually is on each graph.
+
+  - id: pagerank-converge-kernel-f32
+    claim: >
+      steady-state kernel time-to-convergence under an explicit epsilon,
+      preprocessing excluded — a spec-level FIX to a real gap in the
+      surveyed literature: none of the 4 papers in this track runs
+      PageRank to a disclosed convergence tolerance (see survey.md
+      Divergences #1); this variant exists so the track has at least one
+      apples-to-apples "how long until I actually have a usable rank
+      vector" number, not just fixed/arbitrary iteration-count snapshots
+    inputs:
+      suite: "same recommended_subset and correctness_reference_subset as pagerank-fixed-iter-kernel-f32"
+      selection: "same as pagerank-fixed-iter-kernel-f32"
+      recommended_subset: "same list as pagerank-fixed-iter-kernel-f32"
+      dense_operand: "N/A, same as pagerank-fixed-iter-kernel-f32"
+    protocol:
+      format: "CSR/CSC, same as pagerank-fixed-iter-kernel-f32; conversion not timed here"
+      warmup: "1 full to-convergence run, discarded"
+      reps: 5
+      iterations: "unbounded, stop when ||r_t - r_{t-1}||_1 < epsilon = 1e-6 (L1, rank vector sums to 1.0); safety cap max_iterations = 1000 — if hit, the run is reported as non-converged (does not silently count as a normal result) rather than being cut off and reported as if converged"
+      damping: "alpha = 0.85, same rationale as pagerank-fixed-iter-kernel-f32"
+      dangling_node_handling: "same as pagerank-fixed-iter-kernel-f32"
+      statistic: "median of 5 reps (both time and iteration count); report min/max for both"
+      timer: "same as pagerank-fixed-iter-kernel-f32"
+      timing_scope: "kernel only, from r_0 initialization through the iteration that first satisfies epsilon (that iteration's compute is included; the convergence CHECK itself, if done device-side, should be included in the timed region since production PageRank implementations pay this cost too)"
+      preprocessing_reported: "separately, once, same as pagerank-fixed-iter-kernel-f32"
+      direction_disclosure: "REQUIRED, same as pagerank-fixed-iter-kernel-f32"
+    metric:
+      primary: "total_time_ms to convergence"
+      secondary: "iterations_to_converge (itself a graph-dependent quantity of interest — report per graph, not just averaged); GTEPS = nnz * iterations_to_converge / total_time_seconds / 1e9"
+    correctness: >
+      L1 distance between the converged fp32 rank vector and an
+      independent fp64 reference computed once per graph at epsilon=1e-10
+      (same trusted implementation as pagerank-fixed-iter-kernel-f32's
+      reference) must be < 1e-6 (relative, rank vector sums to 1.0) — this
+      IS the primary correctness gate for the track, since a to-convergence
+      run has no "expected non-zero gap" excuse the way the fixed-iteration
+      variant does.
+
+  - id: pagerank-e2e-reorder
+    claim: >
+      end-to-end throughput including one-shot graph preprocessing (CSR/CSC
+      construction and, if used, a reordering pass), amortized over k=20
+      iterations — operationalizes ChenC22/Corder's own amortization
+      discipline ("N iterations of PR needed to amortize reordering cost")
+      as a first-class reportable variant instead of a paper footnote, and
+      gives reordering-focused submissions (Corder-style) a variant that
+      measures what they actually contribute, matching the sibling `bfs`
+      benchspec's bfs-e2e-preprocessing / bfs-reordering-cost design for
+      the same reason
+    inputs:
+      suite: "same recommended_subset as pagerank-fixed-iter-kernel-f32 (preprocessing/reordering cost-benefit is where it actually matters — massive skewed real graphs); small correctness_reference_subset graphs may optionally be used for quick iteration during development but are not required here"
+      selection: "same as pagerank-fixed-iter-kernel-f32"
+      recommended_subset: "same list as pagerank-fixed-iter-kernel-f32"
+      dense_operand: "N/A"
+    protocol:
+      format: "raw edge list or Matrix Market input; CSR/CSC build IS timed; if a reordering method is applied (e.g. Corder, RCM, or a stated baseline), its wall time IS timed and IS in scope for this variant"
+      warmup: "1 full pipeline (preprocess once, then k=20 iterations), discarded"
+      reps: "k = 20 iterations sharing ONE preprocessing pass, matching the fixed-iteration variant's k so amortized numbers are directly comparable to the kernel-only numbers on the same graph"
+      damping: "alpha = 0.85, same as the other two variants"
+      statistic: "total_time = preprocessing_time + k_iteration_time; report total_time/k (amortized per-iteration time) AND preprocessing_time alone, never only the blended number"
+      timer: "wall-clock (host-side) around the full pipeline; device-side events around the k-iteration portion alone for cross-checking against pagerank-fixed-iter-kernel-f32 on the same graph"
+      timing_scope: "preprocessing + k=20 iterations; NOT amortized over more than k=20 unless the submitter also reports pagerank-fixed-iter-kernel-f32's own k=20 number for direct comparison"
+      preprocessing_reported: "as part of total_time by construction of this variant, AND separately as its own standalone number (never silently folded in without also being independently visible)"
+      amortization_count_required: true
+      reordering_disclosure: "if a reordering method is applied, report which one, its own wall time, and the resulting speedup ratio of reordered-order k-iteration time vs original-order k-iteration time (same measurement ChenC22/Corder's Table 8 makes, but disclosed per-submission here rather than only for the paper's own method)"
+      direction_disclosure: "REQUIRED, same as pagerank-fixed-iter-kernel-f32"
+    metric:
+      primary: "amortized_ms_per_iteration = (preprocessing_time_ms + k_iteration_time_ms) / k"
+      secondary: >
+        preprocessing_time_ms (standalone); reordering_speedup_ratio (if a
+        reordering method is used); break_even_iterations =
+        preprocessing_time_ms / (original_order_per_iter_ms -
+        reordered_order_per_iter_ms), the number of PageRank iterations
+        needed before the preprocessing/reordering investment pays for
+        itself — directly answers the question ChenC22/Corder's own paper
+        asks informally ("N iterations of PR to amortize")
+    correctness: "same L1-vs-fp64-reference gate as pagerank-fixed-iter-kernel-f32, applied to the final k=20-iteration rank vector"
+
+notes_on_fairness:
+  - >
+    ChenC22/Corder explicitly excludes its own 'urand' graph from its
+    reported averages, stating it is "not skewed" and therefore
+    unrepresentative of the paper's target workload. This is transparent
+    self-disclosure (good practice) but still a cherry-pick of the
+    reported AVERAGE, not of the underlying data. This spec's
+    recommended_subset keeps urand-scale26 in EVERY variant precisely so
+    that "the reordering/compression technique doesn't help on unskewed
+    graphs" remains a visible, reportable result across the whole suite
+    rather than a number quietly dropped from an average — matching the
+    same fix already applied in the sibling `bfs` benchspec for the same
+    underlying dataset.
+  - >
+    Both surveyed global-PageRank papers (GeraK23, ChenC22) report a
+    fixed-iteration number as their headline PageRank result (50-iteration
+    cap and 1-iteration-per-Table-5-cell respectively) with NO stated
+    convergence tolerance anywhere. Reporting a fixed-iteration time alone,
+    without ever showing how far that snapshot is from the converged
+    fixed point, lets an implementation look fast simply by doing less
+    total work (fewer effective iterations to reach a comparable quality)
+    without that tradeoff being visible. The spec's
+    pagerank-fixed-iter-kernel-f32 variant requires reporting the L1
+    distance to a fully-converged reference as an informational number
+    specifically to make this tradeoff visible rather than hidden, and
+    pagerank-converge-kernel-f32 exists so a true apples-to-apples
+    "time to a real answer" number is always obtainable.
+  - >
+    Direction-optimization (push/pull/hybrid) status is undisclosed for 3
+    of the 4 surveyed papers (GeraK23 is push-only by design and does
+    disclose this; ChenC22's Ligra backend is atomics/push-like but
+    doesn't confirm direction-optimization status, and its GPOP backend's
+    direction is entirely undisclosed; MeLoPPR doesn't apply). Only Shun20
+    discloses and quantifies it. Since PageRank (unlike BFS) has every
+    vertex active every iteration in the naive formulation, a pull-based
+    CSC gather can avoid atomics entirely and is often substantially
+    faster than a push-based CSR scatter with atomic contention on
+    high-degree destinations — exactly the kind of implementation-choice
+    gap that inflates apparent "algorithmic" speedups if left undisclosed.
+    All three variants above make direction disclosure mandatory, mirroring
+    the sibling `bfs` benchspec's identical requirement.
+  - >
+    MeLoPPR is the only one of the 4 papers to state a concrete damping
+    factor (alpha=0.95), but for a different problem (Personalized, not
+    global, PageRank). Rather than let this one disclosed number silently
+    become "the" damping factor for the whole track, the spec fixes
+    alpha=0.85 for its own global-PageRank variants (the standard value,
+    used by every major library referenced across the 4 papers) and
+    explicitly notes in survey.md that this value is asserted by the spec,
+    not evidenced by either of the 2 relevant papers.
+  - >
+    None of the 4 papers validates PageRank's numeric output against an
+    independent reference with a stated tolerance — MeLoPPR's "precision"
+    metric is a top-k set-overlap ratio against its own approximate,
+    depth-truncated reference, which is a fundamentally different
+    (weaker) notion than a rank-vector distance, and is self-referential
+    in a way that can't catch a systematically-biased-but-consistent
+    implementation. The correctness gates in all three variants above
+    (L1 distance vs. an independently computed fp64 reference) are a
+    genuine fix to this gap in the surveyed practice, per the task's own
+    "correctness gate before timing counts" fairness principle, not a
+    codification of anything any of the 4 papers actually did.
+
+open_questions:
+  - >
+    GeraK23's PageRank figure (Fig. 11) never names which specific graphs
+    from its BFS Table II are actually used for PageRank — unlike BFS,
+    there is no PageRank-specific table. The exact graph list for GeraK23's
+    own reported PageRank numbers is therefore unconfirmed; this spec's
+    recommended_subset is built from the union of both papers' NAMED
+    graphs generally, not a guarantee that GeraK23's own PageRank figure
+    used all of them.
+  - >
+    Whether GeraK23's 'soc-lj'/twitter and ChenC22's 'live'/twitter are the
+    same underlying graph snapshots (same crawl, different
+    preprocessing/dedup) or independently collected graphs that happen to
+    be close in size was not resolved from the accessible text — same open
+    question already flagged in the sibling `bfs` benchspec for these
+    exact two papers. Until resolved, treat cross-paper PageRank numbers on
+    same-named graphs as suggestive, not proven bit-identical.
+  - >
+    ChenC22/Corder's 'pld' graph (pay-level-domain web hyperlink graph,
+    42.9M v / 0.6B e) has no confirmed public source/download link in the
+    accessible text (citation [20] in the paper was not resolved); a
+    submitter targeting this instance would need to track down the exact
+    reference before it can be pinned as a byte-identical file.
+  - >
+    ChenC22/Corder's "Pagerank Delta" numeric threshold `d` and GeraK23's
+    implicit damping/tolerance for its cuGraph-based PageRank calls are
+    both unstated in the accessible fulltext; neither could be pinned
+    without access to the actual source (GPOP/Ligra config for Corder, the
+    specific cuGraph API call parameters for GeraK23).
+  - >
+    Whether it is worth adding a 4th, explicitly-separate
+    "personalized-pagerank" track/spec to properly cover MeLoPPR (rather
+    than only discussing it in this survey) was not resolved — it is a
+    different-enough problem (single-source, depth-truncated, top-k-set
+    correctness notion) that folding it into a "variant" of this spec
+    would blur the comparison this spec is trying to make fair; flagged
+    for whoever owns track-scoping decisions rather than decided here.
+
+evidence:
+  conf/ipps/GeraK23: "PageRank capped at 50 iterations (fixed, no epsilon), GTEPS metric, push-only (atomic destination update, no frontier), baseline = NVIDIA cuGraph (modified for out-of-core); no damping factor or correctness check stated; artifact repo (pgera/efg) ships BFS-only code, zero PageRank source available to reproduce this paper's own numbers"
+  journals/tpds/ChenC22: "headline PageRank number is time for exactly 1 iteration (Table 5, GPOP + Ligra backends), separately profiles 20 iterations for L2-cache-miss analysis (Fig. 8); PageRank-Delta variant is threshold-driven but the threshold value is undisclosed; wall-clock seconds + unitless speedup vs original vertex order, not GTEPS; reordering cost reported separately with an explicit 'N iterations of PR to amortize' argument (their own words); no damping factor or rank-vector correctness check stated"
+  conf/dac/0003CZLH21: "Personalized (not global) PageRank; damping alpha=0.95 (the only one of the 4 papers with a stated numeric damping value, for a different problem); correctness = top-k set-overlap precision against the paper's own depth-truncated approximate reference, not an L1/L2 rank-vector distance; graphs 2-4 orders of magnitude smaller than the other 3 papers; paper states k=200 but the released PPR.py hardcodes k=100"
+  conf/ppopp/Shun20: "PageRank generalized to hypergraphs (bipartite vertex/hyperedge propagation), not plain-graph PageRank; PageRank time reported for 1 iteration (same convention as Corder); the ONLY one of the 4 papers to explicitly disclose and quantify direction optimization (sparse/dense/hybrid, default 1/20 in-degree-sum switch threshold); reports sequential vs 72-core-hyperthreaded time + speedup, not GTEPS; damping factor given only symbolically; this track's artifact_url points to a third-party student CUDA reimplementation, not the paper author's own repo"

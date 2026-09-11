@@ -1,0 +1,26 @@
+# HPC-KernelBench harness -- Python dependencies (pinned to the versions the
+# reference environment was developed and gated with; see ENVIRONMENT.md).
+#
+#   python -m venv kb-env && . kb-env/bin/activate
+#   pip install --index-url https://download.pytorch.org/whl/cu128 torch==2.8.0
+#   pip install -r requirements.txt
+#
+# torch is deliberately NOT listed below: its wheel index depends on the CUDA
+# major you have (cu126 / cu128 / cu130). The CUDA toolkit used to BUILD
+# artifacts must share torch's CUDA major (the runner enforces this at start-up,
+# kernelbench/env.py::pin_cuda_toolchain). Reference: torch==2.8.0+cu128.
+#
+# Core harness (kernelbench/, smoke_all.sh, every domain module)
+numpy==2.3.3
+scipy==1.16.2
+PyYAML==6.0.3
+# Used by artifact build scripts that compile torch extensions
+pybind11==3.0.4
+ninja>=1.10
+# Optional: report generation / paper-pipeline scripts under kernel-papers/
+pandas==2.3.2
+networkx==3.5
+# kernel-papers/ corpus pipeline only (not needed to run the benchmark)
+lxml==6.1.1
+requests==2.32.5
+pypdf==6.14.2

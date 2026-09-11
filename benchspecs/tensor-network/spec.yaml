@@ -1,0 +1,384 @@
+kernel: tensor-network
+summary: >
+  Classical-HPC simulation of quantum circuits, covering two structurally
+  distinct simulation paradigms found in this track's literature:
+  gate-by-gate state-vector/density-matrix propagation (SliQSim, HyQuas,
+  SV-Sim, DM-Sim), where there is no contraction path to search, and genuine
+  tensor-network contraction of a random-quantum-circuit (RQC) tensor network
+  via slicing + contraction-path search (SWQsim). A third variant isolates
+  SliQSim's fundamentally different claim -- exact-arithmetic scalability
+  frontier under a fixed time/memory budget, not steady-state throughput.
+  This track's rqc-tensor-network-contraction variant is deliberately kept
+  consistent (same protocol, same flop-counting convention, same
+  permutation-always-included rule) with the sibling tensor-contraction
+  track's quantum-circuit-contraction-kernel-fp32-mixed variant, which uses
+  the same source paper (SWQsim) as evidence.
+operation: >
+  General form: given an n-qubit quantum circuit (a sequence of 1- and
+  2-qubit unitary gates, or, for the density-matrix case, a corresponding
+  sequence of gate-conjugation superoperators), compute either (a) the full
+  final state -- a 2^n-entry state vector or a 2^n x 2^n density matrix -- by
+  applying each gate/superoperator to the current state in circuit order
+  (state-vector/density-matrix paradigm), or (b) a specific amplitude or
+  batch of amplitudes by contracting the tensor network obtained from the
+  circuit's gate graph along a chosen contraction order, optionally with
+  memory-reducing slicing of a subset of the network's edges (tensor-network
+  paradigm). Index permutation required to align tensor operands for a
+  contraction step is always included in the timed step for the
+  tensor-network paradigm (never amortized out), per this track's one point
+  of agreement with the sibling tensor-contraction track.
+variants:
+  - id: state-vector-density-matrix-gate-kernel-fp64
+    claim: >
+      steady-state per-gate/per-circuit latency and throughput of gate-by-gate
+      state-vector or density-matrix propagation on a standard NISQ-era
+      circuit benchmark suite, single-node and distributed, fp64 by default
+    inputs:
+      suite: "QASMBench (Li & Krishnamoorthy, the SV-Sim/DM-Sim authors' own
+        prior benchmark-suite paper), supplemented with HyQuas's own named
+        circuit-family generator set where QASMBench does not already cover a
+        family (QAOA, hidden-shift, quantum-volume, basis-change)"
+      selection: >
+        union of QASMBench circuits named across SV-Sim's and DM-Sim's own
+        evaluations (11-23 qubits) plus HyQuas's own 7 circuit families
+        (basis_change, bv, hidden_shift, qaoa, qft, quantum_volume, supremacy)
+        at 24-30 qubits; density-matrix runs use the SAME circuits at HALF the
+        state-vector-equivalent qubit count (an n-qubit density-matrix run is
+        computationally equivalent to a 2n-qubit state-vector run, per DM-Sim's
+        own stated equivalence -- report both the density-matrix qubit count
+        AND its state-vector-equivalent count explicitly, never one without
+        the other)
+      recommended_subset:
+        - "seca_n11, sat_n11, cc_n12, multiply_n13, bv_n14 (SV-Sim medium set)"
+        - "qf21_n15, qft_n15, multiplier_n15 (SV-Sim medium set, deepest)"
+        - "dnn_n16, bigadder_n18, square_root_n18, qft_n20 (SV-Sim large set)"
+        - "cat_state_n22, ghz_state_n23 (SV-Sim large set, widest)"
+        - "basis_change_28, qaoa_28, supremacy_28, quantum_volume_28 (HyQuas
+          default 28-qubit set)"
+        - "adder_n9 / adder_n18 density-matrix (DM-Sim named routine, both
+          qubit counts)"
+        - "VQE-UCCSD H2, 10 qubits / ~86 gates (SV-Sim chemistry case study)"
+      dense_operand: "n/a -- the state vector / density matrix and the gate
+        unitary matrices are the operands; fp64 (complex double) by default,
+        matching all 4 papers in this sub-family's own stated precision"
+    protocol:
+      format: "given circuit as OpenQASM/QASMBench source, gate-set parsing
+        and circuit-to-native-IR translation timed once and reported
+        separately (never re-timed per repetition)"
+      warmup: 5
+      reps: 10
+      statistic: >
+        median (report min/max) -- SV-Sim's own protocol is mean-of-10 with
+        no stated warmup, DM-Sim's is mean-of-5 with no stated warmup; this
+        spec keeps SV-Sim's higher rep count, adds an explicit warmup, and
+        switches mean to median per the project's track-wide fairness rule
+      timer: >
+        device-side events (CUDA/HIP events) for GPU; std::chrono/system
+        clock for CPU, matching both SV-Sim's and DM-Sim's own stated choice
+      timing_scope: >
+        full-circuit gate-application sequence only (all gates fused into one
+        kernel launch where the target system supports it, per SV-Sim/DM-Sim's
+        own MG-BSP/functional-pointer designs -- report separately if a
+        system instead launches one kernel per gate, since that is itself a
+        measurable design difference, not something to normalize away); one-
+        time circuit-parsing/IR-translation cost reported separately, once
+      preprocessing_reported: "separately, once: OpenQASM parsing + native-IR
+        translation/compilation time; for HyQuas specifically, its evaluator-
+        preprocess method-selection database build (built once, reused across
+        all circuits) reported separately as well"
+    metric:
+      primary: "GFLOP/s using the paradigm's own known per-gate operation-
+        count formula (state-vector: 8 double-precision flops per 1-qubit-
+        gate application per amplitude pair, i.e. one 2x2 complex
+        matrix-vector multiply; density-matrix: 12x8^n total DP ops for the
+        full gate-conjugation multiply per DM-Sim's own Section III-A
+        derivation) -- NOT from hardware performance counters"
+      secondary: "ms/gate and total circuit latency (ms); speedup vs. Qiskit/
+        Cirq/Q# default simulators on the same machine, per SV-Sim's own
+        baseline practice"
+    correctness: "exact bitwise match (up to floating-point associativity) vs.
+      a reference sequential single-gate-at-a-time evaluation of the same
+      circuit in fp64, OR max relative error < 1e-10 in any measured
+      amplitude/probability if a different summation order is used -- none of
+      the 4 source papers in this sub-family state an explicit tolerance; this
+      spec adds one rather than leaving correctness unchecked before timing"
+
+  - id: rqc-tensor-network-contraction-fp32-mixed
+    claim: >
+      sustained throughput and time-to-solution for extreme-scale,
+      structurally imbalanced tensor-network contraction of a random-quantum-
+      circuit (RQC), single- and mixed-precision, contraction-order/slicing
+      search reported separately from execution -- this spec's variant is
+      kept consistent with the sibling tensor-contraction track's
+      quantum-circuit-contraction-kernel-fp32-mixed variant (same source
+      paper, same protocol) since both tracks' literature converges on the
+      identical evidence (SWQsim)
+    inputs:
+      suite: "named, fixed, published random-quantum-circuit tensor
+        networks -- not a selectable suite in the usual sense, given the
+        extreme cost of each data point"
+      selection: >
+        10x10x(1+40+1)-qubit circuit (2D lattice, PEPS-sliced contraction
+        path, near-uniform rank~5-6/dim-32 pairwise contractions -- the
+        source paper's own headline target) and the 53-qubit/20-cycle Google
+        Sycamore circuit (CoTenGra-searched contraction path, imbalanced
+        rank-30-vs-rank-4/dim-2 pairwise contractions); a 20x20x(1+16+1)
+        circuit is available as a scaling-only supplementary case (not a
+        headline accuracy/throughput target in the source paper)
+      recommended_subset:
+        - "10x10x(1+40+1) RQC, PEPS-sliced contraction path"
+        - "Sycamore 53-qubit x 20-cycle, CoTenGra-searched contraction path"
+        - "20x20x(1+16+1) RQC, scaling-only supplementary case"
+      dense_operand: "n/a -- tensor-network amplitude tensors are the
+        operands; fp32 and mixed fp32/fp16 (adaptive per-tensor scaling) --
+        fp64 is explicitly never used for this variant (memory-bandwidth-
+        bound design choice, per the source paper's own roofline analysis)"
+    protocol:
+      format: "given tensor network + a pre-computed slicing/contraction path
+        (path search itself reported separately, once, per the preprocessing
+        rule below)"
+      warmup: 0
+      reps: 25
+      statistic: >
+        median (report min/max) -- the source paper itself reports mean of
+        only 3 runs; this spec raises the repetition count for any
+        reproduction at feasible (non-full-machine) scale, while noting that
+        full-machine-scale reproductions (tens of millions of cores) may only
+        be able to afford the source paper's own 3-run practice, which should
+        be disclosed explicitly if used; warmup is 0 because a run at this
+        scale is itself the measurement -- there is no steady state to warm
+        into for a single extreme-scale contraction
+      timer: >
+        wall-clock (MPI_Wtime or equivalent) at the full-application
+        granularity, since the kernel is distributed across the whole machine
+      timing_scope: >
+        full contraction execution only (permutation ALWAYS fused into the
+        timed step, per this track's and the sibling tensor-contraction
+        track's point of universal agreement); contraction-path/slicing-
+        scheme search reported separately, once. NOTE: the source paper's own
+        accessible text does not give an explicit wall-clock number for how
+        long its CoTenGra path search itself took to run (it reports only the
+        resulting complexity and the execution time-to-solution) -- a
+        reproduction under this spec MUST report the search wall-clock
+        explicitly, closing a gap the source paper itself leaves open
+      preprocessing_reported: "separately, once: contraction-path search
+        (CoTenGra hyper-optimized search) and slicing-scheme selection,
+        INCLUDING the search's own wall-clock time (see timing_scope note)"
+    metric:
+      primary: "sustained PFLOP/s or EFLOP/s, using the CONSERVATIVE counted-
+        instruction flop method (not the hardware perf-counter method, which
+        the source paper's own analysis shows reads 10-20% high due to
+        temporary-operation generation -- state which method was used)"
+      secondary: "achieved memory-bandwidth utilization (% of peak); wall-
+        clock time-to-solution for the full sampling task (source paper's own
+        headline: 304s for a 2^21-correlated-amplitude Sycamore-equivalent
+        bunch); percent of theoretical peak efficiency achieved (source
+        paper's own headline: ~80%/75% fp32/mixed for the balanced
+        10x10x(1+40+1) circuit vs. only ~4%/1.7% for the imbalanced Sycamore
+        circuit -- both numbers MUST be reported together, since reporting
+        only the higher one would misrepresent the method's actual behavior
+        on imbalanced tensor-network shapes)"
+    correctness: >
+      NOT a fixed elementwise tolerance (meaningless for stochastically-
+      sampled quantum amplitudes). Instead: (1) computed-amplitude
+      probability distribution must match the theoretical Porter-Thomas
+      distribution (Kolmogorov-Smirnov or equivalent goodness-of-fit); (2)
+      mixed-precision relative error vs. an fp32 reference run must converge
+      below 1% once >=300 aggregated contraction-path blocks are summed, with
+      <2% of individual mixed-precision paths discarded for under/overflow
+      (both criteria taken directly from the source paper's own validation
+      method, Section 6.2 and Fig. 10/11)
+
+  - id: exact-arithmetic-scalability-frontier
+    claim: >
+      maximum qubit count reachable under EXACT (zero-precision-loss)
+      arithmetic within a fixed wall-clock and memory budget, across
+      structurally distinct circuit families -- a fundamentally different
+      claim from steady-state throughput (variant 1) or sustained FLOP/s
+      (variant 2): this variant measures HOW FAR a method scales before
+      failing, not how fast it runs per gate
+    inputs:
+      suite: "4 named circuit families from the source paper's own
+        evaluation: (a) randomly generated circuits from a fixed 10-gate
+        universal-gate-set library, (b) RevLib reversible-circuit benchmarks
+        (classical-function circuits converted to quantum via H-gate
+        insertion for superposition), (c) algorithmic circuits (entanglement/
+        Bell-state preparation, Bernstein-Vazirani), (d) Google's published
+        random-quantum-supremacy circuits (from the public GRCS repository)"
+      selection: >
+        random circuits: qubit sizes {40, 80, 120, 160, 200, 300, 400, 500},
+        gate:qubit ratio fixed at 3:1, 10 circuit instances per size; RevLib:
+        all 14+ named benchmarks (130-923 qubits), both as-given and modified
+        with H-gate insertion; algorithmic: entanglement and
+        Bernstein-Vazirani circuits at {80, 90, 100, 500, 1000, 5000, 10000}
+        qubits; Google-supremacy: 16-90 qubits at reduced depth 5 (from the
+        published depth-10 circuits), 10 instances per qubit count, from the
+        `inst/rectangular/cz_v2` directory of the public GRCS repository
+      recommended_subset:
+        - "random-circuit-40q through random-circuit-500q (8 sizes, 10
+          instances each)"
+        - "RevLib callif_32_439 (130 qubits, smallest) and apex2_289 (289
+          qubits) -- both original and H-gate-modified"
+        - "entanglement-10000q, bv-10000q (largest algorithmic-circuit cases)"
+        - "google-supremacy-42q through google-supremacy-90q (10 instances
+          each, depth-5-reduced)"
+      dense_operand: "n/a -- circuit gates only; exact algebraic-integer
+        arithmetic under a Clifford+T-superset universal gate set (X, Y, Z, H,
+        S, T, Rx(pi/2), Ry(pi/2), CNOT, CZ, Toffoli, Fredkin), zero
+        floating-point precision loss by construction"
+    protocol:
+      format: "n/a -- circuit given as OpenQASM/RevLib-format source, no
+        sparse-format or matrix-format conversion involved"
+      warmup: 0
+      reps: 1
+      statistic: "single run per instance (repetition is not meaningful for
+        this variant's claim: the metric is completion-within-budget, not
+        steady-state speed -- report the count of successes/TO/MO/error/
+        segfault out of the N instances per qubit-size bucket, plus the mean
+        wall-clock time averaged ONLY over the successful instances,
+        explicitly disclosing that this average excludes failed instances
+        rather than treating them as censored/infinite, per the source
+        paper's own practice)"
+      timer: >
+        wall-clock (process-level, e.g. time or std::chrono at the
+        whole-simulation granularity)
+      timing_scope: >
+        full simulation (state construction through final-amplitude/
+        probability computation) under a hard TIME-OUT of 7200 seconds and a
+        hard MEMORY-OUT of 2GB per instance, both applied identically across
+        every method compared (source paper's own limits, adopted verbatim
+        since the claim being tested -- scalability frontier under a fixed
+        budget -- is meaningless without a fixed, stated budget)
+      preprocessing_reported: "n/a -- no separate preprocessing step exists
+        for this workload; state construction is part of the timed
+        simulation itself"
+    metric:
+      primary: "count of successful instances (out of 10) per qubit-size
+        bucket, per circuit family, under the fixed TO/MO budget -- the
+        primary reportable number for this variant, NOT a speed metric"
+      secondary: "mean wall-clock time (s) over successful instances only
+        (explicitly disclosed as excluding TO/MO/error/segfault cases); peak
+        memory usage (MB), reported for ALL instances including failed ones
+        where measurable (source paper reports this for its Google-supremacy
+        set)"
+    correctness: >
+      NOT a numerical tolerance -- the claim under test IS exactness. A run
+      counts as correct only if all reported state probabilities sum to
+      exactly 1 (within the algebraic representation's own exact-arithmetic
+      guarantee, i.e. no floating-point summation at all until the final
+      user-facing probability readout) and no `error`/segfault condition is
+      raised. Any run that requires an approximate/floating-point fallback
+      does not qualify for this variant and should instead be reported under
+      the state-vector-density-matrix-gate-kernel-fp64 variant, whose
+      correctness clause DOES use a numerical tolerance.
+notes_on_fairness:
+  - "This track's 5 papers split cleanly into two simulation paradigms
+    (gate-by-gate propagation: SliQSim/HyQuas/SV-Sim/DM-Sim; genuine tensor-
+    network contraction: SWQsim only), so the 'contraction-order search time
+    vs. execution time' axis this spec was asked to investigate is simply not
+    applicable to 4 of the 5 papers -- forcing it onto them would misrepresent
+    what those systems actually do. This spec keeps the paradigms in separate
+    variants rather than inventing a fictitious contraction-path-search step
+    for methods that have none."
+  - "SliQSim's claim (exact-arithmetic scalability frontier) is not
+    commensurable with a throughput number at all -- reporting its GFLOP/s
+    would be meaningless since the entire point of the method is that it
+    trades speed for zero-precision-loss reach. This spec gives it its own
+    variant with its own metric (completion count under a fixed budget)
+    rather than shoehorning a throughput figure onto a paper that never
+    reports one."
+  - "SWQsim's own accessible text reports contraction-path complexity and
+    execution time-to-solution but never an explicit CoTenGra search
+    wall-clock number -- this spec requires that number be measured and
+    reported for any reproduction, closing a genuine gap in the one fully-
+    accessible tensor-network-contraction paper in this track."
+  - "SWQsim explicitly demonstrates that hardware flop counters read 10-20%
+    higher than an instruction-level count due to temporary operations, and
+    deliberately chooses the lower, conservative number -- this spec adopts
+    the same conservative-counting principle and requires every throughput
+    number in the rqc-tensor-network-contraction variant to state its
+    flop-counting method explicitly, matching the sibling tensor-contraction
+    track's identical rule for the same source paper."
+  - "SWQsim's own efficiency figures show a stark ~80% vs ~4% split between
+    its balanced (10x10x(1+40+1)) and imbalanced (Sycamore) circuits -- this
+    spec requires both numbers be reported together for any claim about this
+    method's efficiency, since a paper (or a reproduction) reporting only the
+    80% figure would misrepresent the method's actual behavior on realistic,
+    imbalanced tensor-network shapes."
+  - "SliQSim's own reported average runtimes are computed only over
+    successful (non-TO/MO/error/segfault) instances -- a survivorship-biased
+    statistic. This spec keeps that practice (there is no principled
+    alternative for a method that sometimes fails to complete at all) but
+    REQUIRES it be disclosed explicitly alongside the success/failure counts,
+    never presented as a plain average without that context."
+  - "None of the 5 papers state a warmup-iteration count for any of their
+    timing protocols. This spec adds one for the two throughput-oriented
+    variants and explicitly sets it to 0 (with justification) for the
+    exact-arithmetic-scalability-frontier variant, where a 'warmup' has no
+    coherent meaning for a method whose entire point is a one-shot
+    exact-arithmetic scalability test."
+open_questions:
+  - "HyQuas's own ICS'21 paper PDF (dl.acm.org) could not be fetched by any
+    means tried (direct fetch, proxy text-extraction service); no arXiv
+    preprint exists. Its entry in this spec (folded into the
+    state-vector-density-matrix-gate-kernel-fp64 variant) is built entirely
+    from artifact-repo scripts and the paper's public abstract -- its exact
+    timing protocol (warmup/reps/statistic), specific named baseline systems,
+    and correctness-tolerance definition could not be independently verified
+    and should be treated as the lowest-confidence entry in this spec."
+  - "Whether HyQuas's per-circuit-segment OShareMem/TransMM method-selection
+    decision (informed by its evaluator-preprocess time-predictor database)
+    is reported separately from execution time in the source paper could not
+    be confirmed from the accessible repo material; this spec's preprocessing
+    reporting for that specific decision is this spec's own addition, not
+    verified against the paper's actual practice."
+  - "SWQsim's exact wall-clock cost for the CoTenGra contraction-path search
+    step (as opposed to the resulting path's complexity, which IS reported)
+    was not stated anywhere in the accessible fulltext including the
+    appendix; this spec requires it be measured for any reproduction but
+    cannot state what the source paper's own number was."
+  - "No paper in this track's accessible material states an explicit qubit-
+    count-vs-memory-ceiling table beyond SWQsim's own detailed derivation;
+    SV-Sim's and HyQuas's implicit O(2^n)/O(4^n) ceilings were inferred from
+    each paper's own framing rather than a directly-stated numeric bound, and
+    should be treated as this spec's own extrapolation rather than a verified
+    paper claim."
+evidence:
+  conf/sc/LiuLLFYSZWPCGHW21: "2 fixed extreme-scale RQC tensor networks (10x10x(1+40+1),
+    Sycamore-53), fp32 + mixed fp32/fp16 only (never fp64), permutation fused
+    into the timed kernel by explicit design, PEPS-slicing analytic (zero
+    search cost) for the lattice circuit vs. CoTenGra-searched path for
+    Sycamore (search wall-clock itself not stated), 2-method flop accounting
+    with the conservative method explicitly chosen, only 3 repetitions timed
+    (mean), correctness via Porter-Thomas statistical fit + mixed-precision
+    convergence rather than a fixed tolerance, full-machine distributed only
+    (up to 41.9M cores), literature (not same-machine) baseline comparison
+    against qFlex/Summit/AliCloud/60-GPU prior work"
+  conf/sc/LiFGPHRK21: "QASMBench circuits 11-23 qubits, fp64 throughout, CUDA/HIP-event
+    timing with mean-of-10 (no stated warmup), latency-only metric (no
+    GFLOP/s anywhere), single-node (up to 256 CPU cores / 16 GPUs, 6
+    platforms) AND multi-node (up to 1024 GPUs/cores on Summit) both
+    evaluated, Qiskit/Cirq/Q#-default-simulator baselines on the same
+    machine, no stated correctness tolerance"
+  conf/sc/LiSYK20: "synthetic random-gate circuits + 13 named QASMBench routines,
+    density-matrix (O(4^n) memory, n-qubit DM equiv. to 2n-qubit SV), fp64
+    throughout, CUDA-event timing with mean-of-5 (no stated warmup), GFLOP/s
+    IS reported via Roofline-model/ERT analysis (unlike SV-Sim), single-node
+    (up to 16 GPUs) AND multi-node (up to 1024 GPUs on Summit), MG-BSP
+    single/dual-kernel-fusion design, 10-literature-simulator baseline
+    comparison (not same-machine), no stated correctness tolerance"
+  conf/dac/TsaiJJ21: "4 circuit families (random/RevLib/algorithmic/Google-supremacy),
+    exact algebraic-integer arithmetic (zero precision loss by construction),
+    single CPU server only, 7200s TO / 2GB MO hard limits applied identically
+    to itself and its DDSIM baseline, metric is completion-count-under-budget
+    not throughput, average runtime computed only over successful instances
+    (disclosed survivorship bias), DDSIM (QMDD-based) + CHP
+    (stabilizer-circuit-only) baselines"
+  conf/ics/ZhangSWRZ21: "7 named circuit families (basis_change/bv/hidden_shift/qaoa/qft/
+    quantum_volume/supremacy) at 24-30 qubits, fp64 default build flag,
+    single-GPU AND single-node-multi-GPU AND multi-node-multi-GPU all
+    supported, internal OShareMem/TransMM hybrid-method-selection informed by
+    a pre-built time-predictor database, correctness via exact log-diff
+    against a reference output -- entirely repo-script-sourced since the
+    ICS'21 paper PDF was inaccessible by every method tried and no arXiv
+    preprint exists, lowest-confidence entry in this spec"

@@ -1,0 +1,97 @@
+kernel: json-parsing
+summary: >
+  Fully GPU-offloaded JSON parsing (UTF-8 validation, tokenization,
+  nesting-structure/structural-index recognition) measured as throughput
+  over standard JSON corpora, covering both a single large deeply-nested
+  document and many independent JSON-Lines records with an explicit
+  chunking-strategy axis, with RFC 8259 validation strictness reported
+  as a first-class disclosure alongside speed.
+operation: >
+  Given a raw JSON byte buffer of size N: produce a structural index —
+  for every structural character (`{`, `}`, `[`, `]`, `:`, `,`, string
+  quotes), its byte offset, plus a `pair_pos` array mapping every opening
+  bracket/brace to its matching closer — sufficient to support O(1)-ish
+  key/array-index navigation via a query iterator without a full
+  recursive-descent re-parse. Standard-JSON mode processes one such
+  buffer as a single document; JSON-Lines mode processes C independent
+  single-object buffers (one per line), optionally pre-split into K
+  chunks for coarse-grained parallel dispatch.
+variants:
+  - id: json-parse-throughput-gpu
+    claim: >
+      steady-state GPU parsing throughput (GB/s) for the full 3-phase
+      pipeline (UTF-8 validate + tokenize + nesting-recognition) as one
+      measured region, H2D input transfer and D2H structural-index
+      transfer EXCLUDED and reported separately (device-resident timing
+      is the meaningful number for a GPU-resident downstream-query
+      pipeline; a candidate that must round-trip to host per query is a
+      different, worse-case claim that should be reported as a distinct
+      number, not silently substituted).
+    inputs:
+      suite: >
+        standard JSON-benchmarking corpora (the field's common
+        denominator, used by simdjson/Pison-class CPU parsers this
+        artifact itself compares against) plus the artifact's own
+        Twitter-derived sample family, covering both input modes.
+      selection: >
+        (a) Standard-JSON: large single-document files with varying
+        nesting depth and array/object density; (b) JSON-Lines: large
+        multi-record files with varying per-record size, to separate
+        "many tiny records" from "few large records" parallelism
+        regimes. Both required per candidate; a submission reporting
+        only one mode is incomplete (see notes_on_fairness).
+      recommended_subset:
+        - {name: twitter-large-record,  mode: standard-json, size_gb: 1.0, note: "deeply nested, matches artifact's *_large_record.json convention"}
+        - {name: twitter-small-records, mode: json-lines,    size_gb: 1.0, avg_record_bytes: 500, note: "matches artifact's *_small_records.json convention"}
+        - {name: github-archive-events, mode: json-lines,    size_gb: 1.0, avg_record_bytes: 2000, note: "standard JSON-parsing-benchmark corpus (GH Archive event stream), moderate nesting"}
+        - {name: canada-geojson,        mode: standard-json, size_gb: 0.1, note: "simdjson's own canonical 'wide, shallow array of floats' stress case -- opposite structural profile from twitter-large-record's deep nesting"}
+        - {name: synthetic-deep-nest,   mode: standard-json, size_gb: 0.1, nesting_depth: 512, note: "adversarial deep-nesting stress case for the pair_pos matching-bracket structure"}
+      json_lines_chunking: "required sub-sweep for mode=json-lines: chunk_count in {1, 4, 16, number_of_SMs}, matching the artifact's own 3 chunking-strategy entry points (fixed count / fixed byte size / fixed MB size) -- report throughput as a function of chunking strategy, since this is the axis the paper's own dependency-breaking contribution targets"
+    protocol:
+      warmup: 5
+      reps: 20
+      statistic: "median (report min/max) -- not specified in the fetched top-level README/build docs; this spec's own choice since no protocol was recoverable without fetching paper_reproduced/scripts (see open_questions)"
+      timer: "device-side CUDA events, wrapping only the 3-phase parse kernel(s); input buffer assumed already resident in device memory before the timed region starts"
+      timing_scope: "kernel only (UTF-8 validate + tokenize + nesting-recognition); H2D/D2H excluded, reported once as a separate transfer-bandwidth number since it is trivially bandwidth-bound and not the algorithmic contribution"
+      preprocessing_reported: "separately, once per file: JSON-Lines chunk-boundary computation (finding line breaks / splitting into K chunks), since this is a one-shot cost independent of the per-chunk parse throughput"
+    metric:
+      primary: "GB/s (input bytes parsed per second, matching this track's stated brief)"
+      secondary: "records/s for JSON-Lines mode (throughput at the record granularity, since 'GB/s' alone can hide a per-record dispatch-overhead regression at small avg_record_bytes)"
+    correctness: >
+      MANDATORY pre-timing gate, exact match required (JSON structure
+      recovery is a discrete/exact problem, no floating-point tolerance
+      applies): the recovered structural index (`structural` byte
+      offsets + `pair_pos` matching-bracket map) must exactly reproduce
+      a reference recursive-descent CPU parse (e.g. against Python's
+      `json` module or simdjson's own structural index, cross-checked at
+      the level of "same set of structural byte offsets, same bracket
+      pairing") on every file in the suite before any speed number for
+      that file counts.
+      validation_strictness: >
+        report explicitly, as a REQUIRED disclosure alongside every speed
+        number: does the parser (1) fully validate per RFC 8259 (reject
+        malformed UTF-8, trailing commas, unescaped control characters,
+        etc. — matching simdjson's strict mode) or (2) assume
+        well-formed input and skip some/all validation for speed (a
+        legitimate but DIFFERENT claim). A malformed-input test set
+        (5-10 deliberately invalid JSON files covering common malformed
+        classes: truncated document, invalid UTF-8 byte, unescaped
+        control char, mismatched brackets) must be run through the
+        parser and its accept/reject behavior reported — a parser that
+        silently returns garbage instead of rejecting invalid input is
+        NOT comparable on speed to one that validates, and this variant
+        requires the validation-strictness disclosure precisely so that
+        substitution can't happen silently.
+
+notes_on_fairness:
+  - "The paper's own repo splits Standard-JSON and JSON-Lines into entirely separate binaries/entry points with no single combined benchmark; a candidate reporting only one mode's throughput (typically the easier, larger-document Standard-JSON case) would be an incomplete comparison against simdjson/Pison/cuDF/GPJSON, all of which handle both. Both modes are required in this spec's single variant precisely to prevent that omission."
+  - "GPU JSON parsers have an unusually large H2D-transfer-to-compute ratio compared to compute-bound GPU kernels elsewhere in this project (parsing itself is closer to memory-bandwidth-bound than compute-bound); this spec excludes H2D/D2H from the primary kernel-only number specifically because for a GPU-resident downstream pipeline (e.g. GPU dataframe ingestion, cuDF-style), the transfer cost is amortized/irrelevant, but requires it reported separately since a CPU-baseline (simdjson) comparison that ignores the GPU's transfer cost would be unfair to simdjson."
+  - "No source found in this survey states cuJSON's own RFC 8259 conformance/validation-strictness policy; validation_strictness is added as a mandatory disclosure specifically because 'branch-minimal for maximal parallelism' (the paper's own framing) is a design space where skipping validation checks is a natural and legitimate speed/safety tradeoff that must not be hidden inside an unqualified throughput number."
+
+open_questions:
+  - "paper_reproduced/scripts/readme.md (claimed by the top-level README to hold 'all the scripts' for reproducing the paper's figures) was not fetched in this survey -- it is the authoritative source for cuJSON's actual timing protocol (warmup/reps/timer) and should be read directly before finalizing warmup=5/reps=20 above as anything more than this spec's own placeholder."
+  - "The large (~1GB-class) datasets used in the paper's actual performance evaluation are hosted externally (Google Drive link in the README) and were not inspected; recommended_subset's exact file identities (twitter-large-record, twitter-small-records) are inferred from the repo's own naming convention, not confirmed against the paper's literal Table/Figure data."
+  - "Whether cuJSON validates RFC 8259 strictly or assumes well-formed input by default could not be determined from the fetched sources -- this is exactly the gap validation_strictness's mandatory disclosure is meant to force a future measurement pass to resolve empirically."
+
+evidence:
+  conf/asplos/GargaryL026: "cuJSON: 3-phase GPU JSON parser (UTF-8 validate, tokenize, nesting-structure/structural-index recognition) + query iterator; Standard-JSON (single large nested doc) and JSON-Lines (many small records, 3 chunking-strategy entry points) as separate benchmark modes; timing protocol not visible at top-level (paper_reproduced/scripts not fetched); vs CPU simdjson/Pison and GPU cuDF/GPJSON; no stated validation-strictness policy."

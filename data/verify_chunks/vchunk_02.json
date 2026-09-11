@@ -1,0 +1,1124 @@
+[
+ {
+  "key": "conf/dac/ZhangLCCWLCFH24",
+  "venue": "DAC",
+  "year": 2024,
+  "title": "G-PASTA: GPU-Accelerated Partitioning Algorithm for Static Timing Analysis",
+  "abstract": "Recent static timing analysis (STA) engines have leveraged task dependency graph (TDG) parallelism to accelerate various STA algorithms, including graph-based analysis and path-based analysis. Despite the promising speedup via task parallelism, the scheduling cost of a TDG has become dominant when handling large TDGs. To overcome this challenge, we propose G-PASTA, a simple and fast TDG partitioning algorithm to reduce the scheduling cost of large task-parallel STA algorithms. By harnessing the power of GPU computing, G-PASTA incurs minimal cost of partitioning while bringing significant runtime improvement to task-parallel STA algorithms. Compared to a state-of-the-art CPU-based TDG partitioner, G-PASTA is up to 41.8× faster in partitioning runtime and can improve the overall STA performance by 43% on large designs.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "graph partitioning"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "G-PASTA: GPU-accelerated task-dependency-graph partitioning, 41.8x faster than CPU partitioner"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/LeeLHJHL024",
+  "venue": "DAC",
+  "year": 2024,
+  "title": "G-kway: Multilevel GPU-Accelerated k-way Graph Partitioner",
+  "abstract": "Graph partitioning is important for the design of many CAD algorithms. However, as the graph size continues to grow, graph partitioning becomes increasingly time-consuming. To overcome these challenges, we propose G-kway, an efficient multilevel GPU-accelerated k-way graph partitioner. G-kway introduces an effective union find-based coarsening and a novel independent set-based refinement algorithm to significantly accelerate both the coarsening and uncoarsening stages. Experimental results have shown that G-kway outperforms both the state-of-the-art CPU-based and GPU-based parallel partitioners with an average speedup of 8.6× and 3.8×, respectively, while achieving comparable partitioning quality.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "k-way graph partitioning"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "G-kway: multilevel GPU k-way graph partitioner, 8.6x/3.8x faster than CPU/GPU baselines"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/SchefflerCB24",
+  "venue": "DAC",
+  "year": 2024,
+  "title": "SARIS: Accelerating Stencil Computations on Energy-Efficient RISC-V Compute Clusters with Indirect Stream Registers",
+  "abstract": "Stencil codes are performance-critical in many compute-intensive applications, but suffer from significant address calculation and irregular memory access overheads. This work presents SARIS, a general and highly flexible methodology for stencil acceleration using register-mapped indirect streams. We demonstrate SARIS for various stencil codes on an eight-core RISC-V compute cluster with indirect stream registers, achieving significant speedups of 2.72x, near-ideal FPU utilizations of 81%, and energy efficiency improvements of 1.58x over an RV32G baseline on average. Scaling out to a 256-core manycore system, we estimate an average FPU utilization of 64%, an average speedup of 2.14x, and up to 15% higher fractions of peak compute than a leading GPU code generator.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "stencil_pde"
+   ],
+   "kernels": [
+    "stencil computation"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Indirect stream registers on RISC-V compute clusters accelerate stencils 2.72x with 81% FPU utilization"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/FangY24",
+  "venue": "DAC",
+  "year": 2024,
+  "title": "SymPhase: Phase Symbolization for Fast Simulation of Stabilizer Circuits",
+  "abstract": "This paper proposes an efficient stabilizer circuit simulation algorithm that only traverses the circuit forward once. We introduce phase symbolization into stabilizer generators, which allows possible Pauli faults in the circuit to be accumulated explicitly as symbolic expressions in the phases of stabilizer generators. This way, the measurement outcomes are also symbolic expressions, and we can sample them by substituting the symbolic variables with concrete values, without traversing the circuit repeatedly. We show how to integrate symbolic phases into the stabilizer tableau and maintain them efficiently using bit-vector encoding. A new data layout of the stabilizer tableau in memory is proposed, which improves the performance of our algorithm (and other stabilizer simulation algorithms based on the stabilizer tableau). We implement our algorithm and data layout in a Julia package named SymPhase.jl, and compare it with Stim, the state-of-the-art simulator, on several benchmarks. We show that SymPhase.jl has superior performance in terms of sampling time, which is crucial for generating a large number of samples for further analysis.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la"
+   ],
+   "kernels": [
+    "stabilizer tableau simulation"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "New stabilizer-tableau data layout + bit-vector phase symbolization speeds up quantum circuit simulation"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/AghdaeiF24",
+  "venue": "DAC",
+  "year": 2024,
+  "title": "inGRASS: Incremental Graph Spectral Sparsification via Low-Resistance-Diameter Decomposition",
+  "abstract": "This work presents inGRASS, a novel algorithm designed for incremental spectral sparsification of large undirected graphs. The proposed inGRASS algorithm is highly scalable and parallel-friendly, having a nearly-linear time complexity for the setup phase and the ability to update the spectral sparsifier in O(logN) time for each incremental change made to the original graph with N nodes. A key component in the setup phase of inGRASS is a multilevel resistance embedding framework introduced for efficiently identifying spectrally-critical edges and effectively detecting redundant ones, which is achieved by decomposing the initial sparsifier into many node clusters with bounded effective-resistance diameters leveraging a low-resistance-diameter decomposition (LRD) scheme. The update phase of inGRASS exploits low-dimensional node embedding vectors for efficiently estimating the importance and uniqueness of each newly added edge. As demonstrated through extensive experiments, inGRASS achieves up to over 200× speedups while retaining comparable solution quality in incremental spectral sparsification of graphs obtained from various datasets, such as circuit simulations, finite element analysis, and social networks.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "spectral sparsification"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Nearly-linear-time parallel-friendly incremental graph spectral sparsification algorithm"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/LianGHYXYPZXD25",
+  "venue": "DAC",
+  "year": 2025,
+  "title": "A Cross-model Fusion-aware Framework for Optimizing (gather-matmul-scatter)s Workload",
+  "abstract": "Modern deep learning models, such as Relation Graph Convolutional Network (RGCN), Sparse Convolutional Networks (SpConv), and Mixture of Experts Networks (MoE), are significantly dependent on the (gather-matmul-scatter) (abbreviated as (g-mm-s) ${ }_{\\mathrm{s}}$) workload as their fundamental computational pattern. While existing works have made optimization attempts, several critical challenges remain unsolved, including domain-specific optimization migration, time-consuming exploration, and inefficient dataflow with dynamic inputs.To address these challenges, we introduce Efficient-GMS, a comprehensive framework that enhances ($\\mathrm{g}-\\mathrm{mm}-\\mathrm{s})_{\\text {s }}$ workload across diverse input scenarios. Our framework introduces (1) A Fusion-aware framework enabling cross-model optimization migration. We propose a comprehensive dataflow analysis that identifies shared computational patterns across models, enabling the development of four optimized dataflow patterns with vertical and horizontal fusion strategies. (2) Performance model-guided configuration space reduction. We develop a performance model to predict the relative execution efficiency across configurations, thereby reducing the search space and minimizing search time while ensuring optimal configuration selection. (3) Adaptive dataflow selection mechanism. We implement a lightweight heuristic model that dynamically selects optimal dataflow patterns based on the characteristics of the input and the hardware. Experimental results demonstrate that Efficient-GMS achieves significant performance gains, delivering an average end-to-end speedup of $1.46 \\times$ in RGCN model, $1.32 \\times$ in Sp-Conv-based model, and $1.15 \\times$ in MoE model compared to state-of-the-art methods.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "sparse_la",
+    "ml_kernels"
+   ],
+   "kernels": [
+    "gather-matmul-scatter",
+    "SpMM"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Fusion-aware autotuning framework optimizing gather-matmul-scatter dataflow across RGCN/SpConv/MoE"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/SongYJZ25",
+  "venue": "DAC",
+  "year": 2025,
+  "title": "A Cutting-Edge Parallel Solver for Scalable Power Grid Analysis Using Nested Domain Decomposition",
+  "abstract": "As transistor scaling approaches sub-5 nm technologies, power distribution networks (PDNs) in integrated circuits have grown increasingly complex, with billions to trillions of nodes. Simultaneously, reduced noise margins and increased power density necessitate more accurate and efficient power grid analysis. Traditional methods for solving large-scale PDNs, especially those requiring the solution of sparse linear systems, face significant challenges due to high computational costs. Although domain decomposition methods (DDM) allow for efficient parallel computation, the size of the dense global Schur complement grows excessively large as the number of partitions increases, limiting scalability and imposing substantial computational burdens. This paper introduces an efficient parallel nested domain decomposition solver that incorporates a parallel Schur complement computation strategy and intermediate Schur complement to address these challenges. Experimental results demonstrate that by introducing an intermediate Schur complement, the size of the global Schur complement is significantly reduced, achieving an average $1.70 \\times$ speedup in computation, which results in a $1.30 \\times$ speedup for the entire solver compared to the conventional DDM parallel solver.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "sparse_la",
+    "solver_components"
+   ],
+   "kernels": [
+    "sparse linear solve",
+    "domain decomposition",
+    "Schur complement"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Nested domain-decomposition sparse solver with intermediate Schur complement for power grid analysis"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/TongPY25",
+  "venue": "DAC",
+  "year": 2025,
+  "title": "BlasPart: A Deterministic Parallel Partitioner for Balanced Large-Scale Hypergraph Partitioning",
+  "abstract": "Balanced hypergraph partitioning is a fundamental problem in applications like VLSI design, high-performance computing, etc. Nowadays, large-scale hypergraphs become more common due to the increasing complexity of modern systems. Thus, fast and high-quality deterministic partitioning algorithms are largely in demand. Regarding the quality of partitioning, balance is a critical concern when the number of partitions increases. In this paper, we propose BlasPart, a deterministic parallel algorithm for balanced large-scale hypergraph partitioning. BlasPart leverages a recursive multilevel bisection framework to achieve high-quality partitions while ensuring deterministic outcomes. A level-dependent balance constraint is also proposed to further improve the efficiency and effectiveness of the proposed partitioner. Extensive experiments, with comparisons to the state-of-the-art partitioners (hMETIS, BiPart, and Mt-KaHyParSDet), demonstrate that BlasPart achieves better balance and scalability while maintaining competitive partitioning quality and efficiency. BlasPart runs $3.33 \\times$ faster than Mt-KaHyPar-SDet on average for a 4096-way partitioning task on six benchmarks.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "hypergraph partitioning"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Deterministic parallel multilevel-bisection hypergraph partitioner, 3.33x over Mt-KaHyPar"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/ChenW25",
+  "venue": "DAC",
+  "year": 2025,
+  "title": "GPart: A GNN-Enabled Multilevel Graph Partitioner",
+  "abstract": "This paper introduces GPart, a scalable multilevel framework for graph partitioning that integrates GNN embeddings with efficient coarsening and refinement techniques. On the Titan23 benchmarks, GPart achieves a cut size reduction of 34.13% to 42.92% over METIS and improves cut size by 9.30% on selected DIMACS benchmarks compared to G-kway. Furthermore, experiments on the Titan23 benchmarks show that GPart reduces normalized memory usage by 24.6x compared to GAP and 12.4x compared to GenPart. Unlike existing GNN-based methods, which require large hidden layers and substantial memory, GPart’s multilevel architecture reduces hidden layer sizes, significantly optimizing memory efficiency.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph",
+    "ml_kernels"
+   ],
+   "kernels": [
+    "graph partitioning"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "GNN-embedding-enabled multilevel graph partitioner beating METIS/GAP/GenPart on cut size and memory"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/LinLDZLY25",
+  "venue": "DAC",
+  "year": 2025,
+  "title": "SSpMV: A Sparsity-aware SpMV Framework Empowered by Multimodal Machine Learning",
+  "abstract": "Sparse Matrix-Vector Multiplication (SpMV) is an essential sparse operation in scientific computing and artificial intelligence. Efficiently adapting SpMV algorithms to diverse matrices and architectures requires a framework capable of accurately recognizing sparse patterns and selecting the optimal implementation. In this work, we introduce Sparsity-aware SpMV (SSpMV), a framework that integrates expert-designed features with multimodal representations to adaptively predict the best-performing algorithm and parameters. For this purpose, we design a multimodal neural network called MM-Adapter, to capture diverse modalities to represent the computational features of SpMV. Experimental results demonstrate that MMAdapter achieves the highest accuracy of $81.05 \\%$, outperforming existing SpMV prediction models. Furthermore, SSpMV consistently delivers substantial performance improvements over state-of-the-art sparse libraries across various multi-core platforms.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "sparse_la"
+   ],
+   "kernels": [
+    "SpMV"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "ML-based SpMV algorithm/parameter autotuning beating sparse libraries on multi-core"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/ShiLLZZ25",
+  "venue": "DAC",
+  "year": 2025,
+  "title": "VSpGEMM: Exploiting Versal ACAP for High-Performance SpGEMM Acceleration",
+  "abstract": "Sparse general matrix-matrix multiplication (SpGEMM) serves as a fundamental operation in real-world applications such as deep learning. Different from general matrix multiplication, matrices in SpGEMM are highly sparse and therefore require a compact representation. This places an additional burden on data preprocessing and exchanging and also causes irregular memory access patterns, which can in turn lead to communication and computation bottlenecks. To break these bottlenecks, we present VSpGEMM, a hardware accelerator for SpGEMM that is tailored and optimized on Versal ACAP. Firstly, a new storage format called BCSX is proposed in VSpGEMM, which offers a unified and block-wise compression strategy to deal with both row-major and columnmajor representation of non-zero data, enabling fixed-pattern memory accesses and effective data preloading. Secondly, a multi-level tiling mechanism is introduced to decompose the holistic SpGEMM into multiple computation granularities that fit into the AI Engines (AIEs) on Versal in a hierarchical manner, enhancing data reuse. Thirdly, a hybrid partitioning scheme is presented to orchestrate both the AIEs and programmable logic (PL) for intermediate product merging, which together resolve the issues of high memory utilization and communication demand. Experimental results demonstrate a $2.65 \\times$ speedup over state-of-the-art (SOTA) GEMM design on Versal and an average $33.62 \\times$ improvement in energy efficiency compared to cuSPARSE on RTX 4090 GPU, showing the efficacy of VSpGEMM.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "sparse_la"
+   ],
+   "kernels": [
+    "SpGEMM"
+   ],
+   "platform": [
+    "fpga"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "SpGEMM on Versal ACAP with new BCSX format, 33x energy efficiency over cuSPARSE"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/dac/LeeJLCZCSHH25",
+  "venue": "DAC",
+  "year": 2025,
+  "title": "iG-kway: Incremental k-way Graph Partitioning on GPU",
+  "abstract": "Recent advances in GPU-accelerated graph partitioning have achieved significant performance gains but remain limited to full graph partitioning, lacking support for incremental updates. This limitation is critical in CAD applications, where circuit graphs undergo iterative, incremental modifications during optimization. We present iG-kway, the first GPU-based incremental k-way graph partitioner. iG-kway features an incrementality-aware data structure and a refinement kernel that efficiently updates only affected vertices with minimal quality loss. Experiments show that iG-kway delivers up to $84 \\times$ speedup over the state-of-the-art G-kway with comparable partitioning quality.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "graph partitioning"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "GPU incremental k-way graph partitioning, up to 84x over G-kway"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/hpdc/LautBC21",
+  "venue": "HPDC",
+  "year": 2021,
+  "title": "Cache-aware Sparse Patterns for the Factorized Sparse Approximate Inverse Preconditioner",
+  "abstract": "Conjugate Gradient is a widely used iterative method to solve linear systems Ax=b with matrix A being symmetric and positive definite. Part of its effectiveness relies on finding a suitable preconditioner that accelerates its convergence. Factorized Sparse Approximate Inverse (FSAI) preconditioners are a prominent and easily parallelizable option. An essential element of a FSAI preconditioner is the definition of its sparse pattern, which constraints the approximation of the inverse A-1. This definition is generally based on numerical criteria. In this paper we introduce complementary architecture-aware criteria to increase the numerical effectiveness of the preconditioner without incurring in significant performance costs. In particular, we define cache-aware pattern extensions that do not trigger additional cache misses when accessing vector x in the y=Ax Sparse Matrix-Vector (SpMV) kernel. As a result, we obtain very significant reductions in terms of average solution time ranging between 12.94% and 22.85% on three different architectures - Intel Skylake, POWER9 and A64FX - over a set of 72 test matrices.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "solver_components",
+    "sparse_la"
+   ],
+   "kernels": [
+    "FSAI preconditioner",
+    "SpMV"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Cache-aware FSAI preconditioner sparse patterns cutting CG solve time 13-23%"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/hpdc/LautCB22",
+  "venue": "HPDC",
+  "year": 2022,
+  "title": "Communication-aware Sparse Patterns for the Factorized Approximate Inverse Preconditioner",
+  "abstract": "The Conjugate Gradient (CG) method is an iterative solver targeting linear systems of equations Ax=b where A is a symmetric and positive definite matrix. CG convergence properties improve when preconditioning is applied to reduce the condition number of matrix A. While many different options can be found in the literature, the Factorized Sparse Approximate Inverse (FSAI) preconditioner constitutes a highly parallel option based on approximating A-1. This paper proposes the Communication-aware Factorized Sparse Approximate Inverse preconditioner (FSAIE-Comm), a method to generate extensions of the FSAI sparse pattern that are not only cache friendly, but also avoid increasing communication costs in distributed memory systems. We also propose a filtering strategy to reduce inter-process imbalance. We evaluate FSAIE-Comm on a heterogeneous set of 39 matrices achieving an average solution time decrease of 17.98%, 26.44% and 16.74% on three different architectures, respectively, Intel Skylake, Fujitsu A64FX and AMD Zen 2 with respect to FSAI. In addition, we consider a set of 8 large matrices running on up to 32,768 CPU cores, and we achieve an average solution time decrease of 12.59%.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "solver_components",
+    "sparse_la"
+   ],
+   "kernels": [
+    "FSAI preconditioner",
+    "SpMV"
+   ],
+   "platform": [
+    "cpu",
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Communication-aware FSAI preconditioner sparse patterns reducing distributed CG solve time"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/hpdc/WangPGJTAT22",
+  "venue": "HPDC",
+  "year": 2022,
+  "title": "TAC: Optimizing Error-Bounded Lossy Compression for Three-Dimensional Adaptive Mesh Refinement Simulations",
+  "abstract": "Today's scientific simulations require a significant reduction of data volume because of extremely large amounts of data they produce and the limited I/O bandwidth and storage space. Error-bounded lossy compression has been considered one of the most effective solutions to the above problem. However, little work has been done to improve error-bounded lossy compression for Adaptive Mesh Refinement (AMR) simulation data. Unlike the previous work that only leverages 1D compression, in this work, we propose to leverage high-dimensional (e.g., 3D) compression for each refinement level of AMR data. To remove the data redundancy across different levels, we propose three pre-process strategies and adaptively use them based on the data characteristics. Experiments on seven AMR datasets from a real-world large-scale AMR simulation demonstrate that our proposed approach can improve the compression ratio by up to 3.3X under the same data distortion, compared to the state-of-the-art method. In addition, we leverage the flexibility of our approach to tune the error bound for each level, which achieves much lower data distortion on two application-specific metrics.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "compression",
+    "unstructured_amr"
+   ],
+   "kernels": [
+    "error-bounded lossy compression",
+    "AMR compression"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Dimension-aware error-bounded lossy compression for 3D AMR data, up to 3.3x better ratio"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/hpdc/SallinenLR23",
+  "venue": "HPDC",
+  "year": 2023,
+  "title": "Real-Time PageRank on Dynamic Graphs",
+  "abstract": "Modern data generation has grown to enormous proportions, with events occurring at increasingly higher rates. Yet for graph analytics, this growth in scale and velocity has not been matched by improved algorithm or infrastructure techniques: most systems still focus on post-mortem or static analysis. This paper builds on an efficient graph processing abstraction that enables online analysis of dynamically evolving graphs at scale. Integral to this abstraction is that events tied to both graph topology changes as well as algorithmic maintenance occur and are processed asynchronously, concurrently, and autonomously (i.e., without shared state).",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "PageRank"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "low",
+   "one_liner": "Asynchronous real-time PageRank on dynamically evolving graphs"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/hpdc/LautBC24",
+  "venue": "HPDC",
+  "year": 2024,
+  "title": "Extending Sparse Patterns to Improve Inverse Preconditioning on GPU Architectures",
+  "abstract": "Graphic Processing Units (GPUs) have become a key component of high-end computing infrastructures due to their massively parallel architecture, which delivers large floating-point operations per cycle rates. Many scientific workloads benefit from GPUs and, in particular, numerical methods solving linear systems of equations Ax = b typically run on GPUs. Among them, the Conjugate Gradient (CG) method, which targets linear systems with Symmetric and Positive Definite (SPD) matrices, runs on GPUs using its preconditioned form. However, state-of-the-art preconditioning techniques like the Factorized Sparse Approximate Inverse (FSAI) preconditioner ignore the benefits of data coalescence and locality on GPU architectures and leave substantial performance on the table. These approaches are exclusively based on numerical criteria.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "solver_components",
+    "sparse_la"
+   ],
+   "kernels": [
+    "FSAI preconditioner",
+    "SpMV"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "GPU-friendly FSAI preconditioner sparse patterns exploiting coalescence and locality"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/hpdc/YangDZLL00C025",
+  "venue": "HPDC",
+  "year": 2025,
+  "title": "IPComp: Interpolation Based Progressive Lossy Compression for Scientific Applications",
+  "abstract": "Compression is a crucial solution for data reduction in modern scientific applications due to the exponential growth of data from simulations, experiments, and observations. Compression with progressive retrieval capability allows users to quickly access coarse approximations of data and then incrementally refine these approximations to higher fidelity. Existing progressive compression solutions suffer from low reduction ratios or high operation costs, effectively undermining the approach's benefits. In this paper, we propose our interpolation-based progressive lossy compression solution that has both high reduction ratios and low operation costs. The interpolation-based algorithm has been verified as one of the best for scientific data reduction, but previously, no effort exists to make it support progressive retrieval. Our contributions are threefold: (1) We thoroughly analyze the error characteristics of the interpolation algorithm and propose our solution, IPComp, with multi-level bitplane and predictive coding. (2) We derive optimized strategies toward minimum data retrieval under different fidelity levels indicated by users through error bounds and bitrates. (3) We evaluate the proposed solution using six real-world datasets from four diverse domains. Experimental results demonstrate our solution archives up to 487% higher compression ratios and 698% faster speed than other state-of-the-art progressive compressors, and reduces the data volume for retrieval by up to 83% compared to baselines under the same error bound, and reduces the error by up to 99% under the same bitrate.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "compression"
+   ],
+   "kernels": [
+    "lossy compression"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Interpolation-based progressive lossy compressor, up to 487% higher ratio and 698% faster"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/hpdc/HuanMYLZWWMWZGW26",
+  "venue": "HPDC",
+  "year": 2026,
+  "title": "BCCE: Block-Centric GPU Co-Design for Real-Time Range-Top-K Query at Scale",
+  "abstract": "Range-top-k queries retrieve the top-k elements within an arbitrary subrange of a large array and are a key primitive in real-time analytics. Unlike one-shot top-k selection, practical deployments issue large volumes of queries over varying and often overlapping ranges, frequently interleaved with streaming updates. In this setting, applying conventional GPU top-k kernels per query is inefficient: each query triggers range rescans or O(n)-scale passes that overwhelm HBM bandwidth, thrash on-chip caches, and provide little reuse across overlapping windows.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "range-top-k"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Block-centric GPU kernels for real-time range-top-k queries with reuse across ranges"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/hpdc/RaoCPXFZWGWCL26",
+  "venue": "HPDC",
+  "year": 2026,
+  "title": "POLAR-PIC: A Holistic Framework for Matrixized PIC with Co-Designed Compute, Layout, and Communication",
+  "abstract": "Particle-in-Cell (PIC) simulations are fundamental to plasma physics but often suffer from limited scalability due to particle–grid interaction bottlenecks and particle redistribution costs. Specifically, the particle–grid interaction computations have not taken full advantage of the emerging Matrix Processing Units (MPUs), the particle motion introduces irregular memory accesses, and the bulk-synchronous redistribution further destroys long-term data locality thereby limiting parallel efficiency. To address these inefficiencies, we present POLAR-PIC, a co-designed framework for large-scale PIC simulations that (i) reformulates Field Interpolation into an MPU-friendly outer-product form, (ii) maintains a physically ordered particle layout to preserve memory contiguity, and (iii) overlaps particle communication with Deposition to hide redistribution overhead. The evaluation on the pilot system of an Exascale supercomputer demonstrates that POLAR-PIC accelerates the entire particle-processing phase by up to 10.9 × in uniform plasma and 4.4 × in real-world laser-ion acceleration scenarios compared to the native WarpX reference pipeline on LX2. Ablation studies reveal that the speedups achieved by Interpolation and Deposition are 8.0 × and 13.2 × , respectively, and the asynchronous communication design sustains a \\(99.1\\%\\) overlap ratio. In cross-platform comparisons, POLAR-PIC achieves \\(13.2\\%\\) of theoretical peak efficiency on the CPU-based LS system, while WarpX reaches \\(9.6\\%\\) on NVIDIA A800 GPUs. Notably, the scalability evaluation demonstrates that POLAR-PIC maintains \\(67.5\\%\\) weak scaling efficiency on over 2 million cores under high-migration dynamic workloads, highlighting the importance of holistic co-design for future matrix-centric HPC systems.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "unstructured_amr"
+   ],
+   "kernels": [
+    "field interpolation",
+    "particle deposition",
+    "PIC"
+   ],
+   "platform": [
+    "distributed",
+    "cpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Matrixized PIC: MPU-friendly outer-product field interpolation and deposition, up to 13x"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/hpdc/PrajapatiNB26",
+  "venue": "HPDC",
+  "year": 2026,
+  "title": "SAGA: State-Aware Graph Analytics for Combinatorial Optimization on Dynamic Graphs",
+  "abstract": "Combinatorial optimization problems on graphs, such as Maximal Independent Set (\\(\\mathcal {M}\\)), Graph Coloring (\\(\\mathcal {GC}\\)), and Maximal Matching (\\(\\mathcal {MM}\\)), are computationally challenging and are significantly harder in dynamic settings where edges and vertices evolve continuously. Maintaining valid solutions under high-rate updates requires more than recomputation or static parallelism. We present SAGA, a high-performance framework for real-time combinatorial optimization on dynamic graphs. SAGA adopts a state-aware execution model in which each vertex maintains compact local state, enabling incremental and localized updates in response to graph changes. By coupling fine-grained task parallelism with data-parallel execution, SAGA minimizes communication overhead through state-aware partitioning and distributed state management. The SAGA compute engine maintains evolving solutions consistently across worker nodes while supporting low-latency queries. We evaluate SAGA on a distributed memory cluster against three state-of-the-art graph frameworks. On streaming instances of \\(\\mathcal {M}\\), \\(\\mathcal {MM}\\), and \\(\\mathcal {GC}\\), SAGA achieves speedups of up to 11.8 ×, 6.2 ×, and 8.4 ×, respectively, sustains up to 7.2M operations per second, and delivers over 10.8 × lower query latency compared to state-of-the-art graph analytics frameworks under concurrent update workloads.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "maximal independent set",
+    "graph coloring",
+    "maximal matching"
+   ],
+   "platform": [
+    "distributed"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "State-aware dynamic-graph MIS/coloring/matching, up to 11.8x over graph frameworks"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/hpdc/ZhengZCZ26",
+  "venue": "HPDC",
+  "year": 2026,
+  "title": "UniEP: Unified Expert-Parallel MegaKernel MoE for LLM Training",
+  "abstract": "As LLM training grows increasingly resource-intensive and expert parallelism (EP) becomes essential for scaling MoE models, EP optimizations are widely adopted in production frameworks like Megatron-LM. Existing solutions often rely on ad-hoc, complex kernels that lack adaptability across diverse optimization configurations and frequently neglect numerical stability, failing to meet the strict precision requirements of large-scale training.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels"
+   ],
+   "kernels": [
+    "MoE megakernel",
+    "grouped GEMM"
+   ],
+   "platform": [
+    "nvidia-gpu",
+    "distributed"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "low",
+   "one_liner": "Unified expert-parallel MegaKernel for MoE LLM training with numerical stability"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/DonnellyG20",
+  "venue": "ICS",
+  "year": 2020,
+  "title": "A coordinate-oblivious index for high-dimensional distance similarity searches on the GPU",
+  "abstract": "We present COSS, an exact method for high-dimensional distance similarity self-joins using the GPU, which finds all points within a search distance e from each point in a dataset. The similarity self-join can take advantage of the massive parallelism afforded by GPUs, as each point can be searched in parallel. Despite high GPU throughput, distance similarity self-joins exhibit irregular memory access patterns which yield branch divergence and other performance limiting factors. Consequently, we propose several GPU optimizations to improve self-join query throughput, including an index designed for GPU architecture. As data dimensionality increases, the search space increases exponentially. Therefore, to find a reasonable number of neighbors for each point in the dataset, e may need to be large. The majority of indexing strategies that are used to prune the ∈-search focus on a spatial partition of data points based on each point's coordinates. As dimensionality increases, this data partitioning and pruning strategy yields exhaustive searches that eventually degrade to a brute force (quadratic) search, which is the well-known curse of dimensionality problem. To enable pruning the search using an indexing scheme in high-dimensional spaces, we depart from previous indexing approaches, and propose an indexing strategy that does not index based on each point's coordinate values. Instead, we index based on the distances to reference points, which are arbitrary points in the coordinate space. We show that our indexing scheme is able to prune the search for nearby points in high-dimensional spaces where other approaches yield high performance degradation. COSS achieves a speedup over CPU and GPU reference implementations up to 17.7X and 11.8X, respectively.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "distance similarity self-join"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "GPU distance similarity self-join with reference-point index, up to 11.8x over GPU"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/ShuklaRTK20",
+  "venue": "ICS",
+  "year": 2020,
+  "title": "Efficient parallel algorithms for betweenness- and closeness-centrality in dynamic graphs",
+  "abstract": "Finding the centrality measures of nodes in a graph is a problem of fundamental importance due to various applications from social networks, biological networks, and transportation networks. Given the large size of such graphs, it is natural to use parallelism as a recourse. There have been several studies that show how to compute the various centrality measures of nodes in a graph on parallel architectures, including multi-core systems and GPUs. However, as these graphs evolve and change, it is pertinent to study how to update the centrality measures on changes to the underlying graph.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "betweenness centrality",
+    "closeness centrality"
+   ],
+   "platform": [
+    "cpu",
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Parallel betweenness/closeness centrality algorithms for dynamic graphs on CPU and GPU"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/Vandierendonck20",
+  "venue": "ICS",
+  "year": 2020,
+  "title": "Graptor: efficient pull and push style vectorized graph processing",
+  "abstract": "Vectorization seeks to accelerate computation through data-level parallelism. Vectorization has been applied to graph processing, where the graph is traversed either in a push style or a pull style. As it is not well understood which style will perform better, there is a need for both vectorized push and pull style traversals. This paper is the first to present a general solution to vectorizing push style traversal. It more-over presents an enhanced vectorized pull style traversal.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "graph traversal",
+    "PageRank"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Graptor: code generation for vectorized push and pull style graph traversal"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/JinPWDAR20",
+  "venue": "ICS",
+  "year": 2020,
+  "title": "Parallelizing pruned landmark labeling: dealing with dependencies in graph algorithms",
+  "abstract": "To help compute shortest path distances over large graphs efficiently, 2-hop labeling has emerged as a major tool, with Pruned Landmark Labeling (PPL) as a popular algorithm. This paper demonstrates the first scalable parallel implementation of the PPL algorithm that produces the same results as the sequential algorithm. Based on theoretical analysis, we show how computations on each vertex can be performed in parallel while maintaining correctness, resulting in the Vertex-Centrix PLL (VC-PLL) algorithm. We also show a formulation of this algorithm based on linear algebra and argue why the use of a library based on linear algebra operations will not produce an efficient implementation. Next, we introduce a batched VC-PLL (BVC-PLL) algorithm to reduce the computational inefficiency in VC-PLL. We have carried out a parallel implementation of this method for modern clusters, combining shared memory and distributed memory parallelism, that can efficiently execute on graphs with more than a billion edges. We also demonstrate how BVC-PLL algorithm can be extended to handle directed graphs and weighted graphs and how the version for weighted graphs can benefit from SIMD parallelization.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "pruned landmark labeling",
+    "shortest-path distance"
+   ],
+   "platform": [
+    "distributed",
+    "cpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Scalable parallel pruned landmark labeling for shortest-path distances (VC-PLL/BVC-PLL)"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/ZhangSW20",
+  "venue": "ICS",
+  "year": 2020,
+  "title": "TensorSVM: accelerating kernel machines with tensor engine",
+  "abstract": "This paper explores the use of Tensor Engines to accelerate nonlinear and linear SVM training. Support Vector Machine(SVM) is a classical machine learning model for classification and regression and remains to be the state-of-the-art model for some tasks such as text classification and bioinformatics. However large scale SVM training is still challenging because of its high computational complexity. This is especially severe for non-linear SVM with kernel tricks. On the other hand, the surging importance of neural networks fuels the emergence of specialized processors called Tensor Units (TensorCore in GPU and Tensor Processing Unit of Google) which are characterized by extreme efficiency and very limited precision and range. This paper proposes a TensorCore GPU based SVM algorithm and software system that is faster and more scalable than state-of-the-art SVM solvers. It includes a fast, accurate low-rank Gram matrix approximation that effectively utilizes the TensorCore in GPU and a primal-dual interior-point method to solve the quadratic program with a fast and predictable convergence rate. The random projection based Gram matrix approximation can be substantially accelerated by TensorCore on GPU.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la",
+    "ml_kernels"
+   ],
+   "kernels": [
+    "Gram matrix approximation",
+    "GEMM"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "TensorCore-accelerated SVM via low-rank Gram matrix approximation"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/HeidarshenasYSM20",
+  "venue": "ICS",
+  "year": 2020,
+  "title": "V-Combiner: speeding-up iterative graph processing on a shared-memory platform with vertex merging",
+  "abstract": "An iterative graph algorithm applies a vertex update operation to all vertices in a graph in every iteration. For large graphs, this computation is costly. However, in practice, not all the updates contribute equally to the end result and, in fact, an exact result may not be needed. In this work, we leverage these insights to speed-up iterative graph algorithms. We propose a mechanism to identify the less important vertices and omit computations for them.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "iterative graph processing",
+    "PageRank"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "V-Combiner: speeds up iterative graph algorithms via vertex merging on shared memory"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/SharmaC20",
+  "venue": "ICS",
+  "year": 2020,
+  "title": "Wavefront parallelization of recurrent neural networks on multi-core architectures",
+  "abstract": "Recurrent neural networks (RNNs) are widely used for natural language processing, time-series prediction, or text analysis tasks. The internal structure of RNNs inference and training in terms of data or control dependencies across their fundamental numerical kernels complicate the exploitation of model parallelism, which is the reason why just data-parallelism has been traditionally applied to accelerate RNNs.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels"
+   ],
+   "kernels": [
+    "RNN forward/backward"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "low",
+   "one_liner": "Wavefront parallelization of RNN inference/training kernels on multi-core CPUs for model parallelism"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/MinutoliDHTK20",
+  "venue": "ICS",
+  "year": 2020,
+  "title": "cuRipples: influence maximization on multi-GPU systems",
+  "abstract": "Influence maximization is an advanced graph-theoretic operation that aims to identify a set of k most influential nodes in a network. The problem is of immense interest in many network applications (e.g., information spread in a social network, or contagion spread in an infectious disease network). The problem is however computationally expensive, needing several hours of compute time on even modest sized networks. There are numerous challenges to parallelizing influence maximization including its mixed workloads of latency- and throughput-bound steps, frequent and irregular access to graph data, large memory footprint, and potential load imbalanced workloads. In this work, we present the design and development of a new hybrid CPU+GPU parallel influence maximization algorithm (CuRipples) that is also capable of running on multi-GPU systems. Our approach uses techniques for efficiently sharing and scheduling of work between CPU and GPU, and data access and synchronization schemes to efficiently map the different steps of sampling and seed selection on a heterogeneous system. Our experiments on state-of-the-art multi-GPU systems show that our implementation is able to achieve drastic reductions in the time to solution, from hours to under a minute, while also significantly enhancing the approximation quality.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "influence maximization"
+   ],
+   "platform": [
+    "nvidia-gpu",
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "cuRipples: hybrid CPU+GPU multi-GPU influence maximization, hours to under a minute"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/RandallA021",
+  "venue": "ICS",
+  "year": 2021,
+  "title": "FULL-W2V: fully exploiting data reuse for W2V on GPU-accelerated systems",
+  "abstract": "Word2Vec remains one of the highly-impactful innovations in the field of Natural Language Processing (NLP) that represents latent grammatical and syntactical information in human text with dense vectors in a low dimension. Word2Vec has high computational cost due to the algorithm’s inherent sequentiality, intensive memory accesses, and the large vocabularies it represents. While prior studies have investigated technologies to explore parallelism and improve memory system performance, they struggle to effectively gain throughput on powerful GPUs. We identify memory data access and latency as the primary bottleneck in prior works on GPUs, which prevents highly optimized kernels from attaining the architecture’s peak performance. We present a novel algorithm, FULL-W2V, which maximally exploits the opportunities for data reuse in the W2V algorithm and leverages GPU architecture and resources to reduce access to low memory levels and improve temporal locality. FULL-W2V is capable of reducing accesses to GPU global memory significantly, e.g., by more than 89%, compared to prior state-of-the-art GPU implementations, resulting in significant performance improvement that scales across successive hardware generations. Our prototype implementation achieves 2.97X speedup when ported from Nvidia Pascal P100 to Volta V100 cards, and outperforms the state-of-the-art by 5.72X on V100 cards with the same embedding quality. In-depth analysis indicates that the reduction of memory accesses through register and shared memory caching and high-throughput shared memory reduction leads to a significantly improved arithmetic intensity. FULL-W2V can potentially benefit many applications in NLP and other domains.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels"
+   ],
+   "kernels": [
+    "Word2Vec"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "FULL-W2V: GPU Word2Vec exploiting data reuse, 5.72x over prior GPU state-of-the-art"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/ZhangSWRZ21",
+  "venue": "ICS",
+  "year": 2021,
+  "title": "HyQuas: hybrid partitioner based quantum circuit simulation system on GPU",
+  "abstract": "Quantum computing has shown its strong potential in solving certain important problems. Due to the intrinsic limitations of current real quantum computers, quantum circuit simulation still plays an important role in both research and development of quantum computing. GPU-based quantum circuit simulation has been explored due to GPU's high computation capability. Despite previous efforts, existing quantum circuit simulation systems usually rely on a single method to improve poor data locality caused by complex quantum entanglement. However, we observe that existing simulation methods show significantly different performance for different circuit patterns. The optimal performance cannot be obtained only with any single method.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la",
+    "tensor"
+   ],
+   "kernels": [
+    "quantum circuit simulation"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "HyQuas: hybrid-partitioner GPU quantum circuit simulation improving data locality per circuit pattern"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/ChenWWTHOM21",
+  "venue": "ICS",
+  "year": 2021,
+  "title": "Performance portable back-projection algorithms on CPUs: agnostic data locality and vectorization optimizations",
+  "abstract": "Computed Tomography (CT) is a key 3D imaging technology that fundamentally relies on the compute-intense back-projection operation to generate 3D volumes. GPUs are typically used for back-projection in production CT devices. However, with the rise of power-constrained micro-CT devices, and also the emergence of CPUs comparable in performance to GPUs, back-projection for CPUs could become favorable. Unlike GPUs, extracting parallelism for back-projection algorithms on CPUs is complex given that parallelism and locality are not explicitly defined and controlled by the programmer, as is the case when using CUDA for instance. We propose a collection of novel back-projection algorithms that reduce the arithmetic computation, robustly enable vectorization, enforce a regular memory access pattern, and maximize the data locality. We also implement the novel algorithms as efficient back-projection kernels that are performance portable over a wide range of CPUs. Performance evaluation using a variety of CPUs from different vendors and generations demonstrates that our back-projection implementation achieves on average 5.2x speedup over the multi-threaded implementation of the most widely used, and optimized, open library. With a state-of-the-art CPU, we reach performance that rivals top-performing GPUs.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "stencil_pde"
+   ],
+   "kernels": [
+    "CT back-projection"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Performance-portable vectorized CT back-projection kernels on CPUs, 5.2x over optimized library"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/0001DGHP21",
+  "venue": "ICS",
+  "year": 2021,
+  "title": "Sandslash: a two-level framework for efficient graph pattern mining",
+  "abstract": "Graph pattern mining (GPM) is a key building block in diverse applications, including bioinformatics, chemical engineering, social network analysis, recommender systems and security. Existing GPM frameworks either provide high-level interfaces for productivity at the cost of expressiveness or provide low-level interfaces that can express a wide variety of GPM algorithms at the cost of increased programming complexity. Moreover, existing systems lack the flexibility to explore combinations of optimizations to achieve performance competitive with hand-optimized applications.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "graph pattern mining"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Sandslash: two-level graph pattern mining framework rivaling hand-optimized apps"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/PrabhakarK0HF21",
+  "venue": "ICS",
+  "year": 2021,
+  "title": "SumMerge: an efficient algorithm and implementation for weight repetition-aware DNN inference",
+  "abstract": "Deep Neural Network (DNN) inference efficiency is a key concern across the myriad of domains now relying on Deep Learning. A recent promising direction to speed-up inference is to exploit \\emph{weight repetition}. The key observation is that due to DNN quantization schemes---which attempt to reduce DNN storage requirements by reducing the number of bits needed to represent each weight---the same weight is bound to repeat many times within and across filters. This enables a weight-repetition aware inference kernel to factorize and memoize out common sub-computations, reducing arithmetic per inference while still maintaining the compression benefits of quantization. Yet, significant challenges remain. For instance, weight repetition introduces significant irregularity in the inference operation and hence (up to this point) has required custom hardware accelerators to derive net benefit.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels"
+   ],
+   "kernels": [
+    "DNN inference"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "SumMerge: weight-repetition-aware DNN inference kernel factorizing/memoizing sub-computations in software"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/0005L0ZLHSTLHWS22",
+  "venue": "ICS",
+  "year": 2022,
+  "title": "Bring orders into uncertainty: enabling efficient uncertain graph processing via novel path sampling on multi-accelerator systems",
+  "abstract": "Uncertain or probabilistic graphs have been ubiquitously used to represent noisy, incomplete, and inaccurate linked data in many emerging big-data mining and analytics applications. It is impractical to solve uncertain graph problems exactly as it requires to evaluate an exponential number of certain instances (or \"possible worlds\") generated from an uncertain graph. Previously, several CPU-based techniques were proposed to use sampling for uncertain graph processing. However, we observe that (1) they suffer from low computation efficiency and large memory overhead due to unnecessary edge sampling at runtime; (2) they cannot leverage the massive parallelism provided by modern general-purpose accelerators; and (3) there lacks a general programming framework for high-performance uncertain graph processing. To tackle these challenges, we propose a novel runtime path sampling method, which is able to identify and eliminate unnecessary edge sampling via incremental path identification and filtering, resulting in significant reduction in computation and data movement. Centered around this idea, we introduce a general uncertain graph processing framework for multi-GPU systems, named BPGraph1. BPGraph provides general support for users to design and optimize a wide-range of uncertain graph algorithms and applications without concerning about the underlying complexity. Extensive evaluation on a variety of real-world uncertain graph applications demonstrates an average speedup of 26X (up to 43X) and better scalability from BPGraph over the state-of-the-art frameworks.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "uncertain graph processing",
+    "path sampling"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "BPGraph: multi-GPU uncertain graph processing with novel path sampling, 26x avg speedup"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/0006JGTLT22",
+  "venue": "ICS",
+  "year": 2022,
+  "title": "CEAZ: accelerating parallel I/O via hardware-algorithm co-designed adaptive lossy compression",
+  "abstract": "As HPC systems continue to grow to exascale, the amount of data that needs to be saved or transmitted is exploding. To this end, many previous works have studied using error-bounded lossy compressors to reduce the data size and improve the I/O performance. However, little work has been done for effectively offloading lossy compression onto FPGA-based SmartNICs to reduce the compression overhead. In this paper, we propose a hardware-algorithm co-design for an efficient and adaptive lossy compressor for scientific data on FPGAs (called CEAZ), which is the first lossy compressor that can achieve high compression ratios and throughputs simultaneously. Specifically, we propose an efficient Huffman coding approach that can adaptively update Huffman codewords online based on codewords generated offline, from a variety of representative scientific datasets. Moreover, we derive a theoretical analysis to support a precise control of compression ratio under an error-bounded compression mode, enabling accurate offline Huffman codewords generation. This also helps us create a fixed-ratio compression mode for consistent throughput. In addition, we develop an efficient compression pipeline by adopting cuSZ's dual-quantization algorithm to our hardware use cases. Finally, we evaluate CEAZ on five real-world datasets with both a single FPGA board and 128 nodes (to accelerate parallel I/O). Experiments show that CEAZ outperforms the second-best FPGA-based lossy compressor by 2.3X of throughput and 3.0X of ratio. It also improves MPI_File_write and MPI_Gather throughputs by up to 28.9X and 37.8X, respectively.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "compression"
+   ],
+   "kernels": [
+    "lossy compression",
+    "Huffman coding"
+   ],
+   "platform": [
+    "fpga"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "CEAZ: FPGA SZ-family adaptive lossy compression, 2.3x throughput / 3x ratio over prior FPGA compressor"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/MaWFZXH0Z22",
+  "venue": "ICS",
+  "year": 2022,
+  "title": "Efficiently emulating high-bitwidth computation with low-bitwidth hardware",
+  "abstract": "Domain-Specific Accelerators (DSAs) are being rapidly developed to support high-performance domain-specific computation. Although DSAs provide massive computation capability, they often only support limited native data types. To mitigate this problem, previous works have explored software emulation for certain data types, which provides some compensation for hardware limitations. However, how to efficiently design more emulated data types and choose a high-performance one without hurting correctness or precision for a given application still remains an open problem.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels",
+    "dense_la"
+   ],
+   "kernels": [
+    "mixed-precision emulation"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "low",
+   "one_liner": "Emulating high-bitwidth computation on low-bitwidth hardware (precision emulation) for DSAs/GPUs"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/HanindhitoGFTGJ22",
+  "venue": "ICS",
+  "year": 2022,
+  "title": "GAPS: GPU-acceleration of PDE solvers for wave simulation",
+  "abstract": "Large-scale simulations of wave-type equations have many industrial applications, such as in oil and gas exploration. Realistic simulations, which involve a vast amount of data, are often performed on multiple nodes of an HPC cluster. Using GPUs for these simulations is attractive due to considerable parallelizability of the algorithms. Many industry-relevant simulations have characteristics in their physics or geometry that can be exploited to improve computational efficiency. Furthermore, the choice of simulation algorithm impacts computational efficiency significantly.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "stencil_pde"
+   ],
+   "kernels": [
+    "3D stencil",
+    "finite-difference wave solver"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "GAPS: GPU-accelerated finite-difference PDE solvers for wave simulation"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/KamalakkannanMR22",
+  "venue": "ICS",
+  "year": 2022,
+  "title": "High throughput multidimensional tridiagonal system solvers on FPGAs",
+  "abstract": "We present a high performance tridiagonal solver library for Xilinx FPGAs optimized for multiple multi-dimensional systems common in real-world applications. An analytical performance model is developed and used to explore the design space and obtain rapid performance estimates that are over 85% accurate. This library achieves an order of magnitude better performance when solving large batches of systems than previous FPGA work. A detailed comparison with a current state-of-the-art GPU library for multi-dimensional tridiagonal systems on an Nvidia V100 GPU shows the FPGA achieving competitive or better runtime and significant energy savings of over 30%. Through this design, we learn lessons about the types of applications where FPGAs can challenge the current dominance of GPUs.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "solver_components"
+   ],
+   "kernels": [
+    "tridiagonal solver"
+   ],
+   "platform": [
+    "fpga"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "High-throughput multidimensional tridiagonal solver library on FPGAs, competitive with V100, 30% energy savings"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/EsfahaniKV22",
+  "venue": "ICS",
+  "year": 2022,
+  "title": "MASTIFF: structure-aware minimum spanning tree/forest",
+  "abstract": "The Minimum Spanning Forest (MSF) problem finds usage in many different applications. While theoretical analysis shows that linear-time solutions exist, in practice, parallel MSF algorithms remain computationally demanding due to the continuously increasing size of data sets.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "minimum spanning forest"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Structure-aware parallel minimum spanning tree/forest computation"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/Vandierendonck22",
+  "venue": "ICS",
+  "year": 2022,
+  "title": "Software-defined floating-point number formats and their application to graph processing",
+  "abstract": "This paper proposes software-defined floating-point number formats for graph processing workloads, which can improve performance in irregular workloads by reducing cache misses. Efficient arithmetic on software-defined number formats is challenging, even when based on conversion to wider, hardware-supported formats. We derive efficient conversion schemes that are tuned to the IA64 and AVX512 instruction sets. We demonstrate that: (i) reduced-precision number formats can be applied to graph processing without loss of accuracy; (ii) conversion of floating-point values is possible with minimal instructions; (iii) conversions are most efficient when utilizing vectorized instruction sets, specifically on IA64 processors. Experiments on twelve real-world graph data sets demonstrate that our techniques result in speedups up to 89% for PageRank and Accelerated PageRank, and up to 35% for Single-Source Shortest Paths. The same techniques help to accelerate the integer-based maximal independent set problem by up to 262%.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "PageRank",
+    "SSSP"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Software-defined reduced-precision FP formats accelerating graph kernels"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/LiuDZ0CC23",
+  "venue": "ICS",
+  "year": 2023,
+  "title": "FAZ: A flexible auto-tuned modular error-bounded compression framework for scientific data",
+  "abstract": "Error-bounded lossy compression has been effective to resolve the big scientific data issue because it has a great potential to significantly reduce the data volume while allowing users to control data distortion based on specified error bounds. However, none of the existing error-bounded lossy compressors can always obtain the best compression quality because of the diverse characteristics of different datasets. In this paper, we develop FAZ, a flexible and adaptive error-bounded lossy compression framework, which projects a fairly high capability of adapting to diverse datasets. FAZ can always keep the compression quality at the best level compared with other state-of-the-art compressors for different datasets. We perform a comprehensive evaluation using 6 real-world scientific applications and 6 other state-of-the-art error-bounded lossy compressors. Experiments show that compared with the other existing lossy compressors, FAZ can improve the compression ratio by up to 120%, 190%, and 75% when setting the same error bound, the same PSNR and the same SSIM, respectively.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "compression"
+   ],
+   "kernels": [
+    "error-bounded lossy compression"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Adaptive auto-tuned modular error-bounded lossy compression framework"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/TrumperBSCH23",
+  "venue": "ICS",
+  "year": 2023,
+  "title": "Performance Embeddings: A Similarity-Based Transfer Tuning Approach to Performance Optimization",
+  "abstract": "Performance optimization is an increasingly challenging but often repetitive task. While each platform has its quirks, the underlying code transformations rely on data movement and computational characteristics that recur across applications. This paper proposes to leverage those similarities by constructing an embedding space for subprograms. The continuous space captures both static and dynamic properties of loop nests via symbolic code analysis and performance profiling, respectively. Performance embeddings enable direct knowledge transfer of performance tuning between applications, which can result from autotuning or tailored improvements. We demonstrate this transfer tuning approach on case studies in deep neural networks, dense and sparse linear algebra compositions, and numerical weather prediction stencils. Transfer tuning reduces the search complexity by up to four orders of magnitude and outperforms the MKL library in sparse-dense matrix multiplication. The results exhibit clear correspondences between program characteristics and optimizations, outperforming prior specialized state-of-the-art approaches and generalizing beyond their capabilities.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "sparse_la",
+    "dense_la",
+    "stencil_pde",
+    "ml_kernels"
+   ],
+   "kernels": [
+    "SpMM",
+    "GEMM",
+    "stencil"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Similarity-based transfer autotuning producing optimized LA/stencil kernels"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/ics/PathakSG23",
+  "venue": "ICS",
+  "year": 2023,
+  "title": "Scalable algorithms for compact spanners on real world graphs",
+  "abstract": "A graph spanner is a subgraph that preserves the shortest distance between every pair of vertices within a permissible distortion. Typically, the allowed distortion is a multiplicative factor (of the original distances) and is referred to as stretch. Efficient multiplicative spanners, based on finding low diameter decompositions, have been studied in the distributed and parallel settings. Most of these studies aim to find spanners with theoretical guarantees on the stretch and spanner size. The spanner size guarantees obtained in these works are not very useful for real world sparse graphs. In this work, we evaluate and compare the state of the art algorithms for multiplicative spanners on real world and synthetic graphs. We propose a heuristic that aims to reduce the size of the output spanner. When combined with existing approaches, it admits similar theoretical guarantees as described in prior work while yielding considerably smaller spanners. Our heuristic builds on the idea of selecting centers with large neighborhoods and growing clusters around them. We present a parallel algorithm for selecting a large set of cluster centers based on this heuristic. We evaluate our algorithms on 18 real world graphs from the SNAP data set and 3 well studied synthetic graphs. We demonstrate that our heuristic yields spanners with significantly fewer edges - up to 6x smaller on real world graphs and up to 20x smaller on synthetic graphs, compared to baselines from prior work.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "graph spanner"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Scalable parallel compact graph spanner construction"
+  },
+  "mode": "confirm-include"
+ }
+]

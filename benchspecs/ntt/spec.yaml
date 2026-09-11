@@ -1,0 +1,210 @@
+kernel: ntt
+summary: >
+  Number-Theoretic Transform (forward NTT / inverse INTT) over
+  Z_q[x]/(x^N+1) as used inside RNS-CKKS fully homomorphic encryption —
+  this track's single paper (Cheddar) never times bare NTT/INTT in
+  isolation, only as a component slice inside fused elementary-CKKS-op
+  kernels (HMult/HRot/HAdd/Rescale) or whole-FHE-workload runs (bts/HELR/
+  ResNet/Sort). This spec defines both the isolated microkernel the
+  instructions require (degree, modulus bit-width, batch, correctness vs a
+  reference NTT) and an embedded variant that matches what the paper
+  actually reports, so the two are never conflated.
+operation: >
+  Forward: A_hat[i] = sum_{j=0}^{N-1} A[j] * omega^{ij} mod q, for each RNS
+  limb q_i independently (q_i prime, q_i = 1 mod 2N so a primitive 2N-th
+  root of unity omega exists mod q_i); Inverse (INTT) is the scaled
+  conjugate transform, INTT(NTT(A)) = A mod q_i exactly. N is a power of
+  two (this track's paper uses only N=2^16). A polynomial is represented in
+  RNS as L limbs, each an independent length-N vector mod its own q_i;
+  "batch" = number of limbs L processed together (Cheddar fuses all L limbs'
+  NTTs into one kernel launch) and, orthogonally, number of independent
+  ciphertexts/polynomials submitted together (not swept by this track's
+  paper — see survey.md Divergence 3).
+
+variants:
+  - id: ntt-kernel-isolated
+    claim: >
+      Steady-state throughput of a STANDALONE forward+inverse NTT pair
+      (INTT(NTT(x)) round trip, or NTT-only if reporting one direction),
+      decoupled from BConv/automorphism/elementwise ops it is normally
+      fused with in this track's own artifact. This variant does not exist
+      as a ready-to-run benchmark in Cheddar's repo as read; it requires
+      either disabling kernel fusion in Cheddar or invoking a library's raw
+      per-limb NTT device function directly. Included because the
+      instructions require this axis and because Cheddar's own Fig. 3b
+      shows the NTT component is a substantial, separately-optimized
+      (EOT: 1.16x) fraction of a fused kernel's time — isolating it is a
+      reasonable ask, not an invented one.
+    inputs:
+      polynomial_degree: "N in {2^12, 2^14, 2^16, 2^17}; N=2^16 is the only
+        value evaluated by this track's paper (Cheddar's sole parameter set,
+        `bootparam_40.json`: log_degree=16) and MUST be included; smaller/
+        larger N are this spec's own addition to give the requested degree
+        axis, since the source paper sweeps only modulus and limb count at
+        fixed N."
+      modulus_bit_width: "b in {30, 31, 32} (Cheddar's SMR primes, q_i in
+        [0, 2^31)) and b in {62, 64} (this track's baseline libraries'
+        native double-word RNS primes — Liberate.FHE/HEonGPU/Phantom, all
+        cited as Table 7 comparators). Both classes MUST be run at the same
+        polynomial degree N so throughput-per-bit-of-modulus is comparable."
+      batch_limbs: "L (number of RNS limbs run in one launch) in {12, 24,
+        48}; L=48 (dnum=4, alpha=12) is Cheddar's default parameter set and
+        L=24 is its reduced comparison point (Table 7); when comparing
+        against a 64-bit baseline at nominal limb count L_64, halve L_64 to
+        L_64/2 before comparing throughput at matched total modulus
+        bit-width — this is Cheddar's OWN normalization (\"we halved the
+        number of limbs and alpha for fair comparison\"), reproduced here
+        explicitly rather than left implicit."
+      batch_ciphertexts: "1 (single polynomial/ciphertext per launch, matching
+        every measurement in the source paper); a multi-ciphertext batch
+        sweep is NOT covered by this track's paper and is flagged as an
+        open question, not fabricated."
+      data: "uniform random coefficients in [0, q_i) per limb"
+    protocol:
+      warmup: 5 (Cheddar's own `unittest/BasicTest.cpp` warm_up constant)
+      reps: "run the isolated NTT/INTT call >=30 times after warmup and
+        report the distribution; Cheddar's own harness only times ONE
+        post-warmup call per test-binary invocation (see survey.md), so this
+        spec requires MORE repetitions per invocation than the source
+        artifact does, to actually get the median/min/max the paper claims
+        to report without relying on an unconfirmed external repeat-the-binary
+        harness"
+      statistic: median (report min/max)
+      timer: "device-side (CUDA events); the source artifact instead uses
+        std::chrono::high_resolution_clock bracketed by explicit
+        cudaDeviceSynchronize() calls immediately before/after — equivalent
+        in practice on a single stream, and reproduced here as an acceptable
+        alternative timer"
+      timing_scope: "NTT/INTT kernel(s) only; twiddle-factor generation is
+        IN scope if generated on-the-fly (Cheddar's EOT design explicitly
+        avoids a separate precomputed-table load, i.e. there is no
+        analogous 'plan creation' step to exclude); if an implementation
+        instead precomputes/loads a twiddle table, that load is reported
+        separately, once, analogous to preprocessing"
+      preprocessing_reported: "separately, once: any one-time root-of-unity /
+        twiddle-table precomputation for the (N, q_i) configuration"
+    metric: {primary: "GNTT-elements/s (N*L / time) and Melem/s per limb",
+      secondary: "us per (N,L) call"}
+    correctness: >
+      EXACT modular equality, not an epsilon tolerance: for every limb i,
+      INTT_i(NTT_i(x)) == x (mod q_i) bit-for-bit, AND NTT_i(x) matches a
+      reference NTT computed via an independent method (schoolbook O(N^2)
+      DFT mod q_i, or a big-integer/double-double floating-point DFT rounded
+      to the nearest residue) for at least one N per bit-width class. This
+      deliberately does NOT reuse Cheddar's own message-level tolerance
+      (max_error_ = 1e-3 in `Testbed.h`), which is a CKKS-approximation gate
+      for the FULL encrypt/op/decrypt/decode pipeline and could mask a small
+      but real NTT bug inside the FHE noise budget — see survey.md
+      Divergence 2.
+
+  - id: ntt-embedded-fhe-op
+    claim: >
+      Steady-state throughput of an elementary CKKS ciphertext op (HMult,
+      HRot, HAdd, or Rescale) that internally issues one or more NTT/INTT
+      calls as part of a fused INTT->BConv->NTT sequence — this is what
+      Cheddar's own Table 7 actually measures, reproduced here as the
+      track's real "kernel-only" number, with the NTT/BConv/other-component
+      time breakdown reported alongside (not hidden) per Cheddar's own
+      Fig. 3b practice.
+    inputs:
+      ring_dimension: "N = 2^16 (the only value in this track's paper)"
+      modulus_system: "Cheddar 32-bit SMR (q_i in [0, 2^31)) at L in {24,
+        48} limbs, alpha in {6, 12}; baseline 64-bit RNS libraries
+        (Liberate.FHE, HEonGPU, Phantom) at the same L (their native limb
+        count halved per Cheddar's own normalization, see
+        ntt-kernel-isolated.inputs.batch_limbs)"
+      operations: [HMult, HRot, HAdd, Rescale]
+      hardware: "RTX 4090 (Table 7's card); V100 / A100 40GB / A100 80GB /
+        H100 / RTX 5090 optionally, for the scaling story in Table 4/5/6"
+    protocol:
+      warmup: 5   # source artifact's `warm_up` constant, `BasicTest.cpp`
+      reps: ">=30 post-warmup calls per configuration (source artifact times
+        exactly 1 post-warmup call per binary invocation and reports a
+        cross-invocation 'median' whose repeat count N is not recoverable
+        from the reachable files — see survey.md open_questions; this spec
+        requires an explicit, disclosed rep count instead)"
+      statistic: >-
+        median (report min/max) — matches the paper's own stated statistic
+        (Table 7 reports median execution times), just with a disclosed rep count
+      timer: "device-side events (CUDA events) or host
+        std::chrono + explicit cudaDeviceSynchronize() bracketing (source
+        artifact's own method, `__ProfileStart`/`__ProfileEnd` macros in
+        `unittest/Testbed.h`)"
+      timing_scope: "the op kernel sequence only (INTT->BConv->NTT +
+        elementwise/automorphism as applicable); key/evaluation-key
+        generation and initial encryption are one-shot setup, excluded from
+        per-call time"
+      component_breakdown_required: "report the NTT-only, BConv-only,
+        Automorphism-only, Elementwise-only, and Memcpy/etc-only fractions
+        of the total (Cheddar's own Fig. 3b practice for HRot) — required
+        disclosure, not optional, since this is the only place an NTT-only
+        number can be recovered for a fused-kernel implementation"
+      preprocessing_reported: "separately, once: evaluation-key generation
+        time (needed for HMult/HRot specifically)"
+    metric: {primary: "operations/s (1/median time)", secondary: "us per op
+      call (matches Table 7's own unit)"}
+    correctness: >
+      message-level: decrypt+decode the op's output and compare to an
+      unencrypted reference computation of the same op on the same input
+      values; max abs error < 1e-3 per complex slot (Cheddar's own
+      `max_error_` constant in `Testbed.h`) — appropriate HERE because this
+      variant measures the full approximate-FHE op, not a bare NTT.
+
+notes_on_fairness:
+  - "No paper in this 1-paper track times bare NTT/INTT; ntt-kernel-isolated
+    is this spec's own construction (not extracted from any track paper's
+    reported number) built from what IS confirmed — Cheddar's parameter set
+    (N, limb counts, modulus bit-width) and its Fig. 3b NTT-specific
+    optimization ablation — plus the instructions' required axes. Anyone
+    submitting to this variant should expect to write a small standalone
+    harness, not find one pre-built in the cheddar-fhe repo."
+  - "ntt-kernel-isolated's correctness gate (exact modular equality) is
+    deliberately STRICTER than the source paper's own end-to-end message
+    tolerance (1e-3), because NTT/INTT over a prime field is exact
+    arithmetic and an epsilon gate at that layer would hide real bugs inside
+    the FHE noise budget — this is a fairness fix, not a reproduction of the
+    paper's practice (see survey.md Divergence 2)."
+  - "The 32-bit-vs-64-bit modulus comparison in ntt-embedded-fhe-op keeps
+    Cheddar's own normalization (halve the 64-bit baseline's limb count)
+    rather than inventing a different one, since that is the actual basis
+    for the paper's headline speedup claims and changing it would make this
+    spec's numbers incomparable to the paper's."
+
+open_questions:
+  - "The external harness that produces Table 7's 'median execution time'
+    from BasicTest.cpp's single-post-warmup-call-per-invocation design (repeat
+    count, whether the whole test binary is relaunched per sample) is not in
+    the files read this pass (only unittest/Testbed.h and BasicTest.cpp were
+    read; a possible driver script outside unittest/ was not located) —
+    ntt-embedded-fhe-op's rep count is this spec's own choice (>=30), not
+    copied from Cheddar's own (unrecovered) practice."
+  - "Fig. 3b's exact per-category (NTT vs BConv vs Automorphism vs
+    Elementwise vs Memcpy) numeric breakdown for the four optimization
+    stages (Base/+LR/+OT/+EOT) was only partially recoverable as OCR'd
+    axis/bar numbers from the extracted PDF text (values '200 203 184 175 /
+    136 72 71 70 / 212 212 204 196' without a confirmed row-to-category
+    mapping) — the QUALITATIVE claims (EOT gives NTT a 1.16x speedup, LR
+    gives BConv a 1.89x speedup) are used in this spec and survey.md, but no
+    absolute NTT-only microsecond number from Fig. 3b is asserted as fact."
+  - "Whether Cheddar's on-the-fly twiddle generation (EOT) changes the
+    correctness-relevant behavior of ntt-kernel-isolated's 'twiddle-table
+    precomputation, if any' protocol field for implementations that DO use a
+    precomputed table (e.g. the compared baseline libraries) was not
+    confirmed from their READMEs (not read this pass, out of the ~4-minute
+    budget for a singleton track) — flagged rather than assumed zero-cost."
+  - "No track paper addresses a genuinely mixed-radix or non-power-of-two N
+    for NTT (unlike the FFT track, which does cover mixed-radix cases via
+    FlashFFTStencil) — this spec's polynomial_degree axis is power-of-two
+    only, matching the one paper actually surveyed, and this is a real
+    coverage gap rather than an oversight."
+
+evidence:
+  conf/asplos/00150A26: "Cheddar: 32-bit SMR NTT/INTT+BConv fused kernels for
+    RNS-CKKS, N=2^16 fixed, L in {24,48} limbs (baselines' 64-bit limb count
+    halved for fair comparison), median us (Table 7) for HMult/HRot/HAdd/
+    Rescale vs Liberate.FHE/HEonGPU/Phantom on RTX 4090, plus whole-workload
+    (bts/HELR/ResNet-20/Sort) ms vs 100x/TensorFHE/HEaaN-GPU/WarpDrive/GME/
+    FAB/Poseidon/EFFACT across V100/A100/H100/RTX4090/RTX5090/MI100; message-
+    level correctness gate max_error_=1e-3 (Testbed.h); NTT never timed
+    standalone, only as a labeled slice of a fused-kernel breakdown (Fig.
+    3b) or folded into elementary-op/workload totals."

@@ -1,0 +1,273 @@
+kernel: graph-partitioning
+summary: >
+  Divide a graph's vertices into k balanced blocks while minimizing the
+  cut (sum of edge weights crossing block boundaries), measured as
+  wall-clock partitioning time with cut quality and achieved imbalance
+  reported jointly — a faster partitioner that produces a worse cut, or
+  that silently violates its own balance constraint, is not a win. The
+  track's two papers occupy almost disjoint (k, graph-scale, hardware)
+  regimes, so the spec keeps them as separate scale-regime variants rather
+  than forcing a single combined leaderboard, while anchoring both to the
+  one convention they already agree on (imbalance epsilon = 3%).
+operation: >
+  P[V] = Partition(A[V,V] adjacency (sparse, weighted or unweighted,
+  undirected), k, epsilon); output is a vertex-to-block-ID assignment
+  P: V -> {0, ..., k-1} such that (a) BALANCE: for every block p_i,
+  weight(p_i) <= (1+epsilon) * sum(weight(V)) / k, and (b) the CUT =
+  sum of weights of edges (u,v) with P(u) != P(v) is minimized subject to
+  (a). k and epsilon are caller-supplied parameters (unlike the
+  community-detection track, where the number of communities is
+  discovered rather than specified).
+
+variants:
+  - id: gp-kernel-small-k
+    claim: >
+      steady-state partitioning kernel time at G-kway's operating point —
+      small power-of-2 k, graphs in the low-tens-of-millions-of-edges
+      range — runnable on either a single GPU or a single CPU node, so
+      GPU- and CPU-based partitioners can be compared on shared public
+      instances instead of on disjoint hardware as the two surveyed papers
+      currently are
+    inputs:
+      suite: "public DIMACS10 Graph Partitioning Challenge instances, the only graphs in this track confirmed both public and used by a surveyed paper (G-kway); excludes G-kway's 6 industrial circuit-timing graphs, which are not confirmed publicly downloadable or regeneratable (see notes_on_fairness)"
+      selection: "DIMACS10 instances with 1e6 <= |E| <= 1e8, undirected, weighted or unweighted as distributed"
+      recommended_subset:
+        - "ldoor (DIMACS10, 952,203 v / 22,785,136 e, structural mesh) — matches G-kway's own instance exactly"
+        - "NLR (DIMACS10, 4,163,763 v / 12,487,976 e, road network) — matches G-kway's own instance exactly"
+        - "delaunay_n24 (DIMACS10, 16,777,216 v / 50,331,601 e, Delaunay triangulation) — matches G-kway's own instance exactly"
+        - "asia_osm (DIMACS10, 11,950,757 v / 12,711,603 e, road network) — matches G-kway's own instance exactly"
+        - "europe_osm (DIMACS10, ~50.9M v / 108M e, road network) — larger control instance for the top of this variant's range, also used by the bfs track's real-graph suite (benchspecs/bfs/spec.yaml) for cross-track hardware comparability"
+        - "road_usa (DIMACS10, ~23.9M v / 28.9M e, road network) — mid-size control instance"
+      dense_operand: "N/A"
+      k_values: "{2, 4, 8, 16, 32} — matches G-kway's own sweep exactly; all power-of-2"
+      imbalance_epsilon: "0.03 (3%) — the one convention both surveyed papers agree on exactly; do not deviate without disclosing why"
+      size_classes: "small: <5M vertices (ldoor); medium: 5-30M vertices (NLR, asia_osm, delaunay_n24, road_usa); large: >30M vertices (europe_osm)"
+    protocol:
+      format: "METIS/mt-metis-standard graph format (G-kway's own stated input convention) or CSR; graph load/parse NOT counted in per-run partitioning time (see gp-e2e-preprocessing for the included version)"
+      warmup: "1 discarded full partitioning run"
+      reps: "10 independent full runs per (graph, k) pair, EACH WITH A DIFFERENT, DISCLOSED RANDOM SEED — this is a deliberate fix to G-kway's own reported protocol, which states only 'average of ten runs' with no seed or variance disclosed anywhere in the paper (see notes_on_fairness); a submission that cannot vary its seed across reps must disclose that it is deterministic and why"
+      statistic: "median partitioning time; report min/max/stddev of BOTH time AND cut size across the 10 reps (TeraPart's own arithmetic-mean-across-seeds convention is adapted to median+spread here for consistency with this benchmark suite's general preference for median+min/max over a bare mean, per benchspecs/bfs/spec.yaml's stated rationale)"
+      timer: "device-side events (CUDA/HIP) for GPU implementations, wall-clock (std::chrono) for CPU implementations, wrapping the partitioning call only"
+      timing_scope: "coarsening + initial partitioning + uncoarsening/refinement only; graph load excluded and reported separately, once per graph instance"
+      preprocessing_reported: "separately, once per graph instance: graph load/parse time"
+      platform_disclosure: "REQUIRED: CPU thread count or GPU model, since this variant is explicitly designed to let CPU- and GPU-based partitioners be compared on the SAME instances for the first time across this track's two papers"
+      coarsening_threshold_disclosure: "REQUIRED: the coarsening-stop threshold used (both surveyed papers use |V|/(20*log2(k)), G-kway's and mt-metis's/GKSG's shared default) since this materially affects both time and quality"
+    metric:
+      primary: "median partitioning time (ms), across 10 reps"
+      secondary: "median cut size (both raw edge-weight-sum count and as % of total edge weight); achieved max block imbalance (%, must be <= epsilon, see correctness)"
+    correctness: >
+      BALANCE is a hard constraint, not a tolerance: any run whose maximum
+      block weight exceeds (1+epsilon)*sum(weight(V))/k is INVALID and its
+      cut/time numbers do not count, matching both papers' own definition
+      of the partitioning problem (this is a stricter, closed-form
+      analogue of the community-detection track's modularity quality gate,
+      since imbalance has an unambiguous pass/fail threshold where
+      modularity does not). CUT QUALITY is gated via performance profile,
+      not a fixed reference implementation (TeraPart's own convention,
+      adopted here rather than inventing a new one): for each (graph, k),
+      compute best_cut = min cut achieved by any implementation under test
+      on that instance; a submission's median cut must satisfy
+      cut_impl <= 1.10 * best_cut (10% of the best-known cut on that
+      instance) to count as a valid quality-competitive result; submissions
+      exceeding this must still report their number but are flagged as
+      quality-noncompetitive rather than silently ranked on speed alone.
+
+  - id: gp-kernel-large-k
+    claim: >
+      steady-state partitioning kernel time at TeraPart's operating
+      point — wide/irregular k up to tens of thousands, graphs from
+      hundreds of millions to trillions of edges — CPU/distributed-only,
+      since no GPU partitioner in this track (or known to the surveyed
+      literature) currently operates at this scale
+    inputs:
+      suite: "SuiteSparse Matrix Collection + Network Repository + LAW (Laboratory for Web Algorithmics) web graphs + KaGen-generated synthetic graphs, matching TeraPart's own two-tier Benchmark Set A/B split"
+      selection: >
+        medium tier: SuiteSparse/NetworkRepo graphs with 5e6 <= |E| <= 2e9
+        (TeraPart's own Benchmark-Set-A range; exact 72-graph list is
+        TeraPart's own and not fully enumerable from the fulltext excerpt
+        obtained — submitters MUST disclose their exact medium-tier list,
+        following this benchmark suite's general pattern for
+        submitter-disclosed subsets, e.g. benchspecs/bfs/spec.yaml's
+        bfs-reordering-cost RCM-matrix selection);
+        huge tier: the 5 named LAW web graphs below, fixed and
+        non-substitutable since they are individually named in TeraPart's
+        own paper
+      recommended_subset:
+        - "gsh-2015 (LAW webgraph, 25.7B edges) — matches TeraPart's own instance exactly"
+        - "clueweb12 (LAW webgraph, 37.4B edges) — matches TeraPart's own instance exactly"
+        - "uk-2014 (LAW webgraph, 42.5B edges) — matches TeraPart's own instance exactly"
+        - "eu-2015 (LAW webgraph, 80.5B edges) — matches TeraPart's own instance exactly"
+        - "hyperlink (LAW webgraph, 112.2B edges) — matches TeraPart's own instance exactly"
+        - "KaGen rgg2D (random geometric, 8.59B v / 1.10T e, generated with avg degree 256) — matches TeraPart's own generator+parameters exactly"
+        - "KaGen rhg (random hyperbolic, 8.59B v / 1.01T e, generated with avg degree 256, power-law exponent 3.0) — matches TeraPart's own generator+parameters exactly"
+      dense_operand: "N/A"
+      k_values: "{8, 37, 64, 91, 128, 1000, 30000} — matches TeraPart's own sweep exactly, deliberately including non-power-of-2 values (37, 91) to avoid convenient-case bias"
+      imbalance_epsilon: "0.03 (3%) — same fixed convention as gp-kernel-small-k"
+    protocol:
+      format: "compressed graph representation with on-the-fly decoding (TeraPart's own approach to keeping huge-tier graphs in memory) OR plain CSR for the medium tier; graph load/decompression excluded from per-run partitioning time, reported separately"
+      warmup: "1 discarded full partitioning run per (graph, k) pair actually completed (huge-tier + k=30000 combinations may be infeasible to warm up separately from the timed run given multi-minute runtimes — disclose if warmup is skipped for cost reasons)"
+      reps: "5 independent runs with different seeds for single-machine/shared-memory results, 3 for distributed-memory results — matches TeraPart's own repetition counts exactly"
+      statistic: "arithmetic mean of running time, peak memory, and cut size across seeds (TeraPart's own convention, kept as-is here rather than substituting median, since averaging across only 3-5 seeded reps at this scale is TeraPart's own deliberate choice and changing it would break direct comparability with the one paper that actually operates in this regime); harmonic mean for relative speedups; geometric mean for any aggregate cross-instance metric"
+      timer: "wall-clock (host-side), single-node and distributed"
+      timing_scope: "coarsening (parallel label-propagation clustering + graph contraction) + initial partitioning + uncoarsening/local-search refinement; graph load/decompression excluded and reported separately"
+      preprocessing_reported: "separately: graph load/decompression time; report the compression ratio achieved if a compressed representation is used (TeraPart's own practice, since decompression-on-the-fly speed at scale is itself a claim worth verifying independently of partitioning time)"
+      platform_disclosure: "REQUIRED: node count, cores/node, interconnect (if distributed); single-machine core count and RAM (if shared-memory)"
+    metric:
+      primary: "mean partitioning time (s), across the specified rep count"
+      secondary: "mean cut size (% of total edge weight); mean peak memory (GiB); performance-profile curve (fraction of instances with cut_impl <= tau * best_cut, swept over tau) across the full recommended_subset, TeraPart's own preferred cross-instance summary"
+    correctness: "same hard balance constraint as gp-kernel-small-k; same performance-profile cut-quality gate (cut_impl <= 1.10 * best_cut per instance), computed within this variant's own recommended_subset separately from gp-kernel-small-k's (the two regimes are not pooled into one performance-profile curve, since no instance or k value is shared between them)"
+
+  - id: gp-memory-scaling
+    claim: >
+      dedicated memory-efficiency measurement at the largest (graph, k)
+      each submitted implementation can complete within a fixed memory
+      budget — operationalizes TeraPart's own headline contribution (16x
+      peak-memory reduction at comparable quality/speed) as a first-class,
+      reportable variant instead of a claim buried in a single "under 8
+      minutes, 900 GiB" narrative, and gives any future memory-efficiency-
+      focused submission (in the spirit of HSSInfo in the
+      community-detection track, though no such paper currently exists in
+      THIS track) a variant that measures what it actually contributes
+    inputs:
+      suite: "gp-kernel-large-k's huge tier (5 LAW web graphs + 2 KaGen synthetic generators), since memory pressure is the entire point of testing at this scale; gp-kernel-small-k's suite may optionally be included for completeness but is not expected to be memory-bound"
+      selection: "same as gp-kernel-large-k huge tier"
+      recommended_subset: "same as gp-kernel-large-k huge tier"
+      dense_operand: "N/A"
+      k_values: "128 and 1000 (TeraPart's own mid-to-large k values, large enough to matter, small enough to complete across a range of implementations)"
+      imbalance_epsilon: "0.03 (3%)"
+    protocol:
+      format: "same as gp-kernel-large-k"
+      warmup: "none — memory measurement is taken from a single completed run, not averaged the way time is; report whether the run was cold-cache or preceded by a warmup"
+      reps: "3 (matching TeraPart's own distributed-experiment repetition count, since this variant targets the huge tier); report all 3 peak-memory numbers, not only the mean, since a single OOM-adjacent run is itself informative"
+      statistic: "arithmetic mean of peak memory across the 3 reps; report max (worst case) alongside, since the worst-case peak is what determines whether a run fits on a given machine at all"
+      timer: "N/A for the memory metric itself; time and cut size still reported per gp-kernel-large-k's protocol for cross-reference"
+      timing_scope: "N/A"
+      preprocessing_reported: "peak memory during graph load/decompression reported SEPARATELY from peak memory during partitioning proper — the two can have different peaks (e.g. a compressed on-disk format may decompress to a larger transient peak than the steady-state partitioning working set) and conflating them would hide exactly the kind of memory-engineering contribution this variant exists to surface"
+    metric:
+      primary: "mean peak memory during partitioning (GiB), across 3 reps; max peak memory across the 3 reps"
+      secondary: "cross-reference to gp-kernel-large-k's time and cut-size numbers on the same (graph, k) — a memory-efficient implementation that is dramatically slower or produces a much worse cut is not an unqualified win, same fairness principle as elsewhere in this benchmark suite"
+    correctness: "same hard balance constraint and cut-quality gate as gp-kernel-large-k, computed only over runs that completed without OOM; runs that OOM at a given (graph, k) are reported as a data point (infeasible at this memory budget) rather than silently excluded"
+
+  - id: gp-e2e-preprocessing
+    claim: >
+      end-to-end throughput including one-shot graph loading and
+      format/CSR construction; like community detection (and unlike BFS),
+      graph partitioning is inherently single-shot per (graph, k) input —
+      there is no repeated-query amortization argument — so this variant
+      reports ONE full run's total time rather than an amortized-over-k
+      number
+    inputs:
+      suite: "union of gp-kernel-small-k and gp-kernel-large-k recommended_subsets"
+      selection: "same as the two kernel-only variants, run at their respective native k ranges"
+      recommended_subset: "same lists as gp-kernel-small-k and gp-kernel-large-k"
+      dense_operand: "N/A"
+    protocol:
+      format: "raw edge list, Matrix Market, or METIS graph-file input; graph load + parse/format-build + (for the huge tier) decompression-setup is IN SCOPE and timed"
+      warmup: "1 (full end-to-end pipeline: load once, partition once, discarded)"
+      reps: "same rep count/seed-disclosure requirement as the corresponding kernel-only variant (10 for small-k instances, 5/3 for large-k instances), each rep re-running the FULL pipeline"
+      statistic: "total_time = load_time + partitioning_time; report both total_time AND load_time alone, never only the blended number"
+      timer: "wall-clock (host-side) around the full pipeline"
+      timing_scope: "load + parse/build + partitioning; the number a naive end-user timing `time ./partitioner graph.file k` would observe"
+      preprocessing_reported: "as part of total_time by construction, AND separately as its own standalone number"
+    metric:
+      primary: "total_time (median for small-k instances / mean for large-k instances, matching the corresponding kernel-only variant's statistic convention)"
+      secondary: "load_time (standalone); kernel-only time (cross-reference to gp-kernel-small-k or gp-kernel-large-k on the same instance)"
+    correctness: "same balance constraint and cut-quality gate as the corresponding kernel-only variant"
+
+notes_on_fairness:
+  - >
+    TeraPart and G-kway share almost no operating point: TeraPart never
+    tests k<=32, G-kway never tests k>32 or graphs within two orders of
+    magnitude of TeraPart's smallest "huge"-tier instance. Rather than
+    force a single combined ranking that would compare a single-GPU
+    circuit-timing-graph partitioner against a 128-node trillion-edge
+    partitioner (a comparison neither paper's own authors would consider
+    meaningful), the spec keeps gp-kernel-small-k and gp-kernel-large-k as
+    separate regimes, each internally coherent, and unifies them only
+    through the ONE shared convention both papers already use identically:
+    epsilon=3% imbalance.
+  - >
+    G-kway's own repeatability disclosure ("average of ten runs," no seed,
+    no variance anywhere in the paper) is the weakest of the two papers in
+    this track — contrast TeraPart's explicit 5-or-3 seeded reps with three
+    different, deliberately-chosen mean conventions. gp-kernel-small-k's
+    mandatory per-rep seed disclosure and min/max/stddev reporting directly
+    fixes this gap for future submissions rather than perpetuating G-kway's
+    own thinner protocol as the small-k default.
+  - >
+    Roughly half of G-kway's own benchmark suite (the 6 industrial
+    circuit-timing graphs) is not confirmed publicly downloadable or
+    regeneratable — no dataset release or generation script accompanies
+    the paper or artifact, only citations to the internal tools
+    (Taskflow, OpenTimer) that produced them. gp-kernel-small-k therefore
+    uses ONLY G-kway's other 4 graphs (all standard public DIMACS10
+    instances) plus 2 additional public DIMACS10 controls, rather than
+    including graphs a third party cannot actually obtain to reproduce a
+    submission.
+  - >
+    GKSG, one of G-kway's two baselines, is not open-source; G-kway's own
+    reported GKSG numbers are from the DAC'24 authors' own
+    reimplementation of GKSG's published algorithm, not a run of GKSG's
+    original authors' code. Any submission claiming to reproduce or beat
+    "GKSG's" numbers specifically (as opposed to G-kway's own numbers)
+    should disclose whether it is comparing against the original GKSG
+    paper's claims, G-kway's reimplementation, or its own
+    reimplementation — three potentially different baselines sharing one
+    name.
+  - >
+    TeraPart's performance-profile convention (fraction of instances with
+    cut within tau of the best across ALL tested algorithms on that
+    instance) is adopted as this spec's cut-quality gate mechanism in
+    preference to inventing a fixed-reference-implementation gate (the
+    approach used in the community-detection track's spec, where a single
+    trusted reference implementation's modularity is the anchor). Graph
+    partitioning's literature already has this convention as its
+    established fairness mechanism precisely because "best known cut for
+    this NP-hard instance" is itself a moving target across the field, so
+    re-deriving a fixed reference would be less faithful to the track's
+    own practice than adopting what TeraPart already does.
+
+open_questions:
+  - >
+    TeraPart's exact 72-graph medium-tier ("Benchmark Set A") list was not
+    enumerable from the arXiv HTML extraction obtained (the fulltext
+    described the tier's composition, size range, and sources but not
+    every graph name) — gp-kernel-large-k's medium-tier selection
+    criterion is stated but the exact list is left to the submitter to
+    disclose, following this benchmark suite's general pattern (see
+    benchspecs/bfs/spec.yaml's bfs-reordering-cost variant for precedent).
+    Revisit if the full PDF (rather than the HTML conversion) becomes
+    available and enumerates the list.
+  - >
+    Whether TeraPart's 72-graph medium tier or G-kway's 4 DIMACS10 graphs
+    overlap BY NAME was not confirmed (TeraPart's fulltext extraction
+    tagged its sources generically as "(D)" for DIMACS among others,
+    without a full name list) — if a specific overlap (e.g. both papers
+    happening to use the same DIMACS10 europe_osm or road_usa instance) is
+    later confirmed, that instance should be promoted to a required
+    control point tested identically by both scale-regime variants for a
+    direct, paper-to-paper apples-to-apples data point.
+  - >
+    No GPU partitioner in this track (or cited by either surveyed paper)
+    currently operates at TeraPart's scale (>1B edges, k>=1000), and no
+    CPU/distributed partitioner in this track was evaluated by its authors
+    at G-kway's fine-grained small-k circuit-graph scale. Whether this
+    reflects a genuine algorithmic/hardware limit (e.g. GPU memory ceiling
+    for graphs with 100B+ edges) or simply that neither paper's authors
+    tried the other regime could not be determined from the sources
+    surveyed, and would need a third data point (a paper or submission
+    that actually crosses regimes) to resolve.
+  - >
+    This track has only 2 papers, both agreeing on epsilon=3% and both
+    using a Metis-family baseline, but disagreeing on nearly everything
+    else (k range, hardware, dataset scale, quality-reporting units,
+    repeatability rigor). Whether a 3rd paper would land closer to
+    TeraPart's regime, G-kway's regime, or a genuinely new middle ground
+    (e.g. multi-GPU at TeraPart-adjacent scale) is unknown; the variant
+    structure above is designed to be extensible to a third regime without
+    forcing it into either existing variant, but this has not been
+    exercised against a real 3rd paper.
+
+evidence:
+  conf/ipps/SalwasserSG025: "k in {8,37,64,91,128,1000,30000}, epsilon=3%, 5 (shared-mem) or 3 (distributed) seeded reps, arithmetic/harmonic/geometric means for different quantities, cut-% + performance-profile quality metric, SuiteSparse/NetRepo/PizzaChili/synthetic medium tier (72 graphs, 5.4M-1.8B edges) + 5 named LAW web graphs (25.7B-112.2B edges) + KaGen synthetic (~1T edges), CPU/distributed only up to 128 nodes, full fulltext via arXiv:2410.19119 HTML"
+  conf/dac/LeeLHJHL024: "k in {2,4,8,16,32}, epsilon=3% (matches TeraPart exactly), 'average of ten runs' with NO seed or variance disclosed, raw cut-size-count quality metric, 6 undisclosed-provenance industrial circuit graphs + 4 public DIMACS10 graphs, single-GPU only (A6000), GKSG baseline is the DAC'24 authors' own reimplementation (GKSG itself not open-source), full fulltext via author-hosted PDF"

@@ -1,0 +1,477 @@
+[
+ {
+  "key": "conf/sc/AlabandiSBB23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "A GPU Algorithm for Detecting Strongly Connected Components",
+  "abstract": "Detecting strongly connected components (SCCs) is an important step in various graph computations. The fastest GPU and CPU implementations from the literature work well on graphs where most of the vertices belong to a single SCC and the vertex degrees follow a power-law distribution. However, these algorithms can be slow on the mesh graphs used in certain radiative transfer simulations, which have a nearly constant vertex degree and can have significant variability in the number and size of SCCs. We introduce ECL-SCC, an SCC detection algorithm that addresses these shortcomings. Our approach is GPU friendly and employs innovative techniques such as maximum ID propagation and edge removal. On an A100 GPU, ECL-SCC performs on par with the fastest prior GPU code on power-law graphs and outperforms it by 7.8× on mesh graphs. Moreover, ECL-SCC running on the GPU outperforms fast parallel CPU code by three orders of magnitude on meshes.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/FallinGSB23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "A High-Performance MST Implementation for GPUs",
+  "abstract": "Finding a minimum spanning tree (MST) is a fundamental graph algorithm with applications in many fields. This paper presents ECL-MST, a fast MST implementation designed specifically for GPUs. ECL-MST is based on a parallelization approach that unifies Kruskal's and Borůvka's algorithm and incorporates new and existing optimizations from the literature, including implicit path compression and edge-centric operation. On two test systems, it outperforms leading GPU and CPU codes from the literature on all of our 17 input graphs from various domains. On a Titan V GPU, ECL-MST is, on average, 4.6 times faster than the next fastest code, and on an RTX 3080 Ti GPU, it is 4.5 times faster. On both systems, ECL-MST running on the GPU is roughly 30 times faster than the fastest parallel CPU code.",
+  "hint_categories": [
+   "graph"
+  ]
+ },
+ {
+  "key": "conf/sc/WahlgrenSGP23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "A Quantitative Approach for Adopting Disaggregated Memory in HPC Systems",
+  "abstract": "Memory disaggregation has recently been adopted in data centers to improve resource utilization, motivated by cost and sustainability. Recent studies on large-scale HPC facilities have also highlighted memory underutilization. A promising and non-disruptive option for memory disaggregation is rack-scale memory pooling, where node-local memory is supplemented by shared memory pools. This work outlines the prospects and requirements for adoption and clarifies several misconceptions. We propose a quantitative method for dissecting application requirements on the memory system from the top down in three levels, moving from general, to multi-tier memory systems, and then to memory pooling. We provide a multi-level profiling tool and LBench to facilitate the quantitative approach. We evaluate a set of representative HPC workloads on an emulated platform. Our results show that prefetching activities can significantly influence memory traffic profiles. Interference in memory pooling has varied impacts on applications, depending on their access ratios to memory tiers and arithmetic intensities. Finally, in two case studies, we show the benefits of our findings at the application and system levels, achieving 50% reduction in remote access and 13% speedup in BFS, and reducing performance variation of co-located workloads in interference-aware job scheduling.",
+  "hint_categories": [
+   "graph",
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/sc/LuZSCZWYHY23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "ADT-FSE: A New Encoder for SZ",
+  "abstract": "SZ is a lossy floating-point data compressor that excels in compression ratio and throughput for high-performance computing (HPC), time series databases, and deep learning applications. However, SZ performs poorly for small chunks and has slow decompression. We pinpoint the Huffman tree in the quantization factor encoder as the bottleneck of SZ. In this paper, we propose ADT-FSE, a new quantization factor encoder for SZ. Based on the Gaussian distribution of quantization factors, we design an adaptive data transcoding (ADT) scheme to map quantization factors to codes for better compressibility, and then use finite state entropy (FSE) to compress the codes. Experiments show that ADT-FSE improves the quantization factor compression ratio, compression and decompression throughput by up to 5×, 2× and 8×, respectively, over the original SZ Huffman encoder. On average, SZ_ADT is over 2× faster than ZFP in decompression. Case studies of the TDengine time series database and HDF5 file store confirm that SZ_ADT significantly boosts user-perceived application performance. In addition, ADT-FSE makes the compression ratio prediction of SZ_ADT easy and accurate, and has the potential to dramatically reduce the area size of SZ hardware implementation.",
+  "hint_categories": [
+   "compression"
+  ]
+ },
+ {
+  "key": "conf/sc/WangPGTJTSD0FLC23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "AMRIC: A Novel In Situ Lossy Compression Framework for Efficient I/O in Adaptive Mesh Refinement Applications",
+  "abstract": "As supercomputers advance towards exascale capabilities, computational intensity increases significantly, and the volume of data requiring storage and transmission experiences exponential growth. Adaptive Mesh Refinement (AMR) has emerged as an effective solution to address these two challenges. Concurrently, error-bounded lossy compression is recognized as one of the most efficient approaches to tackle the latter issue. Despite their respective advantages, few attempts have been made to investigate how AMR and error-bounded lossy compression can function together. To this end, this study presents a novel in-situ lossy compression framework that employs the HDF5 filter to improve both I/O costs and boost compression quality for AMR applications. We implement our solution into the AMReX framework and evaluate on two real-world AMR applications, Nyx and WarpX, on the Summit supercomputer. Experiments with 4096 CPU cores demonstrate that AMRIC improves the compression ratio by up to 81× and the I/O performance by up to 39× over AMReX's original compression solution.",
+  "hint_categories": [
+   "unstructured_amr",
+   "compression"
+  ]
+ },
+ {
+  "key": "conf/sc/LiWBWXLWFSHC23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "ANT-MOC: Scalable Neutral Particle Transport Using 3D Method of Characteristics on Multi-GPU Systems",
+  "abstract": "The Method Of Characteristic (MOC) to solve the Neutron Transport Equation (NTE) is the core of full-core simulation for reactors. High resolution is enabled by discretizing the NTE through massive tracks to traverse the 3D reactor geometry. However, the 3D full-core simulation is prohibitively expensive because of the high memory consumption and the severe load imbalance. To deal with these challenges, we develop ANT-MOC1. Specifically, we build a performance model for memory footprint, computation and communication, based on which a track management strategy is proposed to overcome the resolution bottlenecks caused by limited GPU memory. Furthermore, we implement a novel multi-level load mapping strategy to ensure load balancing among nodes, GPUs, and CUs. ANT-MOC enables a 3D full-core reactor simulation with 100 billion tracks on 16,000 GPUs, with 70.69% and 89.38% parallel efficiency for strong scalability and weak scalability, respectively.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/PauloskiHWHSBCF23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Accelerating Communications in Federated Applications with Transparent Object Proxies",
+  "abstract": "Advances in networks, accelerators, and cloud services encourage programmers to reconsider where to compute---such as when fast networks make it cost-effective to compute on remote accelerators despite added latency. Workflow and cloud-hosted serverless computing frameworks can manage multi-step computations spanning federated collections of cloud, high-performance computing (HPC), and edge systems, but passing data among computational steps via cloud storage can incur high costs. Here, we overcome this obstacle with a new programming paradigm that decouples control flow from data flow by extending the pass-by-reference model to distributed applications. We describe ProxyStore, a system that implements this paradigm by providing object proxies that act as wide-area object references with just-in-time resolution. This proxy model enables data producers to communicate data unilaterally, transparently, and efficiently to both local and remote consumers. We demonstrate the benefits of this model with synthetic benchmarks and real-world scientific applications, running across various computing platforms.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/XiaoSCWPLMT23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Adaptive Workload-Balanced Scheduling Strategy for Global Ocean Data Assimilation on Massive GPUs",
+  "abstract": "Global ocean data assimilation is a crucial technique to estimate the actual oceanic state by combining numerical model outcomes and observation data, which is widely used in climate research. Due to the imbalanced distribution of observation data in global ocean, the parallel efficiency of recent methods suffers from workload imbalance. When massive GPUs are applied for global ocean data assimilation, the workload imbalance becomes more severe, resulting in poor scalability. In this work, we propose a novel adaptive workload-balance scheduling strategy, Bassimilation, which successfully estimates the total workload prior to execution and ensures a balanced workload assignment. Further, we design a parallel dynamic programming approach to accelerate the schedule decision, and develop a factored dataflow to exploit the parallel potential of GPUs. Evaluation demonstrates that our algorithm outperforms the state-of-the-art method by up to 9.1× speedup. This work is the first to scale global ocean data assimilation to 4, 000 GPUs.",
+  "hint_categories": [
+   "stencil_pde"
+  ]
+ },
+ {
+  "key": "conf/sc/HutterS23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Application Performance Modeling via Tensor Completion",
+  "abstract": "Performance tuning, software/hardware co-design, and job scheduling are among the many tasks that rely on models to predict application performance. We propose and evaluate low-rank tensor decomposition for modeling application performance. We discretize the input and configuration domains of an application using regular grids. Application execution times mapped within grid-cells are averaged and represented by tensor elements. We show that low-rank canonical-polyadic (CP) tensor decomposition is effective in approximating these tensors. We further show that this decomposition enables accurate extrapolation of unobserved regions of an application's parameter space. We then employ tensor completion to optimize a CP decomposition given a sparse set of observed execution times. We consider alternative piecewise/grid-based models and supervised learning models for six applications and demonstrate that CP decomposition optimized using tensor completion offers higher prediction accuracy and memory-efficiency for high-dimensional performance modeling.",
+  "hint_categories": [
+   "tensor"
+  ]
+ },
+ {
+  "key": "conf/sc/TeixeiraHYA23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Automated Mapping of Task-Based Programs onto Distributed and Heterogeneous Machines",
+  "abstract": "In a parallel and distributed application, a mapping is a selection of a processor for each computation or task and memories for the data collections that each task accesses. Finding high-performance mappings is challenging, particularly on heterogeneous hardware with multiple choices for processors and memories. We show that fast mappings are sensitive to the machine, application, and input. Porting to a new machine, modifying the application, or using a different input size may necessitate re-tuning the mapping to maintain the best possible performance.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/Fu0YSLG23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "BLAD: Adaptive Load Balanced Scheduling and Operator Overlap Pipeline For Accelerating The Dynamic GNN Training",
+  "abstract": "Dynamic graph networks are widely used for learning time-evolving graphs, but prior work on training these networks is inefficient due to communication overhead, long synchronization, and poor resource usage. Our investigation shows that communication and synchronization can be reduced by carefully scheduling the workload. And the execution order of operators in GNNs can be adjusted without hurting training convergence. We propose a system called BLAD to consider the above factors, comprising a two-level load scheduler and an overlap-aware topology manager. The scheduler allocates each snapshot group to a GPU, alleviating cross-GPU communication. The snapshots in a group are then carefully allocated to processes on a GPU, enabling overlap of compute-intensive NN operators and memory-intensive graph operators. The topology manager adjusts the operators' execution order to maximize the overlap. Experiments show that BLAD achieves 27.2% speed up on training time on average without affecting final accuracy, compared to state-of-the-art solutions.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/sc/MiyoshiAOMTHTNS23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Big Data Assimilation: Real-time 30-second-refresh Heavy Rain Forecast Using Fugaku During Tokyo Olympics and Paralympics",
+  "abstract": "Real-time 30-second-refresh numerical weather prediction (NWP) was performed with exclusive use of 11,580 nodes (~7%) of supercomputer Fugaku during Tokyo Olympics and Paralympics in 2021. Total 75,248 forecasts were disseminated in the 1-month period mostly stably with time-to-solution less than 3 minutes for 30-minute forecast. Japan's Big Data Assimilation (BDA) project developed the novel NWP system for precise prediction of hazardous rains toward solving the global climate crisis. Compared with typical 1-hour-refresh systems, the BDA system offered two orders of magnitude increase in problem size and revealed the effectiveness of 30-second refresh for highly nonlinear, rapidly evolving convective rains. To achieve the required time-to-solution for real-time 30-second refresh with high accuracy, the core BDA software incorporated single precision and enhanced parallel I/O with properly selected configurations of 1000 ensemble members and 500-m-mesh weather model. The massively parallel, I/O intensive real-time BDA computation demonstrated a promising future direction.",
+  "hint_categories": [
+   "stencil_pde"
+  ]
+ },
+ {
+  "key": "conf/sc/FeeneyLBC23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Breaking Boundaries: Distributed Domain Decomposition with Scalable Physics-Informed Neural PDE Solvers",
+  "abstract": "Mosaic Flow is a novel domain decomposition method designed to scale physics-informed neural PDE solvers to large domains. Its unique approach leverages pre-trained networks on small domains to solve partial differential equations on large domains purely through inference, resulting in high reusability. This paper presents an end-to-end parallelization of Mosaic Flow, combining data parallel training and domain parallelism for inference on large-scale problems. By optimizing the network architecture and data parallel training, we significantly reduce the training time for learning the Laplacian operator to minutes on 32 GPUs. Moreover, our distributed domain decomposition algorithm enables scalable inferences for solving the Laplace equation on domains 4096× larger than the training domain, demonstrating strong scaling while maintaining accuracy on 32 GPUs. The reusability of Mosaic Flow, combined with the improved performance achieved through the distributed-memory algorithms, makes it a promising tool for modeling complex physical phenomena and accelerating scientific discovery.",
+  "hint_categories": [
+   "stencil_pde",
+   "solver_components"
+  ]
+ },
+ {
+  "key": "conf/sc/TrotterELTDIU23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Bringing Order to Sparsity: A Sparse Matrix Reordering Study on Multicore CPUs",
+  "abstract": "Many real-world computations involve sparse data structures in the form of sparse matrices. A common strategy for optimizing sparse matrix operations is to reorder a matrix to improve data locality. However, it's not always clear whether reordering will provide benefits over the unordered matrix, as its effectiveness depends on several factors, such as structural features of the matrix, the reordering algorithm and the hardware that is used. This paper aims to establish the relationship between matrix reordering algorithms and the performance of sparse matrix operations. We thoroughly evaluate six different matrix reordering algorithms on 490 matrices across eight multicore architectures, focusing on the commonly used sparse matrix-vector multiplication (SpMV) kernel. We find that reordering based on graph partitioning provides better SpMV performance than the alternatives for a large majority of matrices, and that the resulting performance is explained through a combination of data locality and load balancing concerns.",
+  "hint_categories": [
+   "dense_la",
+   "sparse_la"
+  ]
+ },
+ {
+  "key": "conf/sc/IsaevMDV23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Calculon: a methodology and tool for high-level co-design of systems and large language models",
+  "abstract": "This paper presents a parameterized analytical performance model of transformer-based Large Language Models (LLMs) for guiding high-level algorithm-architecture codesign studies. This model derives from an extensive survey of performance optimizations that have been proposed for the training and inference of LLMs; the model's parameters capture application characteristics, the hardware system, and the space of implementation strategies. With such a model, we can systematically explore a joint space of hardware and software configurations to identify optimal system designs under given constraints, like the total amount of system memory. We implemented this model and methodology in a Python-based open-source tool called Calculon. Using it, we identified novel system designs that look significantly different from current inference and training systems, showing quantitatively the estimated potential to achieve higher efficiency, lower cost, and better scalability.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/sc/LiuAVB23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Choosing the Best Parallelization and Implementation Styles for Graph Analytics Codes: Lessons Learned from 1106 Programs",
+  "abstract": "Graph analytics has become a major workload in recent years. The underlying core algorithms tend to be irregular and data dependent, making them challenging to parallelize. Yet, these algorithms can be implemented and parallelized in many ways for CPUs and even more ways for GPUs. We took 6 key graph algorithms and created hundreds of CUDA, OpenMP, and parallel C++ versions of each of them, most of which have never been described or studied. To determine which parallelization and implementation styles work well and under what circumstances, we evaluated the resulting 1106 programs on 2 GPUs and 2 CPUs using 5 input graphs. Our results show which styles and combinations perform well and which ones should be avoided. We found that choosing the wrong implementation style can yield over a 10× slowdown on average. The worst combinations of styles can cost 6 orders of magnitude in performance.",
+  "hint_categories": [
+   "graph"
+  ]
+ },
+ {
+  "key": "conf/sc/LiSGT23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Clover: Toward Sustainable AI with Carbon-Aware Machine Learning Inference Service",
+  "abstract": "This paper presents a solution to the challenge of mitigating carbon emissions from hosting large-scale machine learning (ML) inference services. ML inference is critical to modern technology products, but it is also a significant contributor to carbon footprint. We introduce, Clover, a carbon-friendly ML inference service runtime system that balances performance, accuracy, and carbon emissions through mixed-quality models and GPU resource partitioning. Our experimental results demonstrate that Clover is effective in substantially reducing carbon emissions while maintaining high accuracy and meeting service level agreement (SLA) targets.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/JiangLZLHSRZRHA23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Co-design Hardware and Algorithm for Vector Search",
+  "abstract": "Vector search has emerged as the foundation for large-scale information retrieval and machine learning systems, with search engines like Google and Bing processing tens of thousands of queries per second on petabyte-scale document datasets by evaluating vector similarities between encoded query texts and web documents. As performance demands for vector search systems surge, accelerated hardware offers a promising solution in the post-Moore's Law era. We introduce FANNS, an end-to-end and scalable vector search framework on FPGAs. Given a user-provided recall requirement on a dataset and a hardware resource budget, FANNS automatically co-designs hardware and algorithm, subsequently generating the corresponding accelerator. The framework also supports scale-out by incorporating a hardware TCP/IP stack in the accelerator. FANNS attains up to 23.0× and 37.2× speedup compared to FPGA and CPU baselines, respectively, and demonstrates superior scalability to GPUs, achieving 5.5× and 7.6× speedup in median and 95th percentile (P95) latency within an eight-accelerator configuration. The remarkable performance of FANNS lays a robust groundwork for future FPGA integration in data centers and AI supercomputers.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/Lu023",
+  "venue": "SC",
+  "year": 2023,
+  "title": "DASP: Specific Dense Matrix Multiply-Accumulate Units Accelerated General Sparse Matrix-Vector Multiplication",
+  "abstract": "Sparse matrix-vector multiplication (SpMV) plays a key role in computational science and engineering, graph processing, and machine learning applications. Much work on SpMV was devoted to resolving problems such as random access to the vector x and unbalanced load. However, we have experimentally found that the computation of inner products still occupies much overhead in the SpMV operation, which has been largely ignored in existing work.",
+  "hint_categories": [
+   "dense_la",
+   "sparse_la",
+   "graph"
+  ]
+ },
+ {
+  "key": "conf/sc/Islam023",
+  "venue": "SC",
+  "year": 2023,
+  "title": "DGAP: Efficient Dynamic Graph Analysis on Persistent Memory",
+  "abstract": "Dynamic graphs, featuring continuously updated vertices and edges, have grown in importance for numerous real-world applications. To accommodate this, graph frameworks, particularly their internal data structures, must support both persistent graph updates and rapid graph analysis simultaneously, leading to complex designs to orchestrate 'fast but volatile' and 'persistent but slow' storage devices. Emerging persistent memory technologies, such as Optane DCPMM, offer a promising alternative to simplify the designs by providing data persistence, low latency, and high IOPS together. In light of this, we propose DGAP, a framework for efficient dynamic graph analysis on persistent memory. Unlike traditional dynamic graph frameworks, which combine multiple graph data structures (e.g., edge list or adjacency list) to achieve the required performance, DGAP utilizes a single mutable Compressed Sparse Row (CSR) graph structure with new designs for persistent memory to construct the framework. Specifically, DGAP introduces a per-section edge log to reduce write amplification on persistent memory; a per-thread undo log to enable high-performance, crash-consistent rebalancing operations; and a data placement schema to minimize in-place updates on persistent memory. Our extensive evaluation results demonstrate that DGAP can achieve up to 3.2× better graph update performance and up to 3.77× better graph analysis performance compared to state-of-the-art dynamic graph frameworks for persistent memory, such as XPGraph, LLAMA, and GraphOne.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/HeH0TL23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Demystifying and Mitigating Cross-Layer Deficiencies of Soft Error Protection in Instruction Duplication",
+  "abstract": "Soft errors are prevalent in modern High-Performance Computing (HPC) systems, resulting in silent data corruptions (SDCs), compromising system reliability. Instruction duplication is a widely used software-based protection technique against SDCs. Existing instruction duplication techniques are mostly implemented at LLVM level and may suffer from low SDC coverage at assembly level. In this paper, we evaluate instruction duplication at both LLVM and assembly levels. Our study shows that existing instruction duplication techniques have protection deficiency at assembly level and are usually over-optimistic in the protection. We investigate the root-causes of the protection deficiency and propose a mitigation technique, Flowery, to solve the problem. Our evaluation shows that Flowery can effectively protect programs from SDCs evaluated at assembly level.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/ZhouZSKP23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "DistTGL: Distributed Memory-Based Temporal Graph Neural Network Training",
+  "abstract": "Memory-based Temporal Graph Neural Networks are powerful tools in dynamic graph representation learning and have demonstrated superior performance in many real-world applications. However, their node memory favors smaller batch sizes to capture more dependencies in graph events and needs to be maintained synchronously across all trainers. As a result, existing frameworks suffer from accuracy loss when scaling to multiple GPUs. Even worse, the tremendous overhead of synchronizing the node memory makes it impractical to deploy the solution in GPU clusters. In this work, we propose DistTGL --- an efficient and scalable solution to train memory-based TGNNs on distributed GPU clusters. DistTGL has three improvements over existing solutions: an enhanced TGNN model, a novel training algorithm, and an optimized system. In experiments, DistTGL achieves near-linear convergence speedup, outperforming the state-of-the-art single-machine method by 14.5% in accuracy and 10.17× in training throughput.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/sc/LiXYSZRLJLLLQ23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "EasyScale: Elastic Training with Consistent Accuracy and Improved Utilization on GPUs",
+  "abstract": "Distributed synchronized GPU training is commonly used for deep learning. The resource constraint of using a fixed number of GPUs makes large-scale training jobs suffer from long queuing time for resource allocation, and lowers the cluster utilization. Adapting to resource elasticity can alleviate this but often introduces inconsistent model accuracy, due to lacking of capability to decouple model training procedure from resource allocation. We propose EasyScale, an elastic training system that achieves consistent model accuracy under resource elasticity for both homogeneous and heterogeneous GPUs. EasyScale preserves the data-parallel training behaviors strictly, traces the consistency-relevant factors carefully, utilizes the deep learning characteristics for EasyScaleThread abstraction and fast context-switching. To utilize heterogeneous cluster, EasyScale dynamically assigns workers based on the intra-/inter-job schedulers, minimizing load imbalance and maximizing aggregated job throughput. Deployed in an online serving cluster, EasyScale powers the training jobs to utilize idle GPUs opportunistically, improving overall cluster utilization by 62.1%.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/PanHLZWC23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Efficient Maximal Biclique Enumeration on GPUs",
+  "abstract": "Maximal biclique enumeration (MBE) in bipartite graphs is an important problem in data mining with many real-world applications. All existing solutions for MBE are designed for CPUs. Parallel MBE algorithms for GPUs are needed for MBE acceleration leveraging its many computing cores. However, enumerating maximal bicliques using GPUs has three main challenges including large memory requirement, thread divergence, and load imbalance. In this paper, we propose GMBE, the first highly-efficient GPU solution for the MBE problem. To overcome the challenges, we design a node-reuse approach to reduce GPU memory usage, a pro-active pruning method using the vertex's local neighborhood size to alleviate thread divergence, and a load-aware task scheduling framework to achieve load balance among threads within GPU warps and blocks. Our experimental results show that GMBE on an NVIDIA A100 GPU can achieve 70.6× speedup over the state-of-the-art parallel MBE algorithm ParMBE on a 96-core CPU machine.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/DuanWGMGLFXCYL23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Enabling Real World Scale Structural Superlubricity All-Atom Simulation on the Next-Generation Sunway Supercomputer",
+  "abstract": "Molecular dynamics (MD) simulation can provide an affordable way for inspecting microscopic phenomena, which is a powerful complement to real-world experiments. But the spatial scale of MD simulations is usually magnitudes smaller than experiment systems. In this paper, we present our work, redesigning the widely used inter-layer potential in structural superlubricity. By carrying out a specialized neighbor list for inter-layer potential computation, the total memory access amount is reduced significantly. Besides, a simple but efficient vectorization strategy is implemented based on the new neighbor list. In the extreme case, our work can scale to 38 million cores to achieve a sustainable performance of 61 PFLOPS, enabling a simulation of a superlubricity system of 32 μm2 with 7.2 billion atoms at 4.75 ns/day, which is 11,834 times of reported largest scale simulation in superlubricity systems in contact area and almost ten times faster in time-to-solution. Furthermore, we have done a simulation at 9 μm2 which results in consistency with real-world experiments and verified some theoretical predictions in the mesoscopic scale.",
+  "hint_categories": [
+   "nbody_md"
+  ]
+ },
+ {
+  "key": "conf/sc/LiZGSLTJYW23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Enhance the Strong Scaling of LAMMPS on Fugaku",
+  "abstract": "Physical phenomenon such as protein folding requires simulation up to microseconds of physical time, which directly corresponds to the strong scaling of molecular dynamics(MD) on modern supercomputers. In this paper, we present a highly scalable implementation of the state-of-the-art MD code LAMMPS on Fugaku by exploiting the 6D mesh/torus topology of the TofuD network. Based on our detailed analysis of the MD communication pattern, we first adapt coarse-grained peer-to-peer ghost-region communication with uTofu interface, then further improve the scalability via fine-grained thread pool. Finally, Remote direct memory access (RDMA) primitives are utilized to avoid buffer overhead. Numerical results show that our optimized code can reduce 77% of the communication time, improving the performance of baseline LAMMPS by a factor of 2.9x and 2.2x for Lennard-Jones and embedded-atom method potentials when scaling to 36, 846 computing nodes. Our optimization techniques can also benefit other applications with stencil or domain decomposition methods.",
+  "hint_categories": [
+   "stencil_pde",
+   "nbody_md",
+   "solver_components"
+  ]
+ },
+ {
+  "key": "conf/sc/RoychowdhuryMMB23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Enhancing Adaptive Physics Refinement Simulations Through the Addition of Realistic Red Blood Cell Counts",
+  "abstract": "Simulations of cancer cell transport require accurately modeling mm-scale and longer trajectories through a circulatory system containing trillions of deformable red blood cells, whose intercellular interactions require submicron fidelity. Using a hybrid CPU-GPU approach, we extend the advanced physics refinement (APR) method to couple a finely-resolved region of explicitly-modeled red blood cells to a coarsely-resolved bulk fluid domain. We further develop algorithms that: capture the dynamics at the interface of differing viscosities, maintain hematocrit within the cell-filled volume, and move the finely-resolved region and encapsulated cells while tracking an individual cancer cell. Comparison to a fully-resolved fluid-structure interaction model is presented for verification. Finally, we use the advanced APR method to simulate cancer cell transport over a mm-scale distance while maintaining a local region of RBCs, using a fraction of the computational power required to run a fully-resolved model.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/HuangCZHGAZHWCL23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Establishing a Modeling System in 3-km Horizontal Resolution for Global Atmospheric Circulation triggered by Submarine Volcanic Eruptions with 400 Billion Smoothed Particle Hydrodynamics",
+  "abstract": "People are increasingly concerned about how tectonic processes affect climate and vice versa. We establish a cross-sphere modeling system for volcanic eruptions and atmosphere circulation on a new Sunway supercomputer with a spatial resolution from 10m locally to 3km globally, using an improved multimedium and multiphase smoothed particle hydrodynamics (SPH) combined with a fully coupled meteorology-chemistry global atmospheric modeling scheme. We achieve 400 billion particles and 80% parallel efficiency using 39,000,000 processor cores. The simulation captures the whole dynamic process of the Tonga eruption from shock waves, earthquakes, tsunamis, mushroom clouds to the following 6--7 days of transport and diffusion of ash and water vapor, and preliminarily obtains the influence effect of full coupling of volcano, earthquake, ocean and atmosphere. This work is of great significance for deeply understanding the interaction between tectonic processes and climate change, and establishing an early warning simulation system for similar global hazard events.",
+  "hint_categories": [
+   "stencil_pde"
+  ]
+ },
+ {
+  "key": "conf/sc/MerzariH0MFKFRL23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Exascale Multiphysics Nuclear Reactor Simulations for Advanced Designs",
+  "abstract": "ENRICO is a coupled application developed under the U.S. Department of Energy's Exascale Computing Project (ECP) targeting the modeling of advanced nuclear reactors. It couples radiation transport with heat and fluid simulation, including the high-fidelity, highresolution Monte-Carlo code Shift and the Computational fluid dynamics code NekRS. NekRS is a highly-performant open-source code for simulation of incompressible and low-Mach fluid flow, heat transfer, and combustion with a particular focus on turbulent flows in complex domains. It is based on rapidly convergent high-order spectral element discretizations that feature minimal numerical dissipation and dispersion. State-of-the-art multilevel preconditioners, efficient high-order time-splitting methods, and runtime-adaptive communication strategies are built on a fast OCCA-based kernel library, libParanumal, to provide scalability and portability across the spectrum of current and future high-performance computing platforms. On Frontier, Nek5000/RS has recently achieved an unprecedented milestone in breaching over 1 billion spectral elements and 350 billion degrees of freedom. Shift has demonstrated the capability to transport upwards of 1 billion particles per second in full core nuclear reactor simulations featuring complete temperature-dependent, continuous-energy physics on Frontier. Shift achieved a weak-scaling efficiency of 97.8% on 8192 nodes of Frontier and calculated 6 reactions in 214,896 fuel pin regions below 1% statistical error yielding first-of-a-kind resolution for a Monte Carlo transport application.",
+  "hint_categories": [
+   "stencil_pde"
+  ]
+ },
+ {
+  "key": "conf/sc/JanssonKPMJLPLW23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Exploring the Ultimate Regime of Turbulent Rayleigh-Bénard Convection Through Unprecedented Spectral-Element Simulations",
+  "abstract": "We detail our developments in the high-fidelity spectral-element code Neko that are essential for unprecedented large-scale direct numerical simulations of fully developed turbulence. Major innovations are modular multi-backend design enabling performance portability across a wide range of GPUs and CPUs, a GPU-optimized preconditioner with task overlapping for the pressure-Poisson equation and in-situ data compression. We carry out initial runs of Rayleigh-Bénard Convection (RBC) at extreme scale on the LUMI and Leonardo supercomputers. We show how Neko is able to strongly scale to 16,384 GPUs and obtain results that are not possible without careful consideration and optimization of the entire simulation workflow. These developments in Neko will help resolving the long-standing question regarding the ultimate regime in RBC.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/WuGGBHLLH23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "FASDA: An FPGA-Aided, Scalable and Distributed Accelerator for Range-Limited Molecular Dynamics",
+  "abstract": "Conducting long-timescale simulations of small molecules using Molecular Dynamics (MD) is crucial in drug design. However, traditional methods to accelerate the process, including ASICs or GPUs, have limitations. ASIC solutions are not always generally available, while GPU solutions may not scale when processing small molecules. FPGAs are both communication processors and accelerators, with tight coupling between these capabilities, and so could be used to address strong scaling in this domain.",
+  "hint_categories": [
+   "nbody_md"
+  ]
+ },
+ {
+  "key": "conf/sc/LiCSBMLGWS23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "FISCO-BCOS: An Enterprise-grade Permissioned Blockchain System with High-performance",
+  "abstract": "Enterprise-grade permissioned blockchain systems provide a promising infrastructure for data sharing and cooperation between different companies. However, performance bottlenecks seriously hinder the adoption of these systems in many industrial applications that process complex business logic and huge transaction volumes. Our research identifies two key factors that limit the system performance: 1) At the block level, the serial dependency of inter-block processing severely limits the system throughput. A new block must wait for the completion of all previous blocks. 2) At the transaction level, the lack of efficient intra-block transactions concurrency makes it difficult to achieve high performance, especially when dealing with multiple CPU-heavy contracts which are commonly used in industrial scenarios.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/ShiZWCZHYC23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "GraphSet: High Performance Graph Mining through Equivalent Set Transformations",
+  "abstract": "Graph mining is of critical use in a number of fields such as social networks, knowledge graphs, and fraud detection. As an NP-complete problem, accelerating computation performance is the main target for current optimizations. Due to excellent performance, state-of-the-art graph mining systems mainly rely on pattern-aware algorithms. Despite previous efforts, complex control flows introduced by pattern-aware algorithms bring significant overhead and also impede further acceleration on heterogeneous hardware.",
+  "hint_categories": [
+   "graph"
+  ]
+ },
+ {
+  "key": "conf/sc/ChrapekKH23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "HEAR: Homomorphically Encrypted Allreduce",
+  "abstract": "Allreduce is one of the most commonly used collective operations. Its latency and bandwidth can be improved by offloading the calculations to the network. However, no way exists to conduct such offloading securely; in state-of-the-art solutions, the data is passed unprotected into the network. Security is a significant concern for High-Performance Computing applications, but achieving it while maintaining performance remains challenging. We present HEAR, the first high-performance system for securing in-network compute and Allreduce operations based on homomorphic encryption. HEAR implements carefully designed and modified encryption schemes for the most common Allreduce functions and leverages communication domain knowledge in MPI programs to obtain decryption and encryption routines with high performance. HEAR operates on integers and floats with no code base and no or little hardware changes. We design and evaluate HEAR, showing its minimal overhead, and open-source our implementation. HEAR represents the first step towards achieving confidential HPC.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/FinkPGM23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "HPAC-Offload: Accelerating HPC Applications with Portable Approximate Computing on the GPU",
+  "abstract": "The end of Dennard scaling and the slowdown of Moore's law led to a shift in technology trends towards parallel architectures, particularly in HPC systems. To continue providing performance benefits, HPC should embrace Approximate Computing (AC), which trades application quality loss for improved performance. However, existing AC techniques have not been extensively applied and evaluated in state-of-the-art hardware architectures such as GPUs, the primary execution vehicle for HPC applications today.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/LiuCZ023",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Hanayo: Harnessing Wave-like Pipeline Parallelism for Enhanced Large Model Training Efficiency",
+  "abstract": "Large-scale language models have become increasingly challenging and expensive to train. Among various methods addressing this issue, Pipeline Parallelism has been widely employed to accommodate massive model weights within limited GPU memory. This paper introduces Hanayo, a wave-like pipeline parallelism strategy that boasts a concise structure and practical applicability, alongside a high-performance pipeline execution runtime to tackle the challenges of pipeline strategy implementation. Hanayo mitigates the issues of pipeline bubbles and excessive memory consumption prevalent in existing schemes, without resorting to model duplicates as in Chimera. Our evaluation, conducted on four distinct computing clusters and involving both GPT-like and BERT-like architectures with up to 32 GPUs, demonstrates up to a 30.4 % increase in throughput compared to the state-of-the-art approach.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/MeyerSCRR23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "High Throughput Training of Deep Surrogates from Large Ensemble Runs",
+  "abstract": "Recent years have seen a surge in deep learning approaches to accelerate numerical solvers, which provide faithful but computationally intensive simulations of the physical world. These deep surrogates are generally trained in a supervised manner from limited amounts of data slowly generated by the same solver they intend to accelerate. We propose an open-source framework that enables the online training of these models from a large ensemble run of simulations. It leverages multiple levels of parallelism to generate rich datasets. The framework avoids I/O bottlenecks and storage issues by directly streaming the generated data. A training reservoir mitigates the inherent bias of streaming while maximizing GPU throughput. Experiment on training a fully connected network as a surrogate for the heat equation shows the proposed approach enables training on 8TB of data in 2 hours with an accuracy improved by 47% and a batch throughput multiplied by 13 compared to a traditional offline procedure.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/KeyesLNS23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "High-Performance SVD Partial Spectrum Computation",
+  "abstract": "We introduce a new singular value decomposition (SVD) solver based on the QR-based Dynamically Weighted Halley (QDWH) algorithm for computing the partial spectrum SVD (QDWHpartial-SVD) problems. By optimizing the rational function underlying the algorithms in the desired part of the spectrum only, the QDWHpartial-SVD algorithm efficiently computes a fraction (say 1--20%) of the leading singular values/vectors. We develop a high-performance implementation of QDWHpartial-SVD 1 on distributed-memory manycore systems and demonstrate its numerical robustness. We perform a benchmarking campaign against counterparts from the state-of-the-art numerical libraries across various matrix sizes using up to 36K MPI processes. Experimental results show performance speedups for QDWHpartial-SVD up to 6X and 2X against vendor-optimized PDGESVD from ScaLAPACK and KSVD on a Cray XC40 system using 1152 nodes based on two-socket 16-core Intel Haswell CPU, respectively. We also port our QDWHpartial-SVD software library to a system composed of 256 nodes with two-socket 64-Core AMD EPYC Milan CPU and achieve performance speedup up to 4X compared to vendor-optimized PDGESVD from ScaLAPACK. We also compare energy consumption for the two algorithms and demonstrate how QDWHpartial-SVD can further outperform PDGESVD in that regard by performing fewer memory-bound operations.",
+  "hint_categories": [
+   "dense_la"
+  ]
+ },
+ {
+  "key": "conf/sc/BestaRGLZCGSSCI23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "High-Performance and Programmable Attentional Graph Neural Networks with Global Tensor Formulations",
+  "abstract": "Graph attention models (A-GNNs), a type of Graph Neural Networks (GNNs), have been shown to be more powerful than simpler convolutional GNNs (C-GNNs). However, A-GNNs are more complex to program and difficult to scale. To address this, we develop a novel mathematical formulation, based on tensors that group all the feature vectors, targeting both training and inference of A-GNNs. The formulation enables straightforward adoption of communication-minimizing routines, it fosters optimizations such as vectorization, and it enables seamless integration with established linear algebra DSLs or libraries such as GraphBLAS. Our implementation uses a data redistribution scheme explicitly developed for sparse-dense tensor operations used heavily in GNNs, and fusing optimizations that further minimize memory usage and communication cost. We ensure theoretical asymptotic reductions in communicated data compared to the established message-passing GNN paradigm. Finally, we provide excellent scalability and speedups of even 4--5x over modern libraries such as Deep Graph Library.",
+  "hint_categories": [
+   "dense_la",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/sc/HuangH0CRL23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "I/O in WRF: A Case Study in Modern Parallel I/O Techniques",
+  "abstract": "Large-scale parallel applications can face significant I/O performance bottlenecks, making efficient I/O crucial. This work presents a comparative study of several parallel I/O implementations in the Weather Research and Forecasting model, including PnetCDF blocking and non-blocking I/O options, netCDF4, HDF5 Log VOL, and ADIOS. For I/O methods creating files in a canonical data layout, PnetCDF's non-blocking option offers up to 2x improvement over its blocking option and up to 4.5x over HDF5 via netCDF4, demonstrating the effectiveness of the write request aggregation technique. The HDF5 Log VOL outperforms ADIOS with a 4x improvement in write performance when creating files in the log layout, although both require non-negligible time to convert the file back to canonical order for post-run analysis. From these results we extract some observations that can guide I/O strategies for modern parallel codes.",
+  "hint_categories": [
+   "stencil_pde"
+  ]
+ },
+ {
+  "key": "conf/sc/ChenMXY023",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Interference-aware Multiplexing for Deep Learning in GPU Clusters: A Middleware Approach",
+  "abstract": "A common strategy for improving efficiency in training deep learning entails multiplexing tasks on a single GPU. To mitigate the interference caused by multiplexing, existing approaches primarily employ kernel-level solutions to regulate GPU kernel execution, or harness hardware-level techniques to explicitly restrict GPU streaming multiprocessors and memory. Nevertheless, none of them perform satisfactorily in optimizing the completion time of tasks.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/ShiinaT23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Itoyori: Reconciling Global Address Space and Global Fork-Join Task Parallelism",
+  "abstract": "This paper introduces Itoyori, a task-parallel runtime system designed to tackle the challenge of scaling task parallelism (more specifically, nested fork-join parallelism) beyond a single node. The partitioned global address space (PGAS) model is often employed in task-parallel systems, but naively combining them can lead to poor performance due to fine-grained and redundant remote memory accesses. Itoyori addresses this issue by automatically caching global memory accesses at runtime, enabling efficient cache sharing among parallel tasks running on the same processor. As a real-world case study, we ported an existing task-parallel implementation of the Fast Multipole Method (FMM) to distributed memory with Itoyori and achieved a 7.5× speedup when scaled from a single node to 12 nodes and up to 6.0× faster performance than without caching. This study demonstrates that global-view fork-join programming can be made practical and scalable, while requiring minimal changes to the shared-memory code.",
+  "hint_categories": [
+   "nbody_md"
+  ]
+ },
+ {
+  "key": "conf/sc/DasKSPMRZG23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Large-Scale Materials Modeling at Quantum Accuracy: Ab Initio Simulations of Quasicrystals and Interacting Extended Defects in Metallic Alloys",
+  "abstract": "Ab initio electronic-structure has remained dichotomous between achievable accuracy and length-scale. Quantum many-body (QMB) methods realize quantum accuracy but fail to scale. Density functional theory (DFT) scales favorably but remains far from quantum accuracy. We present a framework that breaks this dichotomy by use of three interconnected modules: (i) invDFT: a methodological advance in inverse DFT linking QMB methods to DFT; (ii) MLXC: a machine-learned density functional trained with invDFT data, commensurate with quantum accuracy; (iii) DFT-FE-MLXC: an adaptive higher-order spectral finite-element (FE) based DFT implementation that integrates MLXC with efficient solver strategies and HPC innovations in FE-specific dense linear algebra, mixed-precision algorithms, and asynchronous compute-communication. We demonstrate a paradigm shift in DFT that not only provides an accuracy commensurate with QMB methods in ground-state energies, but also attains an unprecedented performance of 659.7 PFLOPS (43.1% peak FP64 performance) on 619,124 electrons using 8,000 GPU nodes of Frontier supercomputer.",
+  "hint_categories": [
+   "dense_la"
+  ]
+ },
+ {
+  "key": "conf/sc/ShiN0LZ0YLFZLWG23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Large-Scale Simulation of Structural Dynamics Computing on GPU Clusters",
+  "abstract": "Structural dynamics simulation plays an important role in research on reactor design and complex engineering. The Hybrid Total Finite Element Tearing and Interconnecting (HTFETI) method combined with Newmark method is an efficient way to solve large-scale structural dynamics problems. However, the sparse direct solver and the load imbalance caused by inconsistent density models are two critical issues limiting the performance and the scalability of structural dynamics computing. For the former, we propose an efficient variable-size batched method to accelerate SpMV on GPUs. For the latter, we establish an online performance prediction model, based on which we then design a novel inter-cluster subdomain fine-tuning algorithm to balance the workload of HTFETI parallel computing. We are the first to achieve the high-fidelity structural dynamics simulation of China Experimental Fast Reactor core assembly with up to 53.4 billion grids. The weak and strong scalability efficiencies reach 91.77% and 86.13% on 12,800 GPUs, respectively.",
+  "hint_categories": [
+   "dense_la",
+   "sparse_la",
+   "stencil_pde"
+  ]
+ },
+ {
+  "key": "conf/sc/YadavLEPLGAK023",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Legate Sparse: Distributed Sparse Computing in Python",
+  "abstract": "The sparse module of the popular SciPy Python library is widely used across applications in scientific computing, data analysis and machine learning. The standard implementation of SciPy is restricted to a single CPU and cannot take advantage of modern distributed and accelerated computing resources. We introduce Legate Sparse, a system that transparently distributes and accelerates unmodified sparse matrix-based SciPy programs across clusters of CPUs and GPUs, and composes with cuNumeric, a distributed NumPy library. Legate Sparse uses a combination of static and dynamic techniques to efficiently compose independently written sparse and dense array programming libraries, providing a unified Python interface for distributed sparse and dense array computations. We show that Legate Sparse is competitive with single-GPU libraries like CuPy and achieves 65% of the performance of PETSc on up to 1280 CPU cores and 192 GPUs of the Summit supercomputer, while offering the productivity benefits of idiomatic SciPy and NumPy.",
+  "hint_categories": [
+   "sparse_la"
+  ]
+ },
+ {
+  "key": "conf/sc/0002CKK23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "MBFGraph: An SSD-based External Graph System for Evolving Graphs",
+  "abstract": "The challenge of executing extensive graph analyses in-memory intensifies with growing graph sizes. This has given rise to disk-based external graph analytics systems that prioritize cost-effective HDDs/SSDs over pricier memory solutions. In response to this issue, our paper introduces and assesses the MBFGraph external graph system. This system leverages millions of Bloom filters within 1KB or 2KB graph data blocks to diminish graph analysis execution delays. Through our innovative MBF-query and MBF-construct algorithms, MBFGraph utilizes these Bloom filters as approximate indices, enabling the reading of only pertinent sections of dynamic graph data, thereby facilitating scalable analytics. Our tests revealed that, on a 475GB graph, MBFGraph cut down the execution durations of BFS and Pagerank by 24% and 60% respectively, using a mere 4GB memory. This is in comparison to a sequential, tailored-for-workload, disk-based external graph analytics system.",
+  "hint_categories": [
+   "graph"
+  ]
+ },
+ {
+  "key": "conf/sc/DingZKV023",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Mirage: Towards Low-interruption Services on Batch GPU Clusters with Reinforcement Learning",
+  "abstract": "Accommodating long-running deep learning (DL) training and inference jobs is challenging on GPU clusters that use traditional batch schedulers, such as Slurm. Given fixed wall clock time limits, DL researchers usually need to run a sequence of batch jobs and experience long interruptions on overloaded machines. Such interruptions significantly lower the research productivity and QoS for services that are deployed in production. To mitigate the issues from interruption, we propose the design of a proactive provisioner and investigate a set of statistical learning and reinforcement learning (RL) techniques, including random forest, xgboost, Deep Q-Network, and policy gradient. Using production job traces from three GPU clusters, we train each model using a subset of the trace and then evaluate their generality using the remaining validation subset. We introduce Mirage, a Slurm-compatible resource provisioner that integrates the candidate ML methods. Our experiments show that the Mirage can reduce interruption by 17--100% and safeguard 23%-76% of jobs with zero interruption across varying load levels on the three clusters.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/sc/RobertsonS23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Mitigating Coupling Map Constrained Correlated Measurement Errors on Quantum Devices",
+  "abstract": "We introduce a technique for the suppression of state-dependent and correlated measurement errors, which are commonly observed on modern superconducting quantum devices. Our method leverages previous results, establishing that correlated errors tend to be physically localised on quantum devices to perform characterisations over the coupling map of the device, and to join overlapping measurement calibrations as a series of sparse matrices. We term this 'Coupling Map Calibration'. We quantitatively demonstrate the advantages of our proposed error mitigation system design across a range of current IBM quantum devices. Our experimental results on common benchmark circuits demonstrate up to a 41% reduction in the error rate without increasing the number of executions of the quantum device required when compared to conventional error mitigation methods.",
+  "hint_categories": [
+   "sparse_la",
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/sc/WuGFZS23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "NNQS-Transformer: an Efficient and Scalable Neural Network Quantum States Approach for Ab initio Quantum Chemistry",
+  "abstract": "Neural network quantum state (NNQS) has emerged as a promising candidate for quantum many-body problems, but its practical applications are often hindered by the high cost of sampling and local energy calculation. We develop a high-performance NNQS method for ab initio electronic structure calculations. The major innovations include: (1) A transformer based architecture as the quantum wave function ansatz; (2) A data-centric parallelization scheme for the variational Monte Carlo (VMC) algorithm which preserves data locality and well adapts for different computing architectures; (3) A parallel batch sampling strategy which reduces the sampling cost and achieves good load balance; (4) A parallel local energy evaluation scheme which is both memory and computationally efficient; (5) Study of real chemical systems demonstrates both the superior accuracy of our method compared to state-of-the-art and the strong and weak scalability for large molecular systems with up to 120 spin orbitals.",
+  "hint_categories": [
+   "primitives",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/sc/WangYFDHZ0W23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Optimizing Direct Convolutions on ARM Multi-Cores",
+  "abstract": "Convolution kernels are widely seen in deep learning workloads and are often responsible for performance bottlenecks. Recent research has demonstrated that a direct convolution approach can outperform the traditional convolution implementation based on tensor-to-matrix conversions. However, existing approaches for direct convolution still have room for performance improvement. We present nDirect, a new direct convolution approach that targets ARM-based multi-core CPUs commonly found in smartphones and HPC systems. nDirect is designed to be compatible with the data layout formats used by mainstream deep learning frameworks but offers new optimizations for the computational kernel, data packing, and parallelization. We evaluate nDirect by applying it to representative convolution kernels and demonstrating its performance on four distinct ARM multi-core CPU platforms. We compare nDirect against state-of-the-art convolution optimization techniques. Experimental results show that nDirect gives the best overall performance across evaluation scenarios and platforms.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ }
+]

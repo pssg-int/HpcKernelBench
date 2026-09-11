@@ -1,0 +1,92 @@
+{
+ "kernel": "eigensolver",
+ "papers": [
+  {
+   "key": "conf/ppopp/YangNYLDXJ026",
+   "title": "A Diagonal Block Memory-Aware Polynomial Preconditioner for Linear and Eigenvalue Solvers",
+   "venue": "PPoPP",
+   "year": 2026,
+   "doi": "10.1145/3774934.3786446",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/YXJ-123/DBMPK",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu",
+    "arm-cpu"
+   ],
+   "approach": "manual",
+   "abstract": "Krylov subspace methods are widely used in scientific computing to solve large sparse linear systems and eigenvalue problems. Their performance bottleneck is often dominated by high-order matrix-power kernels (MPK), especially in polynomial preconditioners that must scale to millions or billions of variables. We present Diagonal Block MPK (DBMPK), a lightweight and parallel-friendly optimization that partitions the input matrix into diagonal blocks and off-diagonal regions. This design enables efficient intra-block data reuse and eliminates inter-block dependencies. It improves cache locality, parallelism, and reduces preprocessing overheads, compared to existing techniques. Our evaluation on x86 and Arm HPC platforms shows that DBMPK improves MPK performance by 26.6%-38.4%. When applied to polynomial preconditioners for linear systems and eigenvalue problems, it achieves consistent end-",
+   "one_liner": "Diagonal-block matrix-power kernel optimization speeds polynomial preconditioners 18.6-34.0%"
+  },
+  {
+   "key": "conf/ppopp/WangDZWZLJZ25",
+   "title": "Improving Tridiagonalization Performance on GPU Architectures",
+   "venue": "PPoPP",
+   "year": 2025,
+   "doi": "10.1145/3710848.3710894",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3710848.3710894",
+   "artifact_url": "https://github.com/ynkrue/cuEV",
+   "artifact_status": "likely",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Tridiagonalization, which is a key step in symmetric eigenvalue decomposition (EVD), aims to convert a symmetric matrix to a tridiagonal form. In Nvidia's cuSOLVER library, the FP64 precision tridiagonalization process only reach 2.1 TFLOPs out of 67 TFLOPs on H100 GPU, and it consumes a significant portion of the elapsed time in the entire EVD process, accounting for over 97%. Thus, improving the tridiagonalization performance is crucial on accelerating EVD. In this paper, we analyze the reasons behind the suboptimal performance of tridiagonalization on GPU architectures, and we propose a new double blocking band reduction algorithm along with an implementation of GPU-based bulge chasing to improve the tridiagonalization performance. Through experimental evaluation, the proposed FP64 precision tridiagonalization method yields up to 19.6 TFLOPs which is 9.3x and 5.2x faster compared cuSO",
+   "one_liner": "Double-blocking band reduction plus GPU bulge chasing, 9.3x faster tridiagonalization than cuSOLVER"
+  },
+  {
+   "key": "conf/sc/WangHZSJWDZ25",
+   "title": "Rethinking Back Transformation in 2-stage Eigenvalue Decomposition on Heterogeneous Architectures",
+   "venue": "SC",
+   "year": 2025,
+   "doi": "10.1145/3712285.3759770",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/hansheng1001/EVD4SC2025",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "The 2-stage eigenvalue decomposition (EVD) method outperforms conventional 1-stage method on GPUs and heterogeneous architectures, especially when eigenvectors are not required. However, its performance advantage diminishes when performing back transformation to obtain eigenvectors. To address this, we propose two key solutions: 1) replacing BLAS3 operations with BLAS2 operations during the bulge-chasing back transformation for better performance, and 2) reordering the back transformation workflow from a backward pattern to a new parallelism-driven pattern to hide divide-and-conquer latency, at the cost of one additional GEMM computation. Experimentally, the proposed back transformation algorithm demonstrates significant performance improvements, outperforming the SOTA implementation in MAGMA by an average factor of 3.58x. For complete FP64 precision symmetric EVD with eigenvectors, the ",
+   "one_liner": "Restructured back-transformation in 2-stage EVD beats MAGMA/cuSOLVER by up to 3.58x/2.21x"
+  },
+  {
+   "key": "journals/tpds/LiaoLLR21",
+   "title": "A Parallel Structured Divide-and-Conquer Algorithm for Symmetric Tridiagonal Eigenvalue Problems",
+   "venue": "TPDS",
+   "year": 2021,
+   "doi": "10.1109/TPDS.2020.3019471",
+   "arxiv": "2008.01990",
+   "oa_url": "https://arxiv.org/pdf/2008.01990",
+   "artifact_url": "https://github.com/shengguolsg/PSMMA",
+   "artifact_status": "verified",
+   "platform": [
+    "distributed",
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "In this article, a parallel structured divide-and-conquer (PSDC) eigensolver is proposed for symmetric tridiagonal matrices based on ScaLAPACK and a parallel structured matrix multiplication algorithm, called PSMMA. Computing the eigenvectors via matrix-matrix multiplications is the most computationally expensive part of the divide-and-conquer algorithm, and one of the matrices involved in such multiplications is a rank-structured Cauchy-like matrix. By exploiting this particular property, PSMMA constructs the local matrices by using generators of Cauchy-like matrices without any communication, and further reduces the computation costs by using a structured low-rank approximation algorithm. Thus, both the communication and computation costs are reduced. Experimental results show that both PSMMA and PSDC are highly scalable and scale to 4096 processes at least. PSDC has better scalability",
+   "one_liner": "PSDC: parallel structured divide-and-conquer tridiagonal eigensolver beating ScaLAPACK PDSTEDC by 1.4-1.6x"
+  },
+  {
+   "key": "journals/tpds/ShiLXSH21",
+   "title": "Planetary Normal Mode Computation: Parallel Algorithms, Performance, and Reproducibility",
+   "venue": "TPDS",
+   "year": 2021,
+   "doi": "10.1109/TPDS.2021.3050448",
+   "arxiv": "",
+   "oa_url": "https://www.osti.gov/biblio/1836943",
+   "artifact_url": "https://github.com/js1019/NormalModes",
+   "artifact_status": "verified",
+   "platform": [
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "abstract": "This article is an extension of work entitled “Computing planetary interior normal modes with a highly parallel polynomial filtering eigensolver.” by Shi <italic xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">et al.</i> , <xref ref-type=\"bibr\" rid=\"ref1\" xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">[1]</xref> originally presented at the SC18 conference. A highly parallel polynomial filtered eigensolver was developed and exploited to calculate the planetary normal modes. The proposed method is ideally suited for computing interior eigenpairs for large-scale eigenvalue problems as it greatly enhances memory and computational efficiency. In this article, the second-order finite element method is used to further improve the accuracy as only the first-order finite element method was deployed in the previou",
+   "one_liner": "Polynomial-filtered parallel eigensolver for planetary normal modes; scales to 20k cores."
+  }
+ ]
+}

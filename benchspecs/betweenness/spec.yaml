@@ -1,0 +1,139 @@
+kernel: betweenness
+summary: >
+  Single-source dependency-accumulation betweenness centrality on
+  hypergraphs (Brandes-style forward BFS + backward dependency phases,
+  generalized from vertices/edges to vertices/hyperedges), measured as
+  wall-clock running time and parallel self-speedup on a shared-memory
+  multicore machine; hypergraph load time excluded from per-round timing.
+operation: >
+  dep[V] = HyperBC(H=(V,E) hypergraph, source in V);
+  H is unweighted, undirected (symmetric) incidence structure between
+  vertices and hyperedges; output is a per-vertex dependency/centrality
+  score (double) accumulated via one forward traversal (shortest-hyperpath
+  counting) and one backward traversal (dependency propagation) from a
+  single source vertex — same scope as classical single-source Brandes BC,
+  not an all-pairs/exact aggregate BC.
+
+variants:
+  - id: hyperbc-kernel-realworld
+    claim: >
+      steady-state single-source HyperBC running time and multicore
+      speedup on named real-world hypergraphs; hypergraph load/parse
+      excluded from per-round timing but reported separately, once
+    inputs:
+      suite: "union of SNAP and KONECT-derived hypergraphs packaged by the paper's own artifact-evaluation repo (jshun/ppopp20-ae), in Hygra adjacency-hypergraph format"
+      selection: "all 5 real-world hypergraphs distributed as pre-converted Hygra files by the AE repo (no additional filtering applied by this spec — this IS the paper's full real-world suite)"
+      recommended_subset:
+        - "com-orkut (from SNAP com-Orkut community memberships)"
+        - "friendster (from SNAP com-Friendster community memberships)"
+        - "orkut-group (from KONECT orkut-groupmemberships, bipartite)"
+        - "web (from KONECT trackers-trackers, bipartite)"
+        - "livejournal (from KONECT livejournal-groupmemberships, bipartite)"
+      dense_operand: "N/A (no dense operand)"
+      source_selection: "source vertex fixed via -r flag; this spec fixes source=0 for reproducibility unless the submitter reports the exact source used (the paper's own scripts do not vary/average over multiple sources for BC, unlike the bfs track's 64-root convention)"
+    protocol:
+      format: "Hygra adjacency-hypergraph format, given/converted once via the utils/ converters (communityToHyperAdj for SNAP, KONECTtoHyperAdj for KONECT); conversion excluded from per-round timing, reported separately"
+      compiler_toolchain: "g++ with Cilk Plus (CILK=1); OpenMP build also supported but not the one used for the paper's reported numbers"
+      warmup: "0 explicit warmup round; graph is loaded once, then all timed rounds reuse the in-memory structure (matches the paper's own AE protocol, which has no separate discarded warmup round)"
+      reps: 3
+      statistic: "min of 3 (matches the paper's own reporting); this spec additionally REQUIRES mean and max of the same 3 trials to be reported alongside (paper does not report these, spec adds them per fairness principle of never reporting only a best-of-N number silently)"
+      timer: "process-internal wall-clock (CPU-side), printed as 'Running time : <seconds>' by the Hygra runtime; wraps only the HyperBC call"
+      timing_scope: "algorithm only; hypergraph loading/parsing done once before any timed round and excluded"
+      preprocessing_reported: "separately, once per hypergraph: SNAP/KONECT-to-Hygra conversion time"
+      thread_counts: "report at minimum: 1 thread (CILK_NWORKERS=1, serial baseline for speedup) and 144 threads (all hyperthreads, matches the paper's max-parallelism number); intermediate thread counts optional but encouraged for a scaling curve (paper's Figure 2 convention)"
+    metric:
+      primary: "wall-clock running time in seconds (min of 3 trials)"
+      secondary: "parallel speedup = time(1 thread) / time(144 threads); mean and max running time across the same 3 trials"
+    correctness: >
+      dependency values must be non-negative and zero for vertices
+      unreachable from the source; the reachable-vertex set from the
+      forward phase must match an independent single-threaded
+      (CILK_NWORKERS=1) run of the same code on the same source — this
+      spec requires this cross-thread-count consistency check since the
+      paper's own AE scripts do not ship an automated numeric BC
+      correctness check (unlike the LCA/bridges companion track, which
+      does validate against a reference implementation).
+
+  - id: hyperbc-preprocessing-and-scaling
+    claim: >
+      cost of hypergraph construction (format conversion from raw
+      SNAP/KONECT source) reported standalone, plus the thread-count
+      scaling curve from 1 to 144 threads on a single fixed hypergraph —
+      operationalizes the paper's own Figure 2 (varying threads) as a
+      first-class variant rather than folding it into the single-source
+      kernel-only number
+    inputs:
+      suite: "same as hyperbc-kernel-realworld, but this variant additionally requires the raw SNAP/KONECT source files (not just the pre-converted Hygra files) so conversion time is actually measurable"
+      selection: "com-orkut is REQUIRED (it is the one dataset the paper's own MESH-baseline comparison also uses, making it the track's canonical single-instance scaling target); other 4 real-world hypergraphs optional"
+      recommended_subset: "com-orkut (required); friendster, orkut-group, web, livejournal (optional, same instances as hyperbc-kernel-realworld)"
+      dense_operand: "N/A"
+    protocol:
+      format: "raw SNAP/KONECT source converted once via the paper's own utils/ converters; conversion IS in scope and timed for this variant"
+      warmup: 0
+      reps: "conversion: 1 (one-shot, deterministic, no repetition needed); scaling curve: 3 trials per thread count, min reported, same as hyperbc-kernel-realworld"
+      thread_counts: "1, 2, 4, 8, 16, 32, 72, 144 (doubling schedule ending at physical-core and hyperthread counts, matches the paper's own Figure 2 style)"
+      statistic: "min of 3 per thread count"
+      timer: "wall-clock around the converter binary for conversion; same Hygra internal timer as hyperbc-kernel-realworld for the scaling runs"
+      timing_scope: "conversion time reported standalone; scaling-curve times are algorithm-only (load excluded), same as hyperbc-kernel-realworld"
+      preprocessing_reported: "this variant's conversion_time_seconds IS the preprocessing report, not folded into any scaling number"
+    metric:
+      primary: "conversion_time_seconds (one-shot, standalone)"
+      secondary: "speedup(threads) curve = time(1 thread)/time(N threads) for each thread count in thread_counts"
+    correctness: "same cross-thread-count reachable-set consistency check as hyperbc-kernel-realworld, applied at every thread count in the curve"
+
+notes_on_fairness:
+  - >
+    The artifact the automated pipeline attached to this paper
+    (github.com/DevSheth/prallel-hypergraph-algorithms) is a third-party
+    CUDA course-project reimplementation of 4 of the paper's 8 algorithms
+    and specifically does NOT include betweenness centrality or MIS. Had
+    this spec been written against that repo, the "betweenness" track
+    would have had literally no matching code to benchmark. This spec is
+    instead grounded in the paper's own official repo (jshun/ligra) and
+    its companion artifact-evaluation repo (jshun/ppopp20-ae), which do
+    implement and time HyperBC exactly as described in the paper. This is
+    exactly the "same-name-different-project collision" / "third-party
+    reimplementation is not an artifact" trap this project's own
+    CLAUDE.md already warns about, caught here for a case the automated
+    artifact-finder missed.
+  - >
+    The paper's own protocol reports the MINIMUM of 3 trials as its
+    headline number, with no mean/median/max disclosed. Best-of-N is
+    exactly the kind of one-sided reporting the fairness principles ask
+    to avoid; this spec keeps min-of-3 as the headline (for direct
+    comparability with the paper's own Table 2 numbers) but requires
+    mean and max to also be reported, so a reader can tell whether the
+    minimum is representative or a lucky outlier.
+  - >
+    Unlike the bfs track (64 random roots), HyperBC here is timed from a
+    single, unvaried source vertex — consistent with how the paper itself
+    treats it (same convention as HyperBFS, HyperCC, etc. in Table 2, all
+    timed once per dataset/thread-count cell, not averaged over multiple
+    sources). This spec preserves that single-source convention rather
+    than importing the bfs track's multi-root averaging, since importing
+    it would make this benchmark's numbers incomparable to the one
+    existing paper in this track for no fairness benefit (a single
+    dependency-accumulation BC pass is not subject to the same
+    root-dependent load-imbalance variance that motivates multi-root
+    averaging for plain BFS).
+
+open_questions:
+  - >
+    The exact default source vertex used by the paper's own scripts when
+    "-r" is omitted (readECLgraph/Hygra loader default, likely vertex 0)
+    was not directly confirmed by reading run_scalability's invocation
+    lines byte-for-byte; this spec assumes source=0 and asks submitters to
+    disclose otherwise.
+  - >
+    Whether the paper's Table 2 HyperBC numbers used edge-aware
+    parallelization or direction-optimization (mentioned in the AE README
+    as used "for the Orkut-group, Web, and LiveJournal hypergraphs due to
+    their highly-skewed degree distributions") specifically for BC, or
+    only for the traversal algorithms (BFS/SSSP/CC), is not disambiguated
+    in the available README text — flagged for direct source-code
+    confirmation (HyperBC.C's use of EDGELIMIT-style thresholds) before
+    treating direction-optimization disclosure as settled for this
+    variant, unlike the bfs track where it is a REQUIRED disclosure field.
+
+evidence:
+  conf/ppopp/Shun20: "official artifact is jshun/ligra + jshun/ppopp20-ae (NOT the pipeline-attached DevSheth repo, which lacks BC/MIS entirely); 72-core/144-thread Xeon E7-8867 v4 machine, Cilk Plus, min-of-3 trials, load time excluded, 5 real-world hypergraphs (com-orkut, friendster, orkut-group, web, livejournal) plus synthetic rand1-3, metric is wall-clock seconds and self-relative parallel speedup (not GTEPS/throughput), baseline is 1-thread same-code plus external MESH system on com-orkut only"

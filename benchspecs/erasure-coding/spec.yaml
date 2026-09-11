@@ -1,0 +1,86 @@
+kernel: erasure-coding
+summary: >
+  CPU XOR-based Reed-Solomon erasure coding (encode: compute m parity
+  blocks from k data blocks via GF(2) XOR-schedules compiled and
+  optimized as straight-line programs; decode: reconstruct erased blocks
+  from surviving data+parity), measured separately for encode, decode
+  at maximum tolerable erasure count, and degraded-read at partial
+  erasure, across (k,m) configurations and the paper's own three-tier
+  optimization ablation (Nooptim / Fusion / FusionSchedule).
+operation: >
+  Given k data blocks D_1..D_k (each BLOCK_SIZE bytes), compute m parity
+  blocks P_1..P_m such that any k of the (k+m) total blocks suffice to
+  reconstruct all k original data blocks, using ONLY XOR operations
+  (no Galois-field multiplication) — i.e. each P_j and each reconstructed
+  D_i is a fixed XOR-subset of the surviving blocks, with that XOR
+  schedule compiled as a straight-line program (SLP) and optimized via
+  grammar compression (fewer XOR ops), deforestation (fewer memory
+  accesses), and pebble-game scheduling (fewer cache misses) before
+  execution.
+variants:
+  - id: ec-xor-encode-decode-kernel
+    claim: >
+      steady-state single-thread CPU throughput for encode and decode
+      (at maximum-tolerable erasure count, i.e. exactly m blocks erased)
+      separately, at each of the paper's own three optimization tiers,
+      across a spread of (k,m) configurations -- SLP compilation/
+      optimization is a one-shot cost EXCLUDED from the per-run timed
+      loop (matching the artifact's own code structure, which already
+      separates estimate_compile from the timed run::run_program loop).
+    inputs:
+      suite: "the artifact's own README-documented (k,m) configurations, extended with 2 additional points spanning the practical storage range"
+      selection: "(k,m) pairs actually exercised in the artifact's README examples, plus RS(6,3) and RS(12,4) to bracket typical distributed-storage EC configurations (matching common systems like HDFS-EC/Ceph defaults, e.g. RS(6,3))"
+      recommended_subset:
+        - {name: "RS(10,4)-default", k: 10, m: 4, erased_indices: [2, 4, 5, 6], note: "artifact's own default; erasure count == m (max tolerable)"}
+        - {name: "RS(10,3)",         k: 10, m: 3, erased_indices: [2, 4, 5]}
+        - {name: "RS(9,3)",          k: 9,  m: 3, erased_indices: [2, 4, 5]}
+        - {name: "RS(8,2)",          k: 8,  m: 2, erased_indices: [2, 4]}
+        - {name: "RS(6,3)-hdfs-ec",  k: 6,  m: 3, erased_indices: [1, 3, 4], note: "common distributed-storage EC config (HDFS-EC/Ceph default class)"}
+        - {name: "RS(12,4)-large-stripe", k: 12, m: 4, erased_indices: [2, 4, 5, 6]}
+      data_size: "~10 MB total (matching the artifact's own reported example, data size = 10158080 bytes) AND a larger 1 GB point to check whether throughput is stable across the working-set/cache-fitting boundary"
+      optimization_levels: "Nooptim, Fusion, FusionSchedule (the artifact's own --optimize-level values) -- all THREE required per (k,m) point, not only the fully-optimized FusionSchedule headline number, so each technique's individual contribution stays visible"
+      degraded_read_sub_case: >
+        REQUIRED additional sub-case: decode with erasure count < m
+        (e.g. 1 block erased out of RS(10,4)'s tolerable 4) -- a
+        degraded-read is the common case in real storage systems (single
+        node/disk failure), while the artifact's own default example
+        erases the MAXIMUM tolerable count; reporting only the max-
+        erasure case would overstate decode cost for the far more common
+        single-failure scenario, since decode SLP size/cost is a
+        function of exactly which and how many blocks are erased.
+    protocol:
+      warmup: "1 discarded iteration -- DEVIATION from the artifact's own convention, which times all 1000 iterations undiscarded from a cold state; added since the first XOR-schedule execution touches cold cache lines the SLP-compiled program was scheduled against, biasing iteration 1 high relative to steady state."
+      reps: 1000
+      statistic: "median (report min/max) -- DEVIATION from the artifact's own avg+sd reporting (xorslp_ec's README shows 'Encode: avg = 7188.13 MB/s, sd = 405.67'); switched to median+min/max per this project's general timing-protocol convention, since a plain mean over 1000 undiscarded reps is more sensitive to rare scheduling-noise outliers than a median."
+      timer: "host-side, std::time::Instant per iteration (the artifact's own timer choice, retained since XOR-SLP execution is a pure-CPU, no-device-sync workload where Instant is already the right-granularity timer)"
+      timing_scope: "kernel only: run::run_program (the compiled XOR schedule) execution; SLP compilation/optimization (grammar compression, deforestation, pebble-game scheduling) excluded, matching the artifact's own code structure"
+      threading: "single-threaded (the artifact's benchmarked path is single-core; report explicitly if a multi-threaded/SIMD-batched variant is measured instead, since BLOCK_SIZE_PER_ITER already implies some data-parallel lane width within a single core)"
+      preprocessing_reported: "separately, once per (k, m, erased_indices, optimization_level) combination: SLP compilation + optimization wall time (estimate_compile), since a higher optimization tier trades more compile-time cost for less per-run cost and both numbers are needed to judge the tradeoff for a given amortization count"
+    metric:
+      primary: "throughput, MB/s (total data-block bytes processed per second: encode = sum of D_i bytes; decode = sum of RECONSTRUCTED D_i bytes, not counting surviving blocks read)"
+      secondary: "XOR instruction count and memory-transfer count per block (the artifact's own --stat-enc/--stat-dec/--all-stat output), reported as the mechanistic explanation for any throughput delta between optimization tiers"
+    correctness: >
+      MANDATORY pre-timing gate, exact bit-reconstruction required (XOR-
+      based EC over GF(2) is lossless/exact by construction, no numerical
+      tolerance applies): for every decode configuration, the
+      reconstructed D_i blocks must be BYTE-IDENTICAL to the original
+      data blocks before encoding. This is not stated as an automated
+      check in the fetched artifact's benchmark-invocation examples
+      (--enc-dec/--stat-enc/--stat-dec show no visible pass/fail output);
+      this spec makes it mandatory and requires it be checked in the SAME
+      run as the timed measurement, for every (k,m,erased_indices,
+      optimization_level) combination, not just once for a default
+      configuration.
+
+notes_on_fairness:
+  - "The artifact's own reported metric is avg+sd over 1000 undiscarded iterations; this spec switches to median+min/max with 1 discarded warmup iteration, the same class of fix applied throughout this project's other specs (see benchspecs/attention-kernel's notes on PAT/MEATTEN/ByteTransformer) for run-to-run variance robustness -- this is an explicit, noted DEVIATION from the paper's own literal reported numbers, not a claim those numbers are wrong."
+  - "The artifact's own default example erases exactly m blocks (the maximum tolerable erasure count) for its decode benchmark; this spec adds a degraded_read_sub_case at a SMALLER erasure count specifically because production distributed-storage systems overwhelmingly experience single-block failures, not simultaneous max-tolerable-count failures, and XOR-SLP decode cost is a function of which/how-many blocks are erased -- reporting only the max-erasure case would not characterize the common operating point."
+  - "The paper's own three-tier optimization ablation (Nooptim/Fusion/FusionSchedule) is preserved as a REQUIRED axis (not collapsed to only the best tier) specifically because this is the paper's actual scientific contribution (isolating each program-optimization technique's individual effect) -- collapsing to a single headline number would erase the paper's own most informative result."
+
+open_questions:
+  - "The Intel ISA-L baseline comparison (~6.7 GB/s per the abstract) is documented via a SEPARATE procedure (HOWTO_BENCHMARK_ISAL.md) not fetched in this survey -- ISA-L's own timing protocol (warmup/reps/statistic) is unconfirmed and may differ from xorslp_ec's own 1000-iteration convention, which would make a direct number-to-number comparison between the two tools' README-reported throughputs potentially apples-to-oranges without re-running both under this spec's unified protocol."
+  - "BLOCK_SIZE_PER_ITER (the SIMD-lane/block granularity constant controlling how XOR operations are vectorized within run::run_program) was not inspected -- whether the reported throughput already reflects AVX2/AVX-512-width XOR batching, or is scalar, is unconfirmed from the fetched source, and materially affects whether the 8.92 GB/s headline number is a fair single-core comparison point against ISA-L (which is itself SIMD-accelerated)."
+  - "No automated correctness check was found in the fetched benchmark-invocation examples; whether one exists elsewhere in the crate (e.g. a `cargo test` suite distinct from the `xorslp_ec` CLI binary) was not checked."
+
+evidence:
+  conf/sc/Uezato21: "xorslp_ec: XOR-based RS erasure coding compiled as straight-line programs, optimized via grammar compression + deforestation + red-blue pebble-game scheduling (3-tier ablation: Nooptim/Fusion/FusionSchedule); CLI --data-block/--parity-block/--enc-dec/--loop-iter(default 1000)/--optimize-level; per-iteration std::time::Instant, avg+sd over 1000 undiscarded reps (no warmup); SLP compile cost already separated from timed run loop in the code; decode benchmarked at max-tolerable erasure count by default; ~8.92 GB/s vs Intel ISA-L's ~6.7 GB/s and this paper's own prior ~4.9 GB/s naive XOR approach; arXiv:2108.02692."

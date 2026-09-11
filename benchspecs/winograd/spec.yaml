@@ -1,0 +1,169 @@
+kernel: winograd
+summary: >
+  Latency and throughput of Winograd/Cook-Toom fast convolution for 3x3 stride-1
+  layers, measured with an algorithm-invariant flop convention and with the
+  numerical error the transform introduces reported as a first-class result
+  rather than left unstated.
+operation: >
+  Y = A^T [ (G g G^T) (*) (B^T d B) ] A  for output tile F(m,r):
+  filter g is r x r (r = 3), input tile d is (m+r-1) x (m+r-1), (*) is
+  element-wise multiply. Direct-equivalent output: standard 3x3 stride-1
+  convolution over NCHW input.
+
+variants:
+  - id: winograd-kernel-fp32
+    claim: >
+      steady-state convolution-layer throughput of a Winograd implementation at
+      a disclosed tile size, comparable against direct/im2col/FFT convolution
+      because the flop convention is algorithm-invariant
+    inputs:
+      layer_suite: >
+        3x3 stride-1 layers only (the subset Winograd applies to), taken from
+        the shared suite in benchspecs/convolution/spec.yaml; required subset,
+        given as (N, C, H, W, K):
+      required_shapes:
+        - "VGG16 conv1_2: (1, 64, 224, 224, 64)"
+        - "VGG16 conv2_2: (1, 128, 112, 112, 128)"
+        - "VGG16 conv3_3: (1, 256, 56, 56, 256)"
+        - "VGG16 conv4_3: (1, 512, 28, 28, 512)"
+        - "VGG16 conv5_3: (1, 512, 14, 14, 512)"
+        - "ResNet-18 layer1: (1, 64, 56, 56, 64)"
+        - "ResNet-18 layer2: (1, 128, 28, 28, 128)"
+        - "ResNet-18 layer3: (1, 256, 14, 14, 256)"
+        - "ResNet-18 layer4: (1, 512, 7, 7, 512)"
+      batch: "N in {1, 8}; N = 1 is required (the mobile-inference case this track targets)"
+      tile_size: >
+        F(2,3), F(4,3), F(6,3) each reported separately; F(6,3) is required
+        (it is the only tile FeatherCNN ships). Reporting a single unlabelled
+        'Winograd' number is not admissible.
+      precision: "fp32 required; fp16 optional and reported separately"
+      data: "inputs and filters ~ U(-1, 1), fixed seed 20260806"
+    protocol:
+      warmup: 20
+      reps: 100
+      statistic: "median; min and max also reported"
+      timer: "monotonic host clock (CPU target); CUDA events if a GPU port is measured"
+      timing_scope: >
+        input transform + element-wise multiply + output transform.
+        The FILTER transform is excluded (it is weight-only and hoistable) but
+        MUST be measured once and reported as 'filter_transform_ms'; a
+        submission that hoists it silently is not comparable to one that does not.
+      cache_state: >
+        cold and hot both reported: cold = caches flushed before each rep,
+        hot = back-to-back reps. Mobile inference is the cold case.
+      threads: "single-thread and all-core numbers both reported, with core count and ISA (NEON/SVE/AVX2/AVX-512) stated"
+    metric:
+      primary: "ms per layer (median)"
+      secondary:
+        - "GFLOP/s computed with the DIRECT-convolution flop count: flops_ref = 2*N*K*C*H_out*W_out*9"
+        - "actual multiply count performed, reported separately as 'true_mults'"
+      accounting_rule: >
+        flops_ref is algorithm-invariant by construction, so direct, im2col,
+        Winograd and FFT are on one scale. Quoting a rate against a Winograd
+        implementation's own reduced multiply count is forbidden as a headline
+        number — it makes the algorithmic saving disappear and is not comparable.
+    correctness:
+      gate: >
+        max relative error vs a direct fp64 convolution reference over all
+        output elements < 1e-2 for fp32 F(6,3), < 3e-3 for fp32 F(4,3),
+        < 1e-3 for fp32 F(2,3). A run that fails its tile's bound is invalid
+        regardless of speed.
+      note: >
+        the bounds widen with tile size on purpose — that IS the tradeoff being
+        measured; see variant winograd-accuracy-frontier.
+  - id: winograd-accuracy-frontier
+    claim: >
+      the speed/accuracy frontier across tile sizes, which is the actual
+      decision a deployer makes and which a single latency number hides
+    inputs:
+      layer_suite: "same required_shapes as winograd-kernel-fp32"
+      tile_size: "F(2,3), F(4,3), F(6,3) — all three required"
+      precision: "fp32; fp16 optional"
+    protocol:
+      warmup: 20
+      reps: 100
+      statistic: "median"
+      timer: "monotonic host clock"
+      timing_scope: "same as winograd-kernel-fp32"
+    metric:
+      primary: "(median ms, max relative error) pair per tile size, plotted as a frontier"
+      secondary: ["mean relative error", "error at the 99.9th percentile output element"]
+    correctness:
+      gate: >
+        reference is direct convolution in fp64. No pass/fail threshold here —
+        the error IS the reported quantity. A submission may not report a point
+        on this frontier without both coordinates.
+  - id: winograd-e2e-network
+    claim: >
+      whole-network inference latency, the number a mobile deployer experiences,
+      including the layers Winograd does not apply to
+    inputs:
+      networks: ["VGG16", "ResNet-18", "MobileNetV1"]
+      batch: "N = 1"
+      precision: "fp32"
+    protocol:
+      warmup: 10
+      reps: 50
+      statistic: "median; min and max also reported"
+      timer: "monotonic host clock, whole forward pass"
+      timing_scope: >
+        full forward pass including all layer types. Model load, weight
+        transform and memory-pool setup excluded from the window and reported
+        once as 'init_ms'.
+    metric:
+      primary: "ms per inference"
+      secondary: ["fraction of total time in 3x3 stride-1 layers", "peak RSS"]
+    correctness:
+      gate: >
+        top-1 label agreement with a reference fp32 framework run on a fixed
+        100-image sample, plus max relative logit error < 1e-2
+
+notes_on_fairness:
+  - >
+    Winograd changes the arithmetic performed, so GFLOP/s is meaningless unless
+    the flop convention is pinned. This spec fixes flops_ref to the direct
+    convolution count for every algorithm class, and requires the true multiply
+    count to be reported alongside rather than substituted for it.
+  - >
+    F(6,3) is the largest commonly deployed tile and the least numerically
+    accurate. FeatherCNN, the track's only artifact, ships F(6,3) exclusively and
+    contains no accuracy test for it. This spec makes an error bound a hard gate
+    and adds a frontier variant, deliberately diverging from the artifact's
+    practice.
+  - >
+    Filter-transform placement can move a large fraction of the reported win at
+    batch 1. It is excluded from the timed window here but must be reported;
+    a hoisting choice left implicit makes two submissions incomparable.
+  - >
+    Cold-cache is the mobile-inference reality and hot-cache flatters
+    transform-heavy methods. Both are required.
+  - >
+    The artifact commits no timing harness (measurement is delegated to wiki
+    guides), so no protocol could be inherited; the constants here are set to
+    match benchspecs/convolution/spec.yaml so the two tracks stay comparable.
+
+open_questions:
+  - >
+    FeatherCNN's own layer list, warmup/repetition counts, and reported metric
+    could not be recovered — the TPDS paper is paywalled with no arXiv mirror
+    and the repo ships no benchmark script. The required_shapes above are taken
+    from the shared convolution suite, not from this paper.
+  - >
+    Whether FeatherCNN's ARM path uses the generic winograd_kernels.cpp or the
+    F63-specialized file for a given layer is not documented; submissions using
+    it should state which path executed.
+  - >
+    Single-implementation track. Candidate external baselines for a real
+    comparison: ARM Compute Library, NCNN, oneDNN, cuDNN's Winograd algorithms,
+    and the classic Lavin-Gray reference.
+
+evidence:
+  journals/tpds/LanMHSDWLQF20: >
+    FeatherCNN (TPDS'20). Artifact Tencent/FeatherCNN verified (README cites the
+    paper's DOI). Winograd sources located via code search:
+    src/booster/arm/winograd_kernels.cpp, arm/winograd_kernels_F63.cpp,
+    avx/winograd_kernels_F63.cpp, avx/winograd_kernels_F63_fused.cpp,
+    include/booster/winograd_kernels.h — establishing F(6,3) as the shipped tile
+    on both NEON and AVX plus a separate fused AVX path. No benchmark harness,
+    no warmup/repetition constants and no Winograd accuracy test are present in
+    the repository; measurement is delegated to external wiki guides.

@@ -1,0 +1,76 @@
+diff --git a/BCMGX/config.mk b/BCMGX/config.mk
+index 3bf9588..b6eb3f6 100644
+--- a/BCMGX/config.mk
++++ b/BCMGX/config.mk
+@@ -117,10 +117,23 @@ CPP_STD         = -std=c++17
+ 
+ CC = gcc
+ NVCC = $(CUDA_DIR)/bin/nvcc
+-NVCC_FLAG = -DOMPI_SKIP_MPICXX $(CPP_STD) --extended-lambda # -Xptxas=-v
++# kernelbench build-system fix: nvcc does not read $CC/$CXX or PATH order on
++# its own; without an explicit -ccbin it silently falls back to whatever
++# "g++" resolves on PATH (this login node's system g++ 8.5, not the intended
++# host compiler). -ccbin=$(CC) makes the CC= passed on the `make` command
++# line (see build.sh, KB_GCC12) the host compiler nvcc actually uses.
++NVCC_FLAG = -DOMPI_SKIP_MPICXX $(CPP_STD) --extended-lambda -ccbin=$(CC) # -Xptxas=-v
+ GPU_ARCH = -arch=$(CUDA_GPU_ARCH) -m64
+ 
+-LIBS += -lcuda -lcudart -lcublas -lcusolver -lcurand -L$(MPI_DIR)/lib -lmpi -lnvToolsExt -lnvidia-ml -lcusparse #-lpthread
++LIBS += -lcuda -lcudart -lcublas -lcusolver -lcurand -L$(MPI_DIR)/lib -lmpi -lnvidia-ml -lcusparse #-lpthread
++# kernelbench build-system fix: Cray-MPICH's libmpi needs an explicit
++# -lfabric on the link line (Perlmutter); a self-contained MPI (e.g.
++# conda-forge OpenMPI, zaratan) already carries its own transport as a
++# DT_NEEDED dependency of libmpi.so and does not. $(wildcard) keeps the
++# Perlmutter path/behaviour unchanged and simply skips it where absent.
++ifneq ($(wildcard /opt/cray/libfabric/default/lib64),)
++LIBS += -L/opt/cray/libfabric/default/lib64 -lfabric
++endif
+ INCLUDE = -Isrc -Isrc/nsp -I$(MPI_INCLUDE_DIR) -I$(NSP_PATH) -Iinclude #-I$(NSPARSE_PATH)/inc
+ DEFINE = #-DGENERAL_TRANSPOSE #-DDETAILED_TIMING
+ 
+@@ -158,7 +171,37 @@ ifeq ($(SW_USE_LIB),1)
+ DEFINE += -DSW_USE_LIB
+ 
+ # Use LAPACK+CBLAS: please, adjust the following variables according to your system
++#
++# kernelbench build-system fix (ARTIFACT_GUIDE.md rule 3): this machine
++# (Perlmutter, AMD CPUs) has no netlib lapack-master checkout and no Intel
++# MKL (the USE_MKL=1 default below hardcodes an Intel-oneAPI path that does
++# not exist here). Cray's own vendor BLAS/LAPACK, cray-libsci, ships
++# LAPACKE- and CBLAS-compatible headers/symbols in ONE combined library
++# (`module load cray-libsci`; confirmed:
++# $CRAY_LIBSCI_PREFIX_DIR/include/{lapacke.h,cblas.h},
++# $CRAY_LIBSCI_PREFIX_DIR/lib/libsci_gnu.so) -- substituted here instead of
++# the netlib layout the upstream Makefile assumes. No kernel/solver code is
++# touched; this is purely which BLAS/LAPACK vendor gets linked.
+ ifeq ($(USE_LAPACK),1)
++ifdef CRAY_LIBSCI_PREFIX_DIR
++$(info Use cray-libsci (kernelbench build-system substitution for lapack-master))
++INCLUDE += -I$(CRAY_LIBSCI_PREFIX_DIR)/include
++LIBS    += -L$(CRAY_LIBSCI_PREFIX_DIR)/lib -lsci_gnu
++else ifdef KB_BLAS_LIB
++# kernelbench build-system fix (non-Cray machine, e.g. zaratan): no
++# cray-libsci at all here. bench/env.sh's KB_BLAS_LIB/KB_BLAS_INCDIR point
++# at a conda-forge OpenBLAS build that -- like cray-libsci above -- ships
++# LAPACKE_*/cblas_* symbols directly in the one shared object (confirmed:
++# $KB_BLAS_INCDIR/{lapacke.h,cblas.h}, `nm -D $KB_BLAS_LIB` exports both
++# families), so it substitutes the same way cray-libsci does. $(LIBS) is
++# reused verbatim on nvcc's per-object COMPILE lines too (see Makefile) --
++# a bare .so path there is misread as a second input file ("A single input
++# file is required for a non-link phase"), so link it with -l: (GNU ld
++# link-by-exact-filename), a proper linker flag, not a positional input.
++$(info Use KB_BLAS_LIB (kernelbench build-system substitution for lapack-master))
++INCLUDE += -I$(KB_BLAS_INCDIR)
++LIBS    += -L$(dir $(KB_BLAS_LIB)) -l:$(notdir $(KB_BLAS_LIB))
++else
+ $(info Use LAPACK_LIB)
+ LAPACK_INC = $(LAPACK_LIB)/LAPACKE/include/
+ CBLAS_INC = $(LAPACK_LIB)/CBLAS/include/
+@@ -167,6 +210,7 @@ CBLAS_LIB = $(LAPACK_LIB)
+ INCLUDE += -I${LAPACK_INC} -I${CBLAS_INC}
+ LIBS    += -L${LAPACK_LIB} -llapack -lrefblas -llapacke -lcblas -lgfortran
+ endif
++endif
+ 
+ 
+ ifeq ($(USE_MKL),1)

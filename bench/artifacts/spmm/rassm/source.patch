@@ -1,0 +1,79 @@
+diff --git a/code/CMakeLists.txt b/code/CMakeLists.txt
+index 9f00359..0de17e9 100644
+--- a/code/CMakeLists.txt
++++ b/code/CMakeLists.txt
+@@ -44,7 +44,18 @@ if(Boost_FOUND)
+             message(STATUS "Using GCC")
+             target_compile_definitions(rassm PRIVATE GCC_COMPILER=1)
+ 
+-            set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wextra -Wall -Wno-write-strings -std=c++17 -g -O3 -fopenmp")
++            # PATCHED (see bench/artifacts/spmm/rassm/STATUS.md): this GNU
++            # branch was missing -march=core-avx2 (the non-GNU/non-Intel
++            # fallback branch a few lines below already has it, and the
++            # Intel branch has its ICC equivalent -- this looks like an
++            # oversight specific to the GNU branch). config.h's non-Intel
++            # path (spmm/jstream.h etc.) uses raw AVX2/FMA intrinsics
++            # (_mm256_fmadd_pd, ...) unconditionally on x86_64, which GCC
++            # refuses to inline without the matching -mavx2 -mfma target
++            # flags ("target specific option mismatch"). Adding the same
++            # -march=core-avx2 the artifact's own other branches already use
++            # -- not a kernel-code change.
++            set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wextra -Wall -Wno-write-strings -std=c++17 -g -O3 -fopenmp -march=core-avx2")
+ 
+         # set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall -Wno-write-strings -fsanitize=address -std=c++17 -g -O2")
+ 
+diff --git a/code/include/config.h b/code/include/config.h
+index cf33212..5a958e6 100644
+--- a/code/include/config.h
++++ b/code/include/config.h
+@@ -4,6 +4,11 @@
+ #include <cstdint>
+ #include <cstddef>
+ #include <map>
++#include <string>  // PATCHED (see bench/artifacts/spmm/rassm/STATUS.md): std::map<std::string,...>
++                   // below needs this transitively; newer libstdc++ (gcc-12+
++                   // here) no longer pulls it in via <map>, so this compiled
++                   // with the older GCC RASSM's own README targets but not
++                   // here. Header-only include-path fix, no logic touched.
+ 
+ using ITYPE = int32_t;
+ // using ITYPE = int64_t;
+diff --git a/code/include/experiments.h b/code/include/experiments.h
+index 476eea4..cad7eb9 100644
+--- a/code/include/experiments.h
++++ b/code/include/experiments.h
+@@ -326,6 +326,21 @@ void data_movement_experiment( std::string mtx_filename, ITYPE feature, ITYPE Ti
+ 
+         RUN_TIMING(spmm_atm_kstream_compiler_vectorized, S_atm, Ti, Tj);
+     } else if (run_mode == runtype::INTEL_MKL) {
++        // PATCHED (see bench/artifacts/spmm/rassm/STATUS.md): this branch is
++        // a comparison BASELINE (vendor Intel MKL), not any part of RASSM's
++        // own kernel (that's runtype::RASSM, spmm_atm_kstream_compiler_
++        // vectorized, above and untouched). It unconditionally uses MKL
++        // types (sparse_matrix_t, MKL_INT, ...) that only exist when
++        // mkl_spblas.h was included, which this file itself already gates
++        // on `#ifdef INTEL_COMPILER` a few lines up -- so building with GCC
++        // (no Intel compiler, no MKL) always fails here, independent of
++        // which run_mode is actually selected at runtime. Mirroring that
++        // existing include-guard onto this block's body (rather than
++        // deleting or rewriting it) fixes the GCC build while leaving the
++        // MKL codepath itself byte-for-byte identical when compiled with
++        // INTEL_COMPILER, and RASSM's own kernel is not on this branch at
++        // all.
++#ifdef INTEL_COMPILER
+         PRINT_TYPE("INTEL MKL SPMM");
+ 
+         sparse_matrix_t mkl_S;
+@@ -390,7 +405,11 @@ void data_movement_experiment( std::string mtx_filename, ITYPE feature, ITYPE Ti
+         MEM_RESET(C, countC, layers);
+ 
+         RUN_MKL_TIMING;
+-
++#else
++        print_error_exit("[Experiment]: runtype::INTEL_MKL requires building "
++                          "with INTEL_COMPILER (Intel MKL) -- not available "
++                          "in this GCC build; see STATUS.md.\n");
++#endif
+     } else {
+         print_error_exit("[Experiment]: Unknown run-mode\n");
+     }

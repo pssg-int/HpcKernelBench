@@ -1,0 +1,25 @@
+diff --git a/include/alto.hpp b/include/alto.hpp
+index f97a6ee..46b2f08 100644
+--- a/include/alto.hpp
++++ b/include/alto.hpp
+@@ -117,6 +117,20 @@ gen_alto(SparseTensor* spt, AltoTensor<LIT>** at)
+ 
+     AltoTensor<LIT>* _at = (AltoTensor<LIT>*)AlignedMalloc(sizeof(AltoTensor<LIT>));
+     assert(_at);
++    // BUG FIX (see ../../STATUS.md "Real artifact bug found"): AlignedMalloc
++    // is plain posix_memalign -- it does NOT run AltoTensor<LIT>'s
++    // constructor, so the struct's declared "= nullptr" default member
++    // initializers (prtn_ptr, prtn_intervals, cr_masks, prtn_id, prtn_mask,
++    // prtn_mode_masks) never take effect and those fields hold garbage.
++    // gen_alto() (this function) never sets them -- only create_alto() does,
++    // via a separate allocation pass AFTER calling gen_alto(). destroy_alto()
++    // unconditionally frees all of them regardless of which path built the
++    // tensor, so any destroy_alto(gen_alto(...)) call (exactly what
++    // blco.hpp's gen_blcotensor_host() does for every BLCO/MTTKRP run) frees
++    // uninitialized pointers -- observed as a reproducible
++    // "free(): invalid pointer" crash. Zeroing here is a memory-safety fix
++    // only; it changes no algorithm, no numerical result, and no kernel code.
++    memset(_at, 0, sizeof(AltoTensor<LIT>));
+ 
+     _at->nmode = nmode;
+     _at->nnz = nnz;

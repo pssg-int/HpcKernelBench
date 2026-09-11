@@ -1,0 +1,609 @@
+{
+ "kernel": "gemm",
+ "papers": [
+  {
+   "key": "conf/cgo/LopezKB26",
+   "title": "Compilation of Generalized Matrix Chains with Symbolic Sizes",
+   "venue": "CGO",
+   "year": 2026,
+   "doi": "10.1109/CGO68049.2026.11395236",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/HPAC/gmc_code_gen",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "abstract": "Generalized Matrix Chains (GMCs) are products of matrices where each matrix carries features (e.g., general, symmetric, triangular, positive-definite) and is optionally transposed and/or inverted. GMCs are commonly evaluated via sequences of calls to BLAS and LAPACK kernels. When matrix sizes are known, one can craft a sequence of kernel calls to evaluate a GMC that minimizes some cost, e.g., the number of floating-point operations (FLOPs). Even in these circumstances, high-level languages and libraries, upon which users usually rely, typically perform a suboptimal mapping of the input GMC onto a sequence of kernels. In this work, we go one step beyond and consider matrix sizes to be symbolic (unknown); this changes the nature of the problem since no single sequence of kernel calls is optimal for all possible combinations of matrix sizes. We design and evaluate a code generator for GMCs ",
+   "one_liner": "Multi-versioning codegen selects near-optimal BLAS/LAPACK kernel sequences for symbolic-size matrix chains"
+  },
+  {
+   "key": "conf/cgo/ZhangDSHSP26",
+   "title": "Hexcute: A Compiler Framework for Automating Layout Synthesis in GPU Programs",
+   "venue": "CGO",
+   "year": 2026,
+   "doi": "10.1109/CGO68049.2026.11395194",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/hexcute/hexcute-bench",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "abstract": "Efficient GPU programming is crucial for achieving high performance in deep learning (DL) applications. The performance of GPU programs depends on how data is parallelized across threads and arranged within memory subsystems. The mapping functions describing tensors on GPUs are known as tensor layouts. Low-level programming frameworks, such as CUTLASS and Hidet, provide expressive layout abstractions but often require considerable programming effort to manually specify optimal layouts. High-level GPU programming languages, such as Triton, rely on compiler heuristics to generate dataflow, layouts, and pipelining strategies in GPU programs. However, the heuristics for dataflow and pipelining strategies are not generalizable to complex operators. To balance expressiveness and programmability, we propose Hexcute, a compiler framework that automates layout synthesis while providing explicit c",
+   "one_liner": "Hexcute auto-synthesizes GPU tensor layouts, matching cuBLAS/FlashAttention, 6.46x over Triton on MoE"
+  },
+  {
+   "key": "conf/ipps/BellavitaRICDVG26",
+   "title": "Communication-Avoiding Linear Algebraic Kernel K-Means on GPUs",
+   "venue": "IPDPS",
+   "year": 2026,
+   "doi": "10.1109/IPDPS65963.2026.00030",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/CornellHPC/Vivaldi",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu",
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Clustering algorithms are among the most important and informative data analysis tools available. Of these, the K-means algorithm is one of the most popular and powerful choices due to its simplicity and generality. However, K-means cannot compute non-linearly separable cluster boundaries, which limits its utility in certain cases. Kernel K-means is a variant of the K-means algorithm that can compute non-linearly separable cluster boundaries. Kernel K-means has significant computational and memory requirements because of the presence of a large kernel matrix which scales quadratically with dataset size. Prior work has accelerated Kernel K-means by formulating it using sparse linear algebra primitives and implementing it on a single GPU. However, that approach cannot run on datasets with more than approximately 80,000 samples due to limited GPU memory.Clustering using Kernel K-means remai",
+   "one_liner": "1.5D communication-avoiding distributed LA algorithms scale Kernel K-means to 256 GPUs, 79.7% weak-scaling eff."
+  },
+  {
+   "key": "conf/ipps/DengYFD26",
+   "title": "Demystifying ARM SME to Optimize General Matrix Multiplications",
+   "venue": "IPDPS",
+   "year": 2026,
+   "doi": "10.1109/IPDPS65963.2026.00102",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/mpgemm/MPGEMM",
+   "artifact_status": "verified",
+   "platform": [
+    "arm-cpu"
+   ],
+   "approach": "manual",
+   "abstract": "General Matrix Multiplication (GEMM) is a critical kernel in high-performance computing and deep learning. While modern architectures like ARM’s Scalable Matrix Extension (SME) introduce dedicated hardware for matrix operations, existing linear algebra libraries fail to fully exploit its potential, particularly for large matrices. This paper presents MPGEMM, an open-source library that leverages key architectural features of SME to optimize GEMM across multiple precisions. Through a systematic characterization of SME, we derive optimization guidelines that inform our design. MPGEMM employs cache-aware partitioning, efficient data packing with on-the-fly transposition, and specialized micro-kernels that utilize multi-vector loads and all available tile registers. Evaluated on an Apple M4 Pro with real-world workloads from DeepSeek and LLaMA, MPGEMM achieves an average speedup of 1.23 × ov",
+   "one_liner": "MPGEMM exploits ARM SME for multi-precision GEMM, 1.23x over Apple Accelerate on M4 Pro."
+  },
+  {
+   "key": "conf/ipps/YaoZLX26",
+   "title": "High-Order-Preserving Acceleration of a Shallow-Water Dynamical Core Using Tensor Units",
+   "venue": "IPDPS",
+   "year": 2026,
+   "doi": "10.1109/IPDPS65963.2026.00040",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/jnyao/ozHOPE",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Recent advances in low-precision computing units such as Tensor Cores offer enormous performance opportunities for scientific computing beyond machine learning workloads. High-order numerical methods feature rapid convergence and enhanced approximation capability, but a direct application of low precision often degrades numerical accuracy, preventing these methods from achieving their expected order of convergence. This work addresses the challenge by restoring the effective working precision, tunable up to FP64, using FP16 Tensor Cores in the convolution-reformulated stencil computations of a high-order shallow-water dynamical core, HOPE, through the Ozaki scheme combined with an efficient memory layout to optimize Tensor Core utilization. The proposed approach achieves an end-to-end speedup of 1.82× on average and up to 4.34× while maintaining the required accuracy across numerical alg",
+   "one_liner": "Ozaki-scheme FP16 Tensor Cores accelerate high-order shallow-water stencil dynamical core, up to 4.34x speedup."
+  },
+  {
+   "key": "conf/asplos/IkarashiQDRBR25",
+   "title": "Exo 2: Growing a Scheduling Language",
+   "venue": "ASPLOS",
+   "year": 2025,
+   "doi": "10.1145/3669940.3707218",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/exo-lang/exo",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu",
+    "arm-cpu"
+   ],
+   "approach": "codegen",
+   "abstract": "User-schedulable languages (USLs) help programmers productively optimize programs by providing safe means of transforming them. Current USLs are designed to give programmers exactly the control they want, while automating all other concerns. However, there is no universal answer for what performance-conscious programmers want to control, how they want to control it, and what they want to automate, even in relatively narrow domains. We claim that USLs should, instead, be designed to grow. We present Exo 2, a scheduling language that enables users to define new scheduling operations externally to the compiler. By composing a set of trusted, fine-grained primitives, users can safely write their own scheduling library to build up desired automation. We identify actions (ways of modifying code), inspection (ways of interrogating code), and references (ways of pointing to code) as essential fo",
+   "one_liner": "User-extensible scheduling language; 80+ high-performance kernels competitive with SOTA on 3 platforms"
+  },
+  {
+   "key": "conf/cgo/LopoukhineFVLDD25",
+   "title": "A Multi-level Compiler Backend for Accelerated Micro-kernels Targeting RISC-V ISA Extensions",
+   "venue": "CGO",
+   "year": 2025,
+   "doi": "10.1145/3696443.3708952",
+   "arxiv": "2502.04063",
+   "oa_url": "https://arxiv.org/pdf/2502.04063",
+   "artifact_url": "https://github.com/ww2766-www/MLIR-Based-Optimization-for-Protocol-Buffer",
+   "artifact_status": "verified",
+   "platform": [
+    "other"
+   ],
+   "approach": "codegen",
+   "abstract": "High-performance micro-kernels must fully exploit today’s diverse and specialized hardware to deliver peak performance to deep neural networks (DNNs). While higher-level optimizations for DNNs are offered by numerous compilers (e.g., MLIR, TVM, OpenXLA), performance-critical micro-kernels are left to specialized code generators or handwritten assembly. Even though widely-adopted compilers (e.g., LLVM, GCC) offer tuned backends, their CPU-focused input abstraction, unstructured intermediate representation (IR) and general-purpose best-effort design inhibit tailored code generation for innovative hardware. We think it is time to widen the classical hourglass backend and embrace progressive lowering across a diverse set of structured abstractions to bring domain-specific code generation to compiler backends. We demonstrate this concept by implementing a custom backend for a RISC-V-based acc",
+   "one_liner": "MLIR compiler backend generating DNN micro-kernels for RISC-V streaming-register accelerator"
+  },
+  {
+   "key": "conf/ics/DezfuliC25",
+   "title": "Loop Fusion in Matrix Multiplications with Sparse Dependence",
+   "venue": "ICS",
+   "year": 2025,
+   "doi": "10.1145/3721145.3730427",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3721145.3730427",
+   "artifact_url": "https://github.com/SwiftWare-Lab/tile-fusion",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "abstract": "Fusing parallel loops in consecutive matrix multiplications presents an opportunity for data locality optimization. However, irregular dependencies between iterations across the loops hinder existing compilers from performing this fusion. It also poses challenges for runtime methods, leading to excessive synchronization overhead or limited data reuse. This paper introduces tile fusion, a compiler approach that fuses tiles from the two parallel loops of matrix multiplications with sparse dependence between them. By enhancing data locality and providing balanced workloads, tile fusion accelerates graph neural network training and the solution of sparse linear systems, achieving geometric mean speedups of 2.33 × over PyG and 1.32 × over MKL, respectively.",
+   "one_liner": "Tile-fusion compiler fusing consecutive matmuls with sparse dependence (GNN, sparse solve), 2.33x/1.32x"
+  },
+  {
+   "key": "conf/sc/WangHZSJWDZ25",
+   "title": "Rethinking Back Transformation in 2-stage Eigenvalue Decomposition on Heterogeneous Architectures",
+   "venue": "SC",
+   "year": 2025,
+   "doi": "10.1145/3712285.3759770",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/hansheng1001/EVD4SC2025",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "The 2-stage eigenvalue decomposition (EVD) method outperforms conventional 1-stage method on GPUs and heterogeneous architectures, especially when eigenvectors are not required. However, its performance advantage diminishes when performing back transformation to obtain eigenvectors. To address this, we propose two key solutions: 1) replacing BLAS3 operations with BLAS2 operations during the bulge-chasing back transformation for better performance, and 2) reordering the back transformation workflow from a backward pattern to a new parallelism-driven pattern to hide divide-and-conquer latency, at the cost of one additional GEMM computation. Experimentally, the proposed back transformation algorithm demonstrates significant performance improvements, outperforming the SOTA implementation in MAGMA by an average factor of 3.58x. For complete FP64 precision symmetric EVD with eigenvectors, the ",
+   "one_liner": "Restructured back-transformation in 2-stage EVD beats MAGMA/cuSOLVER by up to 3.58x/2.21x"
+  },
+  {
+   "key": "conf/sc/FuXGMSWSD0Y25",
+   "title": "T2-RELION: Task Parallelism, Tensor Core Accelerated RELION for Cryo-EM 3D Reconstruction",
+   "venue": "SC",
+   "year": 2025,
+   "doi": "10.1145/3712285.3759824",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3712285.3759824",
+   "artifact_url": "https://github.com/Edgarrrrrr/T2-RELION",
+   "artifact_status": "likely",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Cryo-electron microscopy (cryo-EM) is a key technique for structural biology, but its computational efficiency, particularly during 3D reconstruction, remains a bottleneck. We introduce T2-RELION, a highly optimized version of RELION for cryo-EM 3D reconstruction on CPU-GPU platforms. RELION is a widely used open-source package in the cryo-EM community. We identify and resolve key inefficiencies in RELION’s parallelization strategy and memory management by proposing task parallelism and a three-phase GPU memory management strategy. Furthermore, we leverage Tensor Cores to accelerate the hot-spot kernel for difference calculation, employing an advanced pipelining strategy to hide latency and enable thread-block-level data reuse. On a quad-A100 GPU machine, performance evaluations demonstrate that T2-RELION outperforms RELION 4.0. For the hot-spot kernel, our optimizations achieve 1.90-23.",
+   "one_liner": "Tensor-Core-accelerated hot-spot difference kernel for cryo-EM RELION reconstruction, up to 23.7x"
+  },
+  {
+   "key": "conf/sc/WuZDZHC25",
+   "title": "TurboFNO: High-Performance Fourier Neural Operator with Fused FFT-GEMM-iFFT on GPU",
+   "venue": "SC",
+   "year": 2025,
+   "doi": "10.1145/3712285.3759772",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3712285.3759772",
+   "artifact_url": "https://github.com/shixun404/TurboFNO",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Fourier Neural Operators (FNO) are widely used for learning partial differential equation solution operators. However, FNO lacks architecture-aware optimizations,with its Fourier layers executing FFT, filtering, GEMM, zero padding, and iFFT as separate stages, incurring multiple kernel launches and significant global memory traffic. We propose TurboFNO, the first fully fused FFT-GEMM-iFFT GPU kernel with built-in FFT optimizations. We first develop FFT and GEMM kernels from scratch, achieving performance comparable to or faster than the closed-source SOTA cuBLAS and cuFFT. Additionally, our FFT kernel integrates a built-in high-frequency truncation, input zero-padding, and pruning feature to avoid additional memory copy kernels. To fuse the FFT and GEMM workloads, we propose an FFT variant in which a single thread block iterates over the hidden dimension, aligning with the k-loop in GEMM",
+   "one_liner": "First fully-fused FFT-GEMM-iFFT GPU kernel for Fourier Neural Operators, up to 150% faster than PyTorch/cuFFT"
+  },
+  {
+   "key": "journals/tpds/NavarroQMFH25",
+   "title": "CAT: Cellular Automata on Tensor Cores",
+   "venue": "TPDS",
+   "year": 2025,
+   "doi": "10.1109/TPDS.2024.3520395",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/temporal-hpc/CAT",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu",
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Cellular automata (CA) are simulation models that can produce complex emergent behaviors from simple local rules. Although state-of-the-art GPU solutions are already fast due to their data-parallel nature, their performance can rapidly degrade in CA with a large neighborhood radius. With the inclusion of tensor cores across the entire GPU ecosystem, interest has grown in finding ways to leverage these fast units outside the field of artificial intelligence, which was their original purpose. In this work, we present CAT, a GPU tensor core approach that can accelerate CA in which the cell transition function acts on a weighted summation of its neighborhood. CAT is evaluated theoretically, using an extended PRAM cost model, as well as empirically using the Larger Than Life (LTL) family of CA as case studies. The results confirm that the cost model is accurate, showing that CAT exhibits cons",
+   "one_liner": "CAT: mapping large-radius cellular automata onto GPU tensor cores (and CPU AMX), up to 101x speedup"
+  },
+  {
+   "key": "journals/tpds/LinXWYLL25",
+   "title": "High Performance OpenCL-Based GEMM Kernel Auto-Tuned by Bayesian Optimization",
+   "venue": "TPDS",
+   "year": 2025,
+   "doi": "10.1109/TPDS.2025.3587673",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/lsl036/CL-DB-GEMM",
+   "artifact_status": "verified",
+   "platform": [
+    "fpga",
+    "other"
+   ],
+   "approach": "autotuning",
+   "abstract": "OpenCL has become the favored framework for emerging heterogeneous devices and FPGAs, owing to its versatility and portability. However, OpenCL-based math libraries still face challenges in fully leveraging device performance. When deploying high-performance arithmetic applications on these devices, the most important hot function is General Matrix-matrix Multiplication (GEMM). This study presents a meticulously optimized OpenCL GEMM kernel. Our enhanced GEMM kernel emphasizes two key improvements: 1) a three-level double buffer pipeline that efficiently overlaps data fetching with floating-point computations; 2) a fine-grained prefetching strategy of private memory to increase device occupancy by optimizing register unit utilization. Furthermore, this work presents a Bayesian Optimization (BO) tuner for kernel auto-tuning. Experimental results demonstrate considerable optimization impro",
+   "one_liner": "OpenCL GEMM kernel with double-buffer pipeline and prefetching, auto-tuned via Bayesian optimization."
+  },
+  {
+   "key": "conf/asplos/YuLZCFX24",
+   "title": "Optimizing Dynamic-Shape Neural Networks on Accelerators via On-the-Fly Micro-Kernel Polymerization",
+   "venue": "ASPLOS",
+   "year": 2024,
+   "doi": "10.1145/3620665.3640390",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3620665.3640390",
+   "artifact_url": "https://github.com/LinkZyy/MoonPoly-dev",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu",
+    "other"
+   ],
+   "approach": "codegen",
+   "abstract": "In recent times, dynamic-shape neural networks have gained widespread usage in intelligent applications to address complex tasks, introducing challenges in optimizing tensor programs due to their dynamic nature. As the operators' shapes are determined at runtime in dynamic scenarios, the compilation process becomes expensive, limiting the practicality of existing static-shape tensor compilers. To address the need for effective and efficient optimization of dynamic-shape neural networks, this paper introduces MikPoly, a novel dynamic-shape tensor compiler based on micro-kernel polymerization. MikPoly employs a two-stage optimization approach, dynamically combining multiple statically generated micro-kernels using a lightweight cost model based on the shape of a tensor operator known at runtime. We evaluate the effectiveness of MikPoly by employing popular dynamic-shape operators and neura",
+   "one_liner": "Micro-kernel polymerization generates dynamic-shape tensor kernels, 1.49x over vendor libraries on GPU/NPU"
+  },
+  {
+   "key": "conf/ics/LiXSS24",
+   "title": "Accelerated Auto-Tuning of GPU Kernels for Tensor Computations",
+   "venue": "ICS",
+   "year": 2024,
+   "doi": "10.1145/3650200.3656626",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3650200.3656626",
+   "artifact_url": "https://github.com/HPCRL/Ansor-AF-DS",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "autotuning",
+   "abstract": "TVM is a state-of-the-art auto-tuning compiler for the synthesis of high-performance implementations of tensor computations. However, an extensive search in the vast design space via thousands of compile-execute trials is often needed to identify high-performance code versions, leading to high auto-tuning time. This paper develops new performance modeling and design space exploration strategies to accelerate the code optimization process within TVM. Experimental evaluation on a number of matrix-matrix multiplication and 2D convolution kernels demonstrates about an order-of-magnitude improvement in auto-tuning time to achieve the same level of code performance.",
+   "one_liner": "Faster TVM auto-tuning of GPU GEMM/convolution tensor kernels"
+  },
+  {
+   "key": "conf/ipps/GeorganasKVKNPB24",
+   "title": "Harnessing Deep Learning and HPC Kernels via High-Level Loop and Tensor Abstractions on CPU Architectures",
+   "venue": "IPDPS",
+   "year": 2024,
+   "doi": "10.1109/IPDPS57955.2024.00089",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/libxsmm/tpp-mlir",
+   "artifact_status": "likely",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "library",
+   "abstract": "During the past decade, Deep Learning (DL) algorithms, programming systems and hardware have converged with the High Performance Computing (HPC) counterparts. Nevertheless, the programming methodology of DL and HPC systems is stagnant, relying on highly-optimized, yet platform-specific and inflexible vendor-optimized libraries. Such libraries provide close-to-peak performance on specific platforms, kernels and shapes thereof that vendors have dedicated optimizations efforts, while they underperform in the remaining use-cases, yielding non-portable codes with performance glass-jaws. This work introduces a framework to develop efficient, portable DL and HPC kernels for modern CPU architectures. We decompose the kernel development in two steps: 1) Expressing the computational core using Tensor Processing Primitives (TPPs): a compact, versatile set of 2D-tensor operators, 2) Expressing the l",
+   "one_liner": "Tensor Processing Primitives plus declarative loop abstractions yield portable, near-peak DL/HPC kernels on CPUs"
+  },
+  {
+   "key": "conf/ppopp/XuSZLH024",
+   "title": "A Holistic Approach to Automatic Mixed-Precision Code Generation and Tuning for Affine Programs",
+   "venue": "PPoPP",
+   "year": 2024,
+   "doi": "10.1145/3627535.3638484",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/sheenisme/lnlamp",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu",
+    "nvidia-gpu"
+   ],
+   "approach": "autotuning",
+   "abstract": "Reducing floating-point (FP) precision is used to trade the quality degradation of a numerical program's output for performance, but this optimization coincides with type casting, whose overhead is undisclosed until a mixed-precision code version is generated. This uncertainty enforces the decoupled implementation of mixed-precision code generation and autotuning in prior work. In this paper, we present a holistic approach called PrecTuner that consolidates the mixed-precision code generator and the autotuner by defining one parameter. This parameter is first initialized by some automatically sampled values and used to generate several code variants, with various loop transformations also taken into account. The generated code variants are next profiled to solve a performance model formulated using the aforementioned parameter, possibly under a pre-defined quality degradation budget. The",
+   "one_liner": "PrecTuner: unified mixed-precision code generator + autotuner for affine programs, up to 3.28x over LuIs"
+  },
+  {
+   "key": "conf/ppopp/ChenLWBWMYZCY24",
+   "title": "ConvStencil: Transform Stencil Computation to Matrix Multiplication on Tensor Cores",
+   "venue": "PPoPP",
+   "year": 2024,
+   "doi": "10.1145/3627535.3638476",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/microsoft/ConvStencil",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Tensor Core Unit (TCU) is increasingly integrated into modern high-performance processors to enhance matrix multiplication performance. However, constrained to its over-specification, its potential for improving other critical scientific operations like stencil computations remains untapped.",
+   "one_liner": "Transforms stencil computation into matmul on Tensor Cores for large speedups"
+  },
+  {
+   "key": "conf/ppopp/JangdaY24",
+   "title": "Fast Kronecker Matrix-Matrix Multiplication on GPUs",
+   "venue": "PPoPP",
+   "year": 2024,
+   "doi": "10.1145/3627535.3638489",
+   "arxiv": "2401.10187",
+   "oa_url": "https://arxiv.org/pdf/2401.10187",
+   "artifact_url": "https://github.com/abhijangda/fastkron",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Kronecker Matrix-Matrix Multiplication (Kron-Matmul) is the multiplication of a matrix with the Kronecker Product of several smaller matrices. Kron-Matmul is a core operation for many scientific and machine learning computations. State-of-the-art Kron-Matmul implementations utilize existing tensor algebra operations, such as matrix multiplication, transpose, and tensor matrix multiplication. However, this design choice prevents several Kron-Matmul specific optimizations, thus, leaving significant performance on the table.",
+   "one_liner": "Custom fused GPU kernels for Kronecker matrix-matrix multiplication beating tensor-algebra baselines"
+  },
+  {
+   "key": "conf/sc/ZhangLYCZCY24",
+   "title": "LoRAStencil: Low-Rank Adaptation of Stencil Computation on Tensor Cores",
+   "venue": "SC",
+   "year": 2024,
+   "doi": "10.1109/SC41406.2024.00059",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/HPHEX/LoRAStencil",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Stencil computations play a pivotal role in numerous scientific and industrial applications, yet their efficient execution on specialized hardware accelerators like Tensor Core Units (TCUs) remains a challenge. This paper introduces LoRAStencil<sup xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">1</sup>, a novel stencil computing system designed to mitigate memory access redundancies on TCUs through low-rank adaptation. We first identify a nuanced form of this redundancy, dimension residue, specific to TCUs. Then LoRAStencil leverages orchestrated mathematical transformations to decompose stencil weight matrices into smaller rank-1 matrices, facilitating efficient data gathering along residual dimensions. It comprises three key components: memory-efficient Residual Dimension Gathering to facilitate more data reuse, compute-saving Pyramidal Matrix",
+   "one_liner": "LoRAStencil: low-rank decomposition of stencil weights removes redundancy on Tensor Cores, 2.16x"
+  },
+  {
+   "key": "conf/sc/LtaiefACRSKDBAK24",
+   "title": "Toward Capturing Genetic Epistasis From Multivariate Genome-Wide Association Studies Using Mixed-Precision Kernel Ridge Regression",
+   "venue": "SC",
+   "year": 2024,
+   "doi": "10.1109/SC41406.2024.00012",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/ecrc/hicma-x",
+   "artifact_status": "likely",
+   "platform": [
+    "nvidia-gpu",
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "abstract": "We exploit the widening margin in tensor-core performance between [FP64/FP32/FP16/INT8,FP64/FP32/FP16/FP8/INT8] on NVIDIA [Ampere,Hopper] GPUs to boost the performance of output accuracy-preserving mixed-precision computation of Genome-Wide Association Studies (GWAS) of 305K patients from the UK BioBank, the largest-ever GWAS cohort studied for genetic epistasis using a multivariate approach. Tile-centric adaptive-precision linear algebraic techniques motivated by reducing data motion gain enhanced significance with low-precision GPU arithmetic. At the core of Kernel Ridge Regression (KRR) techniques for GWAS lie compute-bound cubic-complexity matrix operations that inhibit scaling to aspirational dimensions of the population, genotypes, and phenotypes. We accelerate KRR matrix generation by redesigning the computation for Euclidean distances to engage INT8 tensor cores while exploiting ",
+   "one_liner": "Mixed-precision tensor-core Cholesky/GEMM for GWAS kernel ridge regression, 1.8 mixed-precision ExaOp/s"
+  },
+  {
+   "key": "conf/sc/WuMZDW0WW24",
+   "title": "autoGEMM: Pushing the Limits of Irregular Matrix Multiplication on Arm Architectures",
+   "venue": "SC",
+   "year": 2024,
+   "doi": "10.1109/SC41406.2024.00027",
+   "arxiv": "",
+   "oa_url": "https://www.osti.gov/servlets/purl/2480030",
+   "artifact_url": "https://github.com/wudu98/autoGEMM",
+   "artifact_status": "verified",
+   "platform": [
+    "arm-cpu"
+   ],
+   "approach": "codegen",
+   "abstract": "This paper presents an open-source library that pushes the limits of performance portability for irregular General Matrix Multiplication (GEMM) on the widely-used Arm architectures. Our library, autoGEMM, is designed to support a wide range of Arm processors: from edge devices to HPCgrade CPUs. autoGEMM generates optimized kernels for various hardware configurations by auto-combining fragments of autogenerated micro-kernels that employ hand-written optimizations to maximize computational efficiency. We optimize the kernel pipeline by tuning the register reuse and the data load/store overlapping. In addition, we use a dynamic tiling scheme to generate balanced tile shapes. Finally, we position autoGEMM on top of the TVM framework where our dynamic tiling scheme prunes the search space for TVM to identify the optimal combination of parameters for code optimization. Evaluations on five diff",
+   "one_liner": "autoGEMM: autotuned irregular GEMM micro-kernel generator for Arm, up to 2x over LIBXSMM"
+  },
+  {
+   "key": "conf/asplos/DingYZLWP23",
+   "title": "Hidet: Task-Mapping Programming Paradigm for Deep Learning Tensor Programs",
+   "venue": "ASPLOS",
+   "year": 2023,
+   "doi": "10.1145/3575693.3575702",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3575693.3575702",
+   "artifact_url": "https://github.com/hidet-org/hidet",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "abstract": "As deep learning models nowadays are widely adopted by both cloud services and edge devices, reducing the latency of deep learning model inferences becomes crucial to provide efficient model serving. However, it is challenging to develop efficient tensor programs for deep learning operators due to the high complexity of modern accelerators (e.g., NVIDIA GPUs and Google TPUs) and the rapidly growing number of operators.",
+   "one_liner": "Task-mapping paradigm compiles DL tensor programs into fast GPU kernels rivaling hand-optimized libraries."
+  },
+  {
+   "key": "conf/dac/BasalamaWC23",
+   "title": "A Comprehensive Automated Exploration Framework for Systolic Array Designs",
+   "venue": "DAC",
+   "year": 2023,
+   "doi": "10.1109/DAC56929.2023.10248016",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/UCLA-VAST/Odyssey",
+   "artifact_status": "verified",
+   "platform": [
+    "fpga"
+   ],
+   "approach": "autotuning",
+   "abstract": "Many researchers studying the performance tuning of systolic arrays have based their works on oversimplified assumptions like considering only divisors for loop tiling or pruning based on off-chip data communication to reduce the design space. In this paper, we present a comprehensive design space exploration tool named Odyssey for systolic array optimization. Odyssey results show that limiting tiling factors to only divisors of the problem size can cause up to 39% performance loss, and pruning the design space based on off-chip data movement can miss optimal designs. We tested Odyssey using various matrix multiplication and convolution kernels and validated the results with FPGA implementations.",
+   "one_liner": "Odyssey DSE tool explores tiling/dataflow for systolic-array matmul and conv kernels on FPGA"
+  },
+  {
+   "key": "conf/dac/ZhuangYZ23",
+   "title": "High Performance, Low Power Matrix Multiply Design on ACAP: from Architecture, Design Challenges and DSE Perspectives",
+   "venue": "DAC",
+   "year": 2023,
+   "doi": "10.1109/DAC56929.2023.10247981",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/arc-research-lab/CHARM",
+   "artifact_status": "verified",
+   "platform": [
+    "fpga"
+   ],
+   "approach": "codegen",
+   "abstract": "As the increasing complexity of Neural Network(NN) models leads to high demands for computation, AMD introduces a heterogeneous programmable system-on-chip (SoC), i.e., Versal ACAP architectures featured with programmable logic(PL), CPUs, and dedicated AI engines (AIE) ASICs which has a theoretical throughput up to 6.4 TFLOPs for FP32, 25.6 TOPs for INT16 and 102.4 TOPs for INT8. However, the higher level of complexity makes it non-trivial to achieve the theoretical performance even for well-studied applications like matrix-matrix multiply. In this paper, we provide AutoMM, an automatic white-box framework that can systematically generate the design for MM accelerators on Versal which achieves 3.7 TFLOPs, 7.5 TOPs, and 28.2 TOPs for FP32, INT16, and INT8 data type respectively. Our designs are tested on board and achieve gains of 7.20x (FP32), 3.26x (INT16), 6.23x (INT8) energy efficienc",
+   "one_liner": "AutoMM auto-generates matrix-multiply accelerator designs on Versal ACAP, beating A100/U250/TX2 in efficiency."
+  },
+  {
+   "key": "conf/ics/WuZLHJWC23",
+   "title": "Anatomy of High-Performance GEMM with Online Fault Tolerance on GPUs",
+   "venue": "ICS",
+   "year": 2023,
+   "doi": "10.1145/3577193.3593715",
+   "arxiv": "2305.01024",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3577193.3593715",
+   "artifact_url": "https://github.com/shixun404/Fault-Tolerant-SGEMM-on-NVIDIA-GPUs",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "General Matrix Multiplication (GEMM) is a crucial algorithm for various applications such as machine learning and scientific computing since an efficient GEMM implementation is essential for the performance of these calculations. While researchers often strive for faster performance by using large computing platforms, the increased scale of these systems can raise concerns about hardware and software reliability. In this paper, we present a design of a high-performance GPU-based GEMM that integrates an algorithm-based fault tolerance scheme that detects and corrects silent data corruptions at computing units on-the-fly. We explore fault-tolerant designs for GEMM at the thread, warp, and threadblock levels, and also provide a baseline GEMM implementation that is competitive with or faster than the state-of-the-art, closed-source cuBLAS GEMM. We present a kernel fusion strategy to overlap ",
+   "one_liner": "High-performance fault-tolerant GEMM on GPUs beating cuBLAS"
+  },
+  {
+   "key": "conf/ipps/LiYTLZ22",
+   "title": "A Fine-grained Prefetching Scheme for DGEMM Kernels on GPU with Auto-tuning Compatibility",
+   "venue": "IPDPS",
+   "year": 2022,
+   "doi": "10.1109/IPDPS53621.2022.00089",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/FFFLJL/Tensile-FGPS",
+   "artifact_status": "verified",
+   "platform": [
+    "amd-gpu"
+   ],
+   "approach": "autotuning",
+   "abstract": "General Matrix Multiplication (GEMM) is one of the fundamental kernels for scientific and high-performance computing. When optimizing the performance of GEMM on GPU, the matrix is usually partitioned into a hierarchy of tiles to fit the thread hierarchy. In practice, the thread-level parallelism is affected not only by the tiling scheme but also by the resources that each tile consumes, such as registers and local data share memory. This paper presents a fine-grained prefetching scheme that improves the thread-level parallelism by balancing the usage of such resources. The gain and loss on instruction and thread level parallelism are analyzed and a mathematical model is developed to estimate the overall performance gain. Moreover, the proposed scheme is integrated into the open-source tool Tensile to automatically generate assembly and tune a collection of kernels to maximize the perform",
+   "one_liner": "Fine-grained prefetching scheme for DGEMM, auto-tuned via Tensile, ~1.10x speedup on GPU"
+  },
+  {
+   "key": "conf/sc/HuangC22",
+   "title": "CA3DMM: A New Algorithm Based on a Unified View of Parallel Matrix Multiplication",
+   "venue": "SC",
+   "year": 2022,
+   "doi": "10.1109/SC41404.2022.00033",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/scalable-matrix/CA3DMM",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu",
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "abstract": "This paper presents the Communication-Avoiding 3D Matrix Multiplication (CA3DMM) algorithm, a simple and novel algorithm that has optimal or near-optimal communication cost. CA3DMM is based on a unified view of parallel matrix multiplication. Such a view generalizes 1D, 2D, and 3D matrix multiplication algorithms to reduce the data exchange volume for different shapes of input matrices. CA3DMM further minimizes the actual communication costs by carefully organizing its communication patterns. CA3DMM is much simpler than some other generalized 3D algorithms, and CA3DMM does not require low-level optimization. Numerical experiments show that CA3DMM has good parallel scalability and has similar or better performance when compared to state-of-the-art PGEMM implementations for a wide range of matrix dimensions and number of processes.",
+   "one_liner": "CA3DMM: communication-avoiding 3D matmul algorithm with near-optimal comm cost, beats SOTA PGEMM"
+  },
+  {
+   "key": "conf/sc/LiuLLFYSZWPCGHW21",
+   "title": "Closing the \"quantum supremacy\" gap: achieving real-time simulation of a random quantum circuit using a new Sunway supercomputer",
+   "venue": "SC",
+   "year": 2021,
+   "doi": "10.1145/3458817.3487399",
+   "arxiv": "2110.14502",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3458817.3487399",
+   "artifact_url": "https://github.com/Daisyforest/SWQsim",
+   "artifact_status": "verified",
+   "platform": [
+    "distributed",
+    "other"
+   ],
+   "approach": "manual",
+   "abstract": "We develop a high-performance tensor-based simulator for random quantum circuits(RQCs) on the new Sunway supercomputer. Our major innovations include: (1) a near-optimal slicing scheme, and a path-optimization strategy that considers both complexity and compute density; (2) a three-level parallelization scheme that scales to about 42 million cores; (3) a fused permutation and multiplication design that improves the compute efficiency for a wide range of tensor contraction scenarios; and (4) a mixed-precision scheme to further improve the performance. Our simulator effectively expands the scope of simulatable RQCs to include the 10X10(qubits)X(1+40+1)(depth) circuit, with a sustained performance of 1.2 Eflops (single-precision), or 4.4 Eflops (mixed-precision)as a new milestone for classical simulation of quantum circuits; and reduces the simulation sampling time of Google Sycamore to 304",
+   "one_liner": "Sunway tensor-contraction random-quantum-circuit simulator: fused permute-multiply, 1.2 Eflop/s"
+  },
+  {
+   "key": "conf/sc/YangFDSW21",
+   "title": "LIBSHALOM: optimizing small and irregular-shaped matrix multiplications on ARMv8 multi-cores",
+   "venue": "SC",
+   "year": 2021,
+   "doi": "10.1145/3458817.3476217",
+   "arxiv": "",
+   "oa_url": "https://eprints.whiterose.ac.uk/177559/6/sc21.pdf",
+   "artifact_url": "https://github.com/AnonymousYWL/LibShalom",
+   "artifact_status": "verified",
+   "platform": [
+    "arm-cpu"
+   ],
+   "approach": "manual",
+   "abstract": "General Matrix Multiplication (GEMM) is a key subroutine in highperformance computing. While the mainstream linear algebra libraries can deliver high performance on large and regular-shaped GEMM, they are inadequate for optimizing small and irregular-shaped GEMMs, which are commonly seen in new HPC applications. Some of the recent works in this direction have made promising progress on x86 architectures and GPUs but still leave much room for improvement on emerging HPC hardware built upon the ARMv8 architecture. We present LibShalom, an open-source library for optimizing small and irregular-shaped GEMMs, explicitly targeting the ARMv8 architecture. LibShalom builds upon the classical Goto algorithm but tailors it to minimize the expensive memory accessing overhead for data packing and processing small matrices. It uses analytic methods to determine GEMM kernel optimization parameters, en",
+   "one_liner": "LibShalom: optimized small/irregular-shaped GEMM library for ARMv8 multi-core, beats 5 BLAS libs"
+  },
+  {
+   "key": "journals/tpds/LichtBMH21",
+   "title": "Transformations of High-Level Synthesis Codes for High-Performance Computing",
+   "venue": "TPDS",
+   "year": 2021,
+   "doi": "10.1109/TPDS.2020.3039409",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/spcl/hls_tutorial_examples",
+   "artifact_status": "likely",
+   "platform": [
+    "fpga"
+   ],
+   "approach": "codegen",
+   "abstract": "Spatial computing architectures promise a major stride in performance and energy efficiency over the traditional load/store devices currently employed in large scale computing systems. The adoption of high-level synthesis (HLS) from languages such as C++ and OpenCL has greatly increased programmer productivity when designing for such platforms. While this has enabled a wider audience to target spatial computing architectures, the optimization principles known from traditional software design are no longer sufficient to implement high-performance codes, due to fundamentally distinct aspects of hardware design, such as programming for deep pipelines, distributed memory resources, and scalable routing. To alleviate this, we present a collection of optimizing transformations for HLS, targeting scalable and efficient architectures for high-performance computing (HPC) applications. We systemat",
+   "one_liner": "Catalog of HLS source-to-source optimizing transformations for HPC kernels on FPGA."
+  },
+  {
+   "key": "conf/dac/AlshboulTS20",
+   "title": "WET: Write Efficient Loop Tiling for Non-Volatile Main Memory",
+   "venue": "DAC",
+   "year": 2020,
+   "doi": "10.1109/DAC18072.2020.9218612",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/mshboul/WriteEfficientTiling",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "manual",
+   "abstract": "Future systems are expected to increasingly include a Non-Volatile Main Memory (NVMM). However, due to the limited NVMM write endurance, the number of writes must be reduced. While new architectures and algorithms have been proposed to reduce writes to NVMM, few or no studies have looked at the effect of compiler optimizations on writes.In this paper, we investigate the impact of one popular compiler optimization (loop tiling) on a very important computation kernel (matrix multiplication). Our novel observation includes that tiling on matrix multiplication causes a 25× write amplification. Furthermore, we investigate techniques to make tilling more NVMM friendly, through choosing the right tile size and employing hierarchical tiling. Our method Write-Efficient Tiling (WET) adds a new outer tile designed for fitting the write working set to the Last Level Cache (LLC) to reduce the number ",
+   "one_liner": "Write-efficient hierarchical loop tiling for matrix multiply on NVMM; 81% fewer writes with better performance."
+  },
+  {
+   "key": "conf/ics/ZhangSW20",
+   "title": "TensorSVM: accelerating kernel machines with tensor engine",
+   "venue": "ICS",
+   "year": 2020,
+   "doi": "10.1145/3392717.3392770",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/robbwu/tensorsvm",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "This paper explores the use of Tensor Engines to accelerate nonlinear and linear SVM training. Support Vector Machine(SVM) is a classical machine learning model for classification and regression and remains to be the state-of-the-art model for some tasks such as text classification and bioinformatics. However large scale SVM training is still challenging because of its high computational complexity. This is especially severe for non-linear SVM with kernel tricks. On the other hand, the surging importance of neural networks fuels the emergence of specialized processors called Tensor Units (TensorCore in GPU and Tensor Processing Unit of Google) which are characterized by extreme efficiency and very limited precision and range. This paper proposes a TensorCore GPU based SVM algorithm and software system that is faster and more scalable than state-of-the-art SVM solvers. It includes a fast,",
+   "one_liner": "TensorCore-accelerated SVM via low-rank Gram matrix approximation"
+  },
+  {
+   "key": "conf/sc/MatteisLH20",
+   "title": "fBLAS: streaming linear algebra on FPGA",
+   "venue": "SC",
+   "year": 2020,
+   "doi": "10.1109/SC41405.2020.00063",
+   "arxiv": "1907.07929",
+   "oa_url": "https://arxiv.org/pdf/1907.07929",
+   "artifact_url": "https://github.com/spcl/FBLAS",
+   "artifact_status": "verified",
+   "platform": [
+    "fpga"
+   ],
+   "approach": "library",
+   "abstract": "Spatial computing architectures pose an attractive alternative to mitigate control and data movement overheads typical of load-store architectures. In practice, these devices are rarely considered in the HPC community due to the steep learning curve, low productivity, and the lack of available libraries for fundamental operations. High-level synthesis (HLS) tools are facilitating hardware programming, but optimizing for these architectures requires factoring in new transformations and resources/performance trade-offs. We present FBLAS, an open-source HLS implementation of BLAS for FPGAs, that enables reusability, portability and easy integration with existing software and hardware codes. FBLAS' implementation allows scaling hardware modules to exploit on-chip resources, and module interfaces are designed to natively support streaming on-chip communications, allowing them to be composed t",
+   "one_liner": "fBLAS: open-source streaming HLS BLAS library for FPGAs"
+  },
+  {
+   "key": "journals/tpds/LanMHSDWLQF20",
+   "title": "FeatherCNN: Fast Inference Computation with TensorGEMM on ARM Architectures",
+   "venue": "TPDS",
+   "year": 2020,
+   "doi": "10.1109/TPDS.2019.2939785",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/Tencent/FeatherCNN",
+   "artifact_status": "verified",
+   "platform": [
+    "arm-cpu"
+   ],
+   "approach": "manual",
+   "abstract": "Deep Learning is ubiquitous in a wide field of applications ranging from research to industry. In comparison to timeconsuming iterative training of convolutional neural networks (CNNs), inference is a relatively lightweight operation making it amenable to execution on mobile devices. Nevertheless, lower latency and higher computation efficiency are crucial to allow for complex models and prolonged battery life. Addressing the aforementioned challenges, we propose FeatherCNN- a fast inference library for ARM CPUs - targeting the performance ceiling of mobile devices. FeatherCNN employs three key techniques: 1) A highly efficient TensorGEMM (generalized matrix multiplication) routine is applied to accelerate Winograd convolution on ARM CPUs, 2) General layer optimization based on custom high performance kernels improves both the computational efficiency and locality of memory access patter",
+   "one_liner": "FeatherCNN: TensorGEMM-accelerated Winograd convolution inference library for ARM CPUs."
+  }
+ ]
+}

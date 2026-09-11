@@ -1,0 +1,354 @@
+kernel: sssp
+summary: >
+  Single-source shortest paths on a weighted directed or undirected graph
+  (CSR), measured as steady-state kernel time with preprocessing (format
+  conversion, initial delta-parameter selection) strictly separated from
+  per-search kernel time; source-vertex selection and edge-weight
+  distribution are made explicit, disclosed axes rather than silent
+  defaults, since this track's own papers disagree sharply on both.
+operation: >
+  dist[V] = SSSP(A[V,V] adjacency (sparse, CSR), weight w: E -> R+,
+  source in V); dist[v] = shortest-path weight sum from source to v
+  (INF-sentinel for unreachable v); output additionally includes a
+  parent/predecessor array so correctness can be checked as a valid
+  shortest-path tree, not merely a distance vector.
+
+variants:
+  - id: sssp-kernel-weighted-static
+    claim: >
+      steady-state search-phase kernel time on named real-world weighted
+      graphs, with the edge-weight distribution and delta-stepping (or
+      equivalent priority-coarsening) parameter selection method both
+      mandatorily disclosed; preprocessing (CSR construction, initial
+      delta computation) excluded but reported separately
+    inputs:
+      suite: >
+        union of the real-graph families used across the track's papers
+        (Lonestar/SuiteSparse per ADDS, GAP/SNAP-social/OSM-road per
+        GraphIt) plus the bfs track's real-graph suite for cross-track
+        instance reuse where a shared undirected instance exists
+      selection: >
+        named graphs with disambiguated vertex/edge counts; a candidate
+        instance qualifies if it appears in >=1 surveyed paper's own
+        evaluation OR is drawn from the bfs spec's recommended_subset
+        (for cross-track comparability of the same underlying graph under
+        both an unweighted-BFS and a weighted-SSSP lens)
+      recommended_subset:
+        - "com-LiveJournal (SNAP, ~4.8M v / 69M e, undirected) — shared with bfs spec"
+        - "com-Orkut (SNAP, ~3.1M v / 117M e, undirected) — shared with bfs spec; NOT the same as GraphIt's 234M-e symmetrized Orkut, disambiguated by edge count"
+        - "GAP-twitter (GAP Benchmark Suite, 61.6M v / 1.47B e symmetrized, directed) — shared with bfs spec"
+        - "GAP-road (GAP Benchmark Suite, ~23.9M v / 58M e, directed, USA road network) — matches GraphIt's RoadUSA size class"
+        - "GAP-web (GAP Benchmark Suite, ~50.6M v / 1.93B e, directed)"
+        - "com-Friendster (SNAP, ~65.6M v / 3.61B e, undirected) — shared with bfs spec"
+        - "soc-Pokec (SNAP, 1,632,803 v / 30,622,564 e, directed) — exact size per Srinivasan et al."
+        - "com-Youtube (SNAP, 1,134,890 v / 2,987,624 e, undirected) — exact size per Srinivasan et al. and per ECL-SCC's power-law suite in the connected-components track, small/control instance"
+        - "com-DBLP (SNAP, ~317K v / 1M e) — small-size control instance, shared with bfs spec"
+        - "germany_osm (OpenStreetMap-derived, ~12M v / 32M e, undirected road network) — exact size per GraphIt"
+        - "massachusetts_osm (OpenStreetMap-derived, ~0.45M v / 1.2M e, undirected road network) — exact size per GraphIt, small/control instance"
+        - "RMAT24-scale-free (a=.45,b=.15,c=.15,d=.25 Kronecker generator, ~16M v / 268M e) — per Srinivasan et al., paired with RMAT24-uniform-random below to make skewed-vs-unskewed a visible axis, same discipline as bfs spec's Corder-urand handling"
+        - "RMAT24-uniform-random (a=b=c=d=.25 Kronecker generator, ~16M v / 268M e)"
+      dense_operand: "N/A (weighted scalar per edge, not a dense operand)"
+      edge_weight_distribution: >
+        REQUIRED, explicit per-instance choice (this is the track's
+        sharpest divergence — see notes_on_fairness): for road networks,
+        use REAL travel-distance/time weights where available (matches
+        GraphIt's `origweights` and is the only physically meaningful
+        choice for that graph family); for all other graphs, run BOTH of
+        two disclosed synthetic regimes rather than picking one silently:
+        (a) uniform-random integer weights in [1, 1000] (matches GraphIt's
+        `_rand1000` and is the most common convention across the wider
+        SSSP literature), and (b) uniform-random integer weights in
+        [1, log2(|V|)] (matches GraphIt's `_logn`, relevant because it
+        changes which delta-stepping granularity is optimal and is the
+        regime under which wBFS-style delta=1 special-casing becomes
+        competitive) — reporting only one regime without naming it (as
+        Srinivasan et al.'s SSSP-update precursor does) is exactly the gap
+        this field is designed to close
+      size_classes: "small: <5M vertices (com-DBLP, com-Youtube, massachusetts_osm); medium: 5-70M vertices (com-LiveJournal, com-Orkut, soc-Pokec, GAP-road, RMAT24 pair, germany_osm); large: >70M vertices (GAP-twitter, GAP-web, com-Friendster)"
+    protocol:
+      format: "CSR with a parallel float64 or int64 edge-weight array, built once; construction NOT counted in per-search time"
+      warmup: 1 (one full SSSP from the first search key, discarded)
+      reps: 64 (aligned with the bfs spec's REAL_BFS_ROOTS convention for cross-track consistency, superseding every surveyed SSSP paper's own smaller/fixed-source practice — see notes_on_fairness)
+      root_selection: "uniform-random from the giant (weakly-)connected component, fixed RNG seed = 0, same 64 roots reused across all implementations under test on a given graph+weight-regime instance — directly reuses the bfs spec's root-selection discipline rather than any of this track's own papers' single-vertex or hand-picked-source-set conventions"
+      statistic: "median of per-search wall-clock time, report min/max alongside; ADDS's own convention (8-run arithmetic mean per graph) is a valid alternative statistic to ALSO report for direct ADDS-comparability, but median-with-min/max is the spec's primary statistic for outlier robustness, matching the bfs spec's reasoning"
+      timer: "device-side events (CUDA/HIP events) for GPU implementations or std::chrono for CPU implementations, wrapping only the search call; must exclude host-device transfer of the OUTPUT distance/parent arrays"
+      timing_scope: "search phase only; graph loading, CSR/weight-array construction, and initial delta-value selection (if not runtime-dynamic) are one-shot and excluded"
+      preprocessing_reported: "separately, once per graph+weight-regime instance: CSR/weight-array build time, and (if the implementation uses a static formula rather than runtime-dynamic selection) the initial delta computation time"
+      delta_selection_disclosure: >
+        REQUIRED: report the delta-stepping (or equivalent priority-
+        coarsening) parameter's selection method as one of {static
+        published formula applied uniformly to all graphs and all
+        compared implementations (ADDS's baseline discipline); runtime-
+        dynamic/adaptive selection (ADDS's own contribution); per-graph
+        hand-tuned constant, with the exact tuning search space/budget
+        disclosed (GraphIt's practice)}. Hand-tuning without disclosing
+        the search budget is NOT an acceptable submission under this
+        spec — see notes_on_fairness for why GraphIt's own per-framework
+        hand-tuning, while transparent, still creates a tuning-effort
+        asymmetry risk this field is designed to surface, not eliminate.
+    metric:
+      primary: "search_time_ms (median, min, max across 64 reps)"
+      secondary: >
+        edge_relaxations_per_second = total edge-relaxation operations
+        (including re-relaxations of the same edge under bucket-based
+        coarsening) / search_time_seconds — a first-principles construction
+        since no surveyed paper reports a standardized weighted-SSSP
+        throughput metric (see open_questions); ALSO report work_efficiency
+        = 1 / vertices_processed, following ADDS's own instrumentation
+        convention, since it is the only metric in this track's literature
+        that directly isolates algorithmic quality from raw hardware
+        throughput
+    correctness: >
+      exact per-vertex distance match against an independent single-
+      threaded reference SSSP (Dijkstra for the [1,1000]/[1,log|V|]
+      integer-weight regimes; a tolerance of relative error < 1e-9 for
+      real-valued road-network weights, to allow for floating-point
+      summation-order differences under parallel relaxation) — modeled on
+      ADDS's own `verify.py` exact-diff discipline rather than Srinivasan
+      et al.'s proof-only or GraphIt's compiler-test-suite-only approaches,
+      since a per-run empirical check catches implementation bugs a
+      one-time proof or compile-time test cannot. The output parent array
+      must additionally form a valid tree (no cycles, every non-source
+      parent pointer reduces distance), the same tree-validity requirement
+      the connected-components track's BCC variants use for their own
+      spanning-structure outputs.
+
+  - id: sssp-e2e-preprocessing
+    claim: >
+      end-to-end throughput including one-shot preprocessing (CSR
+      conversion, weight-array construction, and initial delta selection
+      if static), amortized over k=64 searches — same k as the kernel-only
+      variant's repetition count and the bfs spec's e2e variant, so the
+      amortization argument stays apples-to-apples across both tracks
+    inputs:
+      suite: "same recommended_subset and edge_weight_distribution requirement as sssp-kernel-weighted-static"
+      selection: "same as sssp-kernel-weighted-static"
+      recommended_subset: "same list as sssp-kernel-weighted-static"
+      dense_operand: "N/A"
+    protocol:
+      format: "raw edge list (with weights) or Matrix Market input; format conversion + weight-array construction is IN SCOPE and timed"
+      warmup: "1 (full end-to-end pipeline: preprocess once, then search once, discarded)"
+      reps: "k = 64 searches sharing ONE preprocessing pass"
+      root_selection: "same 64 fixed-seed random roots as sssp-kernel-weighted-static"
+      statistic: "total_time = preprocessing_time + sum(64 search times); report both total_time/64 (amortized per-search time) AND preprocessing_time alone, never only the blended number"
+      timer: "wall-clock (host-side) around the full pipeline; device-side events or std::chrono around the search-only portion for cross-checking against the kernel-only variant"
+      timing_scope: "preprocessing + k searches; explicitly NOT amortized over more than 64 unless the submitter also reports the kernel-only variant's k=64 number for comparison"
+      preprocessing_reported: "as part of total_time by construction of this variant, AND separately as its own number"
+      delta_selection_disclosure: "same REQUIRED field as sssp-kernel-weighted-static; if delta selection is static (not runtime-dynamic), its computation cost is part of preprocessing_time and must be visible as its own sub-number, not folded silently into 'format conversion'"
+      amortization_count_required: true
+    metric:
+      primary: "amortized search_time_ms = total_time_ms / 64"
+      secondary: "preprocessing_time_ms (standalone, broken into format-conversion vs. delta-selection sub-costs if the latter is non-runtime-dynamic), kernel-only_median_search_time_ms (cross-reference to sssp-kernel-weighted-static)"
+    correctness: "same exact-distance / valid-tree gate as sssp-kernel-weighted-static, applied to all 64 searches"
+
+  - id: sssp-dynamic-update
+    claim: >
+      cost of updating a pre-existing, already-correct SSSP tree after a
+      batch of edge insertions/deletions, compared against the cost of
+      recomputing SSSP from scratch on the changed graph — operationalizes
+      the dynamic-SSSP-update literature's own (well-reasoned) rejection of
+      throughput-style metrics as a first-class variant instead of an
+      implicit footnote, directly modeled on the Srinivasan-et-al./Khanda
+      family's evaluation discipline
+    inputs:
+      suite: "same recommended_subset as sssp-kernel-weighted-static, restricted to instances with >=5M edges (small graphs make update-vs-recompute comparisons noisy since recompute is already near-instant)"
+      selection: "graphs for which a correct baseline SSSP tree can first be computed once (via the sssp-kernel-weighted-static protocol) and then perturbed"
+      recommended_subset: "com-LiveJournal, com-Orkut, soc-Pokec, GAP-road, RMAT24-scale-free, RMAT24-uniform-random (paired per notes_on_fairness), germany_osm"
+      dense_operand: "N/A"
+      edge_weight_distribution: "same REQUIRED disclosure as sssp-kernel-weighted-static; weight VALUES of newly-inserted edges must also be disclosed (drawn from the same distribution as the base graph, unless explicitly testing out-of-distribution updates as a separate reportable case)"
+    protocol:
+      format: "CSR + weight array + a pre-computed valid SSSP tree (dist[], parent[]) from source-vertex 0 of the giant component, built once via sssp-kernel-weighted-static's protocol and NOT re-timed here"
+      warmup: "1 (one full batch update, discarded)"
+      reps: "5 independent batches of edge changes per (graph, batch_size, insertion_fraction) combination, matching Srinivasan et al.'s own 4-repetition convention rounded up for statistical margin"
+      batch_composition_required: >
+        REQUIRED disclosure: batch size (number of changed edges) and
+        insertion_fraction (% insertions vs. % deletions in the batch);
+        the spec requires reporting at MINIMUM the three points
+        {100% insertions, 75%/25% insertions/deletions, 50%/50%} at a
+        batch size of 1% of |E|, following Srinivasan et al.'s own
+        experimental design, since insertion-only and deletion-heavy
+        batches have different worst-case behavior (deletions can require
+        disconnecting/reconnecting subtrees, insertions cannot)
+      statistic: "median update time across 5 batches, report min/max"
+      timer: "wall-clock (host-side) or device-side events around the update call only; the ORIGINAL SSSP-tree construction is explicitly excluded (it is a one-time input, not part of what's being measured)"
+      timing_scope: "batch update only; explicitly excludes the initial from-scratch SSSP computation that produced the pre-existing tree"
+      preprocessing_reported: "N/A for this variant — see timing_scope"
+      synchronization_granularity_disclosure: >
+        REQUIRED if the implementation exposes a tunable synchronization/
+        coarsening parameter analogous to Srinivasan et al.'s "asynchrony
+        level" (how many propagation hops occur before a barrier): report
+        the parameter value used and, if feasible, a sensitivity sweep
+        following the source paper's own Figure 7-9 discipline
+    metric:
+      primary: "update_time_ms (median of 5 batches)"
+      secondary: >
+        speedup_vs_recompute = recompute_time_ms / update_time_ms, where
+        recompute_time_ms is the sssp-kernel-weighted-static single-search
+        median time on the POST-update graph using the same implementation
+        family's static algorithm (e.g. the same codebase's from-scratch
+        Δ-stepping path) — this is the metric Srinivasan et al. actually
+        report (as "improvement" over Galois), generalized to be
+        self-relative rather than tied to one specific baseline library
+    correctness: >
+      the updated dist[]/parent[] must exactly match a from-scratch
+      reference SSSP computation on the POST-update graph (same tolerance
+      rules as sssp-kernel-weighted-static); this is a STRONGER check than
+      Srinivasan et al.'s own proof-only validation, added because a
+      one-time correctness proof of the algorithm does not substitute for
+      per-run empirical validation of a specific implementation.
+
+  - id: sssp-delta-sensitivity
+    claim: >
+      cost/benefit of the delta-stepping (or equivalent priority-
+      coarsening) parameter choice on its own terms: the delta-vs-time and
+      delta-vs-work-performed curves, and the selection method's own
+      overhead if runtime-dynamic — makes the single sharpest
+      cross-paper divergence in this track (see survey.md notes_on_fairness
+      #5) a first-class, reportable result instead of a hidden
+      hyperparameter buried in a single hand-picked number, directly
+      modeled on ADDS's Figure 7 and GraphIt's per-graph delta table
+    inputs:
+      suite: "a representative subset spanning the size classes: com-DBLP (small), com-LiveJournal (medium, skewed), RMAT24-uniform-random (medium, unskewed), GAP-road (medium-large, high-diameter), com-Friendster (large)"
+      selection: "graphs chosen to span the two extremes ADDS's own Figure 7 identifies as behaviorally distinct: low-diameter/high-parallelism (social/RMAT) vs. high-diameter/low-parallelism (road networks) — delta's effect on performance differs qualitatively between these"
+      recommended_subset: "com-DBLP, com-LiveJournal, RMAT24-uniform-random, GAP-road, com-Friendster"
+      dense_operand: "N/A"
+      edge_weight_distribution: "[1, 1000] uniform-random regime for all instances in this variant, to hold weight distribution constant while varying delta (isolating the delta axis specifically, per the fairness principle of changing one variable at a time)"
+    protocol:
+      format: "CSR + weight array, built once and shared across all delta values tested on a given graph"
+      warmup: "1 per delta value tested, discarded"
+      reps: "for each of >=8 delta values spanning at least 4 orders of magnitude (matching ADDS's own C in {2^-2 ... 2^14} sweep and GraphIt's per-graph range), 16 searches from a fixed-seed random subset of the 64-root set used in sssp-kernel-weighted-static"
+      root_selection: "same 16-of-64 fixed-seed subset for every delta value tested on a given graph, so the delta comparison is root-matched"
+      statistic: "median search time per delta value; median vertex/edge-processing count (work performed) per delta value"
+      timer: "device-side events or std::chrono around the search call only"
+      timing_scope: "search phase only per delta value; if delta selection is itself runtime-dynamic (e.g. ADDS-style), the ADAPTATION overhead is reported as its own separate number, not folded into search time"
+      preprocessing_reported: "N/A (CSR/weight-array build is a one-time shared cost across the whole sweep, reported once)"
+      break_even_required: false
+    metric:
+      primary: "search_time_ms as a function of delta (the full curve, not just the minimum), reported per graph"
+      secondary: >
+        work_performed as a function of delta (vertex/edge processing
+        count, same axis as ADDS's Figure 10 work-efficiency-vs-speedup
+        scatter); best_static_delta (the delta minimizing median time for
+        that graph, for readers who want a single number); if the
+        implementation has runtime-dynamic delta selection, report how
+        close its achieved time comes to best_static_delta and the
+        adaptation overhead as a fraction of total time
+    correctness: "same exact-distance / valid-tree gate as sssp-kernel-weighted-static, applied at every delta value tested (delta choice must never affect correctness, only performance — a delta value that produces an incorrect result indicates an implementation bug, not a valid design point)"
+
+notes_on_fairness:
+  - >
+    Source-vertex selection is, as in the bfs track, the largest single
+    source of incomparability: ADDS uses one unspecified vertex per graph,
+    Srinivasan et al. use a single FIXED vertex 0 for every graph (with a
+    disclosed but limited 2-vertex sensitivity check), and GraphIt uses 10
+    hand-picked vertices explicitly filtered to avoid hangs — none of the
+    four papers uses a random-sampling convention. The spec fixes this at
+    64 fixed-seed random roots from the giant component, directly reusing
+    the bfs spec's convention per this track's explicit design brief,
+    which is a real strengthening relative to every surveyed paper's own
+    practice: a hand-picked or single fixed source cannot be assumed
+    representative of a graph's full behavior, and "filtered to avoid
+    hangs" (GraphIt's own stated criterion) risks silently excluding
+    exactly the hard cases a benchmark should surface.
+  - >
+    Delta-stepping parameter disclosure is this track's sharpest and most
+    consequential divergence. ADDS's own ablation study proves the point
+    quantitatively: disabling its dynamic-delta mechanism alone cuts its
+    reported speedup over Near-Far from 3.5x to 2.4x on an RTX 3090 — a
+    third of the paper's headline number comes from delta selection, not
+    from the underlying data structure. GraphIt goes further in a
+    different direction: it hand-tunes delta PER GRAPH AND PER COMPETING
+    FRAMEWORK (its own artifact's README lists distinct tuned deltas for
+    GraphIt, GAPBS, Julienne, and Galois on the same graph), which is more
+    even-handed than tuning only the authors' own method, but still opens
+    a tuning-BUDGET asymmetry risk: if the authors spent materially more
+    tuning effort on their own tool's delta than on the baselines', the
+    reported speedup partially reflects tuning effort, not algorithmic
+    quality, and the paper's text does not disclose the tuning search
+    budget/method used for either its own tool or the baselines. The spec
+    resolves this by (a) requiring every submission to disclose its
+    delta-selection METHOD from a closed set of options, (b) explicitly
+    disallowing undisclosed hand-tuning without a stated search budget,
+    and (c) adding a dedicated sssp-delta-sensitivity variant that reports
+    the full delta-vs-performance curve rather than a single cherry-pickable
+    number, so a reader can independently judge how sensitive a reported
+    speedup is to the delta choice.
+  - >
+    Edge-weight distribution disclosure ranges from GraphIt's exemplary
+    three-named-regimes-tied-to-every-table-entry practice down to
+    Srinivasan et al.'s undisclosed weight-generation method for its SSSP
+    experiments. Since delta-stepping's optimal granularity and even which
+    algorithmic family wins (e.g. wBFS-as-delta=1-special-case only makes
+    sense for small-integer weights) depend directly on the weight
+    distribution, an SSSP benchmark that doesn't fix and disclose this axis
+    risks comparing numbers that are not measuring the same problem at all.
+    The spec adopts GraphIt's three-regime practice (real weights where
+    physically meaningful, [1,1000] uniform-random, [1,log|V|]
+    uniform-random) as a REQUIRED field for every variant.
+  - >
+    Metric choice diverges sharply from the bfs track: none of this
+    track's four papers use GTEPS. Srinivasan et al. give the most explicit
+    reasoning against it ("TEPS is not a suitable metric for dynamic
+    networks since our goal is to process as few edges as possible"),
+    which is specific to the dynamic-update problem shape but points at a
+    more general concern — a throughput metric implicitly rewards doing
+    MORE work per second, which is exactly backwards for delta-stepping's
+    own accuracy/parallelism tradeoff (a coarser delta processes more
+    edges, often with more redundant relaxations, to finish sooner; a
+    finer delta processes fewer, more "necessary" edges but with less
+    parallelism — ADDS's Figure 10 shows both regimes exist across its 226
+    graphs). The spec adopts wall-clock time as the primary metric for all
+    four variants (never GTEPS as primary), with work-efficiency (ADDS's
+    own vertex-processing-count convention) as a mandatory secondary metric
+    specifically to keep the accuracy/parallelism tradeoff visible rather
+    than collapsed into a single throughput number.
+  - >
+    efg's inclusion in this track's input list despite implementing only
+    BFS is the same "topic-adjacency over-inclusion" pattern this
+    project's CLAUDE.md already warns about for artifact-search false
+    positives, here occurring one level up at paper-classification time
+    instead of artifact-matching time. The spec does not define a variant
+    for it and treats its absence from every variant's evidence as the
+    correct outcome, not a gap to be filled.
+
+open_questions:
+  - >
+    No standardized weighted-SSSP throughput metric (an edges-relaxed-per-
+    second-style GTEPS analogue) could be identified across this 4-paper
+    sample; the spec's `edge_relaxations_per_second` secondary metric is a
+    first-principles construction, not one inherited from the literature,
+    and should be cross-checked against a broader SSSP benchmark corpus
+    (e.g. the DIMACS shortest-path challenge's own conventions, which none
+    of the 4 surveyed papers reference) before being treated as settled.
+  - >
+    The TPDS22 journal version of Khanda et al. (the paper actually named
+    in this track's input list) claims a GPU implementation in its abstract
+    that this survey's CPU-only precursor-paper proxy does not cover;
+    whether the sssp-dynamic-update variant's protocol needs GPU-specific
+    adjustments (e.g. a different synchronization_granularity_disclosure
+    convention, since "asynchrony level" as defined for CPU threads may not
+    map cleanly to GPU warps/blocks) is unresolved pending access to the
+    actual TPDS22 fulltext.
+  - >
+    Whether Srinivasan et al.'s "asynchrony level" parameter and this
+    spec's delta-selection-method disclosure should eventually be unified
+    into one cross-cutting "coarsening/synchronization-granularity
+    disclosure" field spanning both static and dynamic-update SSSP variants
+    was considered but left as two separate fields, since the two parameter
+    families currently apply to disjoint variants (sssp-delta-sensitivity
+    vs. sssp-dynamic-update) and no paper in this 4-paper sample combines
+    them in a single implementation to test whether a unified field would
+    even be meaningful.
+  - >
+    efg's Elias-Fano compressed-graph representation is evaluated for BFS
+    only in every reachable source; whether it composes with a Δ-stepping
+    SSSP kernel (weight storage under compression, decompression cost
+    inside the relaxation inner loop) is an open algorithmic question this
+    survey could not resolve and that would need to be answered before any
+    future "sssp-on-compressed-graphs" variant could be specified.
+
+evidence:
+  conf/ipps/GeraK23: "SCOPE MISMATCH: artifact and reachable paper text implement BFS exclusively over Elias-Fano compressed graphs; no SSSP driver, no weighted-edge support; excluded from all variants above"
+  conf/ppopp/WangFL21: "226 Lonestar+SuiteSparse graphs (explicit >=100K v/>=1M e + >=75%-reachable selection criterion), int/float weight variants, single source per graph, 8-run arithmetic mean, dynamic runtime delta-selection ablated to isolate its 3.5x->2.4x contribution, exact per-vertex distance-diff correctness, metric=time+work-efficiency (no GTEPS), baselines forced onto Near-Far's own published delta formula, real Zenodo artifact"
+  journals/tpds/KhandaSBND22: "PROXY (track_inputs.json artifact_url is a misattributed 3rd-party class project, not used): via Srinivasan/Riazi/Norris/Das/Bhowmick precursor (github.com/DynamicSSSP/HIPC18) — RMAT-G/RMAT-ER + 3 named SNAP graphs, fixed source vertex 0 (2-vertex sensitivity-checked), 4-repetition timing, proof-based correctness, metric=wall time with explicit reasoned rejection of TEPS, baseline=Galois static delta-stepping recompute, dedicated asynchrony-level parameter study, CPU-only 36-core Xeon"
+  conf/cgo/ZhangBCDKAS20: "named real graphs w/ 3 explicit disclosed weight regimes (logn/rand1000/origweights) tied to every result cell, delta hard-coded per-graph-per-framework for ALL compared frameworks (tuning budget undisclosed), 10 curated hang-avoiding fixed source vertices averaged (not random), metric=wall time+speedup ratios (no GTEPS), baselines=GAPBS/Julienne/Galois/Ligra, CPU-only 24-core dual-socket, no GPU numbers"

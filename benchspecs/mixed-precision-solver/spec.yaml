@@ -1,0 +1,468 @@
+kernel: mixed-precision-solver
+summary: >
+  Solvers (dense LU, nested sparse Krylov, tile-based Cholesky) that trade
+  numerical precision (fp8/fp16/fp32) for throughput and rely on a
+  precision-recovery mechanism — fp64 iterative refinement, an independent
+  fp64 residual re-check, an outer statistical-accuracy metric, or a
+  one-shot adaptive per-tile precision choice — to reach an accuracy target
+  this spec treats as a FIRST-CLASS, load-bearing requirement: a
+  mixed-precision run that is fast but does not reach fp64-equivalent
+  accuracy (or an explicitly-defined statistical/application accuracy bar)
+  reports no valid speedup number, full stop. Four variants, one per
+  surveyed paper's own precision-recovery strategy, since (per survey.md's
+  Divergences) none of the four strategies reduces to any other.
+operation: >
+  solve a linear system or covariance-parameter estimation problem using a
+  reduced-precision computational core (fp16/fp32 factorization or fp16
+  inner Krylov iterations or fp8/fp16/fp32/fp64 adaptive tile precision),
+  paired with an accuracy-recovery step (fp64 IR / independent residual
+  recompute / outer MLE optimization / one-shot precision selection) and,
+  where the paper's own codebase supports it, a same-codebase pure-fp64
+  sibling binary run on the identical input as the baseline.
+
+variants:
+  - id: mp-dense-lu-ir-hplai
+    claim: >
+      dense LU factorization (fp32 panel decomposition + fp16 tensor-core
+      GEMM) followed by fp64 iterative refinement to the OFFICIAL HPL-AI
+      accuracy criterion (hplerror < 16, the same constant HPL-AI submissions
+      use), capped at 50 refinement iterations — targets OpenMxP's exact
+      HPL-AI benchmark design. This spec adds one mandatory fix: a run whose
+      IR loop exhausts 50 iterations without reaching hplerror < 16 MUST be
+      reported as a hard FAIL, not silently printed alongside converged runs
+      — OpenMxP's own main.cpp currently prints the loop's {-1,-1}
+      non-convergence sentinel unconditionally (residual=-1, hpl-harness=-1)
+      with no check before the headline TFlop/s line, indistinguishable in
+      the console output from a legitimately converged run.
+    inputs:
+      suite: >
+        synthetic dense matrix, generated in-place (not downloaded) by the
+        implementation's own generator (OpenMxP: matgen.hpp / Higham
+        test-matrix generator in highammgen.hpp — matches HPL-AI convention
+        of self-generating its own test matrix rather than reading one).
+      selection: >
+        square dense N x N; N chosen per scale point to approach available
+        device memory at each rank/GPU count (weak-scaling convention).
+        Spec-fixed defaults below, since OpenMxP's own README gives tuning
+        guidance (best block size, best local-N) but no fixed benchmark size
+        list — the paper's own headline numbers are full-Summit/Frontier-
+        scale runs whose exact N was not recoverable from the repo (see
+        open_questions).
+      recommended_subset: >
+        tile size B=2560 (OpenMxP's own stated best); local-per-rank N
+        (LN)=125440 (OpenMxP's own stated best), global N = P*LN at scaling
+        points P (GPU count) in {1, 8, 64, 512}; a smaller smoke-test point
+        N=40960 (P=1) for quick validation runs.
+      dense_operand: >
+        right-hand side b generated jointly with A by the same Higham/HPL
+        random generator (matches OpenMxP's matgen/Matgen<double> pairing
+        used for both the low-precision factorization input and the fp64
+        residual-recompute reference).
+    protocol:
+      format: >
+        N/A — matrix generated in-device/in-place, no file format or
+        conversion step exists in this variant.
+      warmup: >
+        1 reduced-flop-count calibration run (matches OpenMxP's own -w/
+        --warmup flag: runs with maxit=1 for the IR loop and subtracts a
+        skip-flop correction from the reported flop count for that run;
+        excluded from the timed/reported measurement).
+      reps: >
+        1 per scale point (matches OpenMxP's own single-run-per-invocation
+        design; this is a spec-flagged weakness, not an endorsement — see
+        notes_on_fairness. At scale points where resource cost permits, 3
+        reps with median/min/max is recommended, but a single full-system
+        run is accepted as inherent to HPL-AI-class submissions).
+      statistic: >
+        single measurement at full scale (spec-flagged, see above); median
+        of >=3 at any scale point below full-system size.
+      timer: >
+        MPI_Wtime() bracket around factorization+IR combined (matches
+        OpenMxP's start_time/stop_time), PLUS a separate MPI_Wtime bracket
+        around the IR phase alone (matches OpenMxP's own "IR Time" line) —
+        both reported.
+      timing_scope: >
+        factorization (fp32 panel + fp16 GEMM) + fp64 IR, combined AND
+        IR-only reported separately; matrix generation happens BEFORE the
+        timed region starts in OpenMxP's own code (confirmed: pmatgen calls
+        precede Timer::beg(TOTAL)/start_time) and is correctly excluded.
+      preprocessing_reported: >
+        N/A — matrix generation is untimed setup by construction in this
+        variant (no conversion/preprocessing step separate from generation).
+      precision: >
+        fixed cascade, not swappable sub-variants: fp32 factorization panel
+        + fp16 tensor-core GEMM (OpenMxP's FHIGH=float / FLOW=__half), fp64
+        iterative refinement for accuracy recovery (matches OpenMxP's own
+        fixed design — the paper does not sweep alternative precision
+        assignments the way F3R does).
+    metric:
+      primary: "TFlop/s per GPU (hplflops = 2/3*N^3 + 3/2*N^2, divided by rank/GPU count and wall time)"
+      secondary: "IR iteration count to reach hplerror<16 (cap 50), reported as a distribution across scale points"
+      tertiary: "residual and hpl-harness value at convergence (or FAIL, per correctness below)"
+    correctness: >
+      HARD gate, mandatory: hpl_harness < 16 AND IR iteration count <= 50
+      required for a run to report a valid TFlop/s number. The harness MUST
+      explicitly check for OpenMxP's own {-1,-1} non-convergence sentinel
+      (er.residual == -1) and refuse to report a throughput number for that
+      run — spec-added fix for OpenMxP's own main.cpp gap described in the
+      claim above.
+    baseline: >
+      pure double-precision HPL / the HPL-AI-defined "double-precision-
+      equivalent accuracy" criterion itself IS the correctness bar (not a
+      separately-timed same-binary fp64 LU run — OpenMxP's own repo does not
+      build a pure-fp64 comparison binary). Speedup vs classical HPL is
+      reported as a cross-benchmark ratio against published HPL Rmax numbers
+      on the same system, matching the paper's own Table/Figure approach —
+      flagged as a weaker baseline-pairing than mp-krylov-nested-cascade-
+      sparse's same-script comparison below (see notes_on_fairness).
+
+  - id: mp-krylov-nested-cascade-sparse
+    claim: >
+      nested FGMRES/Richardson Krylov cascade (fp64 outer / fp32 mid / fp16
+      inner) with TWO independent residual channels tracked per run
+      (recurrence-tracked "implicit" + independently recomputed "explicit"),
+      run back-to-back against a SAME-SCRIPT, SAME-MATRIX pure-precision
+      baseline family (cg64/cg32/cg16, gm64/gm32/gm16) — targets F3R's exact
+      design and its own reproduction script's paired-comparison structure,
+      the strongest same-codebase fp64-baseline pairing found in this track.
+    inputs:
+      suite: "SuiteSparse Matrix Collection + F3R's own HPCG/HPGMP synthetic generators"
+      selection: >
+        F3R's own code-confirmed matrix lists (sc25/suite-cpu.py), FULL
+        list required (not the 1/3-subset `step=3` shortcut the paper's own
+        quick-reproduction default uses) — spec strengthens the artifact's
+        own quick-repro default into a full-suite requirement for a
+        legitimate benchmark submission.
+      recommended_subset: >
+        symmetric/SPD-adjacent (14): [audikw_1, Bump_2911, ecology2,
+        Emilia_923, G3_circuit, hpcg_7_7_7, hpcg_8_7_7, hpcg_8_8_7,
+        hpcg_8_8_8, ldoor, Queen_4147, Serena, thermal2, tmt_sym] — 10 real
+        SuiteSparse + 4 synthetic HPCG-generator grids. Nonsymmetric/general
+        (14, BiCGSTAB-paired, out of scope for a Krylov-cascade claim
+        assuming SPD-like behavior but listed for completeness):
+        [atmosmodd, atmosmodj, atmosmodl, hpgmp_7_7_7, hpgmp_8_7_7,
+        hpgmp_8_8_7, hpgmp_8_8_8, ss, stokes, t2em, tmt_unsym, Transport,
+        vas_stokes_1M, vas_stokes_2M].
+      vector_operand: "matches F3R's own driver default (not further decoded from suite-cpu.py; F3R's own generator supplies it)"
+    protocol:
+      format: "CSR (given); no conversion step observed in the driver script"
+      warmup: "none beyond the reps below (matches F3R's own script)"
+      reps: >
+        average>=10 (spec-fixed floor; F3R's own quick-repro instructions
+        permit average=1 "to reproduce the general trend" only — not
+        sufficient for a legitimate submission number).
+      statistic: "median across reps, report min/max (spec-added; F3R's own script reports whatever <average> computes internally, not confirmed to be median)"
+      timer: "F3R's own internal (senk library) high-resolution timer, per invocation"
+      timing_scope: "full to-convergence solve (to-convergence claim; see cg-krylov/spec.yaml's cg-mixed-precision-cascade for the CG/SPD-specific framing of the same underlying F3R artifact)"
+      preprocessing_reported: "N/A in the reviewed driver script (no separate format-conversion bracket observed)"
+      precision: >
+        THREE discrete base-precision configurations (64/32/16) run and
+        reported as SEPARATE rows per method family (cg/gm/f3r), matching
+        F3R's own suite-cpu.py structure exactly — never averaged together.
+    metric:
+      primary: >
+        speedup = Time(f3r64 or the matching cg64/gm64 baseline on the SAME
+        matrix, same script invocation) / Time(f3r32 or f3r16) — the
+        same-binary-family, same-matrix pairing F3R's own suite-cpu.py
+        produces directly, the cleanest baseline evidence in this track.
+      secondary: "Iter (iteration count, CSV column, per precision level)"
+      tertiary: "ImplRes vs ExplRes divergence (both CSV columns, reported together, never only one)"
+    correctness: >
+      BOTH ImplRes (recurrence-tracked residual) and ExplRes (independently
+      recomputed residual) MUST be logged and MUST agree within relative
+      1e-3 for fp32-base runs / 1 for fp16-base runs (spec-added hard gate;
+      F3R's own CSV schema carries both columns but whether the underlying
+      senk library enforces agreement between them was not confirmed from
+      the driver script alone — see open_questions).
+    baseline: >
+      same-binary-family pure-precision solvers (cg64/cg32/cg16 for the
+      symmetric list, bicg64/32/16 for the general list; gm64/32/16 GMRES as
+      a second baseline family) — F3R's own suite-cpu.py runs these on the
+      identical matrix in the identical script invocation, the paper's own
+      comparison.
+
+  - id: mp-tile-cholesky-mle-geostat
+    claim: >
+      mixed single/double-precision tile Cholesky factorization, called once
+      per likelihood evaluation inside an outer NLopt (derivative-free)
+      maximum-likelihood optimization loop — targets ExaGeoStat's exact MLE
+      design. "Convergence" here is the OUTER OPTIMIZER's convergence
+      (function-evaluation budget), not a Krylov/refinement iteration count;
+      "accuracy" is STATISTICAL prediction quality (mean-square prediction
+      error against held-out observations, or parameter-recovery error
+      against known synthetic ground truth), not a floating-point residual —
+      the mixed-precision (sdmle) run's accuracy must not degrade materially
+      relative to the SAME-CODEBASE pure-double (dmle) run on the identical
+      dataset/seed for the speedup to be legitimate.
+    inputs:
+      suite: >
+        (a) synthetic Gaussian random fields (Matern covariance family) with
+        KNOWN ground-truth theta parameters (ExaGeoStat's own
+        synthetic_dmle_test.c / synthetic_sdmle_test.c, via the MLE_zvg
+        generator) — primary, accuracy-controlled variant; (b) real
+        observational datasets (ExaGeoStat's own real_csv_dmle_test.c /
+        real_csv_sdmle_test.c, e.g. wind-speed data) — secondary, real-world
+        variant, reported separately from (a).
+      selection: >
+        N and dts (dense tile size) not recoverable from the driver source
+        alone (open question; the paper's own SC22 12x-speedup headline
+        configuration was not confirmed). Spec-fixed defaults below.
+      recommended_subset: >
+        synthetic: N in {20000, 40000, 80000} locations, univariate Matern
+        stationary kernel (`kernel_fun=univariate_matern_stationary`,
+        num_params=3 — ExaGeoStat's own default kernel per the driver code),
+        dts swept per the paper's own tuning guidance (implementation-
+        dependent, report the actual value used).
+      dense_operand: >
+        synthetic case: generated jointly with known initial_theta by
+        MLE_zvg (fixed seed for reproducibility, seed value not confirmed —
+        open question); real case: CSV observation + location files per
+        ExaGeoStat's own real_csv_*_test.c input format.
+    protocol:
+      format: >
+        N/A — dense covariance matrix generated in-place from a locations
+        file/array, not read from a sparse-matrix file; no
+        format-conversion step in this variant.
+      warmup: "none observed in the driver (spec-added: 1 discarded MLE run before the timed run, for a fair comparison to the other 3 variants' warmup discipline)"
+      reps: "3 (spec-added; ExaGeoStat's own driver runs a single nlopt_optimize call per invocation with no repetition observed)"
+      statistic: "median, report min/max (spec-added)"
+      timer: >
+        TWO separate brackets, matching ExaGeoStat's own START_TIMING/
+        STOP_TIMING macro pairs: (a) total_exec_time, spanning the entire
+        nlopt_optimize call (the full MLE fit — this variant's headline
+        number); (b) pred_time, spanning ONLY the held-out prediction phase,
+        reported separately (matches ExaGeoStat's own "fit" vs "predict"
+        split, the closest analogue in this track to a setup-vs-solve split).
+      timing_scope: "full MLE optimization (fit) and prediction, reported as 2 separate numbers, never blended into one"
+      preprocessing_reported: >
+        N/A for this driver (data reading / location-array setup happens
+        before START_TIMING(data.total_exec_time); not separately measured
+        in the source read)
+      precision: >
+        pure double (`dmle` binary, data.precision path not using
+        EXAGEOSTAT_sdmle_Call) as the REQUIRED baseline vs mixed single/
+        double (`sdmle` binary, data.precision=2) as the treatment — BOTH
+        run on the identical synthetic dataset/seed (or identical real CSV
+        input) for a valid paired comparison; spec-required, since
+        ExaGeoStat's own repo builds both as separate binaries from the same
+        codebase but the driver scripts do not automate running them
+        paired.
+    metric:
+      primary: "speedup = total_exec_time(dmle) / total_exec_time(sdmle), same dataset/seed"
+      secondary: >
+        NLopt function-evaluation count to convergence (outer "iteration"
+        count, capped at data.opt_max_iters) for both dmle and sdmle,
+        reported side by side (a mixed-precision run needing materially more
+        outer evaluations to converge is not a clean win, same
+        iteration-count-as-first-class principle as this track's sibling
+        cg-krylov/multigrid/preconditioner specs)
+      tertiary: >
+        prediction error (MSPE) delta = prediction_error(sdmle) -
+        prediction_error(dmle), and, for the synthetic case, ||estimated
+        theta - ground truth theta|| relative error delta between the two
+        precisions
+    correctness: >
+      spec-added HARD gate (ExaGeoStat's own driver computes but never
+      gates on this): for synthetic data, sdmle's theta-recovery relative
+      error must be within 10% of dmle's own theta-recovery error; for real
+      data, sdmle's prediction MSPE must be within 5% of dmle's MSPE on the
+      identical held-out set. A run failing either bound reports no valid
+      speedup number.
+    baseline: >
+      pure double-precision MLE (`dmle`), same codebase, same dataset/seed
+      (ExaGeoStat's own paired binaries, not automated as a pair by the
+      driver scripts — see precision above).
+
+  - id: mp-tile-cholesky-onestep-climate-emulator
+    claim: >
+      one-shot (no iterative refinement, no outer optimization loop)
+      mixed-precision tile factorization pipeline: forward spherical-
+      harmonic transform (SHT) -> SYRK -> Cholesky factorization (adaptive
+      per-tile precision among double/single/half/fp8, chosen ONCE before
+      factorization, never corrected afterward) -> inverse SHT — targets
+      hicma-x's exact climate-emulator design, the fourth and structurally
+      most different precision-recovery strategy in this track (accuracy
+      measured as an application-domain RMSE against a reference field, not
+      a floating-point residual and not a statistical prediction metric).
+    inputs:
+      suite: >
+        ERA5-style climate reanalysis data (hicma-x's own
+        testing_climate_emulator, `--mesh_file` input; download link given
+        in TESTS.md), gridded by `--latitude L` (N = L*L).
+      selection: >
+        latitude values covering TESTS.md's own worked example plus a
+        larger scale point approaching the paper's claimed near-EFlop/s
+        Frontier configuration (exact paper-reported N not recoverable from
+        the repo — open question).
+      recommended_subset: "latitude in {120, 480, 1440} (N = 14400, 230400, 2073600); 120 matches TESTS.md's own worked example exactly"
+      dense_operand: "reanalysis climate field read from the mesh_file input (real data, not synthetic)"
+    protocol:
+      format: "N/A — dense covariance-like matrix built from SHT output, not read from a sparse-matrix file"
+      warmup: "none stated in the source read (spec-added: 1 discarded full pipeline run)"
+      reps: >
+        --nruns wraps ONLY the Cholesky-factorization phase in hicma-x's own
+        code (hicma_parsec_potrf loop in performCholeskyFactorization); SHT/
+        SYRK/inverse-SHT/MSE are each single-shot in the artifact. Spec
+        REQUIRES reps>=3 for EVERY phase, not just factorization — strengthens
+        the artifact's own partial-repetition practice.
+      statistic: "median per phase, report min/max (spec-added; hicma-x's own SYNC_TIME_PRINT prints a single value per phase per run)"
+      timer: >
+        SYNC_TIME_START()/SYNC_TIME_PRINT() macro pairs around EACH phase
+        separately (matches hicma-x's own code exactly: forward SHT,
+        forward-reshape, SYRK, matrix-norm, factorization, inverse SHT, MSE)
+        — the finest-grained per-phase split of any paper surveyed across
+        this track and its cg-krylov/multigrid/preconditioner siblings.
+      timing_scope: "every phase reported separately, plus a total; no phase is silently folded into another"
+      preprocessing_reported: "mesh/data reading (climate_emulator_reading_data), timed separately (gb.time_init), excluded from every downstream phase's number"
+      precision: >
+        adaptive per-tile cascade among double/single/half/fp8
+        (--adaptive_decision, tuned via --band_dense_dp/--band_dense_sp/
+        --band_dense_fp8), chosen ONCE at setup from the matrix's
+        error-bound structure — no runtime refinement pass exists in this
+        variant. The spec REQUIRES reporting the actual precision assigned
+        per band/tile-region (not just "mixed precision was used"), since
+        the decision algorithm itself was not independently verified (see
+        open_questions) and a submission's specific band assignment is
+        otherwise unreproducible.
+    metric:
+      primary: "time-to-solution (ms) per phase (SHT-forward, SYRK, factorization, SHT-inverse) plus total"
+      secondary: "Gflop/s for the SHT-forward and factorization phases (hicma-x's own gb->flops_forward-based metric)"
+      tertiary: "normalized RMSE (hicma-x's own climate_emulator_mse metric) vs the reference/observed climate field, per time-slot and aggregated"
+    correctness: >
+      spec-added HARD gate (hicma-x's own code computes but never gates on
+      this — climate_emulator_mse.jdf prints the RMSE unconditionally at
+      verbose>1 with no threshold comparison anywhere in the reviewed
+      source): normalized RMSE vs the reference field must be < 1e-2
+      (spec-author default, since no paper-stated threshold exists — see
+      open_questions) for the run's timing number to count as valid.
+    baseline: >
+      a pure fp64, single-precision-level run of the SAME pipeline (all
+      bands forced to double, i.e. --band_dense_sp=0 --band_dense_fp8=0) on
+      the identical mesh/latitude — not automated as an explicit A/B pair by
+      hicma-x's own test driver; spec-required for a valid speedup claim.
+
+notes_on_fairness:
+  - >
+    OpenMxP's own main.cpp prints the iterative-refinement loop's {-1,-1}
+    non-convergence sentinel (residual=-1, hpl-harness=-1) unconditionally
+    alongside legitimate converged results, with no check before the
+    headline TFlop/s line — mp-dense-lu-ir-hplai's correctness gate makes
+    this check mandatory. This is the same class of silent-non-convergence
+    reporting bug this project's cg-krylov survey found in Mille-feuille's
+    public artifact (loop runs regardless of its own termination argument).
+  - >
+    This track's 4 papers use FOUR incompatible notions of "accuracy":
+    floating-point residual harness (OpenMxP), dual implicit/explicit
+    residual channels (F3R), statistical prediction quality (ExaGeoStat),
+    and application-domain field RMSE (hicma-x). The spec deliberately does
+    not force one universal "residual < eps" rule across all 4 variants,
+    since a linear-algebra residual and a geostatistics prediction error are
+    not the same kind of quantity and forcing them into one metric would
+    hide exactly the information a reader needs to judge the claim.
+  - >
+    F3R's own suite-cpu.py is the only artifact in this track whose
+    reproduction script runs the mixed-precision treatment (f3r16/f3r32)
+    and a same-binary-family pure-precision baseline (cg64/gm64) back-to-
+    back on the IDENTICAL matrix in the SAME script invocation — the
+    cleanest same-codebase baseline pairing surveyed. The other 3 papers'
+    drivers require this spec to mandate the paired run explicitly, since
+    their own scripts do not automate it (OpenMxP has no fp64 LU sibling
+    binary in-repo at all; ExaGeoStat's dmle/sdmle and hicma-x's all-double-
+    band configuration exist but are not scripted as an automatic pair).
+  - >
+    Both ExaGeoStat's prediction-error/MLOE-MMOM values and hicma-x's MSE
+    value are computed by their own drivers and then only WRITTEN to a file
+    or PRINTED under a verbosity flag — neither driver gates on its own
+    accuracy number anywhere in the source read. Both this track's
+    mp-tile-cholesky-mle-geostat and mp-tile-cholesky-onestep-climate-
+    emulator variants turn these into hard, mandatory gates.
+  - >
+    F3R (SuzukiI25) is also surveyed in benchspecs/cg-krylov/spec.yaml's
+    cg-mixed-precision-cascade variant (SPD/CG-specific framing of the same
+    artifact). This track's mp-krylov-nested-cascade-sparse variant is
+    complementary, not duplicative: it documents the same-binary-family
+    paired baseline (T3C_SYM/T3C_GEN in sc25/suite-cpu.py) discovered by
+    reading that specific reproduction script, which the cg-krylov survey's
+    own evidence line for this paper does not mention.
+
+open_questions:
+  - >
+    OpenMxP's exact paper-reported problem sizes N at full Summit/Frontier
+    scale (the SC22 headline numbers themselves) were not recoverable from
+    the public repo; README gives tuning guidance (best B, best local-N),
+    not a fixed benchmark size list. mp-dense-lu-ir-hplai's
+    recommended_subset is constructed from that tuning guidance, not
+    verbatim from the paper's own reported configuration.
+  - >
+    hicma-x's per-tile adaptive-precision decision algorithm
+    (--adaptive_decision) was located only by CLI flag name (TESTS.md); the
+    source implementing the actual decision criterion (which tile gets
+    which of double/single/half/fp8) was not read within this survey's
+    budget. mp-tile-cholesky-onestep-climate-emulator's requirement to
+    report the actual per-band precision assignment is a workaround for not
+    being able to independently verify the decision logic itself.
+  - >
+    ExaGeoStat's paper-reported N and dts values for the SC22 "Reshaping
+    Geostatistical Modeling" 12x-Fugaku-speedup headline number were not
+    recovered (no arXiv id, ACM DL paywalled, no OA fulltext link in the
+    track input JSON). mp-tile-cholesky-mle-geostat's recommended_subset is
+    the spec's own construction, not verbatim from the paper.
+  - >
+    F3R's exact M2/M3/M4/W/Precond/ACC CSV column semantics (visible as
+    literal CLI arguments in sc25/suite-cpu.py's `add = [...]` lists but not
+    decoded from the senk library source within this survey's time budget)
+    are used descriptively only in mp-krylov-nested-cascade-sparse; the spec
+    does not assert a precise per-column meaning for any of them.
+  - >
+    Whether F3R's own senk library hard-fails a run when ImplRes and ExplRes
+    diverge beyond tolerance, or merely logs both columns without asserting
+    agreement, was not confirmed — the driver script only captures binary
+    stdout into a CSV; the underlying pass/fail logic (if any) lives in the
+    senk library's own headers, not reviewed here. mp-krylov-nested-cascade-
+    sparse's correctness gate (relative agreement bound) is therefore a
+    spec-author addition, not a confirmed existing behavior.
+  - >
+    hicma-x's normalized-RMSE correctness threshold (1e-2) in
+    mp-tile-cholesky-onestep-climate-emulator is a spec-author default: no
+    paper-stated accuracy threshold was found in the source read (the
+    metric is diagnostic/logged-only in the artifact, per notes_on_fairness
+    above), so this value should be treated as a starting point pending
+    validation against a real run's actual RMSE distribution.
+
+evidence:
+  conf/sc/SuzukiI25: >
+    F3R: nested FGMRES/Richardson cascade (fp64/fp32/fp16), 14 symmetric
+    (10 real SuiteSparse + 4 synthetic HPCG) + 14 general/BiCGSTAB matrices
+    code-confirmed in sc25/suite-cpu.py; same-script paired comparison
+    against cg64/32/16 and gm64/32/16 baselines on the identical matrix;
+    CSV logs BOTH implicit (recurrence) and explicit (recomputed) residuals
+    plus iteration count; <average> repeated full solves (paper's own quick-
+    repro default average=1, 1/3-subset step=3); up to 1.65x/2.42x vs
+    double-precision.
+  conf/sc/LuMOEJW22: >
+    OpenMxP (HPL-AI benchmark): fp32 panel factorization + fp16 tensor-core
+    GEMM, fp64 iterative refinement gated by the official HPL-AI harness
+    (hplerror<16), capped at 50 IR iterations; non-convergence returns a
+    {-1,-1} sentinel that main.cpp prints unconditionally without a pass/
+    fail check (bug-adjacent gap this spec fixes); single run per scale
+    point, MPI_Wtime timing, matrix generation excluded from the timed
+    region; TFlop/s-per-GPU headline metric; no in-repo pure-fp64 LU sibling
+    binary for a same-codebase A/B baseline.
+  conf/sc/AbdulahBBCCGKKL24: >
+    hicma-x (HiCMA-PaRSEC climate emulator): one-shot pipeline (forward SHT
+    -> SYRK -> Cholesky factorization [only phase with an --nruns repeat] ->
+    inverse SHT -> MSE), mixed double/single/half/fp8 via
+    --adaptive_decision (per-tile, chosen once, no refinement afterward);
+    accuracy = normalized RMSE vs a reference climate field
+    (climate_emulator_mse.jdf), printed only at verbose>1, never gated;
+    finest per-phase timing split (SYNC_TIME_START/PRINT per phase) of any
+    paper in this track; claims 0.976 EFlop/s on Frontier.
+  conf/sc/CaoAAPNBDGKLS22: >
+    ExaGeoStat: mixed single/double tile Cholesky (sdmle) called once per
+    NLopt-BOBYQA likelihood evaluation inside an outer MLE optimization
+    loop; pure-double dmle sibling exists in the same codebase but is not
+    scripted as an automatic paired comparison; accuracy = prediction MSPE
+    against held-out real observations or parameter-recovery error against
+    known synthetic ground truth (both computed, never threshold-gated in
+    the driver); total_exec_time (fit) and pred_time (predict) timed as two
+    separate brackets; claims 12x speedup on Fugaku.

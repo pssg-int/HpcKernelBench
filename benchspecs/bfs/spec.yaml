@@ -1,0 +1,259 @@
+kernel: bfs
+summary: >
+  Breadth-first search from a set of source vertices over a directed or
+  undirected graph in CSR/CSC form, measured as traversed-edges-per-second
+  with preprocessing (format conversion, reordering, bitmap construction)
+  strictly separated from per-search kernel time.
+operation: >
+  parent[V] = BFS(A[V,V] adjacency (sparse, CSR), source in V);
+  A is unweighted (or weight-agnostic — only connectivity matters);
+  output is a parent/predecessor array (or level array) over all V vertices,
+  undefined (INT64_MAX-sentinel) for unreached vertices.
+
+variants:
+  - id: bfs-kernel-rmat-graph500
+    claim: >
+      steady-state search-phase throughput on synthetic Graph500 R-MAT
+      graphs; graph generation and CSR construction excluded but reported
+      separately (one-shot, not amortized)
+    inputs:
+      suite: "Graph500 R-MAT/Kronecker generator, official parameterization"
+      selection: >
+        edge_factor = 16 (Graph500 default); size classes by SCALE:
+        small = {20, 22} (dev/CI, fits in <8 GB), medium = {26, 28, 30}
+        (single high-memory GPU/node), large = {32, 34, 36} (multi-GPU or
+        multi-node required). SCALE >= 38 (Fugaku-class, 100K+ node runs) is
+        reportable but NOT required for a submission to count.
+      recommended_subset:
+        [SCALE20, SCALE22, SCALE24, SCALE26, SCALE28, SCALE30, SCALE32, SCALE34]
+      graph_type: "directed as generated (do not symmetrize unless the paper's baseline requires it — report which)"
+      dense_operand: "N/A (no dense operand; unweighted edges, single bit adjacency)"
+    protocol:
+      format: "CSR, built once from the generated edge list; construction NOT counted in per-search time"
+      warmup: 1 (one full BFS from the first search key, discarded)
+      reps: 64 (REAL_BFS_ROOTS, official Graph500 count; roots drawn from the largest connected/weakly-connected component only, per Graph500 spec)
+      root_selection: "uniform-random from the giant component, fixed RNG seed = 0, same 64 roots reused across all implementations under test on a given graph instance"
+      statistic: "median of per-search GTEPS, report min/max alongside (deviates from official Graph500's harmonic mean — see notes_on_fairness)"
+      timer: "device-side events (CUDA/HIP events) or std::chrono wrapping only the search call, whichever the implementation's native API exposes; must exclude host-device transfer of the OUTPUT parent array (that transfer, if needed for validation, is untimed)"
+      timing_scope: "search phase only; graph generation, CSR build, and any reordering/bitmap layout construction are one-shot and excluded"
+      preprocessing_reported: "separately, once per graph instance: generation time, CSR-build time, and (if used) reordering/layout-construction time, each as its own number"
+      direction_optimization_disclosure: "REQUIRED: report whether the implementation is direction-optimizing (hybrid top-down/bottom-up) or pure top-down/pure bottom-up; if hybrid, report the alpha/beta (or equivalent) switch thresholds used"
+    metric:
+      primary: "GTEPS = (# edges connecting BFS-tree vertices to their parents, summed over both directions if undirected) / search_time_seconds / 1e9"
+      secondary: "search_time_ms (median, min, max across the 64 reps)"
+    correctness: >
+      full Graph500 validation_level=2 equivalent: every reached vertex's
+      parent must be adjacent to it in the original graph, tree depth must
+      be consistent with BFS level order, and the reached-vertex set must
+      exactly match an independent reference BFS (CPU, level-synchronous,
+      no direction optimization) run once per graph/root pair. Any
+      discrepancy invalidates that search's GTEPS (does not count toward
+      the median).
+
+  - id: bfs-kernel-real-graphs
+    claim: >
+      steady-state search-phase throughput on named real-world graphs,
+      union of the graph families actually used across the track's papers;
+      same protocol as bfs-kernel-rmat-graph500 but on fixed, disambiguated
+      real instances instead of a parameterized generator
+    inputs:
+      suite: "union of SNAP, LAW/WebGraph, GAP, and DIMACS10 instances used by >=2 surveyed papers, plus canonical SNAP staples for size coverage"
+      selection: >
+        named graphs with disambiguated vertex/edge counts (same-named
+        snapshots differ across papers — sizes below are the specific
+        instances this spec targets, not "twitter" generically)
+      recommended_subset:
+        - "com-LiveJournal (SNAP, ~4.8M v / 69M e, undirected)"
+        - "com-Orkut (SNAP, ~3.1M v / 117M e, undirected)"
+        - "com-Friendster (SNAP, ~65.6M v / 3.61B e, undirected) — matches efg's 'frndster'"
+        - "soc-LiveJournal1 (SNAP, ~4.8M v / 69M e, directed)"
+        - "twitter-2010-efg (Kwak et al. crawl as packaged by efg, 41.6M v / 1.47B e, directed) — NOT the same graph as GAP-twitter, name explicitly disambiguated"
+        - "GAP-twitter (GAP Benchmark Suite packaging, 61.6M v / 1.47B e symmetrized, directed) — NOT the same graph as twitter-2010-efg"
+        - "GAP-road (GAP Benchmark Suite, ~23.9M v / 58M e, directed, USA road network)"
+        - "GAP-web (GAP Benchmark Suite, ~50.6M v / 1.93B e, directed)"
+        - "GAP-urand (GAP Benchmark Suite, ~134.2M v / 4.29B e, uniform random)"
+        - "uk-2005 (LAW webgraph, ~39.5M v / 936M e, directed)"
+        - "uk-2007-05 (LAW webgraph, 105.9M v / 3.74B e, directed) — matches efg's 'uk-07-05'"
+        - "it-2004 (LAW webgraph, ~41.3M v / 1.15B e, directed)"
+        - "webbase-2001 (LAW webgraph, ~118M v / 1.02B e, directed)"
+        - "europe_osm (DIMACS10, ~50.9M v / 108M e, undirected road network)"
+        - "wiki-topcats or a comparable wiki hyperlink graph (~1.8M v / 28M e, directed) — small/medium control instance"
+        - "com-DBLP (SNAP, ~317K v / 1M e) — small-size control instance for the small size class"
+      dense_operand: "N/A"
+      size_classes: "small: <5M vertices (com-DBLP, com-LiveJournal); medium: 5-70M vertices (com-Orkut, soc-LiveJournal1, uk-2005, it-2004, GAP-road/web/twitter); large: >70M vertices (GAP-urand, com-Friendster, uk-2007-05, webbase-2001)"
+    protocol:
+      format: "CSR, given/converted once, conversion timed and reported separately (see bfs-e2e-preprocessing for the amortized version)"
+      warmup: 1
+      reps: 64
+      root_selection: "uniform-random from the giant component, fixed seed = 0, same 64 roots reused across implementations under test — explicitly REPLACES both efg's 100-root convention and Corder's single-hottest-vertex convention for cross-paper comparability (see notes_on_fairness)"
+      statistic: "median GTEPS, report min/max"
+      timer: "device-side events or std::chrono around the search call only"
+      timing_scope: "search phase only"
+      preprocessing_reported: "separately, once: CSR conversion/load time, plus reordering/compression time if applicable (with the compression ratio or bandwidth-reduction factor achieved, since these are the entire point of several of the surveyed techniques)"
+      direction_optimization_disclosure: "REQUIRED, same as bfs-kernel-rmat-graph500"
+    metric:
+      primary: "GTEPS, same definition as bfs-kernel-rmat-graph500"
+      secondary: "search_time_ms (median, min, max)"
+    correctness: "same validation_level=2-equivalent gate as bfs-kernel-rmat-graph500"
+
+  - id: bfs-e2e-preprocessing
+    claim: >
+      end-to-end throughput including one-shot preprocessing (CSR
+      conversion, any graph reordering, and any specialized layout/bitmap
+      construction), amortized over k=64 searches — the same k as the
+      kernel-only variants' repetition count, so the amortization argument
+      is apples-to-apples with the kernel-only numbers rather than an
+      arbitrarily chosen k
+    inputs:
+      suite: "same recommended_subset as bfs-kernel-real-graphs (real graphs are where preprocessing cost/benefit tradeoffs actually matter; RMAT graphs may optionally be included for the reordering-quality axis)"
+      selection: "same as bfs-kernel-real-graphs"
+      recommended_subset: "same list as bfs-kernel-real-graphs"
+      dense_operand: "N/A"
+    protocol:
+      format: "raw edge list or Matrix Market input; format conversion + any reordering/layout step is IN SCOPE and timed"
+      warmup: "1 (full end-to-end pipeline: preprocess once, then search once, discarded)"
+      reps: "k = 64 searches sharing ONE preprocessing pass (matches the official Graph500 convention of building the graph once and running 64 searches against it)"
+      root_selection: "same 64 fixed-seed random roots as the kernel-only variants"
+      statistic: "total_time = preprocessing_time + sum(64 search times); report both total_time/64 (amortized per-search time) AND preprocessing_time alone, never only the blended number"
+      timer: "wall-clock (host-side) around the full pipeline; device-side events around the search-only portion for cross-checking against the kernel-only variant"
+      timing_scope: "preprocessing + k searches; explicitly NOT amortized over more than 64 unless the submitter also reports the kernel-only variant's k=64 number for comparison"
+      preprocessing_reported: "as part of total_time by construction of this variant, AND separately as its own number (never silently folded in without also being independently visible)"
+      amortization_count_required: true
+    metric:
+      primary: "amortized GTEPS = total_edges_traversed_across_64_searches / total_time_seconds / 1e9"
+      secondary: "preprocessing_time_ms (standalone), kernel-only_median_GTEPS (cross-reference to bfs-kernel-real-graphs on the same graph)"
+    correctness: "same validation_level=2-equivalent gate, applied to all 64 searches"
+
+  - id: bfs-reordering-cost
+    claim: >
+      cost/benefit of a graph-reordering preprocessing step on its own
+      terms: reordering wall time, resulting kernel speedup on a downstream
+      BFS, and the break-even repetition count — operationalizes Corder's
+      own amortization discipline as a first-class, reportable variant
+      instead of an implicit footnote, and gives reordering-focused papers
+      (Corder, RCM) a variant that measures what they actually contribute
+    inputs:
+      suite: "same recommended_subset as bfs-kernel-real-graphs, plus SuiteSparse square/quadratic matrices for RCM-style bandwidth-reduction reordering (selection: nnz in [1e6, 1e9], square, from the SuiteSparse Matrix Collection)"
+      selection: "graphs/matrices for which BOTH an original-order BFS baseline AND a reordered BFS number can be measured on the same instance"
+      recommended_subset: "same real-graph list as bfs-kernel-real-graphs; for RCM specifically: 20 square SuiteSparse matrices spanning nnz 1e6-1e9 (exact list left to the submitter, but MUST be disclosed and MUST include at least 3 matrices already used by >=2 track papers, e.g. drawn from Corder's kron/urand or common bandwidth-reduction benchmarks)"
+      dense_operand: "N/A"
+    protocol:
+      format: "reordering method under test is applied once to CSR; original-order CSR kept for the baseline comparison"
+      warmup: 1 reordering pass + 1 BFS pass (discarded)
+      reps: "reordering: 5 rounds (matches Corder's own convention), report median; downstream BFS: same 64-root protocol as bfs-kernel-real-graphs, run once on original order and once on reordered graph"
+      root_selection: "uniform-random, fixed seed = 0, 64 roots, SAME roots (mapped through the permutation) used for both original-order and reordered-order runs so the comparison is root-matched, NOT the single-max-degree-root convention Corder itself used (flagged in notes_on_fairness as a fairness fix to Corder's own protocol)"
+      statistic: "median reordering time (5 rounds); median downstream-BFS GTEPS ratio (reordered / original)"
+      timer: "wall-clock around the reordering step; device-side events or std::chrono around each downstream BFS"
+      timing_scope: "reordering time reported standalone; downstream BFS kernel-only time reported standalone; the two are never summed into a single blended number here (that's what bfs-e2e-preprocessing is for)"
+      preprocessing_reported: "this ENTIRE variant IS the preprocessing report — reordering_time_seconds is the primary artifact, not a footnote"
+      break_even_required: true
+    metric:
+      primary: "break_even_reps = reordering_time_seconds / (original_order_search_time_seconds - reordered_order_search_time_seconds); the number of BFS searches needed before the reordering investment pays for itself"
+      secondary: "reordering_time_seconds (median of 5), GTEPS_ratio = reordered_GTEPS / original_GTEPS, resulting bandwidth (for RCM-style methods, via the standard matrix-bandwidth definition)"
+    correctness: >
+      reordered graph must be a valid relabeling (bijection on vertex IDs,
+      edge set preserved under the permutation) verified once per graph;
+      downstream BFS on the reordered graph must pass the same
+      validation_level=2-equivalent gate as the other variants, applied
+      through the inverse permutation before comparison to the
+      original-order result.
+
+notes_on_fairness:
+  - >
+    Root-vertex selection is the single biggest source of incomparability in
+    this track: Graph500-BFS and BLEST use 64 random roots (good), efg uses
+    100 random roots (fine on its own, but not directly comparable to a
+    64-root number without re-running), and Corder uses ONE fixed
+    maximum-degree root for every graph and every algorithm — the single
+    most favorable and least representative choice possible, since a
+    max-degree root in a skewed real-world graph typically reaches the
+    giant component almost immediately and minimizes the frontier-imbalance
+    effects that make BFS hard to parallelize in the first place. The spec
+    fixes this at 64 fixed-seed random roots from the giant component for
+    every variant, and bfs-reordering-cost explicitly re-derives Corder's
+    own experiment with matched roots rather than inheriting its
+    single-root convention.
+  - >
+    BLEST reports zero GTEPS numbers (ms only); Graph500-BFS reports
+    harmonic-mean GTEPS; efg reports an edge-weighted-aggregate GTEPS.
+    None of these three statistics are numerically interchangeable (harmonic
+    mean is pulled down by slow outlier searches, arithmetic/weighted mean
+    is pulled up by fast ones). The spec picks median-of-per-search-GTEPS
+    with min/max reported, which is neither of the two literature
+    conventions but is the only choice that (a) is robust to outliers in
+    either direction and (b) always allows recovering min/max for readers
+    who want the harmonic- or arithmetic-mean framing themselves from raw
+    per-search numbers, which median discards but min/max partially
+    recovers.
+  - >
+    Direction-optimization (push/pull hybrid) status is undisclosed or
+    ambiguous for 2 of 7 papers (BLEST's pull-based description doesn't
+    confirm whether it also pushes; efg and Corder don't discuss it at
+    all), yet direction optimization alone typically accounts for a
+    5-15x speedup over naive top-down BFS on skewed real-world graphs —
+    larger than most of the algorithmic contributions in this track. A
+    benchmark that doesn't require disclosure risks comparing a hybrid
+    number against a naive-baseline number and attributing the entire gap
+    to the paper's actual contribution. All variants above make disclosure
+    mandatory.
+  - >
+    Corder itself flags a cherry-pick (excluding 'urand' from its own
+    reported averages because it is "not skewed") — this is transparent in
+    the paper's own text, which is good practice, but the spec's
+    recommended_subset includes both skewed (real-world, kron) and
+    non-skewed (urand-style uniform-random) graphs in EVERY variant so that
+    "the technique doesn't help on unskewed graphs" is a visible, reportable
+    result rather than an excluded one.
+  - >
+    efg's compression-ratio and BLEST's preprocessing-time numbers are
+    exactly the kind of one-shot, separately-reported preprocessing the
+    fairness principles ask for — adopted as the model for
+    preprocessing_reported across all four variants above, in contrast to
+    RCM (survey paper 7), whose BFS-as-subroutine time is never separated
+    from total reordering time at all in the available sources, a pattern
+    this spec's preprocessing_reported field is designed to prevent.
+
+open_questions:
+  - >
+    Bit-GraphBLAS's BFS-specific protocol (root selection, warmup/reps,
+    whether the 433x speedup figure is kernel-only or includes B2SR format
+    construction) could not be confirmed from available sources (IEEE
+    paywall, no arXiv, artifact ships only the underlying BMV
+    microbenchmark). If/when fulltext becomes available, its ~700-matrix
+    SuiteSparse sweep methodology should be cross-checked against the
+    bfs-reordering-cost variant's SuiteSparse selection criterion for
+    possible alignment.
+  - >
+    FuseIM's exact evaluation graphs/sizes and whether its probabilistic-BFS
+    timing includes host-device transfer could not be confirmed (ACM DL
+    403, no arXiv). Probabilistic (weighted, randomized-edge-activation)
+    BFS is a related but distinct kernel from the deterministic-reachability
+    BFS this spec targets; if the track later wants to cover probabilistic
+    traversal explicitly, it likely needs its own variant (different
+    correctness notion — expected-value comparison across many samples,
+    not a single exact parent-array match) rather than being folded into
+    the variants above.
+  - >
+    The official Graph500 R-MAT parameters (A=0.57, B=0.19, C=0.19, D=0.05)
+    were assumed for bfs-kernel-rmat-graph500 based on well-known Graph500
+    defaults, not directly confirmed by reading
+    RIKEN-RCCS/Graph500-BFS/generator/graph_generator.hpp line-by-line
+    (only user_settings.h and mpi/parameters.h were inspected). Should be
+    verified before treating the synthetic-suite variant as bit-for-bit
+    official-Graph500-compliant.
+  - >
+    Whether GAP-twitter (BLEST) and the "twitter" graph used by efg/Corder
+    are related snapshots (same crawl, different post-processing) or
+    genuinely independent datasets that happen to share a name was not
+    resolved — the recommended_subset above treats them as distinct
+    instances (different vertex counts: ~61.6M vs ~41.6-41.7M) pending
+    confirmation.
+
+evidence:
+  conf/ics/ElbekK26: "64 random roots (arithmetic mean), preprocessing timed separately, reports only ms (no GTEPS), GAP+SuiteSparse-derived suite, H200 GPU"
+  conf/sc/AraiNITUYSF24: "canonical Graph500 protocol: R-MAT/Kronecker edge_factor=16, 64 random search keys, harmonic-mean GTEPS, direction-optimizing (alpha=10/beta=14), full validation_level=2, graph built once per SCALE"
+  conf/ipps/GeraK23: "100 random roots (fixed seed 0), 1 warmup, CSR->Elias-Fano compression timed once and separate, GTEPS=edges*1e-6/time_ms, self-consistency hash only (no independent reference check)"
+  conf/ipps/ChenSSTBL22: "public artifact ships only the BMV microbenchmark over ~700 SuiteSparse matrices; BFS-specific protocol (root selection, warmup, GTEPS definition) unconfirmed from available sources; paper reports up to 433x BFS speedup vs. baseline GraphBLAS"
+  journals/tpds/ChenC22: "single fixed max-degree root (not random), 5-round average, reordering cost reported separately with an explicit amortization argument (2-3 iterations for BFS-like apps), metric is a unitless speedup ratio not GTEPS, urand excluded from averages as 'not skewed'"
+  conf/ics/NeffZMHTKB24: "probabilistic (weighted, randomized) BFS for RRR-set sampling, not deterministic reachability BFS; fixed-seed random root batches; up to 4096 Frontier nodes; speedup-vs-unfused framing; exact graphs/timing protocol unconfirmed (ACM DL 403)"
+  conf/ipps/MlakarWPS21: "BFS is an internal subroutine (pseudo-peripheral-vertex level structure) inside RCM reordering, never measured as a standalone BFS number; baselines are cuSolverRCM plus own CPU/GPU/batched variants; metric is reordering wall time + resulting bandwidth, not TEPS"

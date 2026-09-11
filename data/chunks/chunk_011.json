@@ -1,0 +1,454 @@
+[
+ {
+  "key": "conf/usenix/JiaL00JX24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Fast (Trapless) Kernel Probes Everywhere",
+  "abstract": "The ability to efficiently probe and instrument a running operating system (OS) kernel is critical for debugging, system security, and performance monitoring. While efforts to optimize the widely used Kprobes in Linux over the past two decades have greatly improved its performance, many fundamental gaps remain that prevent it from being completely efficient. Specifically, we find that Kprobe is only optimized for ~80% of kernel instructions, leaving the remaining probe-able kernel code to suffer the severe penalties of double traps needed by the Kprobe implementation. In this paper, we focus on the design and implementation of an efficient and general trapless kernel probing mechanism (no hardware exceptions) that can be applied to almost all code in Linux. We discover that the main limitation of current probe optimization efforts comes from not being able to assume or change certain properties/layouts of the target kernel code. Our main insight is that by introducing strategically placed nops , thus slightly changing the code layout, we can overcome this main limitation. We implement our mechanism on Linux Kprobe, which is transparent to the users. Our evaluation shows a 10x improvement of probe performance over standard Kprobe while providing this level of performance for 96% of kernel code.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/JiangWMM24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Fast Inference for Probabilistic Graphical Models",
+  "abstract": "Probabilistic graphical models (PGMs) have attracted much attention due to their firm theoretical foundation and inherent interpretability. However, existing PGM inference systems are inefficient and lack sufficient generality, due to issues with irregular memory accesses, high computational complexity, and modular design limitation. In this paper, we present Fast-PGM, a fast and parallel PGM inference system for importance sampling-based approximate inference algorithms. Fast-PGM incorporates careful memory management techniques to reduce memory consumption and enhance data locality. It also employs computation and parallelization optimizations to reduce computational complexity and improve the overall efficiency. Furthermore, Fast-PGM offers high generality and flexibility, allowing easy integration with all the mainstream importance sampling-based algorithms. The system abstraction of Fast-PGM facilitates easy optimizations, extensions, and customization for users. Extensive experiments show that Fast-PGM achieves 3 to 20 times speedup over the state-of-the-art implementation. Fast-PGM source code is freely available at https://github.com/jjiantong/FastPGM .",
+  "hint_categories": [
+   "primitives",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/ShirwadkarKT24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "FastCommit: resource-efficient, performant and cost-effective file system journaling",
+  "abstract": "JBD2, the current physical journaling mechanism in Ext4 is bulky and resource-hungry. Specifically, in case of metadata-heavy workloads, fsyncs issued by applications cause JBD2 to write copies of changed metadata blocks, incurring high byte and IO overhead. When storing data in Ext4 via NFS (a popular setup), the NFS protocol issues fsyncs for every file metadata update which further exacerbates the problem. In a simple multi-threaded mail-server workload, JBD2 consumed approximately 76% of the disk’s write bandwidth. Higher byte and IO utilization of JBD2 results in reduced application throughput, higher wear-out of flash based media and increased performance provisioning costs in cloud-based storage services. We present FastCommit: a hybrid journaling approach for Ext4 which performs logical journaling for simple and frequent file system modifications, while relying on JBD2 for more complex and rare modifications. Key design elements of FastCommit are compact logging , selective flushing and inline journaling . The first two techniques work together to ensure that over 80% commits are contained within a single 4KB block and are written to disk without requiring an expensive cache flush operation. Inline journaling minimizes context switching delays. With faster and efficient fsyncs, FastCommit reduces throughput interference of JBD2 by over 2× along with throughput improvements of up to 120%. We implemented FastCommit in Ext4 and successfully merged our code to the upstream Linux kernel.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/CaoPLHP24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "FetchBPF: Customizable Prefetching Policies in Linux with eBPF",
+  "abstract": "Monolithic operating systems are infamously complex. Linux in particular has a tendency to intermingle policy and mechanisms in a manner that hinders modularity. This is especially problematic when developers aim to finely optimize performance,since it is often the case that a default policy in Linux, while performing well on average, cannot achieve the optimal performance in all circumstances. However, developing and maintaining a bespoke kernel to satisfy the need of a specific application is usually an unrealistic endeavor due to the high software engineering cost. Therefore, we need a mechanism to easily customize kernel policies and its behavior. In this paper, we design a framework called FetchBPF that addresses this problem in the context of memory prefetching. FetchBPF extends the widely used eBPF framework to allow developers to easily express, develop, and deploy prefetching policies without modifying the kernel codebase. We implement various memory prefetching policies from the literature and demonstrate that our deployment model incurs negligible overhead as compared to the equivalent native kernel implementation.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/YangWZZLX24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Full Lifecycle Data Analysis on a Large-scale and Leadership Supercomputer: What Can We Learn from It?",
+  "abstract": "The system architecture of contemporary supercomputers is growing increasingly intricate with the ongoing evolution of system-wide network and storage technologies, making it challenging for application developers and system administrators to manage and utilize the escalating complexity of supercomputers effectively. Moreover, the limited experience of application developers and system administrators in conducting insightful analyses of diverse High-Performance Computing (HPC) workloads and the resulting array of resource utilization characteristics exacerbate the challenge. To address this issue, we undertake a comprehensive analysis of six years' worth of 40 TB data (comprising I/O performance data and job running information) from Sunway TaihuLight, boasting 41508 nodes and currently ranked as the world's 11th-fastest supercomputer. Our study provides valuable insights into operational management strategies for HPC systems (i.e., job hanging caused by heavy-load benchmark testing, job starvation caused by aggressive scheduling policies) and I/O workload characteristics (i.e., getattr operations spiking caused by massive access to grid files, a large number of files accessed by many applications in a short period), shedding light on both challenges and opportunities for improvements in the HPC environment. This paper delineates our methodology, findings, and the significance of this study. Additionally, we discuss the potential of our research for future studies and practice within this domain.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/XuCWLW24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "FwdLLM: Efficient Federated Finetuning of Large Language Models with Perturbed Inferences",
+  "abstract": "Large Language Models (LLMs) are transforming the landscape of mobile intelligence. Federated Learning (FL), a method to preserve user data privacy, is often employed in fine-tuning LLMs to downstream mobile tasks, i.e., FedLLM. A vital challenge of FedLLM is the tension between LLM complexity and resource constraint of mobile devices. In response to this challenge, this work introduces FwdFL, an innovative FL protocol designed to enhance the FedLLM efficiency. The key idea of FwdFL is to employ backpropagation (BP)-free training methods, requiring devices only to execute ''perturbed inferences''. Consequently, FwdFL delivers way better memory efficiency and time efficiency (expedited by mobile NPUs and an expanded array of participant devices). FwdFL centers around three key designs: (1) it combines BP-free training with parameter-efficient training methods, an essential way to scale the approach to the LLM era; (2) it systematically and adaptively allocates computational loads across devices, striking a careful balance between convergence speed and accuracy; (3) it discriminatively samples perturbed predictions that are more valuable to model convergence. Comprehensive experiments illustrate FwdFL's significant advantages over conventional methods, including up to three orders of magnitude faster convergence and a 4.6× reduction in memory footprint. Uniquely, FwdFL paves the way for federated billion-parameter LLMs such as LLaMA on COTS mobile devices -- a feat previously unattained.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/LiuY0XZFL024",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Harmonizing Efficiency and Practicability: Optimizing Resource Utilization in Serverless Computing with Jiagu",
+  "abstract": "Current serverless platforms struggle to optimize resource utilization due to their dynamic and fine-grained nature. Conventional techniques like overcommitment and autoscaling fall short, often sacrificing utilization for practicability or incurring performance trade-offs. Overcommitment requires predicting performance to prevent QoS violation, introducing trade-off between prediction accuracy and overheads. Autoscaling requires scaling instances in response to load fluctuations quickly to reduce resource wastage, but more frequent scaling also leads to more cold start overheads. This paper introduces Jiagu to harmonize efficiency with practicability through two novel techniques. First, pre-decision scheduling achieves accurate prediction while eliminating overheads by decoupling prediction and scheduling. Second, \\emph{dual-staged scaling} achieves frequent adjustment of instances with minimum overhead. We have implemented a prototype and evaluated it using real-world applications and traces from the public cloud platform. Our evaluation shows a 54.8% improvement in deployment density over commercial clouds (with Kubernetes) while maintaining QoS, and 81.0%–93.7% lower scheduling costs and a 57.4%–69.3% reduction in cold start latency compared to existing QoS-aware schedulers.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/WenY24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "HiP4-UPF: Towards High-Performance Comprehensive 5G User Plane Function on P4 Programmable Switches",
+  "abstract": "Due to better cost benefits, P4 programmable switches have been considered in a few recent works to implement 5G User Plane Function (UPF). To circumvent limited resources on P4 programmable switches, they either ignore some essential UPF features or resort to a hybrid deployment approach which requires extra resources. This work is aimed to improve the performance of UPFs with comprehensive features which, except packet buffering, are deployable entirely on commodity P4 programmable switches. We build a baseline UPF based on prior work and analyze its key performance bottlenecks. We propose a three-tiered approach to optimize rule storage on the switch ASICs. We also develop a novel scheme that combines pendulum table access and selective usage pulling to reduce the operational latency of the UPF. Using a commodity P4 programmable switch, the experimental results show that our UPF implementation can support twice as many mobile devices as the baseline UPF and 1.9 times more than SD-Fabric. Our work also improves the throughputs in three common types of 5G call flows by 9-619% over the UPF solutions in two open-source 5G network emulators.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/ZhangWX24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "High-density Mobile Cloud Gaming on Edge SoC Clusters",
+  "abstract": "System-on-Chip (SoC) Clusters, i.e., servers consisting of many stacked mobile SoCs, have emerged as a popular platform for serving mobile cloud gaming. Sharing the underlying hardware and OS, these SoC Clusters enable native mobile games to be executed and rendered efﬁciently without modiﬁcation. However, the number of deployed game sessions is limited due to conservative deployment strategies and high GPU utilization in current game ofﬂoading methods. To address these challenges, we introduce SFG, the ﬁrst system that enables high-density mobile cloud gaming on SoC Clusters with two novel techniques: (1) It employs a resource-efﬁcient game partitioning and cross-SoC ofﬂoading design that maximally preserves GPU optimization intents in the standard graphics rendering pipeline; (2) It proposes an NPU-enhanced game partition coordination strategy to adjust game performance when co-locating partitioned and complete game sessions. Our evaluation of ﬁve Unity games shows that SFG achieves up to 4.5× higher game density than existing methods with trivial performance loss. Equally important, SFG extends the lifespan of SoC Clusters, enabling outdated SoC Clusters to serve new games that are unfeasible on a single SoC due to GPU resource shortages.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/Chen0JNB24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Limitations and Opportunities of Modern Hardware Isolation Mechanisms",
+  "abstract": "A surge in the number, complexity, and automation of targeted security attacks has triggered a wave of interest in hardware support for isolation. Intel memory protection keys (MPK), ARM pointer authentication (PAC), ARM memory tagging extensions (MTE), and ARM Morello capabilities are just a few hardware mechanisms aimed at supporting low-overhead isolation in recent CPUs. These new mechanisms aim to bring practical isolation to a broad range of systems, e.g., browser plugins, device drivers and kernel extensions, user-defined database and network functions, serverless cloud platforms, and many more. However, as these technologies are still nascent, their advantages and limitations are yet unclear. In this work, we do an in-depth look at modern hardware isolation mechanisms with the goal of understanding their suitability for the isolation of subsystems with the tightest performance budgets. Our analysis shows that while a huge step forward, the isolation mechanisms in commodity CPUs are still lacking implementation of several design principles critical for supporting low-overhead enforcement of isolation boundaries, zero-copy exchange of data, and secure revocation of access permissions.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/UmOKLKKKMJ24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Metis: Fast Automatic Distributed Training on Heterogeneous GPUs",
+  "abstract": "As deep learning model sizes expand and new GPUs are released every year, the need for distributed training on heterogeneous GPUs rises to fully harness under-utilized low-end GPUs and reduce the cost of purchasing expensive high-end GPUs. In this paper, we introduce Metis, a system designed to automatically find efficient parallelism plans for distributed training on heterogeneous GPUs. Metis holistically optimizes several key system components, such as profiler, cost estimator, and planner, which were limited to single GPU types, to now efficiently leverage compute powers and memory capacities of diverse GPU types. This enables Metis to achieve fine-grained distribution of training workloads across heterogeneous GPUs, improving resource efficiency. However, the search space designed for automatic parallelism in this complexity would be prohibitively expensive to navigate. To address this issue, Metis develops a new search algorithm that efficiently prunes large search spaces and balances loads with heterogeneity-awareness, while preferring data parallelism over tensor parallelism within a pipeline stage to take advantage of its superior computation and communication trade-offs. Our evaluation with three large models (GPT-3, MoE, and Wide-Resnet) on combinations of three types of GPUs demonstrates that Metis finds better parallelism plans than traditional methods with $1.05 ~ 8.43× training speed-up, while requiring less profiling searching time. Compared to the oracle planning that delivers the fastest parallel training, Metis finds near-optimal solutions while reducing profiling and search overheads by orders of magnitude.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/Xu0LL024",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Models on the Move: Towards Feasible Embedded AI for Intrusion Detection on Vehicular CAN Bus",
+  "abstract": "Controller Area Network (CAN) protocol is widely used in vehicles as an efficient standard enabling communication among Electronic Control Units (ECUs). However, the CAN bus is vulnerable to malicious attacks because of a lack of defense features. To achieve efficient and effective intrusion detection system (IDS) design for hardware and embedded system security in vehicles, we have specifically tackled the challenge that existing IDS techniques rarely consider attacks with small-batch. We propose a model with hardware implementation to function in the vehicular CAN bus, namely MULSAM which employing multi-dimensional long short-term memory with the self-attention mechanism. The self-attention mechanism can enhance the characteristics of CAN bus-oriented attack behavior and the multi-dimensional long short-term memory can effectively extract the in-depth features of time series data. The MULSAM model has been compared with other baselines on five attacks generated by extracting benign CAN data from the actual vehicle. Our experimental results demonstrate that MULSAM has the best training stability and detection accuracy (98.98%) to identify small-batch injection attacks. Furthermore, to speed up the inference of MULSAM as an embedded unit in vehicles, hardware accelerator has been implemented on FPGA to achieve a better energy efficiency than other embedded platform. Even with a certain degree of quantification, the acceleration model for MULSAM still presents a high detection accuracy of 98.81% and a low latency of 1.88 ms, leading to a new cyber-physical system security solution towards feasible embedded AI for intrusion detection on vehicular CAN bus.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/WangWFHMM0D24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "OPER: Optimality-Guided Embedding Table Parallelization for Large-scale Recommendation Model",
+  "abstract": "The deployment of Deep Learning Recommendation Models (DLRMs) involves the parallelization of extra-large embedding tables (EMTs) on multiple GPUs. Existing works overlook the input-dependent behavior of EMTs and parallelize them in a coarse-grained manner, resulting in unbalanced workload distribution and inter-GPU communication. To this end, we propose OPER , an algorithm-system co-design with OP timality-guided E mbedding table parallelization for large-scale R ecommendation model training and inference. The core idea of OPER is to explore the connection between DLRM inputs and the efficiency of distributed EMTs, aiming to provide a near-optimal parallelization strategy for EMTs. Specifically, we conduct an in-depth analysis of various types of EMTs parallelism and propose a heuristic search algorithm to efficiently approximate an empirically near-optimal EMT parallelization. Furthermore, we implement a distributed shared memory-based system, which supports the lightweight but complex computation and communication pattern of fine-grained EMT parallelization, effectively converting theoretical improvements into real speedups. Extensive evaluation shows that OPER achieves 2.3× and 4.0× speedup on average in training and inference, respectively, over state-of-the-art DLRM frameworks.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/LeiJZHYZ24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "PUZZLE: Efficiently Aligning Large Language Models through Light-Weight Context Switch",
+  "abstract": "Aligning Large Language Models (LLMs) is currently the primary method to ensure AI systems operate in an ethically responsible and socially beneficial manner. Its paradigm differs significantly from standard pre-training or fine-tuning processes, involving multiple models and workloads (context), and necessitates frequently switching execution, introducing significant overhead, such as parameter updates and data transfer, which poses a critical challenge: efficiently switching between different models and workloads. To address these challenges, we introduce PUZZLE, an efficient system for LLM alignment. We explore model orchestration as well as light-weight and smooth workload switching in aligning LLMs by considering the similarity between different workloads. Specifically, PUZZLE adopts a two-dimensional approach for efficient switching, focusing on both intra- and inter-stage switching. Within each stage, switching costs are minimized by exploring model affinities and overlapping computation via time-sharing. Furthermore, a similarity-oriented strategy is employed to find the optimal inter-stage switch plan with the minimum communication cost. We evaluate PUZZLE on various clusters with up to 32 GPUs. Results show that PUZZLE achieves up to 2.12× speedup compared with the state-of-the-art RLHF training system DeepSpeed-Chat.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/GraurMLPTK24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Pecan: Cost-Efficient ML Data Preprocessing with Automatic Transformation Ordering and Hybrid Placement",
+  "abstract": "Input data preprocessing is a common bottleneck in machine learning (ML) jobs, that can significantly increase training time and cost as expensive GPUs or TPUs idle waiting for input data. Previous work has shown that offloading data preprocessing to remote CPU servers successfully alleviates data stalls and improves training time. However, remote CPU workers in disaggregated data processing systems comprise a significant fraction of total training costs. Meanwhile, current disaggregated solutions often underutilize CPU and DRAM resources available on ML accelerator nodes. We propose two approaches to alleviate ML input data stalls while minimizing costs. First, we dynamically schedule data preprocessing workers on ML accelerator host resources to minimize the number of remote CPU workers needed to achieve peak data ingestion bandwidth. Second, we analyze the characteristics of input pipelines and automatically reorder transformations to increase data preprocessing worker throughput. We observe that relaxing commutativity increases throughput while maintaining high model accuracy for a variety of ML data pipelines. We build Pecan, an ML data preprocessing service that automates data preprocessing worker placement and transformation reordering decisions. Pecan reduces preprocessing costs by 87% on average and total training costs by up to 60% compared to training with state-of-the-art disaggregated data preprocessing and total training costs by 55% on average compared to collocated data preprocessing.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/QiuMPCJ0FKBI24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Power-aware Deep Learning Model Serving with μ-Serve",
+  "abstract": "With the increasing popularity of large deep learning model-serving workloads, there is a pressing need to reduce the energy consumption of a model-serving cluster while maintaining satisfied throughput or model-serving latency requirements. Model multiplexing approaches such as model parallelism, model placement, replication, and batching aim to optimize the model-serving performance. However, they fall short of leveraging the GPU frequency scaling opportunity for power saving. In this paper, we demonstrate (1) the benefits of GPU frequency scaling in power saving for model serving; and (2) the necessity for co-design and optimization of fine-grained model multiplexing and GPU frequency scaling. We explore the co-design space and present a novel power-aware model-serving system, µ-Serve. µ-Serve is a model-serving framework that optimizes the power consumption and model serving latency/throughput of serving multiple ML models efficiently in a homogeneous GPU cluster. Evaluation results on production workloads show that µ-Serve achieves 1.2–2.6× power saving by dynamic GPU frequency scaling (up to 61% reduction) without SLO attainment violations.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/WeiW00LW0YY24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "QDSR: Accelerating Layer-7 Load Balancing by Direct Server Return with QUIC",
+  "abstract": "Layer-7(L7) load balancing is a crucial capability for cloud service providers to maintain stable and reliable services. However, high flexibility of the L7 load balancers(LBs) and increasing downlink relaying service result in a heavy workload, which significantly increases the cost of cloud service providers and reduces end-to-end service quality. We proposes QDSR, a new L7 load balancing scheme that uses Q UIC and D irect S erver R eturn(DSR) technology. QDSR divides the QUIC connection into independent streams and distributes them to multiple real servers(RSs), enabling real servers to send data directly to the client simultaneously. Due to the lack of redundant relaying, QDSR enables high performance, low latency, and nearly eliminates additional downlink relaying overhead. To evaluate the performance of QDSR, we implemented all its components using Nginx and Apache Traffic Server, deployed them in a real environment testbed, and conducted large-scale simulation experiments using mahimahi. The experimental results show that QDSR can process an additional 4.8%-18.5% of client requests compared to traditional L7 proxy-based load balancing schemes. It can achieve a maximum throughput that is 12.2 times higher in high-load scenarios and significantly reduce end-to-end latency and first packet latency.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/XiaZWCYYBWZZRHS24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Quant-LLM: Accelerating the Serving of Large Language Models via FP6-Centric Algorithm-System Co-Design on Modern GPUs",
+  "abstract": "Six-bit quantization (FP6) can effectively reduce the size of large language models (LLMs) and preserve the model quality consistently across varied applications. However, existing systems do not provide Tensor Core support for FP6 quantization and struggle to achieve practical performance improvements during LLM inference. It is challenging to support FP6 quantization on GPUs due to (1) unfriendly memory access of model weights with non-power-of-two bit-width and (2) high runtime overhead of weight de-quantization. To address these problems, we propose TC-FPx, the first full-stack GPU kernel design scheme with unified Tensor Core support of 6-bit and arbitrary bit-width quantization (5-bit, etc.). We integrate TC-FPx kernel into an existing inference system, providing new end-to-end support (called Quant-LLM) for quantized LLM inference, where better trade-offs between inference cost and model quality are achieved with 6-bit quantization. Experiments show that Quant-LLM enables the inference of LLaMA-70b using only a single GPU, achieving 1.69×-2.65× higher normalized inference throughput than the FP16 baseline. The source code is publicly available at https://github.com/usyd-fsalab/fp6_llm .",
+  "hint_categories": [
+   "dense_la",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/0001LYS24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "RL-Watchdog: A Fast and Predictable SSD Liveness Watchdog on Storage Systems",
+  "abstract": "This paper proposes a reinforcement learning-based watchdog (RLW) that examines solid-state drive (SSD) liveness or failures by faults (e.g., controller/power faults and high temperature) quickly, precisely, and online to minimize application data loss. To do this, we first provide a lightweight watchdog (LWW) to actively and lightly examine SSD liveness by issuing a liveness-dedicated command to the SSD. Second, we introduce a reinforcement learning-based timeout predictor (RLTP) which predicts the timeout of the dedicated command, enabling the detection of a failure point regardless of the SSD model. Finally, we propose fast failure notification (FFN) to immediately notify the applications of the failure to minimize their potential data loss. We implement RLW with three techniques in a Linux kernel 6.0.0 and evaluate it in a single SSD and RAID using realistic power fault injection. The experimental results reveal that RLW reduces the data loss by up to 96.7% compared with the existing scheme, and its accuracy in predicting failure points reaches up to 99.8%.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/YiPLLWMJ024",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "ScalaAFA: Constructing User-Space All-Flash Array Engine with Holistic Designs",
+  "abstract": "All-flash array (AFA) is a popular approach to aggregate the capacity of multiple solid-state drives (SSDs) while guaranteeing fault tolerance. Unfortunately, existing AFA engines inflict substantial software overheads on the I/O path, such as the user-kernel context switches and AFA internal tasks (e.g., parity preparation), thereby failing to adopt next-generation high-performance SSDs. Tackling this challenge, we propose ScalaAFA, a unique holistic design of AFA engine that can extend the throughput of next-generation SSD arrays in scale with low CPU costs. We incorporate ScalaAFA into user space to avoid user-kernel context switches while harnessing SSD built-in resources for handling AFA internal tasks. Specifically, in adherence to the lock-free principle of existing user-space storage framework, ScalaAFA substitutes the traditional locks with an efficient message-passing-based permission management scheme to facilitate inter-thread synchronization. Considering the CPU burden imposed by background I/O and parity computation, ScalaAFA proposes to offload these tasks to SSDs. To mitigate host-SSD communication overheads in offloading, ScalaAFA takes a novel data placement policy that enables transparent data gathering and in-situ parity computation. ScalaAFA also addresses two AFA intrinsic issues, metadata persistence and write amplification, by thoroughly exploiting SSD architectural innovations. Comprehensive evaluation results indicate that ScalaAFA can achieve 2.5× write throughput and reduce average write latency by a significant 52.7%, compared to the state-of-the-art AFA engines.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/PengAZWLC024",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "ScalaCache: Scalable User-Space Page Cache Management with Software-Hardware Coordination",
+  "abstract": "Due to the host-centric design principle, the existing page cache management suffers from CPU consumption, communication costs, and garbage collection (GC) interference. To address these challenges, we propose ScalaCache, a scalable user-space page cache with software-hardware coordination. Specifically, to reduce the host CPU overhead, we offload the cache management into computational storage drives (CSDs) and further merge the indirection layers in both the cache and flash firmware, which facilitates lightweight cache management. To further boost scalability, we build a lockless resource management framework that allows multiple CSD internal cores to manage the cache space concurrently. ScalaCache also aggregates the computing power of multiple CSDs to deliver scalable I/O performance. Moreover, ScalaCache reduces communication costs by trimming the I/O control path while mitigating GC interference via a GC-aware replacement policy, thereby enhancing its efficiency and performance stability. Our evaluation results reveal that ScalaCache exhibits 5.12× and 1.70× bandwidth improvements, respectively, compared to kernel page cache and the state-of-the-art user-space one. ScalaCache is open source and available at https://github.com/ChaseLab-PKU/ScalaCache .",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/TianLDL0024",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Scalable Billion-point Approximate Nearest Neighbor Search Using SmartSSDs",
+  "abstract": "Approximate nearest neighbor search (ANNS) in high-dimensional vector spaces has become increasingly crucial in database and machine learning applications. Most previous ANNS algorithms require TB-scale memory to store indices of billion-scale datasets, making their deployment extremely expensive for high-performance search. The emerging SmartSSD technology offers an opportunity to achieve scalable ANNS via near data processing (NDP). However, there remain challenges to directly adopt existing ANNS algorithms on multiple SmartSSDs. In this paper, we present SmartANNS, a SmartSSD-empowered billion-scale ANNS solution based on a hierarchical indexing methodology. We propose several novel designs to achieve near-linear scaling with multiple SmartSSDs. First, we propose a \"host CPUs + SmartSSDs'' cooperative architecture incorporated with hierarchical indices to significantly reduce data accesses and computations on SmartSSDs. Second, we propose dynamic task scheduling based on optimized data layout to achieve both load balancing and data reusing for multiple SmartSSDs. Third, we further propose a learning-based shard pruning algorithm to eliminate unnecessary computations on SmartSSDs. We implement SmartANNS using Samsung’s commercial SmartSSDs. Experimental results show that SmartANNS can improve query per second (QPS) by up to 10.7× compared with the state-of-the-art SmartSSD-based ANNS solution—CSDANNS. Moreover, SmartANNS can achieve near-linear performance scalability for large-scale datasets using multiple SmartSSDs.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/GaoKTCSJ24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Scalable and Effective Page-table and TLB management on NUMA Systems",
+  "abstract": "Memory management operations that modify page-tables, typically performed during memory allocation/deallocation, are infamous for their poor performance in highly threaded applications, largely due to process-wide TLB shootdowns that the OS must issue due to the lack of hardware support for TLB coherence. We study these operations in NUMA settings, where we observe up to 40x overhead for basic operations such as munmap or mprotect. The overhead further increases if page-table replication is used, where complete coherent copies of the page-tables are maintained across all NUMA nodes. While eager system-wide replication is extremely effective at localizing page-table reads during address translation, we find that it creates additional penalties upon any page-table changes due to the need to maintain all replicas coherent. In this paper, we propose a novel page-table management mechanism, called Hydra , to enable transparent, on-demand, and partial page-table replication across NUMA nodes in order to perform address translation locally, while avoiding the overheads and scalability issues of system-wide full page-table replication. We then show that Hydra's precise knowledge of page-table sharers can be leveraged to significantly reduce the number of TLB shootdowns issued upon any memory-management operation. As a result, Hydra not only avoids replication-related slowdowns, but also provides significant speedup over the baseline on memory allocation/deallocation and access control operations. We implement Hydra in Linux on x86_64, evaluate it on 4- and 8-socket systems, and show that Hydra achieves the full benefits of eager page-table replication on a wide range of applications, while also achieving a 12% and 36% runtime improvement on Webserver and Memcached respectively due to a significant reduction in TLB shootdowns.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/SunJ0L0024",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "SimEnc: A High-Performance Similarity-Preserving Encryption Approach for Deduplication of Encrypted Docker Images",
+  "abstract": "Encrypted Docker images are becoming increasingly popular in Docker registries for privacy. As the Docker registry is tasked with managing an increasing number of images, it becomes essential to implement deduplication to conserve storage space. However, deduplication for encrypted images is difficult because deduplication exploits identical content, while encryption tries to make all contents look random. Existing state-of-the-art works try to decompress images and perform message-locked encryption (MLE) to deduplicate encrypted images. Unfortunately, our measurements uncover two limitations in current works: (i) even minor modifications to the image content can hinder MLE deduplication, (ii) decompressing image layers would increase the size of the storage for duplicate data, and significantly compromise user pull latency and deduplication throughput. In this paper, we propose SimEnc , a high-performance similarity-preserving encryption approach for deduplication of encrypted Docker images. SimEnc is the first work that integrates the semantic hash technique into MLE to extract semantic information among layers for improving the deduplication ratio. SimEnc builds on a fast similarity space selection mechanism for flexibility. Unlike existing works completely decompressing the layer, we explore a new similarity space by Huffman decoding that achieves a better deduplication ratio and performance. Experiments show that SimEnc outperforms both the state-of-the-art encrypted serverless platform and plaintext Docker registry, reducing storage consumption by up to 261.7% and 54.2%, respectively. Meanwhile, SimEnc can surpass them in terms of pull latency.",
+  "hint_categories": [
+   "compression"
+  ]
+ },
+ {
+  "key": "conf/usenix/FengHKLZ0Z24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "SlimArchive: A Lightweight Architecture for Ethereum Archive Nodes",
+  "abstract": "With the rapid development of Ethereum, archive nodes that record all historical states have become a critical component of the infrastructure. However, current archive nodes suffer enormous storage requirements and poor performance due to the inefficient authenticated Merkle Patricia Trie and coarse-grained state granularity. This paper presents a lightweight and high-performance architecture for Ethereum archive nodes to address the two limitations mentioned earlier. The core idea of our approach is to maintain compacted, flattened, and fine-grained (i.e., transaction-level) historical states by flattening the minimum state changes of each transaction required for the world state. Our method maintains an archive node with minimum storage requirements while providing high-performance state access. We have implemented a prototype system named SLIMARCHIVE for Ethereum. The evaluation results demonstrate that our approach reduces storage requirements by 98.1%, improves state access throughput by 19.0×, and speeds up transaction execution by an average of 1112.5×, compared to vanilla Geth.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/LuoZVBCFSS24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "Starburst: A Cost-aware Scheduler for Hybrid Cloud",
+  "abstract": "To efficiently tackle bursts in job demand, organizations employ hybrid cloud architectures to scale their batch workloads from their private clusters to public cloud. This requires transforming cluster schedulers into cloud-enabled versions to navigate the tradeoff between cloud costs and scheduler objectives such as job completion time (JCT). However, our analysis over production-level traces show that existing cloud-enabled schedulers incur inefficient cost-JCT trade-offs due to low cluster utilization. We present Starburst, a system that maximizes cluster utilization to streamline the cost-JCT tradeoff. Starburst's scheduler dynamically controls jobs' waiting times to improve utilization—it assigns longer waits for large jobs to increase their chances of running on the cluster, and shorter waits to small jobs to increase their chances of running on the cloud. To offer configurability, Starburst provides system administrators a simple waiting budget framework to tune their position on the cost-JCT curve. A departure from traditional cluster schedulers, Starburst operates as a higher-level resource manager over a private cluster and dynamic cloud clusters. Simulations over production-level traces and real-world experiments on a 32-GPU private cluster show that Starburst can reduce cloud costs by up to 54-91% over existing cluster managers, while increasing average JCT by at most 5.8%.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/0010YDI0FC024",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "StreamBox: A Lightweight GPU SandBox for Serverless Inference Workflow",
+  "abstract": "The dynamic workload and latency sensitivity of DNN inference drive a trend toward exploiting serverless computing for scalable DNN inference serving. Usually, GPUs are spatially partitioned to serve multiple co-located functions. However, existing serverless inference systems isolate functions in separate monolithic GPU runtimes (e.g., CUDA context), which is too heavy for short-lived and fine-grained functions, leading to a high startup latency, a large memory footprint, and expensive inter-function communication. In this paper, we present StreamBox, a new lightweight GPU sandbox for serverless inference workflow. StreamBox unleashes the potential of streams and efficiently realizes them for serverless inference by implementing fine-grain and auto-scaling memory management, allowing transparent and efficient intra-GPU communication across functions, and enabling PCIe bandwidth sharing among concurrent streams. Our evaluations over real-world workloads show that StreamBox reduces the GPU memory footprint by up to 82% and improves throughput by 6.7X compared to state-of-the-art serverless inference systems.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/0001JYQZLZPZWJP24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "SuperBench: Improving Cloud AI Infrastructure Reliability with Proactive Validation",
+  "abstract": "Reliability in cloud AI infrastructure is crucial for cloud service providers, prompting the widespread use of hardware redundancies. However, these redundancies can inadvertently lead to hidden degradation, so called\"gray failure\", for AI workloads, significantly affecting end-to-end performance and concealing performance issues, which complicates root cause analysis for failures and regressions. We introduce SuperBench, a proactive validation system for AI infrastructure that mitigates hidden degradation caused by hardware redundancies and enhances overall reliability. SuperBench features a comprehensive benchmark suite, capable of evaluating individual hardware components and representing most real AI workloads. It comprises a Validator which learns benchmark criteria to clearly pinpoint defective components. Additionally, SuperBench incorporates a Selector to balance validation time and issue-related penalties, enabling optimal timing for validation execution with a tailored subset of benchmarks. Through testbed evaluation and simulation, we demonstrate that SuperBench can increase the mean time between incidents by up to 22.61x. SuperBench has been successfully deployed in Azure production, validating hundreds of thousands of GPUs over the last two years.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/0006TSRSMB24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "TileClipper: Lightweight Selection of Regions of Interest from Videos for Traffic Surveillance",
+  "abstract": "With traffic surveillance increasingly used, thousands of cameras on roads send video feeds to cloud servers to run computer vision algorithms, requiring high bandwidth. State-of-the-art techniques reduce the bandwidth requirement by either sending a limited number of frames/pixels/regions or relying on re-encoding the important parts of the video. This imposes significant overhead on both the camera side and server side compute as re-encoding is expensive. In this work, we propose TILECLIPPER, a system that utilizes tile sampling, where a limited number of rectangular areas within the frames, known as tiles, are sent to the server. TILECLIPPER selects the tiles adaptively by utilizing its correlation with the tile bitrates. We evaluate TILECLIPPER on different datasets having 55 videos in total to show that, on average, our technique reduces ≈ 22% of data sent to the cloud while providing a detection accuracy of 92% with minimal calibration and compute compared to prior works. We show real-time tile filtering of TILECLIPPER even on cheap edge devices like Raspberry Pi 4 and nVidia Jetson Nano. We further create a live deployment of TILECLIPPER to show that it provides over 87% detection accuracy and over 55% bandwidth savings.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/GuWSXHQG24",
+  "venue": "ATC",
+  "year": 2024,
+  "title": "gVulkan: Scalable GPU Pooling for Pixel-Grained Rendering in Ray Tracing",
+  "abstract": "Ray tracing rendering technology enhances scene realism and offers immersive experiences. However, it demands significant computational resources to trace and compute light-object interactions. As a result, traditional local GPU rendering might not meet the demands for high image quality and low latency. Moreover, many applications are tailored to utilize the resources of a single GPU, limiting their capacity to increase computational power through additional GPUs. This paper presents gVulkan, the first transparent multi-GPU acceleration rendering solution for Vulkan-based ray tracing. To address the bottleneck caused by limited local GPU resources, gVulkan can offload ray tracing rendering to the cloud via API-forwarding. In the cloud, gVulkan employs Split Frame Rendering (SFR) to enable an arbitrary number of GPUs to accelerate rendering in parallel, while dynamically self-rebalancing the workload at a pixel-grained level across GPUs. Experiments demonstrate that gVulkan can accelerate Vulkan-based ray tracing programs in an application-unaware manner. By dynamically rebalancing each GPU's workload, gVulkan achieves good linearity with 3.81× speedup across 4 GPUs on average.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/PengTZLCJXWXZLY25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "ASTERINAS: A Linux ABI-Compatible, Rust-Based Framekernel OS with a Small and Sound TCB",
+  "abstract": "How can one build a feature-rich, general-purpose, Rust-based operating system (OS) with a minimal and sound Trusted Computing Base (TCB) for memory safety? Existing Rust-based OSes fall short due to their improper use of unsafe Rust in kernel development. To address this challenge, we propose a novel OS architecture called framekernel that realizes Rust's full potential to achieve intra-kernel privilege separation, ensuring TCB minimality and soundness. We present OSTD, a streamlined framework for safe Rust OS development, and Asterinas, a Linux ABI-compatible framekernel OS implemented entirely in safe Rust using OSTD. Supporting over 210 Linux system calls, Asterinas delivers performance on par with Linux, while maintaining a minimized, memory-safety TCB of only about 14.0% of the codebase. These results underscore the practicality and benefits of the framekernel architecture in building safe and efficient OSes.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/Li00L0LZZSLS00025",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Accelerating Distributed Graph Learning by Using Collaborative In-Network Multicast and Aggregation",
+  "abstract": "Distributed GNN training systems typically partition large graphs into multiple subgraphs and train them across multiple workers to eliminate single-GPU memory limitations. However, the graph propagation in each iteration involves numerous one-to-many multicast and many-to-one aggregation operations across workers, resulting in massive redundant traffic and severe bandwidth bottlenecks. Offloading multicast and aggregation operations into programmable switches has the potential to reduce the traffic volume significantly. Unfortunately, the complex dependencies among graph data and the limited switch-aggregator resources lead to performance degradation. The graph-agnostic sending order results in excessive traffic in multicast operations, leading to a severe backlog. Additionally, a small number of vertices may consume the major part of aggregator resources, while most traffic misses the opportunity for in-network aggregation. To tackle these challenges, we propose SwitchGNN, which accelerates graph learning through coordinated in-network multicast and aggregation. First, to alleviate the link under-utilization and queue backlog, we design a graph-aware multicast reordering algorithm, which prioritizes the upload of multicast vertices with the higher number of neighbors to reduce the communication time. Second, to prevent aggregator overflow, SwitchGNN employs a multi-level graph partitioning mechanism that further partitions boundary vertices into independent blocks to perform in-network aggregation in batches while ensuring the correctness of the graph propagation. We implement SwitchGNN using P4 programmable switch and DPDK host stack. The experimental results of the real testbed and NS3 simulations show that SwitchGNN effectively reduces the communication overhead and speeds up the training time by up to 74%.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/ZhouWW000DCW0ZW25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Accelerating Model Training on Ascend Chips: An Industrial System for Profiling, Analysis and Optimization",
+  "abstract": "Training large-scale deep learning (DL) models is a resource-intensive and time-consuming endeavor, yet optimizing training efficiency poses significant challenges. The sporadic performance fluctuations during long training require advanced profiling capabilities. It is not easy to perform comprehensive and accurate bottleneck analysis amidst numerous influencing factors. Selecting effective optimization strategies without proper guidance further complicates the process. This paper shares our practical insights on optimizing training on Huawei Ascend chips based on three years of experience with 135 typical cases. We propose a systematic optimization system, Hermes, including a lightweight profiling approach, a hierarchical bottleneck analysis framework, and an optimization advisor. Our real-world experiments demonstrate significant acceleration in training for models like PanGu-&alpha;, MobileNetV1, and MoE (Mixture of Experts), with respective speedups of 3.05&times;, 1.91&times;, and 1.19&times;.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/Zhan0025",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "AssyLLM: Efficient Federated Fine-tuning of LLMs via Assembling Pre-trained Blocks",
+  "abstract": "Federated Learning (FL) provides a promising way to fine-tune Large Language Models (LLMs) to downstream mobile tasks while preserving data privacy. However, the intensive memory footprint prevents large amount of edge devices from contributing to the fine-tuning process with their own private data. To this end, we introduce AssyLLM, an innovative framework that conducts fine-tuning in a memory-efficient manner through directly assembling the pre-trained transformer blocks. The core idea of AssyLLM is to decompose a pre-trained LLM into discrete blocks. These blocks are iteratively selected based on the local corpus distributed across various devices, and subsequently assembled to form a novel LLM tailored for downstream tasks. In this way, high fine-tuning efficiency can be achieved through avoiding the backpropagation process adopted in traditional fine-tuning approaches. Specifically, AssyLLM features four core components: 1) Block Comparator, 2) Elastic Adapter, 3) Block Quanter, and 4) Block Swapper. Block Comparator is designed to assess the compatibility between two blocks, facilitating the selection of appropriate blocks for assembling. After that, Elastic Adapter creates customized adapter configurations that address the specific structural differences between the blocks for seamless concatenation between the selected blocks. Meanwhile, Block Quanter is proposed to adjust precision of related weights based on the block output activation in order to reduce the extra memory overhead caused by retaining the candidate blocks while preserving the performance of the assembled model. Moreover, in order to further increase the scalability of the candidate blocks for better fine-tuning performance while guaranteeing fine-tuning progress, Block Swapper is designed to optimize the swapping pipeline by incorporating block correlation metrics. AssyLLM is comprehensively evaluated on multiple benchmark datasets of varying complexity. Compared to traditional methods, AssyLLM improves accuracy by up to 18.26%, achieves up to 30.04x speedup, and significantly reduces memory consumption by up to 92%.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/PengWZHXWBJY00D25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Barre: Empowering Simplified and Versatile Programmable Congestion Control in High-Speed AI Clusters",
+  "abstract": "Network interface cards (NICs) and switches have entered the 400 Gbps era. RoCEv2 networks face significant challenges in congestion management, particularly under high-throughput workloads. While advanced congestion control algorithms have been proposed, their deployment in large-scale data centers remains hindered by complex parameter tuning and dependency on sophisticated hardware features. In this paper, we present Barre, a simple yet highly effective congestion control scheme designed for modern AI/HPC clusters operating at 400 Gbps. By leveraging commodity hardware and standard network functionalities, Barre achieves near-optimal performance in fairness, congestion responsiveness, and scalability with minimal overhead. Deployed in our 400 Gbps RoCE cluster for over a year and supporting up to 10,000 GPUs, Barre improves AI training task throughput by an average of 9.6%. Furthermore, we demonstrate that Barre’s core principles can be seamlessly applied to enhance DCQCN, a widely deployed congestion control algorithm, underscoring its practicality and versatility.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/PonsALMK25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Burst Computing: Quick, Sudden, Massively Parallel Processing on Serverless Resources",
+  "abstract": "We present burst computing, a novel serverless solution tailored for burst-parallel jobs. Unlike Function-as-a-Service (FaaS), burst computing establishes job-level isolation using a novel group invocation primitive to launch large groups of workers with guaranteed simultaneity. Resource allocation is optimized by packing workers into fewer containers, which accelerates their initialization and enables locality. Locality significantly reduces remote communication compared to FaaS and, combined with simultaneity, it allows workers to communicate synchronously with message passing and group collectives. Consequently, applications unfeasible in FaaS are now possible. We implement burst computing atop OpenWhisk and provide a communication middleware that seamlessly leverages locality with zero-copy messaging. Evaluation shows reduced job invocation and communication latency for a 2&times; speed-up in TeraSort and a 98.5% reduction in remote communication in PageRank (13&times; speed-up) compared to standard FaaS.",
+  "hint_categories": [
+   "graph",
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/HuangWY0XL25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Chitu: Avoiding Unnecessary Fallback in Byzantine Consensus",
+  "abstract": "Most Byzantine-Fault Tolerant (BFT) consensus protocols either pre-select a single leader with the help of additional timing assumptions (i.e., partially synchronous ones) or resort to random coins to achieve only probabilistic termination (i.e., asynchronous ones). The single leader may become a performance bottleneck and/or lead to availability problems, while probabilistic termination increases latency. We re-consider the consensus problem from its first principles, where neither synchrony assumption or any designated role, nor randomization is intrinsic to consensus. We thus formally study a framework for designing robust BFT protocols with low latency: nodes first try to achieve consensus merely based on message exchange, but only resort to a fallback mechanism like random coin or leader election if correct nodes have divergent opinions on a proposal. We further present Chitu, an asynchronous DAG-based protocols following this framework. Chitu in the best case commits proposals in four message delays, even in the presence of faulty nodes and/or under asynchrony. In the worst case, Chitu still ensures predictable performance with O(1) time complexity in expectation. Experimental results on Amazon EC2 show that Chitu achieves a significant reduction in latency compared to two representative DAG-based protocols that always put a leader or randomization on the execution path.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/WangWH025",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Colocating ML Inference and Training with Fast GPU Memory Handover",
+  "abstract": "This paper presents SIRIUS, an efficient colocation system that enables spatial sharing of GPU resources between machine learning (ML) inference and training tasks. To meet strict latency SLOs, SIRIUS prioritizes inference tasks, allowing them to utilize all GPU resources without restriction and interference. Meanwhile, it concurrently runs training tasks on leftover resources to improve throughput and GPU utilization. SIRIUS is novel in three ways. First, it leverages the characteristics of gradient computation in a batch to adjust the memory consumption of training tasks in a few milliseconds. Second, it explicitly manages memory reclamation for training, ensuring a thorough and safe memory handover process. Third, it employs an SLO-aware memory reallocation strategy to mitigate memory initialization overhead and prevent thrashing when facing frequently fluctuating workloads. Our evaluation shows that SIRIUS outperforms existing state-of-the-art colocation approaches, improving inference SLO compliance by an average of 57.0% (up to 97.0%) and training throughput by 2.2× (up to 13.7×).",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/TangW0H0M25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Converos: Practical Model Checking for Verifying Rust OS Kernel Concurrency",
+  "abstract": "ASTERINAS is an open-source, general-purpose operating system written in Rust, compatible with the Linux ABI, and designed with a focus on reliability and security. We developed a practical model-checking methodology, CONVEROS, to verify the correctness of ASTERINAS concurrency modules such as synchronization primitives and critical thread-safety components. CONVEROS leverages the rigor of formal specifications and introduces a multi-layered, multi-grained specification approach to make writing scalable specifications practical, demonstrated in our case by writing PlusCal specifications for Rust code. It also makes conformance checking incremental and more automated to detect specification-code discrepancies. While many formal methods are challenging to apply due to complexity and the expertise required, CONVEROS makes model checking cost-effective, accessible, and adaptable to evolving specifications and code. We applied CONVEROS to 12 critical concurrency modules, uncovering 20 bugs that led to issues such as data races, deadlocks, livelocks, and kernel panics. With a specification-to-code ratio ranging from 0.3 to 2.3 and a verification effort of only four person-months, our results demonstrate the practicality and effectiveness of CONVEROS.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/Zhang0HZCSZ0B0W25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "DRack: A CXL-Disaggregated Rack Architecture to Boost Inter-Rack Communication",
+  "abstract": "Data-intensive applications are scaling out across more and more racks, and boosted with advanced computing units with enhanced throughput, which necessitates increased NIC capacity and network bandwidth to transport inter-rack traffic. As a result, when running them over ToR-centric racks, inter-rack traffic can be bottlenecked at host NICs and core network due to oversubscription. However, we observe that, although a large volume of inter-rack traffic exists, the utilization of the host’s NICs within a rack remains low. If those underutilized NICs within a rack can be utilized by any host, inter-rack communication can be accelerated. Therefore, we propose DRack. At its core, DRack disaggregates all NICs within a rack from their hosts, forming a shared NIC pool. As the local memory bandwidth or the PCIe link at a host is much smaller than the NIC pool capacity, the host cannot fully utilize the NIC pool. DRack also disaggregates memory devices within a rack from their hosts, so that data from the NIC pool can be written and read from multiple memory with full capacity, while host processors can directly access the memory pool with memory semantics. We realize DRack with CXL as it supports device pooling and memory semantics, which is well-suited to our designs. We have implemented DRack prototype and evaluated it with real applications, such as DNN training and graph processing. The result shows that DRack can reduce the communication stage by an average of 37.3% compared to ToR-centric rack.",
+  "hint_categories": [
+   "graph",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/LiuMZHSLXL0RC025",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "DSA-2LM: A CPU-Free Tiered Memory Architecture with Intel DSA",
+  "abstract": "Tiered Memory is critical to manage heterogeneous memory devices, such as Persistent Memory or CXL Memory. Existing works make difficult trade-offs between optimal data placement and costly data movement. With the advent of Intel Data Streaming Accelerator (DSA), a CPU-free hardware to move data between memory regions, data movement can be up to 4&times; faster than a single CPU core. However, the fine memory movement granularity in Linux kernel undermines the potential performance improvement. To this end, we have developed DSA-2LM, a new tiered memory system that adaptively integrates DSA into page migration. The proposed framework integrates fast memory migration workflow and adaptable concurrent data paths with well-tuned DSA configurations. Experimental results show that, compared to three representative tiered memory works: MEMTIS, TPP and NOMAD, DSA-2LM can achieve 20%, 30% and 16% performance improvement under real-world applications.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/ZhangX00CWLXG25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Efficient Performance-Aware GPU Sharing with Compatibility and Isolation through Kernel Space Interception",
+  "abstract": "To support diverse GPU applications and ensure their performance, it is crucial to ensure compatibility, isolation, and maximizing utilization. However, existing approaches are limited to CUDA runtimes and have vulnerable isolation, where the misbehavior or crash of a single application disrupts all other applications sharing the same GPU. Moreover, existing solutions fail to efficiently orchestrate the applications. Our investigation reveals that the limitations in compatibility and isolation stem from the user-space design of existing GPU-sharing solutions. To address these issues, we propose KRYPTON, a kernel-space GPU-sharing scheme that ensures compatibility and isolation. KRYPTON intercepts GPU command buffers at the kernel level to provide virtual GPU devices. Rather than relying on fixed GPU resource allocation, it employs efficient spatio-temporal sharing, enabling performance guarantees while improving resource utilization. Experimental results show that KRYPTON reduces the required GPU number by 32.1% compared with SOTA baselines, while providing robust compatibility and isolation.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/HuLLWLY00025",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "FLB: Fine-grained Load Balancing for Lossless Datacenter Networks",
+  "abstract": "Remote Direct Memory Access (RDMA) over Converged Ethernet (RoCE) cooperating with Priority Flow Control (PFC) has been widely deployed in production datacenters to enable low latency, lossless transmission. At the same time, modern datacenters typically offer parallel transmission paths between any pair of end-hosts, underscoring the importance of load balancing. However, the well-studied load balancing mechanisms designed for lossy datacenter networks (DCNs) are ill-suited for such lossless environments. Through extensive experiments, we are among the first to comprehensively inspect the interactions between PFC and load balancing, and uncover that existing fine-grained rerouting schemes can be counterproductive to spread the congested flows among more paths, further aggravating PFC’s head-of-line (HoL) blocking. Motivated by this, we present FLB, a Fine-grained Load Balancing scheme for lossless DCNs. At its core, FLB employs threshold-free rerouting to effectively balance traffic load and improve link utilization during normal conditions and leverages timely congested flow isolation to eliminate HoL blocking on non-congested flows when congestion occurs. We have fully implemented a FLB prototype, and our evaluation results show that FLB reduces PFC PAUSE rate by up to 96% and avoids HoL blocking, translating to up to 45% improvement in goodput over CONGA+DCQCN and 40%, 36%, 29% and 18% reduction in average flow completion time (FCT) over LetFlow+Swift, MP-RDMA, Proteus+DCQCN and LetFlow+PCN, respectively.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/LuLZDL0025",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "Fast Distributed Transactions for RDMA-based Disaggregated Memory",
+  "abstract": "Memory disaggregation has emerged as a promising datacenter architecture since it improves memory utilization and scalability. However, it is usually costly to process distributed transactions in disaggregated memory systems due to relatively high latency of remote memory accesses. In this paper, we present HDTX, a high-performance distributed transaction system for RDMA-based disaggregated memory. We advocate three novel designs. First, we propose a fast commit protocol (FCP) to minimize network round trips by coalescing different phases of distributed transaction processing. Second, we propose an RDMA-enabled offloading mechanism to reduce data transfers across computing and memory nodes by carefully orchestrating different RDMA primitives. Third, we propose decentralized priority-based locking to schedule mission-critical transactions, and thus further reduce the latency of distributed transactions. Experimental results show that HDTX reduces the latency of distributed transactions by up to 88.3% and 72.1%, and improves the throughput by up to 2.08&times; and 84.7%, compared with RDMA-based distributed transaction systems&ndash;FaRM and FORD, respectively.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/ZhaoT0C25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "FlexPipe: Maximizing Training Efficiency for Transformer-based Models with Variable-Length Inputs",
+  "abstract": "Transformer achieves promising results among various deep learning architectures. Training transformer-based models (transformers) typically involves various parallelisms, such as data parallelism and pipeline parallelism (PP). Variable-length datasets have been adopted to facilitate multi-task training of transformers, which degrades training efficiency. Though many efforts have significantly improved the variable-length training, these efforts primarily focus on optimizations within a single iteration. However, substantial fluctuations of computation and memory requirements across iterations can also lead to inefficiency overall due to the static partitioning of distributed frameworks. Thus, this paper proposes FlexPipe from the perspective of a distributed system to enable high throughput variable-length training of transformers. To our knowledge, FlexPipe is the first flexible pipeline framework that dynamically adjusts PP by a live flexibility mechanism without training loss. We introduce a novel problem which aims at maximizing training throughput by adjusting the parallel configurations, along with an efficient heuristic algorithm to solve the problem. Extensive experiments show that FlexPipe achieves an average 1.25&times; training throughput compared to state-of-the-art methods.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/WangF0HG0025",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "GMI-DRL: Empowering Multi-GPU DRL with Adaptive-Grained Parallelism",
+  "abstract": "With the increasing popularity of robotics in industrial control and autonomous driving, deep reinforcement learning (DRL) raises the attention of various fields. However, DRL computation on the modern powerful multi-GPU platform is still inefficient due to its heterogeneous tasks and complicated inter-task interactions. To this end, we propose GMI-DRL, the first systematic design for scaling multi-GPU DRL via adaptive-grained parallelism. To facilitate such a new parallelism scheme, GMI-DRL introduces a new concept &ndash; GPU Multiplexing Instance (GMI), a unified resource-adjustable sub-GPU design for heterogeneous tasks in DRL scaling. Besides, GMI-DRL introduces an adaptive Coordinator to effectively manage workloads and resources for better system performance. GMI-DRL also incorporates a specialized Communicator with highly efficient inter-GMI communication support to meet diverse communication demands. Extensive experiments demonstrate that GMI-DRL outperforms state-of-the-art DRL accelerating solutions in training throughput (up to 2.34x) and GPU utilization (up to 40.8% improvement) on the DGX-A100 platform.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/usenix/FanRXGSL25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "GPREEMPT: GPU Preemptive Scheduling Made General and Efficient",
+  "abstract": "GPUs support various workloads with different peak periods and diverse service level agreements (SLA) requirements, including latency-critical tasks and best-effort tasks. Co-locating tasks with diverse SLA demands can enhance resource utilization, yet it introduces the risk of performance interference. Prior work employs preemption strategies to enforce SLAs for latency-critical tasks. These strategies can be classified into two categories: wait-based and reset-based approaches. The wait-based strategy ensures broad generality but incurs significant preemption latency. In contrast, the reset-based strategy necessitates the idempotence of preempted kernels, limiting its generality. This paper presents GPreempt, a preemption mechanism that breaks the trade-off. GPreempt implements a timeslice-based yield mechanism to enable context-switch preemption on GPUs. To mitigate the overhead associated with context-switching, GPreempt employs a hint-based pre-preemption technique to overlap the preemption process with the essential data-preparation phase. Our evaluation demonstrates that GPreempt achieves within 40 &mu;s low-latency preemption comparable to executing only latency-critical tasks while remaining applicable to non-idempotent workloads, where reset-based mechanisms prove inadequate.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/Wu0YYWDYWQZ25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "GREYHOUND: Hunting Fail-Slows in Hybrid-Parallel Training at Scale",
+  "abstract": "Fail-slows, or stragglers, are common problems in largescale hybrid-parallel training that runs on a large fleet of GPU servers for an extended period of time. Yet, these problems are not well studied. In this paper, we first present a characterization study on a shared production cluster with over 10,000 GPUs. We find that fail-slows manifest as transient stragglers caused by slow computations or communications due to contention, device degradation, or network congestion, lasting from sub-minutes to nearly ten hours, and delaying large training jobs by 1.34× on average. The current practice is to manually detect fail-slows and treat them as fail-stops by means of checkpoint-and-restart failover, which is time-consuming. In this paper, we propose GREYHOUND, a system that rapidly identifies slow GPUs and/or communication links, and effectively tackles them with a novel multi-level mitigation mechanism, all without human intervention. GREYHOUND correctly detects fail-slows in a production cluster with over 99% accuracy. Testbed experiment on 256 H800 GPUs further shows it effectively handles (manually injected) stragglers, improving end-to-end throughput by 1.58×.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/usenix/WangGXCT25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "GeneralSparse: Bridging the Gap in SpMM for Pruned Large Language Model Inference on GPUs",
+  "abstract": "The rapid growth of generative model parameters poses challenges in deployment, especially regarding weight storage and inference latency. The weight pruning is an effective technique to reduce the computational and memory overhead of Large Language Models (LLMs) while maintaining accuracy, which transforms the matmuls to Sparse Matrix Multiplication (SpMM) computation. However, the diverse pruning methods introduce varying sparsity patterns that challenge high-performance SpMM on GPUs. Existing solutions are limited with adaptability to these patterns, flexibility in handling different sparsity levels, and support for efficient optimizations. In this work, we present GeneralSparse, a novel solution that bridges this gap by leveraging the abstraction of memory access and reduction spaces. GeneralSparse designs the process of dividing box to adapt dynamically to diverse pruning patterns and proposes hierarchical reduction algorithms tailored to GPU hierarchies. Through evaluations on pruned LLM weight matrices and the SuiteSparse collection, GeneralSparse achieves up to 20.82× speedup over cuSPARSE libraries. At end-to-end inference time on LLMs, GeneralSparse achieves up to 2.33× speedup over counterparts.",
+  "hint_categories": [
+   "dense_la",
+   "sparse_la",
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/usenix/YinSATY25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "HEC: Equivalence Verification Checking for Code Transformation via Equality Saturation",
+  "abstract": "In modern computing systems, compilation employs numerous optimization techniques to enhance code performance. Source-to-source code transformations, which include control flow and datapath transformations, have been widely used in High-Level Synthesis (HLS) and compiler optimization. While researchers actively investigate methods to improve performance with source-to-source code transformations, they often overlook the significance of verifying their correctness. Current tools cannot provide a holistic verification of these transformations. This paper introduces HEC, a framework for equivalence checking that leverages the e-graph data structure to comprehensively verify functional equivalence between programs. HEC utilizes the MLIR as its frontend and integrates MLIR into the e-graph framework. Through the combination of dynamic and static e-graph rewriting, HEC facilitates the validation of comprehensive code transformations. We demonstrate effectiveness of HEC on PolyBenchC benchmarks, successfully verifying loop unrolling, tiling, and fusion transformations. HEC processes over 100,000 lines of MLIR code in 40 minutes with predictable runtime scaling. Importantly, HEC identified two critical compilation errors in mlir-opt: loop boundary check errors causing unintended executions during unrolling, and memory read-after-write violations in loop fusion that alter program semantics. These findings demonstrate HEC practical value in detecting real-world compiler bugs and highlight the importance of formal verification in optimization pipelines.",
+  "hint_categories": []
+ }
+]

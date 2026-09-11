@@ -1,0 +1,377 @@
+kernel: preconditioner
+summary: >
+  Measures preconditioner cost along three axes that the track's own papers
+  keep separate but a benchmark must report together where an outer solver
+  exists: one-shot setup (factorization / hierarchy construction / DAG
+  scheduling), per-application or per-iteration apply cost, and, for
+  variants that exercise an outer Krylov solver, the number of iterations
+  the preconditioner buys or costs versus a reference.
+operation: >
+  Setup: build M (an approximate inverse of A, or a multigrid hierarchy, or
+  a scheduled DAG) once from sparse A. Apply: z = M*r, either as a standalone
+  kernel proxy (matrix-power A^d*x for polynomial preconditioners; forward/
+  backward triangular solve for ILU(0)/IC(0)) or nested inside a Krylov
+  solve (PCG/BiCGStab) that is run to a residual-based convergence criterion.
+
+variants:
+  - id: mpk-kernel-cpu-f64
+    claim: >
+      steady-state per-application throughput of the matrix-power kernel
+      A^d*x that underlies polynomial preconditioners, one-shot block-
+      partitioning setup excluded and reported separately; no outer solver
+      exercised (this is a kernel-only proxy, not a solve-to-convergence).
+    inputs:
+      suite: SuiteSparse
+      selection: >
+        real symmetric positive-definite matrices, 1e4 <= n <= 2e5,
+        1e5 <= nnz <= 5e6. Spec-fixed: DBMPK's own artifact ships no matrix
+        list at all, only a -in <path> flag; this list is the spec's
+        construction, reusing named instances already verified elsewhere in
+        this track's artifacts so results are cross-comparable.
+      recommended_subset: [bcsstk08, bcsstk09, bcsstk11, bcsstk13, bcsstk14,
+        bcsstk16, bcsstk17, bcsstk18, bcsstk21, bcsstk25, bcsstk27, bcsstk36,
+        crystm01, crystm02, crystm03, ct20stif, gyro, msc01050, msc10848,
+        nasa2910, nasa4704, nd3k, nasasrb, olafu, s1rmt3m1, s2rmt3m1,
+        s3rmt3m1, thermal1, wathen100, wathen120]
+      dense_operand: >
+        x in R^n, fp64, initialized to all-ones (matches DBMPK)
+      polynomial_degree: >
+        d = 20 (matches DBMPK's paper example; also report d=10,40 as a
+        size-class check)
+    protocol:
+      format: >
+        CSR (given; symmetric-to-general expansion not timed)
+      warmup: >
+        1 discarded application. Spec-fixed: DBMPK's own first-power call
+        is dead code, its result is unused.
+      reps: >
+        50 (matches DBMPK's fixed iteration count)
+      statistic: >
+        median. Spec-fixed: DBMPK only reports mean; median plus min/max
+        now required.
+      timer: >
+        host wall-clock (std::chrono or gettimeofday, matches DBMPK)
+      timing_scope: >
+        kernel only (the A^d*x application); H2D/D2H not applicable
+        (CPU-only variant)
+      preprocessing_reported: >
+        separately, once: diagonal-block partitioning time (DBMPK's
+        kernel.Setup())
+    metric:
+      primary: GFLOP/s (2*d*nnz per application)
+      secondary: ms/application
+    correctness: >
+      max rel err of A^d*x vs a repeated-MKL-SpMV (mkl_sparse_d_mv applied
+      d times) reference < 1e-9. Spec-added: DBMPK's own artifact computes
+      both outputs but never diffs them.
+    baseline: >
+      Intel MKL sparse BLAS, mkl_sparse_d_mv applied d times per
+      application (DBMPK's own comparison)
+
+  - id: ilu-apply-kernel-cpu-f64
+    claim: >
+      steady-state kernel throughput of ILU(0)/IC(0) triangular-solve apply
+      and sparse-triangular-solve (SpTRSV), with one-shot DAG-scheduling
+      plus factorization setup reported separately; no outer solver
+      exercised.
+    inputs:
+      suite: SuiteSparse
+      selection: >
+        square real matrices usable as SpTRSV/ILU(0) inputs (general,
+        structurally nonsingular after fill) union with SPD matrices for
+        IC(0), 1e4 <= n <= 2e6. Spec-fixed: HDagg's own scripts only glob
+        a local matrix directory with no list shipped in the repo; this
+        list reuses named SuiteSparse instances actually verified in this
+        track (Graphene's benchmark harness names Hook_1498, G3_circuit,
+        Geo_1438, af_shell7 verbatim) plus standard staples from the same
+        sparse-triangular-solve literature family.
+      recommended_subset: [Hook_1498, G3_circuit, Geo_1438, af_shell7,
+        apache2, ecology2, offshore, parabolic_fem, thermal2, StocF-1465,
+        Serena, boneS10, torso3, Transport, vas_stokes_4M, bcsstk17, nd3k]
+      dense_operand: >
+        rhs vector b in R^n, fp64, initialized U(0,1), compatible with a
+        known reference x
+    protocol:
+      format: >
+        CSR/CSC as required per kernel (given; conversion not timed)
+      warmup: >
+        1 discarded run (spec-added on top of HDagg's own protocol)
+      reps: >
+        10 (spec-strengthened from HDagg's own default num_test_=5)
+      statistic: >
+        median (matches HDagg's FusionDemo::evaluate(), which already does
+        median-of-N); min/max also reported (spec-added, HDagg reports
+        median only)
+      timer: >
+        host wall-clock (std::chrono::system_clock, matches HDagg)
+      timing_scope: >
+        kernel only (triangular-solve apply / ILU-IC apply); DAG
+        scheduling and factorization are one-shot and excluded from the
+        per-application loop
+      preprocessing_reported: >
+        separately, once: DAG-aggregation/scheduling time plus ILU(0)/
+        IC(0) factorization time
+    metric:
+      primary: ms/application
+      secondary: speedup vs MKL baseline, dimensionless
+    correctness: >
+      max abs err vs a reference solution (dense/direct solve or MKL
+      sparse triangular solve) < 1e-6. Spec-strengthened: HDagg's own
+      testing() only logs a warning on mismatch; this is now a hard gate
+      before timing counts.
+    baseline: >
+      Intel MKL sparse triangular solve / ILU(0) / IC(0) routines
+      (HDagg's own comparison, headline 3.56x geomean)
+
+  - id: precond-solve-single-gpu-f32
+    claim: >
+      end-to-end preconditioned-CG time-to-solution on a single GPU, with
+      one-shot preconditioner-setup time, mean per-iteration time, and
+      iteration-count-to-convergence all reported together: a cheap
+      preconditioner that needs 3x the iterations is not faster here.
+    inputs:
+      suite: SuiteSparse
+      selection: >
+        the 113 real SPD matrices SPCG's own artifact downloads via
+        ssgetpy (CG requires SPD); n and nnz not stated by the paper,
+        sizes span classic small/medium structural-FEM benchmark
+        instances. Open question: exact size bounds unconfirmed.
+      recommended_subset: [bcsstk08, bcsstk11, bcsstk13, bcsstk14, bcsstk16,
+        bcsstk17, bcsstk18, bcsstk21, bcsstk25, bcsstk27, bcsstk36, crystm01,
+        crystm02, crystm03, ct20stif, gyro, nasa2910, nasa4704, nasasrb,
+        nd3k, olafu, s1rmt3m1, s2rmt3m1, s3rmt3m1, thermal1, wathen100,
+        wathen120, Dubcova3, G2_circuit, cant]
+      dense_operand: >
+        rhs b in R^n, fp32, all-ones (matches SPCG)
+      preconditioners: >
+        ILU(0); ILU(k); sparsified variants at ratios 0.01, 0.05, 0.1
+    protocol:
+      format: >
+        CSR (given; conversion not timed)
+      warmup: >
+        1 full solve, discarded. Spec-added: SPCG's own driver runs a
+        single solve, no warmup.
+      reps: >
+        5 full solves, timed. Spec-added: SPCG's own driver has zero
+        repeated runs.
+      statistic: >
+        median, report min/max (spec-added, per fairness principle)
+      timer: >
+        device-side CUDA events (matches SPCG's own cudaEventElapsedTime
+        for setup and per-iteration)
+      timing_scope: >
+        full solve to convergence; ILU factorization plus SpSV analysis
+        (setup) timed and reported once per matrix, separately from the
+        per-iteration PCG loop (matches SPCG's own precond_time / PCG-time
+        split)
+      preprocessing_reported: >
+        separately, once per matrix: ILU factorization plus
+        triangular-solve analysis time
+    convergence:
+      criterion: >
+        relative residual, norm(r_k)/norm(r_0) < 1e-8. Spec-fixed: SPCG's
+        own 1e-12 is an absolute threshold on fp32 arithmetic, below
+        fp32's practical residual floor, so iteration counts on harder
+        matrices are effectively gated by max_iter, not tol.
+      max_iterations: >
+        1000 (matches SPCG)
+    metric:
+      primary: >
+        time-to-solution (ms), decomposed into setup / mean-per-iteration
+        / total
+      secondary: iteration count k to convergence
+      tertiary: >
+        speedup vs baseline (non-sparsified ILU-PCG), matching SPCG's own
+        reported axis
+    correctness: >
+      max|A*x - b| / max|b| < 1e-5 AND k <= max_iterations. Spec-
+      relativized from SPCG's own absolute 1e-5 check to be
+      precision-portable.
+    baseline: >
+      non-sparsified ILU(0)/ILU(k)-preconditioned PCG (SPCG's own paper
+      baseline; SPCG's reported geomean 1.23x/1.65x iterative-phase-only,
+      1.68x/3.73x end-to-end over this baseline)
+
+  - id: amg-precond-solve-multigpu-f64
+    claim: >
+      end-to-end AMG-preconditioned Krylov time-to-solution across
+      multiple GPUs/nodes (strong and weak scaling), with AMG hierarchy
+      setup time, per-iteration time, and iteration-count-to-convergence
+      all reported together, plus operator complexity as a
+      hierarchy-quality indicator.
+    inputs:
+      suite: >
+        synthetic 3D Poisson, 7-point finite-difference stencil (matches
+        BootCMatchGX; no SuiteSparse matrices used in its own scaling
+        study)
+      selection: >
+        structured cubic grids; strong scaling fixes total problem size
+        and varies GPU/node count, weak scaling fixes per-GPU size and
+        grows total size with node count
+      recommended_subset:
+        strong_scaling: >
+          300^3 = 2.7e7 dofs, fixed; GPU/node counts 1, 2, 4, 8, 16
+        weak_scaling: >
+          130^3 (approx 2.2e6) dofs per node, fixed; node counts 1, 4, 16,
+          32, 64, 100
+      dense_operand: >
+        rhs b in R^n, precision per below; generated to match a known
+        exact solution x_star (matches BootCMatchGX's laplacian-3d
+        generator)
+    protocol:
+      format: >
+        CSR, distributed across MPI ranks 1:1 with GPUs (given; local
+        partitioning/halo setup not counted as kernel time)
+      warmup: >
+        1 discarded distributed run (spec-added)
+      reps: >
+        3. Spec-added at a reduced count vs the single-GPU variant's 5,
+        reflecting the cost of distributed jobs; min/max still reported.
+      statistic: >
+        median, report min/max. Spec-added: BootCMatchGX's own paper does
+        not state a repeated-run/statistic policy.
+      timer: >
+        device-side timing via the driver's own detailed-prof /
+        summary-prof profiling flags (matches BootCMatchGX's
+        driverSolve.cu)
+      timing_scope: >
+        full solve to convergence; AMG hierarchy construction (setup)
+        reported separately, once per problem size, from per-iteration
+        and total solve time (matches BootCMatchGX's own t_setup/t_solve/
+        t_iter/it columns)
+      preprocessing_reported: >
+        separately, once per problem size: AMG hierarchy (aggregation)
+        construction time, plus operator complexity (OPC)
+    convergence:
+      criterion: >
+        relative residual, norm(r_k)/norm(r_0) < 1e-6 (matches
+        BootCMatchGX)
+      max_iterations: >
+        1000 (matches BootCMatchGX)
+    precision: >
+      fp64 assumed. Open question: not confirmed in the paper text or
+      headers read; classical AMG/CG practice defaults to fp64.
+    metric:
+      primary: >
+        time-to-solution (s), decomposed into setup / mean-per-iteration
+        / total
+      secondary: iteration count to convergence
+      tertiary: >
+        speedup vs NVIDIA AmgX baseline (matches BootCMatchGX's own
+        reported 1.6x-2.0x in the solve phase)
+      quaternary: operator complexity (OPC)
+    correctness: >
+      relative residual gate below convergence.criterion doubles as the
+      correctness gate (standard AMG-literature idiom; flagged, not
+      fixed, since it is common and defensible practice)
+    baseline: >
+      NVIDIA AmgX (release 2.1), primary; hypre (release 2.26.0),
+      secondary/appendix (both match BootCMatchGX)
+
+notes_on_fairness:
+  - >
+    DBMPK's own artifact never checks correctness (computes both baseline
+    and DBMPK outputs, never diffs them); mpk-kernel-cpu-f64 adds a hard
+    gate.
+  - >
+    SPCG and BootCMatchGX both time a single solve-to-convergence with no
+    warmup and no repeated runs; both full-solve variants add explicit
+    warmup plus N reps plus median/min/max, since GPU clock throttling or
+    first-touch page faults on a single run would otherwise silently
+    pollute the reported number.
+  - >
+    SPCG's own convergence tolerance (1e-12, absolute, on fp32
+    arithmetic) is tighter than fp32's practical residual floor;
+    precond-solve-single-gpu-f32 replaces it with a relative 1e-8
+    criterion so iteration counts reflect the preconditioner, not an
+    unreachable tolerance.
+  - >
+    Neither DBMPK nor HDagg ships a fixed matrix list in its artifact
+    (DBMPK takes one path via -in; HDagg globs a local directory); both
+    kernel-only variants fix an explicit, named list built from matrices
+    independently verified elsewhere in this track's artifacts
+    (Graphene's and SPCG's own named SuiteSparse instances), rather than
+    leaving the suite to whatever the user happens to have on disk.
+  - >
+    HDagg's own correctness check (testing()) only logs a warning on
+    mismatch, never fails; ilu-apply-kernel-cpu-f64 makes it a hard gate
+    before timing counts.
+  - >
+    The setup-vs-apply-vs-iteration-count-together rule is scoped to the
+    two full-solve variants (precond-solve-single-gpu-f32,
+    amg-precond-solve-multigpu-f64): the two kernel-only variants
+    (mpk-kernel-cpu-f64, ilu-apply-kernel-cpu-f64) have no outer solver
+    and hence no iteration count to report. Collapsing all four variants
+    onto one iteration-count column would be meaningless for two of them,
+    so the spec keeps setup-vs-apply reporting mandatory everywhere but
+    iteration-count mandatory only where an outer Krylov loop exists.
+
+open_questions:
+  - >
+    DBMPK's and HDagg's own paper-reported matrix suites could not be
+    recovered (PPoPP 2026 DL page paywalled, no arXiv id for either;
+    IPDPS 2022 PDF at cs.toronto.edu could not be text-extracted with the
+    tools available). The recommended_subset lists above are the spec's
+    own construction, not verbatim from either paper.
+  - >
+    BootCMatchGX's floating-point precision (the vtype typedef used
+    throughout BCMGX/src/datastruct/CSR.h) was not located in the header
+    files read; fp64 is assumed by AMG/CG convention but unconfirmed.
+  - >
+    Graphene (IPDPS 2025, Graphcore IPU) is excluded from all four
+    variants: its architecture has no native fp64 and a fundamentally
+    different tile-memory execution model incompatible with a shared
+    CPU/GPU timing harness. Its artifact is still useful evidence for
+    this spec's iteration-count-as-first-class-metric principle (its
+    solver configs print inner/outer iteration counts and residuals by
+    default) and for the precision axis (fp32 base plus twofloat32/
+    float64 extended precision as its actual research contribution). A
+    future IPU-specific variant would need its own harness built around
+    Poplar's profiler, whose own warmup/repeat/statistic policy is opaque
+    from the repo.
+  - >
+    SPCG's SC 2025 paper text (setup vs iteration-count breakdown beyond
+    what the abstract states) is paywalled (ACM DL) and has no arXiv id;
+    the precond-solve-single-gpu-f32 variant's exact size range for the
+    113-matrix suite is inferred from matrix names, not stated bounds.
+
+evidence:
+  conf/ppopp/YangNYLDXJ026: >
+    DBMPK: microbenchmarks A^d*x only (d=20 default), fp64, mean-of-50
+    with a dead/unused warmup call, setup time reported separately, no
+    correctness check, single user-supplied matrix (no shipped suite),
+    baseline is repeated MKL SpMV.
+  conf/ipps/NoackKK25: >
+    Graphene: full PBiCGStab+ILU solves on Graphcore IPUs, fp32 base plus
+    twofloat32/float64 extended precision (its actual contribution),
+    inner/outer iteration counts and residuals printed by default,
+    matrices are named SuiteSparse (Hook_1498, G3_circuit, Geo_1438,
+    af_shell7) plus synthetic 3D Poisson, timing delegated to Poplar's
+    external profiler; excluded from this spec's variants (incompatible
+    platform).
+  conf/sc/MaACSH25: >
+    SPCG: full ILU(0)/ILU(k)-PCG solves on a single A100, fp32, 113 named
+    SPD SuiteSparse matrices (ssgetpy-downloaded), max_iter=1000 and
+    tol=1e-12 absolute, CUDA-event timing, setup (ILU factorization) vs
+    PCG-loop time split, per-iteration time and residual logged to CSV,
+    iteration count k a first-class output, but a single un-repeated
+    solve per matrix with no warmup/reps/statistic.
+  journals/tpds/BernaschiCVD23: >
+    BootCMatchGX: full AMG-preconditioned Krylov solves on Piz Daint (up
+    to 100 nodes, Tesla P100) via MPI+CUDA, synthetic 3D Poisson
+    (7-point) strong scaling (300^3, up to 16 nodes) and weak scaling
+    (130^3/node, up to 100 nodes), relative residual under 1e-6 or
+    max_iter=1000, reports OPC/setup/solve/per-iteration/iteration-count
+    as explicitly separate columns (the track's best example of this
+    discipline), baseline NVIDIA AmgX (1.6x-2.0x solve-phase speedup) and
+    hypre; precision unconfirmed; no stated repeated-run/statistic
+    policy.
+  conf/ipps/ZarebavaniCLSD22: >
+    HDagg: kernel-only SpTRSV/IC(0)/ILU(0) apply on CPU (OpenMP+MKL),
+    fp64, shared FusionDemo harness across the whole Sympiler/Aggregation
+    paper family does median-of-5 timed runs (num_test_=5 default) with
+    one-shot scheduling/factorization time reported separately
+    (Scheduling_Time vs Executor_Runtime columns), correctness check
+    exists but only warns (soft-gate) rather than failing, no fixed
+    matrix list ships in the repo (glob-based), baseline Intel MKL
+    (headline 3.56x geomean).

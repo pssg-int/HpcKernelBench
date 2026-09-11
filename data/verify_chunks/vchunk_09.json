@@ -1,0 +1,822 @@
+[
+ {
+  "key": "conf/ics/SelvitopiBNTYB21",
+  "venue": "ICS",
+  "year": 2021,
+  "title": "Distributed-memory parallel algorithms for sparse times tall-skinny-dense matrix multiplication",
+  "abstract": "Sparse times dense matrix multiplication (SpMM) finds its applications in well-established fields such as computational linear algebra as well as emerging fields such as graph neural networks. In this study, we evaluate the performance of various techniques for performing SpMM as a distributed computation across many nodes by focusing on GPU accelerators. We examine how the actual local computational performance of state-of-the-art SpMM implementations affect computational efficiency as dimensions change when we scale to large numbers of nodes, which proves to be an unexpectedly important bottleneck. We also consider various distribution strategies, including A-Stationary, B-Stationary, and C-Stationary algorithms, 1.5D and 2D algorithms, and RDMA-based and bulk synchronous methods of data transfer. Our results show that the best choice of algorithm and implementation technique depends not only on the cost of communication for particular matrix sizes and dimensions, but also on the performance of local SpMM operations. Our evaluations reveal that with the involvement of GPU accelerators, the best design choices for SpMM differ from the conventional algorithms that are known to perform well for dense matrix-matrix or sparse matrix-sparse matrix multiplies.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "communication",
+   "confidence": "medium",
+   "one_liner": "Distributed SpMM distribution/communication strategies using existing local kernels"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/XieDLPM021",
+  "venue": "ICS",
+  "year": 2021,
+  "title": "MD-HM: memoization-based molecular dynamics simulations on big memory system",
+  "abstract": "Molecular dynamics (MD) simulation is a fundamental method for modeling ensembles of particles. In this paper, we introduce a new method to improve the performance of MD by leveraging the emerging TB-scale big memory system. In particular, we trade memory capacity for computation capability to improve MD performance by the lookup table-based memoization technique. The traditional memoization technique for the MD simulation uses relatively small DRAM, bases on a suboptimal data structure, and replaces pair-wise computation, which leads to limited performance benefit in the big memory system. We introduce MD-HM, a memoization-based MD simulation framework customized for the big memory system. MD-HM partitions the simulation field into subgrids, and replaces computation in each subgrid as a whole based on a lightweight pattern-match algorithm to recognize computation in the subgrid. MD-HM uses a new two-phase LSM-tree to optimize read/write performance. Evaluating with nine MD simulations, we show that MD-HM outperforms the state-of-the-art LAMMPS simulation framework with an average speedup of 7.6x based on the Intel Optane-based big memory system.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "application",
+   "confidence": "medium",
+   "one_liner": "Memoization-based MD simulation framework on big-memory systems"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/0036SMLS23",
+  "venue": "ICS",
+  "year": 2023,
+  "title": "Parallel Software for Million-scale Exact Kernel Regression",
+  "abstract": "We present the design and the implementation of a kernel principal component regression software that handles training datasets with a million or more observations. Kernel regressions are nonlinear and interpretable models that have wide downstream applications, and are shown to have a close connection to deep learning. Nevertheless, the exact regression of large-scale kernel models using currently available software has been notoriously difficult because it is both compute and memory intensive and it requires extensive tuning of hyperparameters.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [
+    "cpu",
+    "distributed"
+   ],
+   "approach": null,
+   "excluded_reason": "application",
+   "confidence": "low",
+   "one_liner": "Scalable software for million-scale exact kernel regression"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/0002KDLGMBCM23",
+  "venue": "ICS",
+  "year": 2023,
+  "title": "SPARTA: Spatial Acceleration for Efficient and Scalable Horizontal Diffusion Weather Stencil Computation",
+  "abstract": "Fast and accurate climate simulations and weather predictions are critical for understanding and preparing for the impact of climate change. Real-world climate and weather simulations involve the use of complex compound stencil kernels, which are composed of a combination of different stencils. Horizontal diffusion is one such important compound stencil found in many climate and weather prediction models. Its computation involves a large amount of data access and manipulation that leads to two main issues on current computing systems. First, such compound stencils have high memory bandwidth demands as they require large amounts of data access. Second, compound stencils have complex data access patterns and poor data locality, as the memory access pattern is typically irregular with low arithmetic intensity. As a result, state-of-the-art CPU and GPU implementations suffer from limited performance and high energy consumption. Recent works propose using FPGAs as an alternative to traditional CPU and GPU-based systems to accelerate weather stencil kernels. However, we observe that stencil computation cannot leverage the bit-level flexibility available on an FPGA because of its complex memory access patterns, leading to high hardware resource utilization and low peak performance.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [
+    "fpga"
+   ],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "medium",
+   "one_liner": "Spatial accelerator for horizontal-diffusion weather stencil"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/PlesnerSH24",
+  "venue": "ICS",
+  "year": 2024,
+  "title": "Accurate Computation of the Logarithm of Modified Bessel Functions on GPUs",
+  "abstract": "Bessel functions are critical in scientific computing for applications such as machine learning, protein structure modeling, and robotics. However, currently, available routines lack precision or fail for certain input ranges, such as when the order v is large, and GPU-specific implementations are limited. We address the precision limitations of current numerical implementations while dramatically improving the runtime. We propose two novel algorithms for computing the logarithm of modified Bessel functions of the first and second kinds by computing intermediate values on a logarithmic scale. Our algorithms are robust and never have issues with underflows or overflows while having relative errors on the order of machine precision, even for inputs where existing libraries fail. In C++/CUDA, our algorithms have median and maximum speedups of 45x and 6150x for GPU and 17x and 3403x for CPU, respectively, over the ranges of inputs and third-party libraries tested. Compared to SciPy, the algorithms have median and maximum speedups of 77x and 300x for GPU and 35x and 98x for CPU, respectively, over the ranges of inputs tested.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [
+    "nvidia-gpu",
+    "cpu"
+   ],
+   "approach": null,
+   "excluded_reason": "other",
+   "confidence": "low",
+   "one_liner": "GPU/CPU algorithms for accurate log modified Bessel functions"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/LiLJLFZX24",
+  "venue": "ICS",
+  "year": 2024,
+  "title": "NEOCNN: NTT-Enabled Optical Convolution Neural Network Accelerator",
+  "abstract": "In the realm of neural network computation, optical neural network accelerators (ONNs) have emerged as a promising solution, leveraging the inherent speed and parallelism of optical systems. Despite their potential, current ONN designs often fall short due to inefficient data movement and reliance on traditional electronics-based dataflows.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "NTT-based optical CNN accelerator"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/TarancoA024",
+  "venue": "ICS",
+  "year": 2024,
+  "title": "SLIDEX: A Novel Architecture for Sliding Window Processing",
+  "abstract": "Efficient image processing is increasingly crucial in constrained embedded and real-time platforms, especially in emerging applications such as Autonomous Driving (AD) or Augmented/Virtual Reality (AR/VR). A commonality among most image processing operations is their reliance on primitives like convolutions and stencil operations, which typically utilize a sliding window dataflow. Many existing implementations are domain-specific, lacking generality, or are programmable at the cost of sacrificing performance and energy efficiency. Among the latter, the CPU-based platforms that typically rely on Vector Processing Units (VPUs) often miss critical optimization opportunities, particularly those arising from the overlapping nature of the mentioned windowed image processing operations.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "medium",
+   "one_liner": "Novel architecture for sliding-window (stencil/convolution) processing"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/MoXL25",
+  "venue": "ICS",
+  "year": 2025,
+  "title": "Fast and Fair Training for Deep Learning in Heterogeneous GPU Clusters",
+  "abstract": "The GPU device heterogeneity in accelerating deep learning training workloads poses significant challenges for job scheduling in datacenters.Existing heterogeneity-aware job schedulers, however, cannot effectively reduce the overall job completion time (JCT) or provide fairness guarantees due to their coarse-grained resource allocation and poor integration of conflicting objectives.This paper presents FFT, a novel scheduling system designed for Fast and Fair deep learning Training in heterogeneous GPU clusters.FFT incorporates two key designs.First, it incorporates a resource allocation scheme in each round to enable fine-grained control over resource utilization.Second, it seamlessly integrates a fairness compensation mechanism that dynamically evaluates fairness in real-time.Building upon these designs, FFT formulates a cost minimization problem to determine the optimal schedule, striking a delicate balance between efficiency and fairness.Extensive experiments conducted in physical clusters as well as large-scale testbed demonstrate that FFT can significantly accelerate the overall JCT by up to 5.2 while improving job finishtime-fairness by more than 2.2 compared to state-of-the-art heterogeneity-aware solutions.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "runtime-sched",
+   "confidence": "high",
+   "one_liner": "Fair and fast DL training job scheduling in heterogeneous GPU clusters"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/YangZ25",
+  "venue": "ICS",
+  "year": 2025,
+  "title": "MG-αGCD: Accelerating Graph Community Detection on Multi-GPU Platforms",
+  "abstract": "Graph community detection is widely applied in fields such as genetic engineering and social network analysis.As the scale of input graphs continues to grow and multi-GPU platforms become increasingly prevalent, utilizing the storage capacity and computational power of these platforms to scale graph community detection algorithms has become more feasible.However, existing multi-GPU graph community detection methods are constrained by the traditional CPUdominated communication model, and fail to simultaneously account for the irregular sparse memory access patterns and the latency disparities between local and remote communication.Consequently, they do not fully exploit modern high-speed GPU interconnect technologies.Furthermore, while current solutions propose various strategies to mitigate the decline in clustering quality during parallelization, these approaches are often inefficient or compromise clustering quality.Finally, to address the high memory overhead of the algorithms, existing Multi-GPU solutions extend the graph size limit at the cost of reduced performance.To address these challenges, we propose MG-GCD, a novel graph community detection algorithm designed for multi-GPU platforms.First, MG-GCD introduces a loading balancing and latency-aware computation-communication pipeline that effectively mitigates the overhead of highlatency remote communication.Second, MG-GCD incorporates a bidirectional probing heuristic to enhance execution efficiency while outperforming existing methods in clustering quality.Lastly, MG-GCD employs a two-phase graph coarsening algorithm consisting of a symbolic phase and a numeric phase, which significantly reduces GPU peak memory usage and minimizes data transfers between CPU and",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "application",
+   "confidence": "low",
+   "one_liner": "Multi-GPU graph community detection with comm-computation pipeline and coarsening"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/ZhuangZWCHLYDEM25",
+  "venue": "ICS",
+  "year": 2025,
+  "title": "Scaling Large-scale GNN Training to Thousands of Processors on CPU-based Supercomputers",
+  "abstract": "Graph Convolutional Networks (GCNs), particularly for large-scale graphs, are crucial across numerous domains. However, training distributed full-batch GCNs on large-scale graphs suffers from inefficient memory access patterns and high communication overhead. To address these challenges, we introduce SuperGCN, an efficient and scalable distributed GCN training framework tailored for CPU-powered supercomputers. Our contributions are threefold: (1) we develop general and efficient aggregation operators designed for irregular memory access, (2) we propose a hierarchical aggregation scheme that reduces communication costs without altering the graph structure, and (3) we present a communication-aware quantization scheme to enhance performance. Experimental results demonstrate that SuperGCN achieves a speedup of up to 6 × compared with the SoTA implementations, and scales to 1000s of HPC-grade CPUs on the largest publicly available datasets, without sacrificing model convergence and accuracy. Moreover, due to the effective strong scaling of SuperGCN, we outperform SoTA GPU-based and CPU-based distributed full-batch GCN training frameworks, in absolute performance, for large-scale graphs.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "pure-ml-serving",
+   "confidence": "low",
+   "one_liner": "SuperGCN distributed full-batch GCN training framework scaling to 1000s of CPUs"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/KangCSK25",
+  "venue": "ICS",
+  "year": 2025,
+  "title": "SparsePIM: An Efficient HBM-Based PIM Architecture for Sparse Matrix-Vector Multiplications",
+  "abstract": "Sparse matrix-vector multiplication (SpMV) is a fundamental operation across diverse domains, including scientific computing, machine learning, and graph processing. However, its irregular memory access patterns necessitate frequent data retrieval from external memory, leading to significant inefficiencies on conventional processors such as CPUs and GPUs. Processing-in-memory (PIM) presents a promising solution to address these performance bottlenecks observed in memory-intensive workloads. However, existing PIM architectures are primarily optimized for dense matrix operations since conventional memory cell structures struggle with the challenges of indirect indexing and unbalanced data distributions inherent in sparse computations. In order to address these challenges, we propose SparsePIM, a novel PIM architecture designed to accelerate SpMV computations efficiently. SparsePIM introduces a DRAM row-aligned format (DRAF) to optimize memory access patterns. SparsePIM exploits K-means-based column group partitioning to achieve a balanced load distribution across memory banks. Furthermore, SparsePIM includes bank group (BG) accumulators to mitigate the performance burdens of accumulating partial sums in SpMV operations. By aggregating partial results across multiple banks, SparsePIM can significantly improve the throughput of sparse matrix computations. Leveraging a combination of hardware and software optimizations, SparsePIM can achieve significant performance gains over cuSPARSE-based SpMV kernels on the GPU. Our evaluation demonstrates that SparsePIM achieves up to 5.61 × speedup over SpMV on GPUs.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "SparsePIM HBM-based processing-in-memory architecture for SpMV"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/GuanHABLSZAR25",
+  "venue": "ICS",
+  "year": 2025,
+  "title": "TMModel: Modeling Texture Memory and Mobile GPU Performance to Accelerate DNN Computations",
+  "abstract": "The demand for Deep Neural Network (DNN) execution (including both inference and training) on mobile system-on-a-chip (SoCs) has surged, driven by factors like the need for real-time latency, privacy, and reducing vendors’ costs. Mainstream mobile GPUs (e.g., Qualcomm Adreno GPUs) usually have a 2.5D L1 texture cache that offers throughput superior to that of on-chip memory. However, to date, there is limited understanding of the performance features of such a 2.5D cache, which limits the optimization potential. This paper introduces TMModel, a framework with three components: 1) a set of micro-benchmarks and a novel performance assessment methodology to characterize a non-well-documented architecture with 2D memory, 2) a complete analytical performance model configurable for different data access pattern(s), tiling size(s), and other GPU execution parameters for a given operator (and associated size and shape), and 3) a compilation framework incorporating this model and generating optimized code with low overhead. TMModel is validated both on a set of DNN kernels and for training complete models on mobile GPU, and compared against both popular mobile DNN frameworks and another GPU performance model. Evaluation results demonstrate that TMModel outperforms all baselines, achieving 1.48 − 3.61 × speedup on individual kernels and 1.83 − 66.1 × speedup for end-to-end on-device training with only \\(0.25\\%-18.5\\%\\) the tuning cost of the baselines.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "perf-model",
+   "confidence": "low",
+   "one_liner": "Mobile-GPU texture-memory performance model driving DNN kernel codegen"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/0001DHCCGT25",
+  "venue": "ICS",
+  "year": 2025,
+  "title": "ghZCCL: Advancing GPU-aware Collective Communications with Homomorphic Compression",
+  "abstract": "In the exascale computing era, collective communication has emerged as a significant bottleneck for GPU-based applications, as network bandwidth lags behind rapid GPU advancements. While traditional GPU-aware approaches employ error-bounded lossy compression to mitigate this issue, they incur substantial decompression-operation-compression (DOC) overhead. To overcome these limitations, we introduce ghZCCL, a first-ever GPU-aware homomorphic compression-accelerated collective communications library that enables direct computation and communication on compressed data, eliminating the DOC workflow. We design the first GPU homomorphic compressor, surpassing the fastest existing GPU lossy compressor, cuSZp2, by 3.47–3.89 × for DOC workloads. We also propose co-design strategies to further optimize GPU-aware collective communications with homomorphic compression. Experiments on up to 512 NVIDIA A100 GPUs show that ghZCCL outperforms three state-of-the-art communication libraries—gZCCL, NCCL, and Cray MPI—by achieving speedups of up to 2.29 × , 5.81 × , and 188 × , respectively, while maintaining high data accuracy.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "communication",
+   "confidence": "low",
+   "one_liner": "GPU-aware collective-communications library using homomorphic compression"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/PopoviciLYBIKCB26",
+  "venue": "ICS",
+  "year": 2026,
+  "title": "C-3PQ: A Closeness Centrality-based Circuit Partitioner for Quantum Simulations",
+  "abstract": "Simulating quantum circuits (QC) on high-performance computing (HPC) systems is essential for validating quantum algorithms and probing the potential of large-scale quantum computation before the advent of scalable quantum hardware. However, state vector simulations are resource-intensive, often requiring large clusters with thousands of compute nodes and large amounts of memory. To address this, we introduce C-3PQ, an end-to-end framework that minimizes inter-node data movement through an efficient circuit partitioning scheme alongside a flexible code generator to offer a portable simulation solution. By formulating the distribution of the state vector and circuit over multiple nodes as a graph problem, we utilize closeness centrality to assess gate importance and design a fast, scalable partitioning method. C-3PQ compiles the resulting partitions into highly optimized kernels targeting a wide range of hardware platforms from Intel, AMD, NVIDIA and ARM. Moreover, compared to a state-of-the-art implementation specific for NVIDIA platforms, C-3PQ achieves a speedup of up to \\(40\\%\\) at a fraction of the cost when partitioning the state vector.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "communication",
+   "confidence": "low",
+   "one_liner": "Closeness-centrality circuit partitioner minimizing inter-node data movement for quantum state-vector sim"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/XiongZYJX26",
+  "venue": "ICS",
+  "year": 2026,
+  "title": "CipherSkip: Efficient Sparse Matrix Multiplication with FHE",
+  "abstract": "Sparse General Matrix–Matrix Multiplication (SpGEMM) is a fundamental but computationally intensive operation that underpins many scientific workloads, including numerous AI applications. With the increasing demands for data security, privacy-preserving computation techniques, such as Fully Homomorphic Encryption (FHE), have gained significant attention for their ability to process sensitive data without decryption. Nonetheless, executing SpGEMM within the framework of FHE presents significant challenges. The most effective SpGEMM algorithms exploit matrix sparsity to minimize computational costs; however, FHE obscures both the data values and the sparsity structures. Prior FHE‑based privacy‑preserving computation frameworks either ignore the inherent sparsity of matrices and rely on dense General Matrix–Matrix Multiplication (GEMM), incurring substantial overhead from redundant homomorphic multiplications, or they attempt to exploit sparsity by encrypting only the non‑zero values, which inadvertently exposes sensitive positional information. To address this gap and achieve a better balance between efficiency and privacy, we propose CipherSkip, an efficient FHE-compatible SpGEMM framework that enables oblivious data and position processing under a Single Instruction Multiple Data (SIMD) scheme. Moreover, we extend our method to support an arbitrary number of sparse matrices (FHE-SpGEMCM). The efficiency analysis shows that our method achieves an average homomorphic computation cost of (nAnB)2/n2N, where nA and nB represent the number of nonzero elements in A and B respectively, n is the shared inner dimension of the multiplication, and N denotes the batch size used in FHE. Experimental results demonstrate that for square matrices of scale 29, our scheme achieves an average speedup of 439.25 × and a 10.68 × reduction in memory consumption compared to state-of-the-art baselines that ignore sparsity. Furthermore, when the scale increases to 213, our method yields up to a 1201.77 × speedup over baselines that only exploit the sparsity of a single matrix.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "other",
+   "confidence": "medium",
+   "one_liner": "FHE-compatible privacy-preserving SpGEMM scheme under encryption (cryptography)"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/WuMW26",
+  "venue": "ICS",
+  "year": 2026,
+  "title": "Phase-aware Peak Power Reduction for Minimizing the Capital Expense of LLM Inference",
+  "abstract": "",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "pure-ml-serving",
+   "confidence": "low",
+   "one_liner": "Phase-aware peak power reduction for LLM inference capex"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/ZhuangZBWCEMW26",
+  "venue": "ICS",
+  "year": 2026,
+  "title": "SHIRO: Near-Optimal Communication Strategies for Distributed Sparse Matrix Multiplication",
+  "abstract": "Distributed Sparse Matrix-Matrix Multiplication (SpMM) is a fundamental operation in high-performance computing and deep learning applications. The major performance bottleneck in distributed SpMM lies in substantial communication overhead, which limits both performance and scalability. In this paper, we identify two key sources of communication inefficiency in distributed SpMM: redundant data transfer due to sparsity unawareness, and suboptimal utilization of hierarchical network topology. To address these, we propose (1) a fine-grained, sparsity-aware communication strategy that reduces communication overhead by exploiting the sparsity pattern of the sparse matrix, and (2) a hierarchical communication strategy that maps the sparsity-aware strategy onto two-tier GPU network architectures, minimizing redundant data movement across slower inter-node links. We implement these optimizations in a comprehensive distributed SpMM framework, SHIRO. Extensive evaluations on real-world datasets show that SHIRO demonstrates strong scalability up to 128 GPUs, achieving geometric mean speedups of 221.5 ×, 56.0 ×, 23.4 ×, and 8.8 × in SpMM over four state-of-the-art baselines (CAGNET, SPA, BCL, and CoLa, respectively) at this scale.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "communication",
+   "confidence": "medium",
+   "one_liner": "Communication-optimal distributed SpMM via sparsity-aware hierarchical strategies"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/DengS26",
+  "venue": "ICS",
+  "year": 2026,
+  "title": "StencilMD: Optimizing Communication in Molecular Dynamics Simulations",
+  "abstract": "Molecular dynamics (MD) simulations are used to simulate the behavior of molecular systems. MD simulations for large molecular systems require significant computational resources to achieve good performance. Existing MD libraries, such as LAMMPS, use MPI to run MD simulations in distributed settings. Communication costs can be a significant bottleneck in MD simulations, however, as MPI processes communicate with each other at every timestep in the simulation.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "communication",
+   "confidence": "high",
+   "one_liner": "Communication optimization for distributed molecular-dynamics simulations"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/KimKSSYK26",
+  "venue": "ICS",
+  "year": 2026,
+  "title": "SumcheckPIM: An Efficient HBM-Based PIM Architecture for Linear Complexity Zero Knowledge Proofs",
+  "abstract": "Zero-knowledge proofs (ZKPs) are emerging as a core technology for privacy-preserving computation. Despite steady progress in protocol and algorithm design, generating these proofs remains computationally intensive, driving growing interest in hardware acceleration for kernels such as number-theoretic transform (NTT) and multi-scalar multiplication (MSM). Among them, the sumcheck protocol offers a compelling alternative with O(n) prover complexity compared to O(nlog n) for NTT-based approaches, yet our analysis reveals its execution is fundamentally memory-bound, with severely underutilized compute resources. This characteristic demands a memory-centric acceleration strategy, in contrast to compute-centric approaches of prior work.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "high",
+   "one_liner": "HBM-based PIM architecture for zero-knowledge-proof sumcheck protocol"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/ZhuHC26",
+  "venue": "ICS",
+  "year": 2026,
+  "title": "ViSim: A Lightweight SpMV Performance Simulator via Statistical and Visual Residual Learning",
+  "abstract": "",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "perf-model",
+   "confidence": "high",
+   "one_liner": "Statistical/visual residual-learning SpMV performance simulator"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ics/ShinLKK26",
+  "venue": "ICS",
+  "year": 2026,
+  "title": "quEStab: Towards Scalable Quantum Circuit Simulation on Multi-GPU using an Extended Stabilizer Formalism",
+  "abstract": "",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "unclear",
+   "confidence": "low",
+   "one_liner": "Multi-GPU quantum circuit simulation via extended stabilizer formalism (no abstract)"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ipps/0001HPKSRWJP21",
+  "venue": "IPDPS",
+  "year": 2021,
+  "title": "Adaptive Spatially Aware I/O for Multiresolution Particle Data Layouts",
+  "abstract": "Large-scale simulations on nonuniform particle distributions that evolve over time are widely used in cosmology, molecular dynamics, and engineering. Such data are often saved in an unstructured format that neither preserves spatial locality nor provides metadata for accelerating spatial or attribute subset queries, leading to poor performance of visualization tasks. Furthermore, the parallel I/O strategy used typically writes a file per process or a single shared file, neither of which is portable or scalable across different HPC systems. We present a portable technique for scalable, spatially aware adaptive aggregation that preserves spatial locality in the output. We evaluate our approach on two supercomputers, Stampede2 and Summit, and demonstrate that it outperforms prior approaches at scale, achieving up to 2.5 x faster writes and reads for nonuniform distributions. Furthermore, the layout written by our method is directly suitable for visual analytics, supporting low-latency reads and attribute-based filtering with little overhead.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "io-storage",
+   "confidence": "high",
+   "one_liner": "Spatially-aware adaptive I/O aggregation layout for multiresolution particle data"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ipps/YangFD21",
+  "venue": "IPDPS",
+  "year": 2021,
+  "title": "Characterizing Small-Scale Matrix Multiplications on ARMv8-based Many-Core Architectures",
+  "abstract": "General Matrix Multiplication (GEMM) is a key subroutine in high-performance computing. There is a large body of work on evaluating and optimizing large-scale matrix multiplication, but how well the small-scale matrix multiplication (SMM) performs is largely unknown, especially for the ARMv8-based many-core architectures. In this work, we evaluate and characterize the performance of SMM subroutines on Phytium 2000 +, an ARMv8-based 64-core architecture. The evaluation work is extensively performed with the mainstream open-source libraries including OpenBLAS, BLIS, BALSFEO, and Eigen. Given various experimental settings, we observe how well the small-scale GEMM routines perform on Phytium 2000 +, and then discuss the impacting factors behind the performance behaviours of SMM. Built on such a basis, we shed light on the performance bottlenecks and practical optimizations on SMM from various angles: (1) mitigating the data packing overhead, (2) processing the edge cases properly, (3) selecting a suitable micro-kernel, and (4) adopting a right parallelization method. The result of our work facilitates users to develop efficient SMM optimizations on ARMv8-based many-core architectures, and embed them into real-world applications.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "perf-model",
+   "confidence": "medium",
+   "one_liner": "Characterization/benchmarking study of small-matrix GEMM libraries on ARMv8 many-core"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ipps/KaramatiHHGSLC022",
+  "venue": "IPDPS",
+  "year": 2022,
+  "title": "\"Smarter\" NICs for faster molecular dynamics: a case study",
+  "abstract": "This work evaluates the benefits of using a “smart” network interface card (SmartNIC) as a compute accelerator for the example of the MiniMD molecular dynamics proxy application. The accelerator is NVIDIA's BlueField-2 card, which includes an 8-core Arm processor along with a small amount of DRAM and storage. We test the networking and data movement performance of these cards compared to a standard Intel server host using microbenchmarks and MiniMD. In MiniMD, we identify two distinct classes of computation, namely core computation and maintenance computation, which are executed in sequence. We restructure the algorithm and code to weaken this dependence and increase task parallelism, thereby making it possible to increase utilization of the BlueField-2 concurrently with the host. We evaluate our implementation on a cluster consisting of 16 dual-socket Intel Broadwell host nodes with one BlueField-2 per host-node. Our results show that while the overall compute performance of BlueField-2 is limited, using them with a modified MiniMD algorithm allows for up to 20% speedup over the host CPU baseline with no loss in simulation accuracy.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "application",
+   "confidence": "high",
+   "one_liner": "Case study offloading MiniMD maintenance compute to a BlueField-2 SmartNIC accelerator"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ipps/DurrmanS22",
+  "venue": "IPDPS",
+  "year": 2022,
+  "title": "Coloring the Vertices of 9-pt and 27-pt Stencils with Intervals",
+  "abstract": "Graph coloring is commonly used to schedule computations on parallel systems. Given a good estimation of the computational requirement for each task, one can refine the model by adding a weight to each vertex. Instead of coloring each vertex with a single color, the problem is to color each vertex with an interval of colors. In this paper, we are interested in studying this problem for particular classes of graphs, namely stencil graphs. Stencil graphs appear naturally in the parallelisation of applications where the location of an object in a space affects the state of neighboring objects. Rectilinear decompositions of a space generate conflict graphs that are 9-pt stencils for 2D problems and 27-pt stencils for 3D problems. We show that the 5-pt stencil and 7-pt stencil relaxations of the problem can be solved in polynomial time. We prove that the decision problem on 27-pt stencil is NP-Complete. We discuss approximation algorithms with a ratio of 2 for the 9-pt stencil case, and 4 for the 27-pt stencil case. We identify two lower bounds for the problem that are used to design heuristics. We evaluate the effectiveness of several different algorithms experimentally on a set of real instances. Furthermore, these algorithms are integrated into a real application to demonstrate the soundness of the approach.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "runtime-sched",
+   "confidence": "medium",
+   "one_liner": "Interval graph-coloring complexity/algorithms for scheduling 9-pt/27-pt stencil computations"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ipps/BraceYMTMFRLTJ22",
+  "venue": "IPDPS",
+  "year": 2022,
+  "title": "Coupling streaming AI and HPC ensembles to achieve 100-1000× faster biomolecular simulations",
+  "abstract": "Machine learning (ML)-based steering can improve the performance of ensemble-based simulations by allowing for online selection of more scientifically meaningful computations. We present DeepDriveMD, a framework for ML-driven steering of scientific simulations that we have used to achieve orders-of-magnitude improvements in molecular dynamics (MD) performance via effective coupling of ML and HPC on large parallel computers. We discuss the design of DeepDriveMD and characterize its performance. We demonstrate that DeepDriveMD can achieve between 100-1000× acceleration for protein folding simulations relative to other methods, as measured by the amount of simulated time performed, while covering the same conformational landscape as quantified by the states sampled during a simulation. Experiments are performed on leadership-class platforms on up to 1020 nodes. The results establish DeepDriveMD as a high-performance framework for ML-driven HPC simulation scenarios, that supports diverse MD simulation and ML back-ends, and which enables new scientific insights by improving the length and time scales accessible with current computing capacity.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "application",
+   "confidence": "high",
+   "one_liner": "DeepDriveMD: ML-steered ensemble molecular dynamics framework for protein folding"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ipps/SunLYJLQ22",
+  "venue": "IPDPS",
+  "year": 2022,
+  "title": "StencilMART: Predicting Optimization Selection for Stencil Computations across GPUs",
+  "abstract": "Stencil computations are widely used in high performance computing (HPC) applications. Many HPC platforms utilize the high computation capability of GPUs to accelerate stencil computations. In recent years, stencils have become more diverse in terms of stencil order, memory accesses and computation patterns. To adapt diverse stencils to GPUs, a variety of optimization techniques have been proposed such as streaming and retiming. However, due to the diversity of stencil patterns and GPU architectures, no single optimization technique fits all stencils. Besides, it is challenging to choose the most cost-efficient GPU for accelerating target stencils. To address the above problems, we propose StencilMART, an automatic optimization selection framework that predicts the best optimization combination and execution time under a certain parameter setting for stencils on GPUs. Specifically, the StencilMART represents the stencil patterns as binary tensors and neighboring features through tensor assignment and feature extraction. In addition, the StencilMART implements various machine learning methods such as classification and regression that utilize stencil representation and hardware characteristics for execution time prediction. The experiment results show that the StencilMART can achieve accurate optimization selection and performance prediction for various stencils across GPUs.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "perf-model",
+   "confidence": "medium",
+   "one_liner": "ML predictor for best stencil optimization combo & runtime across GPUs"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ipps/MpakosGAPKG23",
+  "venue": "IPDPS",
+  "year": 2023,
+  "title": "Feature-based SpMV Performance Analysis on Contemporary Devices",
+  "abstract": "The SpMV kernel is characterized by high performance variation per input matrix and computing platform. While GPUs were considered State-of-the-Art for SpMV, with the emergence of advanced multicore CPUs and low-power FPGA accelerators, we need to revisit its performance and energy efficiency. This paper provides a high-level SpMV performance analysis based on structural features of matrices related to common bottlenecks of memory-bandwidth intensity, low ILP, load imbalance and memory latency overheads. Towards this, we create a wide artificial matrix dataset that spans these features and study the performance of different storage formats in nine modern HPC platforms; five CPUs, three GPUs and an FPGA. After validating our proposed methodology using real-world matrices, we analyze our extensive experimental results and draw key insights on the competitiveness of different target architectures for SpMV and the impact of each feature/bottleneck on its performance.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "perf-model",
+   "confidence": "medium",
+   "one_liner": "Feature-based performance analysis of SpMV storage formats across CPU/GPU/FPGA platforms"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ipps/LaukemannGHOW24",
+  "venue": "IPDPS",
+  "year": 2024,
+  "title": "CloverLeaf on Intel Multi-Core CPUs: A Case Study in Write-Allocate Evasion",
+  "abstract": "In this paper we analyze the MPI-only version of the CloverLeaf code from the SPEChpc 2021 benchmark suite on recent Intel Xeon \"Ice Lake\" and \"Sapphire Rapids\" server CPUs. We observe peculiar breakdowns in performance when the number of processes is prime. Investigating this effect, we create first-principles data traffic models for each of the stencil-like hotspot loops. With application measurements and microbenchmarks to study memory data traffic behavior, we can connect the breakdowns to SpecI2M, a new write-allocate evasion feature in current Intel CPUs. For serial and full-node cases we are able to predict the memory data volume analytically with an error of a few percent. We find that if the number of processes is prime, SpecI2M fails to work properly, which we can attribute to short inner loops emerging from the one-dimensional domain decomposition in this case. We can also rule out other possible causes of the prime number effect, such as breaking layer conditions, MPI communication overhead, and load imbalance.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [
+    "cpu"
+   ],
+   "approach": null,
+   "excluded_reason": "perf-model",
+   "confidence": "high",
+   "one_liner": "Analytic data-traffic modeling of CloverLeaf stencil kernels explaining Intel write-allocate-evasion effects"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ipps/ZhouHWWTJ25",
+  "venue": "IPDPS",
+  "year": 2025,
+  "title": "FastCHGNet: Training One Universal Interatomic Potential to 1.5 Hours with 32 GPUs",
+  "abstract": "Graph neural network universal interatomic potentials (GNN-UIPs) have demonstrated remarkable generalization and transfer capabilities in material discovery and property prediction. These models can accelerate molecular dynamics (MD) simulation by several orders of magnitude while maintaining <tex xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">$a b$</tex> initio accuracy, making them a promising new paradigm in material simulations. One notable example is Crystal Hamiltonian Graph Neural Network (CHGNet), pretrained on the energies, forces, stresses, and magnetic moments from the MPtrj dataset, representing a state-of-the-art GNN-UIP model for charge-informed MD simulations. However, training the CHGNet model is time-consuming (8.3 days on one A100 GPU) for three reasons: (i) requiring multi-layer propagation to reach more distant atom information, (ii) requiring secondorder derivatives calculation to finish weights updating and (iii) the implementation of reference CHGNet does not fully leverage the computational capabilities. This paper introduces FastCHGNet, an optimized CHGNet, with three contributions: Firstly, we design innovative Force/Stress Readout modules to decompose Force/Stress prediction. Secondly, we adopt massive optimizations such as kernel fusion, redundancy bypass, etc, to exploit GPU computation power sufficiently. Finally, we extend CHGNet to support multiple GPUs and propose a load-balancing technique to enhance GPU utilization. Numerical results show that FastCHGNet reduces memory footprint by a factor of 3.59. The final training time of FastCHGNet can be decreased to 1.53 hours on 32 GPUs without sacrificing model accuracy.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "pure-ml-serving",
+   "confidence": "medium",
+   "one_liner": "FastCHGNet: end-to-end training system optimizations for GNN interatomic potential (kernel fusion, multi-GPU)"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ipps/Keyes25",
+  "venue": "IPDPS",
+  "year": 2025,
+  "title": "For What the Bell Tolls",
+  "abstract": "With today's exascale computers requiring 20 to 40 MW and some cloud centers exceeding 100MW, with no slacking of demand in sight, computing is a nonnegligible factor in climate change. For the past three years, we have been finalists in the Gordon Bell Prize with computations that do more with less - that scale up while squeezing out operations and data transfers that do not ultimately impact application accuracy requirements.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "unclear",
+   "confidence": "low",
+   "one_liner": "Keynote-style abstract on Gordon Bell finalist computations reducing energy; no specific technical contribution given"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ipps/DandurandVS25",
+  "venue": "IPDPS",
+  "year": 2025,
+  "title": "Improving Parallel Scalability for Molecular Dynamics Simulations in the Exascale Era",
+  "abstract": "Molecular Dynamics (MD) simulations are timeconsuming as they simulate particle-to-particle interactions for increasingly larger particle counts. Applications split these interactions into short-range and long-range interactions at large counts as long-range ones can be approximated with a fundamentally different computation. State-of-the-art implementations map these computations to different processes, often on different nodes, which results in heterogeneous processes with disparate parallel scaling properties, with periodic information exchanges between them. This split and the communication that it requires creates a richer performance optimization space. Our fundamentally novel approach increases asynchrony between the process classes, which implies that up-to-date grid potentials are not always available and so we instead model evolving potentials based on their histories. We provide an analysis of the accuracy of our approach and assess the accuracy of trajectories and maintenance of simulation invariants. We implement our approach in the open-source LAMMPS MD code. Experimental timing measurements indicate up to 80 % speedup in those configurations where synchrony is a substantial bottleneck.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "application",
+   "confidence": "medium",
+   "one_liner": "Increased asynchrony between short/long-range MD process classes in LAMMPS for better scaling"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ipps/LiXLWUDSBCG26",
+  "venue": "IPDPS",
+  "year": 2026,
+  "title": "pMSz: A Distributed Parallel Algorithm for Correcting Extrema and Morse-Smale Segmentations in Lossy Compression",
+  "abstract": "Lossy compression, widely used by scientists to reduce data from simulations, experiments, and observations, can distort features of interest even under bounded error. Such distortions may compromise downstream analyses and lead to incorrect scientific conclusions in applications such as combustion and cosmology. This paper presents a distributed and parallel algorithm for correcting topological features, specifically, piecewise linear Morse–Smale segmentations (PLMSS), which decompose the domain into monotone regions labeled by their corresponding local minima and maxima. While a single-GPU algorithm (MSz) exists for PLMSS correction after compression, no methodology has been developed that scales beyond a single GPU for extreme-scale data. We identify the key bottleneck in scaling PLMSS correction as the parallel computation of integral paths, a communication-intensive computation that is notoriously difficult to scale. Instead of explicitly computing and correcting integral paths, our algorithm simplifies MSz by preserving steepest ascending and descending directions across all locations, thereby minimizing interprocess communication while introducing negligible additional storage overhead. With this simplified algorithm and relaxed synchronization, our method achieves over 90% parallel efficiency on 128 GPUs on the Perlmutter supercomputer for real-world datasets.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "other",
+   "confidence": "low",
+   "one_liner": "Distributed GPU algorithm correcting Morse-Smale segmentation artifacts from lossy compression"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ppopp/GuoLYHLTSJLCZC022",
+  "venue": "PPoPP",
+  "year": 2022,
+  "title": "Extending the limit of molecular dynamics with ab initio accuracy to 10 billion atoms",
+  "abstract": "High-performance computing, together with a neural network model trained from data generated with first-principles methods, has greatly boosted applications of ab initio molecular dynamics in terms of spatial and temporal scales on modern supercomputers. Previous state-of-the-art can achieve 1 -- 2 nanoseconds molecular dynamics simulation per day for 100-million atoms on the entire Summit supercomputer. In this paper, we have significantly reduced the memory footprint and computational time by a comprehensive approach with both algorithmic and system innovations. The neural network model is compressed by model tabulation, kernel fusion, and redundancy removal. Then optimizations such as acceleration of customized kernel, tabulation of activation function, MPI+OpenMP parallelization are implemented on GPU and ARM architectures. Testing results of the copper system show that the optimized code can scale up to the entire machine of both Fugaku and Summit, and the corresponding system size can be extended by a factor of 134 to an unprecedented 17 billion atoms. The strong scaling of a 13.5-million atom copper system shows that the time-to-solution can be 7 times faster, reaching 11.2 nanoseconds per day. This work opens the door for unprecedentedly large-scale molecular dynamics simulations based on ab initio accuracy and can be potentially utilized in studying more realistic applications such as mechanical properties of metals, semiconductor devices, batteries, etc. The optimization techniques detailed in this paper also provide insight for relevant high-performance computing applications.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "application",
+   "confidence": "medium",
+   "one_liner": "DeePMD-kit whole-application scaling of ab initio MD to 10-17B atoms on Summit/Fugaku; no single kernel isolated"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ppopp/MosesIDEDZ23",
+  "venue": "PPoPP",
+  "year": 2023,
+  "title": "High-Performance GPU-to-CPU Transpilation and Optimization via High-Level Parallel Constructs",
+  "abstract": "While parallelism remains the main source of performance, architectural implementations and programming models change with each new hardware generation, often leading to costly application re-engineering. Most tools for performance portability require manual and costly application porting to yet another programming model.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "other",
+   "confidence": "low",
+   "one_liner": "Transpiles/optimizes GPU code to CPU via high-level parallel constructs for performance portability"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ppopp/YesilH0T23",
+  "venue": "PPoPP",
+  "year": 2023,
+  "title": "WISE: Predicting the Performance of Sparse Matrix Vector Multiplication with Machine Learning",
+  "abstract": "Sparse Matrix-Vector Multiplication (SpMV) is an essential sparse kernel. Numerous methods have been developed to accelerate SpMV. However, no single method consistently gives the highest performance across a wide range of matrices. For this reason, a performance prediction model is needed to predict the best SpMV method for a given sparse matrix. Unfortunately, predicting SpMV's performance is challenging due to the diversity of factors that impact it.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "perf-model",
+   "confidence": "high",
+   "one_liner": "WISE: ML-based performance predictor to select the best SpMV method per matrix"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/ppopp/HuZSLMLWTJ24",
+  "venue": "PPoPP",
+  "year": 2024,
+  "title": "Training one DeePMD Model in Minutes: a Step towards Online Learning",
+  "abstract": "Neural Network Molecular Dynamics (NNMD) has become a major approach in material simulations, which can speedup the molecular dynamics (MD) simulation for thousands of times, while maintaining ab initio accuracy, thus has a potential to fundamentally change the paradigm of material simulations. However, there are two time-consuming bottlenecks of the NNMD developments. One is the data access of ab initio calculation results. The other, which is the focus of the current work, is reducing the training time of NNMD model. The training of NNMD model is different from most other neural network training because the atomic force (which is related to the gradient of the network) is an important physical property to be fit. Tests show the traditional stochastic gradient methods, like the Adam algorithms, cannot efficiently deploy the multisample minibatch algorithm. As a result, a typical training (taking the Deep Potential Molecular Dynamics (DeePMD) as an example) can take many hours. In this work, we designed a heuristic minibatch quasi-Newtonian optimizer based on Extended Kalman Filter method. An early reduction of gradient and error is adopted to reduce memory footprint and communication. The memory footprint, communication and settings of hyper-parameters of this new method are analyzed in detail. Computational innovations such as customized kernels of the symmetry-preserving descriptor are applied to exploit the computing power of the heterogeneous architecture. Experiments are performed on 8 different datasets representing different real case situations, and numerical results show that our new method has an average speedup of 32.2 compared to the Reorganized Layer-wised Extended Kalman Filter with 1 GPU, reducing the absolute training time of one DeePMD model from hours to several minutes, making it one step toward online training.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "pure-ml-serving",
+   "confidence": "medium",
+   "one_liner": "Quasi-Newton/Kalman-filter minibatch optimizer to speed up DeePMD NNMD model training"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/sc/SunLDYLGYQ20",
+  "venue": "SC",
+  "year": 2020,
+  "title": "SpTFS: sparse tensor format selection for MTTKRP via deep learning",
+  "abstract": "Canonical polyadic decomposition (CPD) is one of the most common tensor computations adopted in many scientific applications. The major bottleneck of CPD is matricized tensor times Khatri-Rao product (MTTKRP). To optimize the performance of MTTKRP, various sparse tensor formats have been proposed such as CSF and HiCOO. However, due to the spatial complexity of the tensors, no single format fits all tensors. To address this problem, we propose SpTFS, a framework that automatically predicts the optimal storage format for an input sparse tensor. Specifically, SpTFS leverages a set of sampling methods to lower the sparse tensor to fix-sized matrices and specific features. Then, TnsNet combines CNN and the feature layer to accurately predict the optimal format. The experimental results show that SpTFS achieves prediction accuracy of 92.7% and 96% on CPU and GPU respectively.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "perf-model",
+   "confidence": "medium",
+   "one_liner": "DL classifier (TnsNet) predicting best sparse tensor storage format for MTTKRP, not a kernel itself"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/sc/ShawAABBBBBBCDD21",
+  "venue": "SC",
+  "year": 2021,
+  "title": "Anton 3: twenty microseconds of molecular dynamics simulation before lunch",
+  "abstract": "Anton 3 is the newest member in a family of supercomputers specially designed for atomic-level simulation of molecules relevant to biology (e.g., DNA, proteins, and drug molecules). Anton 3 achieves order-of-magnitude improvements in time-to-solution over its predecessor, Anton 2 (the current state of the art), and is over 100-fold faster than any other currently available supercomputer, thereby enabling broad new avenues of research on critical questions in biology and drug discovery. This speedup means that a 512-node Anton 3 simulates a million atoms at over 100 microseconds per day. Furthermore, Anton 3 attains this performance while consuming an order of magnitude less energy per simulated microsecond than any other machine. Like its predecessors, Anton 3 was designed from the ground up around a new custom chip to best exploit the capabilities offered by new technologies. We present here the main architectural and algorithmic developments that were necessary to achieve such significant advances.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "medium",
+   "one_liner": "Anton 3: custom ASIC supercomputer for molecular dynamics simulation"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/sc/BaluBKRSHKAG21",
+  "venue": "SC",
+  "year": 2021,
+  "title": "Distributed multigrid neural solvers on megavoxel domains",
+  "abstract": "We consider the distributed training of large scale neural networks that serve as PDE (partial differential equation) solvers producing full field outputs. We specifically consider neural solvers for the generalized 3D Poisson equation over megavoxel domains. A scalable framework is presented that integrates two distinct advances. First, we accelerate training a large model via a method analogous to the multigrid technique used in numerical linear algebra. Here, the network is trained using a hierarchy of increasing resolution inputs in sequence, analogous to the `V', `W', `F' and `Half-V' cycles used in multigrid approaches. In conjunction with the multi-grid approach, we implement a distributed deep learning framework which significantly reduces the time to solve. We show scalability of this approach on both GPU (Azure VMs on Cloud) and CPU clusters (PSC Bridges2). This approach is deployed to train a generalized 3D Poisson solver that scales well to predict output full field solutions up to the resolution of 512 X 512 X 512 for a high dimensional family of inputs. This strategy opens up the possibility of fast and scalable training of neural PDE solvers on heterogeneous clusters.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "pure-ml-serving",
+   "confidence": "high",
+   "one_liner": "Multigrid-curriculum distributed training framework for neural PDE (Poisson) solvers"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/sc/MorimotoKZKONOK21",
+  "venue": "SC",
+  "year": 2021,
+  "title": "Hardware acceleration of tensor-structured multilevel ewald summation method on MDGRAPE-4A, a special-purpose computer system for molecular dynamics simulations",
+  "abstract": "We developed MDGRAPE-4A, a special-purpose computer system for molecular dynamics simulations, consisting of 512 nodes of custom system-on-a-chip LSIs with dedicated processor cores and interconnects designed to achieve strong scalability for biomolecular simulations. To reduce the global communications required for the evaluation of Coulomb interactions, we conducted a co-design of the MDGRAPE-4A and the novel algorithm, tensor-structured multilevel Ewald summation method (TME), which produced hardware modules on the custom LSI circuit for particle-grid operations and for grid-grid separable convolutions on a 3D torus network. We implemented the convolution for the top-level grid potentials by using 3D FFTs on an FPGA, along with an FPGA-based octree network to gather grid charges. The elapsed time for the long-range part of Coulomb is 50 μs, which can mostly overlap with those for the short-range part, and the additional cost is approximately 10 μs/step, which is only a 5% performance loss.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "hardware-accel",
+   "confidence": "medium",
+   "one_liner": "MDGRAPE-4A: custom ASIC + FPGA-FFT for tensor-structured multilevel Ewald summation MD"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/sc/SeelingerRRBBS21",
+  "venue": "SC",
+  "year": 2021,
+  "title": "High performance uncertainty quantification with parallelized multilevel Markov chain Monte Carlo",
+  "abstract": "Numerical models of complex real-world phenomena often necessitate High Performance Computing (HPC). Uncertainties increase problem dimensionality further and pose even greater challenges.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "application",
+   "confidence": "low",
+   "one_liner": "Parallelized multilevel Markov chain Monte Carlo for HPC uncertainty quantification"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/sc/BenNunGDWDDEGMTWFSH22",
+  "venue": "SC",
+  "year": 2022,
+  "title": "Productive Performance Engineering for Weather and Climate Modeling with Python",
+  "abstract": "Earth system models are developed with a tight coupling to target hardware, often containing specialized code predicated on processor characteristics. This coupling stems from using imperative languages that hard-code computation schedules and layout. We present a detailed account of optimizing the Finite Volume Cubed-Sphere Dynamical Core (FV3), improving productivity and performance. By using a declarative Python-embedded stencil domain-specific language and data-centric optimization, we abstract hardware-specific details and define a semi-automated workflow for analyzing and optimizing weather and climate applications. The workflow utilizes both local and full-program optimization, as well as user-guided fine-tuning. To prune the infeasible global optimization space, we automatically utilize repeating code motifs via a novel transfer tuning approach. On the Piz Daint supercomputer, we scale to 2,400 GPUs, achieving speedups of up to 3.92× over the tuned production implementation at a fraction of the original code.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "application",
+   "confidence": "medium",
+   "one_liner": "DSL/data-centric optimization workflow for productivity and performance of the FV3 weather dycore"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/sc/LiZGSLTJYW23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Enhance the Strong Scaling of LAMMPS on Fugaku",
+  "abstract": "Physical phenomenon such as protein folding requires simulation up to microseconds of physical time, which directly corresponds to the strong scaling of molecular dynamics(MD) on modern supercomputers. In this paper, we present a highly scalable implementation of the state-of-the-art MD code LAMMPS on Fugaku by exploiting the 6D mesh/torus topology of the TofuD network. Based on our detailed analysis of the MD communication pattern, we first adapt coarse-grained peer-to-peer ghost-region communication with uTofu interface, then further improve the scalability via fine-grained thread pool. Finally, Remote direct memory access (RDMA) primitives are utilized to avoid buffer overhead. Numerical results show that our optimized code can reduce 77% of the communication time, improving the performance of baseline LAMMPS by a factor of 2.9x and 2.2x for Lennard-Jones and embedded-atom method potentials when scaling to 36, 846 computing nodes. Our optimization techniques can also benefit other applications with stencil or domain decomposition methods.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "communication",
+   "confidence": "high",
+   "one_liner": "Ghost-region communication/RDMA optimizations for LAMMPS MD strong scaling on Fugaku's TofuD network"
+  },
+  "mode": "confirm-exclude"
+ },
+ {
+  "key": "conf/sc/JanssonKPMJLPLW23",
+  "venue": "SC",
+  "year": 2023,
+  "title": "Exploring the Ultimate Regime of Turbulent Rayleigh-Bénard Convection Through Unprecedented Spectral-Element Simulations",
+  "abstract": "We detail our developments in the high-fidelity spectral-element code Neko that are essential for unprecedented large-scale direct numerical simulations of fully developed turbulence. Major innovations are modular multi-backend design enabling performance portability across a wide range of GPUs and CPUs, a GPU-optimized preconditioner with task overlapping for the pressure-Poisson equation and in-situ data compression. We carry out initial runs of Rayleigh-Bénard Convection (RBC) at extreme scale on the LUMI and Leonardo supercomputers. We show how Neko is able to strongly scale to 16,384 GPUs and obtain results that are not possible without careful consideration and optimization of the entire simulation workflow. These developments in Neko will help resolving the long-standing question regarding the ultimate regime in RBC.",
+  "current_verdict": {
+   "is_kernel_opt": false,
+   "categories": [],
+   "kernels": [],
+   "platform": [],
+   "approach": null,
+   "excluded_reason": "application",
+   "confidence": "low",
+   "one_liner": "Neko spectral-element code developments (multi-backend, GPU preconditioner) for turbulence DNS at scale"
+  },
+  "mode": "confirm-exclude"
+ }
+]

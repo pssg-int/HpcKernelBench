@@ -1,0 +1,127 @@
+{
+ "kernel": "cg-krylov",
+ "papers": [
+  {
+   "key": "conf/ipps/NoackKK25",
+   "title": "Accelerating Sparse Linear Solvers on Intelligence Processing Units",
+   "venue": "IPDPS",
+   "year": 2025,
+   "doi": "10.1109/IPDPS64566.2025.00095",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/esa-tu-darmstadt/graphene",
+   "artifact_status": "verified",
+   "platform": [
+    "other"
+   ],
+   "approach": "codegen",
+   "abstract": "This paper presents an open-source framework for solving large, sparse linear systems on Intelligence Processing Units (IPUs). The IPU is a massively parallel architecture consisting of thousands of independent cores connected by an all-to-all communication fabric. We introduce two Domain-Specific Languages, CodeDSL and TensorDSL, that allow us to express complex algebraic algorithms like solvers and preconditioners close to their mathematical notation. Our framework symbolically executes these DSLs to generate the dataflow graph, execution schedule, and the codelets required by IPU's programming model. The IPU's cacheless design allows us to reorder matrices without performance penalties. We present a novel matrix reordering strategy that enables efficient blockwise halo exchanges with the IPU's all-to-all communication fabric. Our framework implements a suite of parallel linear solvers",
+   "one_liner": "DSL-generated sparse linear solvers (SpMV/ILU/PBiCGStab) on Graphcore IPUs, up to 150x vs CPU/GPU."
+  },
+  {
+   "key": "conf/sc/SuzukiI25",
+   "title": "A Nested Krylov Method Using Half-Precision Arithmetic",
+   "venue": "SC",
+   "year": 2025,
+   "doi": "10.1145/3712285.3759807",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3712285.3759807",
+   "artifact_url": "https://github.com/suzuki-hpc/F3R",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Low-precision computing is essential for efficiently utilizing memory bandwidth and computing cores. While many mixed-precision algorithms have been developed for iterative sparse linear solvers, effectively leveraging half-precision (fp16) arithmetic remains challenging. This study introduces a novel nested Krylov approach that integrates the FGMRES and Richardson methods in a deeply nested structure, progressively reducing precision from double-precision to fp16 toward the innermost solver. To avoid meaningless computations beyond precision limits, the low-precision inner solvers perform only a few iterations per invocation, while the nested structure ensures their frequent execution. Numerical experiments show that incorporating fp16 into the approach directly enhances solver performance without compromising convergence, achieving speedups of up to 1.65 × and 2.42 × over double-precis",
+   "one_liner": "Nested FGMRES/Richardson Krylov solver exploiting fp16 inner iterations, up to 2.42x speedup"
+  },
+  {
+   "key": "conf/sc/MaACSH25",
+   "title": "Sparsified Preconditioned Conjugate Gradient Solver on GPUs",
+   "venue": "SC",
+   "year": 2025,
+   "doi": "10.1145/3712285.3759796",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3712285.3759796",
+   "artifact_url": "https://github.com/SwiftWare-Lab/SPCG",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Preconditioned iterative sparse linear solvers are memory-efficient for large scientific simulations, but the dependences between iterations introduced by preconditioners limit parallelization. This issue is exacerbated on GPUs, which feature many parallel cores. We propose a sparsified preconditioned conjugate gradient (SPCG) solver that increases parallelism by reducing dependences through sparsification, while preserving convergence behavior. We evaluate the proposed SPCG using both ILU(0) and ILU(K) preconditioners on a wide range of symmetric positive definite (SPD) matrices. The proposed SPCG improves the performance of the iterative phase of SPCG by a geometric mean speedup of 1.23 × and 1.65 × over the non-sparsified PCG using ILU(0) and ILU(K), respectively on an NVIDIA A100 GPU. SPCG also yields geometric mean end-to-end speedups of 1.68 × and 3.73 × over the non-sparsified ver",
+   "one_liner": "Sparsified ILU-preconditioned CG solver increases GPU parallelism, up to 3.73x end-to-end speedup"
+  },
+  {
+   "key": "conf/sc/YangZNJS0T024",
+   "title": "Mille-feuille: A Tile-Grained Mixed Precision Single-Kernel Conjugate Gradient Solver on GPUs",
+   "venue": "SC",
+   "year": 2024,
+   "doi": "10.1109/SC41406.2024.00064",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/SuperScientificSoftwareLaboratory/Mille-feuille",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu",
+    "amd-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Conjugate gradient (CG) and biconjugate gradient stabilized (BiCGSTAB) are effective methods used for solving sparse linear systems. We in this paper propose Mille-feuille, a new solver for accelerating CG and BiCGSTAB on GPUs. We first analyze the two methods and list three findings related to the use of mixed precision, the reduction of kernel synchronization costs, and the awareness of partial convergence during the iteration steps. Then, (1) to enable tile-grained mixed precision, we develop a tiled sparse format; (2) to reduce synchronization costs, we leverage atomic operations that make the whole solving procedure work within a single GPU kernel; (3) to support a partial convergence-aware mixed precision strategy, we enable tile-wise on-chip dynamic precision conversion within the single kernel at runtime. The experimental results on an NVIDIA A100 and an AMD MI210 show that the M",
+   "one_liner": "Mille-feuille: tile-grained mixed-precision single-kernel CG/BiCGSTAB solver, up to 3-5x over cuSPARSE"
+  },
+  {
+   "key": "conf/ics/ZhangWCMWEM23",
+   "title": "PERKS: a Locality-Optimized Execution Model for Iterative Memory-bound GPU Applications",
+   "venue": "ICS",
+   "year": 2023,
+   "doi": "10.1145/3577193.3593705",
+   "arxiv": "",
+   "oa_url": "https://www.osti.gov/servlets/purl/1994672",
+   "artifact_url": "https://github.com/neozhang307/PERKS",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Iterative memory-bound solvers commonly occur in HPC codes. Typical GPU implementations have a loop on the host side that invokes the GPU kernel as much as time/algorithm steps there are. The termination of each kernel implicitly acts the barrier required after advancing the solution every time step. We propose an execution model for running memory-bound iterative GPU kernels: PERsistent KernelS (PERKS). In this model, the time loop is moved inside persistent kernel, and device-wide barriers are used for synchronization. We then reduce the traffic to device memory by caching subset of the output in each time step in the unused registers and shared memory. PERKS can be generalized to any iterative solver: they largely independent of the solver's implementation. We explain the design principle of PERKS and demonstrate effectiveness of PERKS for a wide range of iterative 2D/3D stencil bench",
+   "one_liner": "Persistent-kernel locality optimization for iterative stencil/CG GPU kernels"
+  },
+  {
+   "key": "journals/tpds/BernaschiCVD23",
+   "title": "A Multi-GPU Aggregation-Based AMG Preconditioner for Iterative Linear Solvers",
+   "venue": "TPDS",
+   "year": 2023,
+   "doi": "10.1109/TPDS.2023.3287238",
+   "arxiv": "",
+   "oa_url": "https://ieeexplore.ieee.org/abstract/document/10155151",
+   "artifact_url": "https://github.com/bootcmatch/BootCMatchGX",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu",
+    "distributed"
+   ],
+   "approach": "manual",
+   "abstract": "We present and release in open source format a sparse linear solver which efficiently exploits heterogeneous parallel computers. The solver can be easily integrated into scientific applications that need to solve large and sparse linear systems on modern parallel computers made of hybrid nodes hosting Nvidia Graphics Processing Unit (GPU) accelerators. The work extends previous efforts of some of the authors in the exploitation of a single GPU accelerator and proposes an implementation, based on the hybrid MPI-CUDA software environment, of a Krylov-type linear solver relying on an efficient Algebraic MultiGrid (AMG) preconditioner already available in the <italic xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">BootCMatchG</i> library. Our design for the hybrid implementation has been driven by the best practices for minimizing data communication ",
+   "one_liner": "Multi-GPU MPI-CUDA AMG-preconditioned Krylov solver (BootCMatchG), up to 2x over Nvidia AmgX."
+  },
+  {
+   "key": "conf/sc/BrunnHBMM20",
+   "title": "Multi-node multi-GPU diffeomorphic image registration for large-scale imaging problems",
+   "venue": "SC",
+   "year": 2020,
+   "doi": "10.1109/SC41405.2020.00042",
+   "arxiv": "2008.12820",
+   "oa_url": "https://arxiv.org/pdf/2008.12820",
+   "artifact_url": "https://github.com/andreasmang/claire",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu",
+    "distributed"
+   ],
+   "approach": "manual",
+   "abstract": "We present a Gauss-Newton-Krylov solver for large deformation diffeomorphic image registration. We extend the publicly available CLAIRE library to multi-node multi-graphics processing unit (GPUs) systems and introduce novel algorithmic modifications that significantly improve performance. Our contributions comprise (i) a new preconditioner for the reduced-space Gauss-Newton Hessian system, (ii) a highly-optimized multi-node multi-GPU implementation exploiting device direct communication for the main computational kernels (interpolation, high-order finite difference operators and Fast-Fourier-Transform), and (iii) a comparison with state-of-the-art CPU and GPU implementations. We solve a 256 <sup xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">3</sup> -resolution image registration problem in five seconds on a single NVIDIA Tesla V100, with a perf",
+   "one_liner": "Multi-GPU CLAIRE: optimized interpolation/FD/FFT kernels + preconditioner for image registration."
+  }
+ ]
+}

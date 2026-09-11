@@ -1,0 +1,117 @@
+kernel: astar-search
+summary: >
+  Single-pair shortest-path search (start -> goal) on an 8-connected 2D
+  occupancy grid via GPU-parallel (bidirectional or unidirectional)
+  bucketed A*, measured as search-phase wall time and nodes expanded, with
+  path optimality (not approximation) as the correctness gate.
+operation: >
+  path = A*(grid[H,W] occupancy (0=passable,1=obstacle), start, goal,
+  heuristic=octile/Chebyshev-consistent); 8-connected movement, integer-
+  scaled edge costs (straight vs. diagonal); output is the minimum-cost
+  path (or "unreachable") plus the parent chain from start to goal.
+
+variants:
+  - id: astar-kernel-movingai-maps
+    claim: >
+      steady-state search-phase throughput on the standard MovingAI
+      pathfinding benchmark corpus; grid/scenario loading excluded but
+      reported separately (one-shot, not amortized)
+    inputs:
+      suite: "MovingAI Benchmarks (movingai.com) .map/.map.scen pairs — the de-facto standard pathfinding corpus (game maps, city maps, road networks)"
+      selection: >
+        union of named map categories used by the track (game maps,
+        city/road maps); at minimum the bundled arena.map plus 2+
+        additional named MovingAI map families for size/obstacle-structure
+        coverage; each map paired with its official .scen scenario file
+        for reproducible start/goal pairs (not ad hoc random pairs)
+      recommended_subset: ["arena (bundled sample)", "a maze-type MovingAI map (e.g. from the 'mazes' category)", "a room-type MovingAI map (e.g. from the 'rooms' category)", "a large city/road-network MovingAI map for scale coverage"]
+      dense_operand: "N/A (no dense operand; single-bit occupancy grid)"
+    protocol:
+      format: "grid decoded from .map text once; not counted in per-search time"
+      warmup: "1 search per (map, start, goal) pair, discarded"
+      reps: "N >= 10 start/goal pairs per map, drawn from the map's official .scen file in scenario-index order (not hand-picked)"
+      statistic: "median runtime and median nodes-expanded across reps, report min/max"
+      timer: "device-side CUDA events wrapping only the search kernel(s); host-side wall clock as cross-check"
+      timing_scope: "search phase only; .map parsing/grid construction excluded"
+      preprocessing_reported: "separately, once per map: grid load/construction time"
+    metric:
+      primary: "search_time_ms (median, min, max)"
+      secondary: "nodes expanded, speedup vs. CPU heap-based A* baseline (astarHeapCPU.cpp), speedup vs. any available prior GPU A* baseline"
+    correctness: >
+      path must be cost-optimal: returned path cost must exactly equal the
+      cost from an independent CPU reference A*/Dijkstra run on the same
+      (map, start, goal) with an admissible heuristic (astarHeapCPU.cpp or
+      equivalent), i.e. exact-value correctness, not an approximation
+      ratio — any mismatch invalidates that search's timing.
+
+  - id: astar-kernel-procedural-grids
+    claim: >
+      steady-state search-phase throughput on the repo's own parameterized
+      procedural-grid generator, sweeping obstacle family and grid size —
+      the axis the paper itself uses to show the bucketed-bidirectional
+      design scaling with grid complexity
+    inputs:
+      suite: "procedural grid generator (5 obstacle families: random, maze, blockCenter, zigzag, rectangle), fixed RNG seed for reproducibility"
+      selection: "all 5 obstacle families crossed with a fixed size ladder"
+      recommended_subset: ["256x256", "512x512", "1024x1024", "2048x2048 (large, optional)"]
+      dense_operand: "N/A"
+      obstacle_rate: "20% (repo default), disclosed explicitly if varied"
+    protocol:
+      format: "grid generated once per (size, type, seed) and reused across implementations under test; compressed-grid I/O excluded from search time"
+      warmup: 1
+      reps: "5 (start,goal) pairs per (size,type) cell, fixed seed=0"
+      statistic: "median runtime and nodes-expanded, report min/max"
+      timer: "device-side CUDA events around the search call"
+      timing_scope: "search phase only; grid generation/compression is one-shot and reported separately"
+      preprocessing_reported: "generation + compressed-grid encode time, separately, once per (size,type)"
+    metric:
+      primary: "search_time_ms (median, min, max) as a function of grid size and obstacle family"
+      secondary: "nodes expanded, speedup vs. CPU baseline and vs. unidirectional GPU variant (same repo, ablation)"
+    correctness: "same exact-path-cost gate as astar-kernel-movingai-maps"
+
+notes_on_fairness:
+  - >
+    A* with an admissible, consistent heuristic (octile distance on a
+    uniform-cost 8-connected grid) is exact, not heuristic-approximate —
+    unlike most other tracks in this benchmark set, the correctness gate
+    here is a strict equality check against an independent reference
+    shortest-path cost, not a tolerance or approximation ratio. Any
+    GPU implementation that trades optimality for speed (e.g. weighted
+    A*, epsilon-admissible relaxations) must be reported as a DISTINCT
+    variant, not folded into these numbers, since it changes the
+    correctness contract.
+  - >
+    The repo's `--repeats` flag on `demo.sh` defaults to 1, which is too
+    few to report a meaningful median/min/max; both variants above fix a
+    minimum repetition count (10 for named maps, 5 per grid cell for the
+    procedural sweep) explicitly rather than inheriting the tool's
+    single-run default.
+  - >
+    "Compressed-grid" construction (`data/generated/*.bin`) is a real,
+    separate cost the repo already treats as a distinct artifact from the
+    search call — this spec keeps that separation explicit via
+    preprocessing_reported rather than letting it silently inflate or
+    deflate the reported search time depending on whether an
+    implementation reuses a pre-built compressed grid.
+
+open_questions:
+  - >
+    The paper's own MovingAI map selection (which named maps/categories,
+    how many start-goal pairs per map) could not be confirmed — no arXiv
+    preprint exists for this ICS 2026 paper and the ACM DL page was not
+    fetched as fulltext. The recommended_subset above is a reasonable
+    standard-corpus stand-in, not a reproduction of the paper's exact
+    table.
+  - >
+    The identity of the "prior GPU baseline" the paper reports 11.91x
+    geomean / 43.33x peak speedup against (per a WebSearch summary of the
+    abstract page, not independently verified) is unconfirmed — likely a
+    massively-parallel-heap-based GPU A* (e.g. Zhou & Zeng, AAAI 2020
+    style), but this should be verified against the paper's related-work
+    section before being named as a required baseline.
+  - >
+    Exact largest grid size used in the paper's own scaling experiments
+    (beyond demo.sh's default 1024) was not confirmed.
+
+evidence:
+  conf/ics/Al-KhansaGMH26: "MovingAI .map/.scen corpus + 5-family procedural grid generator (random/maze/blockCenter/zigzag/rectangle), demo.sh reports runtime/expanded-nodes/path-cost with an optional --repeats averaging flag (default 1), CUDA-event-friendly GPUTimer-style structure, CPU heap-based A* shipped as reference baseline for both timing and correctness; exact paper-table map list and prior-GPU-baseline identity unconfirmed (no arXiv, ACM DL fulltext not fetched)"

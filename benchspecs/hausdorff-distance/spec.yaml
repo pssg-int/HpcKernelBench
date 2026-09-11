@@ -1,0 +1,154 @@
+kernel: hausdorff-distance
+summary: >
+  Hausdorff Distance (HD) between two point sets, computed via GPU
+  ray-tracing-core-accelerated k-NN search with spatial-grid and
+  provably-exact branch-and-bound pruning (X-HD), measured against an
+  exact brute-force reference and an industrial-standard baseline (ITK),
+  across three structurally different point-set domains the artifact
+  treats as first-class (medical imaging, geospatial, 3D graphics).
+operation: >
+  HD(A,B) = max(h(A,B), h(B,A)); h(A,B) = max_{a in A} min_{b in B}
+  dist(a,b); A, B are point sets in R^n_dims (n_dims in {2,3}). X-HD
+  reformulates the inner min_{b in B} dist(a,b) as an RT-accelerated k-NN
+  query, adding a spatial grid (reduce BVH traversal intensity), HD
+  estimators (provably-exact early-termination bounds on the running
+  max-min), and CUDA-kernel offload of distance computation from RT
+  shaders to fix a grid-induced load-imbalance.
+
+variants:
+  - id: hd-exact-kernel
+    claim: >
+      steady-state kernel time to compute the EXACT Hausdorff distance
+      for a point-set pair, across four algorithm choices exposed
+      directly by the artifact's own CLI (-variant eb/nn/itk/rt) and an
+      execution-target axis (-execution cpu/gpu, GPU-only for rt); eb is
+      treated as this benchmark's ground-truth reference, matching the
+      artifact's own apparent design (see survey.md)
+    inputs:
+      suite: >
+        three domains exposed as first-class CLI options
+        (-input_type image/wkt/ply): medical-imaging point sets (MRI
+        segmentation-mask-derived), WKT geospatial point/polygon data,
+        PLY 3D graphics point clouds/meshes -- required to be exercised
+        as sub-cases of this ONE variant (not three separate variants,
+        per survey.md Divergences: the algorithm and its
+        correctness/timing protocol are domain-agnostic, only input
+        format and typical scale differ)
+      selection: >
+        the paper's own exact dataset list was not recoverable from the
+        sources fetched in this survey (README gives only the CLI
+        signature, flags.cc returned compiled usage text not raw flag
+        definitions) -- this spec therefore specifies known public
+        sources per domain as a disclosed, reasonable stand-in rather
+        than leaving the suite unspecified, flagged in open_questions
+      recommended_subset:
+        - "medical (image): a public MRI-segmentation mask pair (e.g. Medical Segmentation Decathlon or comparable public set), 2D slice instances ~1e3-1e5 points and a 3D volume instance ~1e5-1e7 points, matched to HD's standard role as a segmentation-quality metric"
+        - "geospatial (wkt): OpenStreetMap-derived polygon/point extracts at three size classes: small ~1e3 points, medium ~1e5 points, large ~1e6 points"
+        - "graphics (ply): Stanford 3D Scanning Repository models as small/medium/large -- Bunny (~35K vertices), Dragon (~437K vertices), Lucy (~14M vertices)"
+      dense_operand: "N/A; -n_dims in {2,3} is a required, explicit CLI parameter (not assumed from the input)"
+      size_classes: "small <1e4 points, medium 1e4-1e6 points, large >1e6 points -- each domain in recommended_subset contributes at least one instance per class"
+    protocol:
+      variants_under_test: "eb (reference/ground-truth, presumed exact brute-force or exact-bound method), itk (Insight Toolkit, CPU industrial-standard baseline), nn (naive RT-accelerated k-NN library, the paper's own stated 'poor performance due to lack of domain-specific optimizations' baseline), rt (X-HD, the paper's contribution -- GPU only, per the README's 'RT only has the GPU implementation')"
+      execution: "cpu/gpu axis, independent for eb/itk/nn; rt is GPU-only and must not be run with -execution cpu"
+      warmup: "1 discarded run per point-set pair -- NOT recoverable from the sources fetched in this survey (README is a single terse CLI usage block, flags.cc's raw source was not obtained); specified here from this project's general timing convention, flagged in open_questions per survey.md"
+      reps: 10
+      statistic: "median wall time, report min/max"
+      timer: "wall-clock (host-side) around the single hd_exec invocation per point-set pair; device-side timing availability for the rt/gpu path was not confirmed from the CLI as read"
+      timing_scope: "kernel only: point-set file parsing and any BVH/grid index construction are preprocessing, excluded from the timed region but reported separately, one-shot"
+      preprocessing_reported: "separately, once per point-set pair and per variant: file-parse time; BVH-build time (nn/rt variants); grid-build time (rt variant's specific spatial-grid optimization, since this is one of X-HD's three named contributions and must be visible on its own, not folded into query time)"
+    metric:
+      primary: "wall time (ms) per point-set pair, per variant, per execution target"
+      secondary: "speedup vs. eb (exact reference) and vs. itk (industrial baseline) -- matches the paper's own reporting convention (abstract: 5.3x over ITK on average, up to 6.4x over a GPU-optimized prior HD solution)"
+    correctness: >
+      rt and nn MUST return the same HD value as eb (the exact
+      reference) within floating-point tolerance (relative error < 1e-6
+      at matched precision, or exact match if inputs/outputs are
+      integer/quantized). This track's problem is NOT an
+      accuracy-for-speed approximation the way ANN or spectral
+      sparsification are: X-HD's grid and HD-estimator optimizations are
+      described as provably-exact search-space pruning (branch-and-bound
+      style early termination that never discards the true max-min
+      point), so there is no legitimate quality-vs-speed operating-point
+      tradeoff here -- only a pass/fail exactness gate. A variant that
+      returns a materially different HD value is not "faster at lower
+      quality," it is incorrect, and must be excluded from the timing
+      comparison rather than reported alongside it.
+
+  - id: hd-e2e-preprocessing
+    claim: >
+      end-to-end throughput including one-shot index construction (BVH
+      for nn/rt, spatial grid for rt specifically) amortized over
+      k=10 point-set-pair queries against the same reference structure --
+      relevant when one point set (e.g. a fixed reference mesh/anatomical
+      atlas) is queried against many others, a realistic batch-scoring
+      usage this track's single-pair kernel variant does not capture
+    inputs:
+      suite: "same recommended_subset as hd-exact-kernel, restricted to the medium/large size classes where index-build cost is non-trivial relative to a single query"
+      selection: "same as hd-exact-kernel"
+      recommended_subset: "medical (3D volume instance), graphics (Dragon, Lucy)"
+      dense_operand: "N/A"
+    protocol:
+      format: "raw point-set files; parsing + BVH/grid construction for the FIXED reference set is IN SCOPE and timed once, then reused across k queries against k distinct second point sets"
+      warmup: "1 full pipeline pass (build once, query once), discarded"
+      reps: "k = 10 queries sharing one index-construction pass"
+      statistic: "total_time = index_build_time + sum(10 query times); report both total_time/10 (amortized per-query time) AND index_build_time alone, never only the blended number"
+      timer: "wall-clock around the full pipeline; wall-clock around the query-only portion for cross-checking against hd-exact-kernel"
+      timing_scope: "index construction + k queries; not amortized beyond k=10 unless the kernel-only k=10 cross-reference is also reported"
+      preprocessing_reported: "index_build_time reported standalone, in addition to being part of total_time by construction"
+      amortization_count_required: true
+    metric:
+      primary: "amortized_time_ms = total_time_ms / 10"
+      secondary: "index_build_time_ms (standalone), kernel-only_median_time_ms (cross-reference to hd-exact-kernel on the same pair)"
+    correctness: "same exact-match-vs-eb gate as hd-exact-kernel, applied to all 10 queries"
+
+notes_on_fairness:
+  - >
+    The artifact's own timing protocol (warmup count, repetition count,
+    statistic, timer placement) could not be recovered from the sources
+    fetched in this survey -- the README exposes only a bare CLI usage
+    example, and flags.cc's raw flag-definition source was not obtained
+    (only compiled usage text). This spec's protocol section is
+    therefore explicitly specified from this project's general
+    convention rather than lifted from the paper/artifact, flagged here
+    and in open_questions per the fairness principle that a spec must
+    not silently assume methodology it cannot cite.
+  - >
+    Because X-HD's three domains (medical/geospatial/graphics) share one
+    algorithm and CLI, this spec keeps them as required sub-cases of a
+    single variant rather than three separate variants -- splitting them
+    would let a submission cherry-pick the domain where X-HD performs
+    best without ever reporting the other two.
+  - >
+    eb is treated as ground truth on the strength of the CLI's own naming
+    and the paper's framing of nn/itk as baselines and rt as the
+    contribution; this was not independently confirmed from a methods
+    section (none was fetched) and should be verified against the paper's
+    own text if it becomes available, per open_questions.
+
+open_questions:
+  - >
+    The artifact's exact evaluation dataset list (specific medical
+    imaging cohort, specific WKT source, specific PLY models) was not
+    recoverable from the fetched README/abstract -- recommended_subset
+    above is this spec's own disclosed stand-in using standard public
+    sources per domain, not a reproduction of the paper's own table.
+  - >
+    Whether "eb" stands for "exact brute-force" or some other
+    exact-bound method, and whether it is itself GPU- or CPU-only or
+    both, was inferred from the CLI's variant-naming convention and the
+    paper's framing, not confirmed from fulltext (no arXiv/OA link
+    recorded for this paper).
+  - >
+    Timer implementation, warmup, and repetition convention actually used
+    by the artifact's benchmark scripts (if any exist beyond the bare CLI
+    example) were not found in the portion of flags.cc retrieved; if
+    raw source becomes available this should be re-verified against the
+    protocol specified here from general convention.
+  - >
+    Whether the "GPU-optimized HD solution" the abstract claims up to
+    6.4x speedup over is the same as the -variant nn baseline exposed by
+    the CLI, or a distinct prior work not present in the artifact at all,
+    was not disambiguated.
+
+evidence:
+  conf/ics/GengYLWZ26: "X-HD: RT-core-accelerated HD via k-NN reduction, three optimizations (spatial grid, provably-exact HD estimators for early termination, CUDA-offloaded distance computation to fix grid-induced load imbalance); CLI exposes -input_type image/wkt/ply, -n_dims, -variant eb/nn/itk/rt, -execution cpu/gpu (rt is gpu-only); abstract reports 5.3x average speedup over ITK, up to 6.4x over a GPU-optimized prior HD solution; timing protocol (warmup/reps/statistic/timer) not recoverable from fetched README/flags.cc, specified from project convention"

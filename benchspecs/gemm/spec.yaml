@@ -1,0 +1,376 @@
+kernel: gemm
+summary: >
+  Dense general matrix-matrix multiplication (including uniform-shape batched
+  GEMM and small-scale distributed GEMM); quantized/int8 GEMM is explicitly
+  out of scope (see the quantized-gemm track).
+operation: >
+  C[M,N] = alpha*A[M,K]*B[K,N] + beta*C[M,N] (beta=0 unless noted); row-major
+  storage by convention of this spec (papers surveyed used a mix of
+  row-/column-major and NN/NT/TN/TT layouts — the harness must record which
+  layout each measured run used, since LibShalom shows NT materially
+  outperforms NN for some irregular shapes on the same hardware).
+
+variants:
+  - id: gemm-square-kernel
+    claim: >
+      steady-state kernel throughput on large/near-square dense GEMM,
+      preprocessing (allocation, JIT/codegen, autotuning search) excluded
+      from the timed region but reported once, separately. This is the
+      common-denominator "textbook HPC GEMM" variant most surveyed papers
+      report in some form (WuZLHJWC23, CA3DMM's per-rank number, CL-DB-GEMM's
+      "around 2048"/multiples-of-128 sweep, fBLAS, Tensile-FGPS/DGEMM).
+    inputs:
+      suite: synthetic square and near-square dense GEMM
+      selection: >
+        union of the surveyed papers' large/square sweeps: WuZLHJWC23's
+        1024-6144 (step 512) square set, CL-DB-GEMM's "multiples of 128" and
+        "multiples of 129" (tile-boundary/padding stress) sets, plus two
+        extra padding-stress points (+1 offset) at the 2048 and 4096 scale
+        applying the same "multiples of N+1" idea CL-DB-GEMM already uses at
+        smaller scale. Fixed list below, not sampled.
+      recommended_subset: >
+        M=N=K in {128, 256, 512, 1024, 1536, 2048, 2049, 2560, 3072, 3584,
+        4096, 4097, 4608, 5120, 5632, 6144} (16 sizes; the 2049/4097 points
+        are the padding-boundary stress tests). On FPGA targets whose
+        systolic/streaming design ties matrix size to on-chip tile size
+        (fBLAS's convention: N = 5x tile size), substitute the platform's own
+        tile-derived size for the 4 largest entries and record the
+        substitution — do not silently reuse the CPU/GPU list where it
+        doesn't fit the design.
+      dense_operand: >
+        precision in {fp64, fp32, fp16} (int8/quantized excluded — see
+        quantized-gemm track); operands initialized U(-1,1) (this spec's
+        choice; surveyed repos used U(0,1) (LibShalom) or 2*drand48() = U(0,2)
+        (MPGEMM) with no stated rationale, so standardizing here does not
+        contradict any paper's specific finding but is a genuine change from
+        common practice — flagged in notes_on_fairness).
+    protocol:
+      preprocessing: >
+        one-shot: buffer allocation/H2D residency, any JIT/codegen compile
+        (relevant for LIBXSMM-style JIT libraries and autoGEMM-style codegen
+        baselines), and any autotuning search (Tensile, CL-DB-GEMM's BO
+        tuner) happen once before the timed region and are reported
+        separately, never amortized into per-call time. This directly
+        follows autoGEMM's own practice of excluding LIBXSMM's JIT time
+        "for fairness" and FastKron's separate "Autotuning Time" report.
+      warmup: 10
+      reps: 50 (min 20 if a single call exceeds 50ms wall time, to bound
+        total harness time; max 500 if a single call is under 0.1ms, to keep
+        the median statistically meaningful — this generalizes MPGEMM's
+        manual per-size nreps scaling (500/100/20 reps for M=64/128/4096)
+        into an explicit rule instead of an ad hoc per-shape choice)
+      statistic: median (report min and max alongside)
+      timer: >
+        per platform class: NVIDIA/AMD GPU - device-side kernel time (CUDA
+        events, or the ROCm/Tensile KernelTime convention used by
+        Tensile-FGPS) with the host synchronized before/after; CPU/ARM -
+        host wall-clock via a monotonic clock (matches MPGEMM's dClock()
+        pattern); FPGA/OpenCL - OpenCL profiling-event kernel time (the
+        implied CLBlast convention CL-DB-GEMM inherits). Async-queue leakage
+        into adjacent timed regions must be prevented by an explicit sync.
+      timing_scope: >
+        kernel only; H2D/D2H and any data (re)distribution excluded (matches
+        CA3DMM's own "matmul only" sub-metric, generalized to single-device
+        variants here).
+      preprocessing_reported: separately, once, before the steady-state loop
+    metric:
+      primary: GFLOP/s (2*M*N*K / time)
+      secondary: ms (median, min, max)
+    correctness: >
+      max relative error vs. a same-precision-family vendor BLAS reference
+      (cuBLAS/rocBLAS on GPU, MKL/OpenBLAS/ARMPL/Accelerate on CPU) computed
+      at fp64: < 1e-6 for fp64 kernels (near machine epsilon, sanity check
+      only), < 1e-3 for fp32, < 1e-2 for fp16. None of the 9 surveyed papers
+      state a numeric tolerance (several only assert "compared against
+      cuBLAS" with no number) — this spec fixes explicit values to close
+      that gap; a run that fails this gate does not count toward the
+      reported throughput.
+
+  - id: gemm-small-irregular-kernel
+    claim: >
+      steady-state kernel throughput on small and irregular (tall-skinny /
+      long-rectangular) GEMM shapes sourced from real scientific and DNN/LLM
+      workloads, with cache state as an explicit reported axis. This is the
+      variant where the literature most disagrees on scope (hot vs. cold
+      cache changes rankings by up to 2x per LibShalom), so both states are
+      required, not one.
+    inputs:
+      suite: >
+        union of LibShalom (SeisSol/Nekbox-derived small cubic shapes),
+        WuZLHJWC23's irregular sweep (K fixed, M/N swept), autoGEMM's small
+        range plus ResNet-50-derived shapes, and MPGEMM's DeepSeek/LLaMA
+        linear-layer shapes.
+      selection: >
+        M=N=K <= 128 (small/cubic class) OR (one of M,N <= 512 AND K >= 256)
+        (irregular/skinny class) — matches the union of ranges the 4 source
+        papers actually swept (LibShalom [8,120], autoGEMM [1,128],
+        WuZLHJWC23 irregular M,N in [64,490] with K in {256,1024}, MPGEMM's
+        M=64/128 with N,K up to 32768).
+      recommended_subset: >
+        small/cubic: (8,8,8), (16,16,16), (24,24,24), (32,32,32), (64,64,64),
+        (96,96,96), (120,120,120), (128,128,128) (LibShalom/autoGEMM range,
+        8 points). irregular/skinny, K fixed at 256 and 1024 (WuZLHJWC23):
+        (M,N) in {(64,64),(128,128),(256,256),(384,384),(490,490)} x
+        {K=256, K=1024} (10 points). LLM-linear-layer shapes (MPGEMM,
+        verbatim from the artifact's benchmark driver): (M,N,K) in
+        {(64,2112,7168), (64,24576,1536), (64,32768,512), (64,7168,16384),
+        (64,4096,7168), (64,7168,2048)} (6 points). 24 total named shapes.
+      dense_operand: precision in {fp64, fp32, fp16}; U(-1,1)
+    protocol:
+      cache_state: >
+        both reported, not one: "hot" (operands resident in the fastest
+        cache level that fits them before the timed loop starts, i.e.
+        repeated calls reuse the same buffers back-to-back — LibShalom's Fig.
+        7 setup) and "cold" (a companion buffer larger than LLC is
+        touched between each timed call to evict the operands, or K is
+        padded to a size that guarantees LLC eviction as in LibShalom's
+        K=5000 trick — LibShalom's Fig. 8 setup). Report both numbers for
+        every shape; do not average across cache states.
+      preprocessing: same rule as gemm-square-kernel
+      warmup: 10
+      reps: 100 (small kernels are fast and noisy — this is deliberately
+        higher than the square-kernel default, closer to LibShalom's use of
+        a min-max bar over reps, but larger than LibShalom's own 10 since 10
+        reps is too few for a stable median)
+      statistic: median (report min and max)
+      timer: same per-platform rule as gemm-square-kernel
+      timing_scope: kernel only; explicit cache_state control is part of the
+        timed region by construction (see cache_state above)
+      preprocessing_reported: separately, once
+    metric:
+      primary: GFLOP/s
+      secondary: ms (median, min, max), reported per cache_state
+    correctness: same tolerances as gemm-square-kernel
+
+  - id: gemm-batched-kernel
+    claim: >
+      steady-state throughput of uniform-shape batched GEMM (same M,N,K
+      across the batch, independent problems, no data reuse across batch
+      elements), preprocessing excluded. Thin in the literature (only 2 of 9
+      surveyed papers exercise it with real numbers) but explicitly in scope
+      per this track's definition ("dense GEMM incl. batched").
+    inputs:
+      suite: CL-DB-GEMM's GEMMBATCHED/GEMMSTRIDEDBATCHED sweep (the only
+        source with concrete batch-count numbers among surveyed papers)
+      selection: >
+        batch_num in {8, 64} with M=N=K swept 32-640 (step 32, 20 steps), and
+        batch_num as powers of 2 from 1 to 4096 with M=N=K=128 fixed —
+        reproduced verbatim from the artifact's own benchmark config rather
+        than re-derived, since it is the only concrete batched-GEMM sweep
+        found in this track's survey.
+      recommended_subset: >
+        (batch=8, M=N=K in {32,64,96,128,160,192,224,256,320,384,448,512,
+        576,640}); (batch=64, same M=N=K list); (M=N=K=128, batch in
+        {1,2,4,8,16,32,64,128,256,512,1024,2048,4096}).
+      dense_operand: precision in {fp32, fp16} (fp64 batched GEMM not
+        evidenced in the surveyed literature — open question, see below)
+    protocol:
+      preprocessing: same rule as gemm-square-kernel; for auto-tuned
+        backends (Tensile, CLBlast/CL-DB-GEMM's BO tuner) the per-batch-size
+        tuning search is a preprocessing cost reported once per (shape,
+        batch) config, not per batch element
+      warmup: 10
+      reps: 50
+      statistic: median (report min and max)
+      timer: device-side kernel time (GPU) — batched GEMM in this track's
+        literature is GPU-only
+      timing_scope: kernel only; a single "batched call" (one API/kernel
+        launch covering the whole batch) is the timed unit, not per-batch-
+        element calls
+      preprocessing_reported: separately, once
+    metric:
+      primary: GFLOP/s (2*M*N*K*batch_num / time)
+      secondary: ms
+    correctness: same tolerances as gemm-square-kernel, checked per batch
+      element (all elements must pass, not just an aggregate/average)
+
+  - id: gemm-distributed-e2e
+    claim: >
+      end-to-end distributed dense GEMM across multiple nodes/GPUs, including
+      one-shot input/output data redistribution, amortized over k=10 runs (k
+      chosen to match CA3DMM's own example CLI usage, `ntest=10`, which is
+      the only concrete k found in this track's survey); the kernel-only
+      "local matmul" component is also reported separately, since CA3DMM's
+      own tool already computes this split internally.
+    inputs:
+      suite: distributed dense GEMM, arbitrary M=N=K
+      selection: >
+        square problems large enough that per-rank local GEMM dominates
+        redistribution cost at the smallest tested scale, matching CA3DMM's
+        own example sizing rationale
+      recommended_subset: M=N=K in {4000, 8000, 16000}; process counts in
+        {8, 24, 64} (single node through small multi-node, matching the
+        24-rank single-node example CA3DMM ships in its own README)
+      dense_operand: precision fp64 (DGEMM, matches CA3DMM's own MKL-backed
+        default); fp32 optional if the artifact supports it
+    protocol:
+      preprocessing: >
+        one-shot process-grid setup and any static communication-plan
+        construction; NOT the per-run data redistribution (that is inside
+        the timed e2e region below, since it happens on every run in
+        CA3DMM's own design, not once)
+      warmup: 1 full run (matches CA3DMM's own "Initialization" vs.
+        "Number of executions" split, where the first call includes MPI
+        warm-up costs the tool itself separates out)
+      reps: 10 (k=10, explicit and reported; matches CA3DMM's own example
+        `ntest=10` — this is the amortization count called for by the
+        design instructions whenever preprocessing is amortized)
+      statistic: mean over the k=10 reps (this is CA3DMM's own built-in
+        statistic — kept as-is here rather than forced to median, since the
+        tool does not expose per-run raw samples in its default output; an
+        open question for the harness implementation is whether to patch
+        the tool to emit per-run samples so median/min/max can be reported
+        like the other three variants)
+      timer: MPI-synchronized wall clock (MPI_Wtime or equivalent), matching
+        CA3DMM's own internal timers
+      timing_scope: >
+        two numbers per run, both reported (CA3DMM computes both natively):
+        "local matmul only" (kernel-only, excludes redistribution/comm) and
+        "total execution" (end-to-end, includes A/B/C redistribution,
+        allgather, and reduce-scatter communication phases)
+      preprocessing_reported: process-grid/plan setup reported separately,
+        once; per-run redistribution is NOT preprocessing here and stays
+        inside "total execution" every run (see claim above)
+    metric:
+      primary: aggregate GFLOP/s (2*M*N*K / total_execution_time, summed
+        across ranks) and per-rank GFLOP/s (matches CA3DMM's own reported
+        unit, 64.40 GFlops/rank in its README example)
+      secondary: ms, broken into the phase breakdown CA3DMM already prints
+        (redistribute, allgather, local compute, reduce-scatter)
+    correctness: >
+      CA3DMM's own binary pass/fail validation flag (0 error(s) required);
+      this spec additionally requires the numeric tolerance from
+      gemm-square-kernel be checked wherever the harness can access raw
+      output (the tool's built-in check does not surface a numeric error
+      value, only a pass/fail count — open question whether to patch it)
+
+notes_on_fairness:
+  - >
+    Every surveyed paper except CA3DMM and MPGEMM (via its separate
+    correct.x/singlePerformance.x binaries) times correctness-checking code
+    inside or right next to the performance loop, or doesn't state whether
+    it does. This spec keeps correctness checking as a separate, un-timed
+    gate before any run's throughput counts, following CA3DMM's and
+    MPGEMM's own (better) practice rather than the track's modal practice.
+  - >
+    Best-of-N ("min") is the most common statistic in this track's own
+    artifacts (WuZLHJWC23's implied averaging aside, MPGEMM and FastKron
+    both explicitly take a min). Min is optimistic — it reports the best
+    run, not typical behavior, and is more exploitable by a paper's authors
+    than by an independent reproducer. The spec uses median (reporting
+    min/max alongside) for all three single-device variants; only the
+    distributed e2e variant keeps CA3DMM's native mean because the tool
+    doesn't expose raw per-run samples to compute a median from without
+    patching it.
+  - >
+    autoGEMM's own paper excludes competing baselines from platforms they
+    don't support (LibShalom on M2/A64FX) rather than reporting a failure or
+    a 0. This spec requires reporting "N/A (unsupported)" explicitly per
+    (baseline, platform) cell rather than omitting the row, so a benchmark
+    table can't be quietly pruned to hide baseline failures.
+  - >
+    LibShalom's hot/cold cache-state distinction is the single most
+    consequential methodological detail found in this survey for the
+    small/irregular shape class (other papers in the track target exactly
+    this shape class — autoGEMM, MPGEMM, WuZLHJWC23's irregular sweep — but
+    none of them mention cache state at all, meaning their reported numbers
+    are for whichever state their loop happened to produce, unstated and
+    possibly inconsistent across their own baseline-vs-proposed
+    comparisons). Making cache_state an explicit, both-reported axis in
+    gemm-small-irregular-kernel is this spec's most significant fairness
+    fix relative to track's own common practice.
+  - >
+    Matrix initialization ranges (U(0,1) vs. U(0,2) vs. unspecified) differ
+    across artifacts with no stated rationale in any of the 9 surveyed
+    sources. Standardizing to U(-1,1) in this spec is a deliberate choice
+    to avoid any accidental one-sided bias in accumulation, not a
+    correction of a specific error found in any one paper.
+
+open_questions:
+  - >
+    Exact statistic (mean/median/min) used by Tensile's library-client
+    benchmark reporting (LiYTLZ22/Tensile-FGPS) is not visible in the
+    surveyed repo README; would need Tensile's own documentation or source
+    to confirm before treating its GFLOPS numbers as directly comparable to
+    this spec's median-based numbers.
+  - >
+    Whether Tensile-FGPS's final published numbers re-enable
+    NumElementsToValidate (disabled, =0, in the sample auto-tuning-search
+    config found in the repo) is unconfirmed from available sources.
+  - >
+    CL-DB-GEMM/CLBlast's exact OpenCL timer mechanism (profiling-event kernel
+    time vs. host-side wall clock around clFinish) was inferred from CLBlast
+    conventions, not confirmed by reading the C++ client benchmark source in
+    this survey pass.
+  - >
+    autoGEMM's precision (fp32 assumed) and exact warmup/repetition counts
+    were not recoverable from the extracted PDF sections available in this
+    survey; would need the full paper body (tables/figures not captured by
+    text extraction) to pin these down.
+  - >
+    fBLAS's exact repetition count behind its "99% CI within 5% of mean"
+    claim is not stated; would need the paper's appendix or the
+    evaluation/ scripts in the repo (not read in this pass) to confirm.
+  - >
+    No source surveyed gives a numeric correctness tolerance; the values in
+    this spec (1e-6/1e-3/1e-2 by precision) are this spec's own choice, not
+    derived from any paper, and should be revisited against actual
+    reproduction runs once the harness exists.
+  - >
+    fp64 batched GEMM has no evidence in this track's survey (both
+    batched-GEMM sources, Tensile-FGPS and CL-DB-GEMM, use fp64/mixed and
+    fp16/fp32/fp64-separate-sweeps respectively but neither shows a
+    concrete fp64-batched number) — kept as optional in the spec rather
+    than required.
+  - >
+    CA3DMM's own tool does not expose raw per-run timing samples in its
+    default output (only the mean over ntest runs), which is why the
+    distributed e2e variant cannot use the median statistic the other three
+    variants use without first patching the artifact.
+
+evidence:
+  conf/ics/WuZLHJWC23: >
+    Square SGEMM 1024-6144 (step 512) + irregular sweep (K fixed 256/1024,
+    M,N 64-490), mean over "tens of runs", GFLOPS vs. cuBLAS, kernel-only,
+    correctness checked qualitatively against cuBLAS (no numeric tolerance
+    stated). arXiv 2305.01024 fulltext + repo README benchmark table.
+  conf/sc/YangFDSW21: >
+    Small GEMM 8-120^3 + irregular 32-256, 10 reps geometric mean with
+    min-max bars, explicit hot vs. cold cache split, GFLOPS vs. 5 ARM BLAS
+    libraries (OpenBLAS/BLIS/ARMPL/LIBXSMM/BLASFEO). Paper PDF Sections 7-8.
+  conf/sc/WuMZDW0WW24: >
+    Small (1-128^3) + ResNet-50-derived irregular shapes on 5 Arm chips;
+    explicitly excludes JIT/codegen time from the timed region; GFLOPS/%peak
+    vs. OpenBLAS/LIBXSMM/LibShalom/Eigen/SSL2, with LibShalom unsupported on
+    2 of 5 platforms. Paper PDF Evaluation sections.
+  conf/ipps/LiYTLZ22: >
+    Batched DGEMM on AMD GPU via Tensile auto-tuning framework;
+    device-side KernelTime, FGPS on/off ablation, validation disabled in the
+    sample tuning-search config. Repo README (embedded Tensile YAML).
+  conf/sc/HuangC22: >
+    Distributed DGEMM (MPI+OpenMP, optional GPU), ntest=10 explicit
+    repetition count, mean statistic, built-in kernel-only vs. total-e2e
+    split, explicit validation flag, per-rank GFlops. Repo README worked
+    example.
+  conf/sc/MatteisLH20: >
+    FPGA GEMM/BLAS sized as 5x on-chip tile size, mean with 99% CI within 5%
+    of mean, Ops/s vs. theoretical DSP-peak and vs. MKL/Xeon CPU baseline,
+    H2D excluded via on-chip data generation for some tests. arXiv 1907.07929
+    fulltext.
+  conf/ppopp/JangdaY24: >
+    GPU Kronecker-chain matmul; 1x10-iter warmup then min-of-4x5-iter-means,
+    synchronized host timer, autotuning time reported separately from
+    steady-state GFLOPS, vs. GPyTorch/COGENT/cuTensor/CTF/Distal. Repo
+    tests/benchmarks/run_benchmarks.py + arXiv 2401.10187 abstract page.
+  conf/ipps/DengYFD26: >
+    Multi-precision (fp64/fp32/fp16/int8) GEMM on ARM SME, shapes from
+    DeepSeek/LLaMA linear layers, min-of-nreps statistic (nreps manually
+    scaled 500/100/20 by size), single-threaded driver, separate correct.x
+    binary, GFLOPS vs. Accelerate/LIBXSMM/KleidiAI/OpenBLAS. Repo README +
+    benchmark/singlePerformance.c source.
+  journals/tpds/LinXWYLL25: >
+    OpenCL GEMM incl. explicit GEMMBATCHED/GEMMSTRIDEDBATCHED configs
+    (batch 8/64/powers-of-2-to-4096), num_runs 10-20 per config, half/single/
+    double sweeps, GFLOPS, inherited CLBlast benchmark harness with the
+    paper's double-buffer kernel + Bayesian-Optimization tuner plugged in.
+    Repo README + scripts/benchmark/settings.py.

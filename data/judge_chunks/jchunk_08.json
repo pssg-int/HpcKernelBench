@@ -1,0 +1,611 @@
+[
+ {
+  "key": "conf/sc/SuzukiI25",
+  "title": "A Nested Krylov Method Using Half-Precision Arithmetic",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Kengo Suzuki",
+   "Takeshi Iwashita"
+  ],
+  "abstract": "Low-precision computing is essential for efficiently utilizing memory bandwidth and computing cores. While many mixed-precision algorithms have been developed for iterative sparse linear solvers, effectively leveraging half-precision (fp16) arithmetic remains challenging. This study introduces a novel nested Krylov approach that integrates the FGMRES and Richardson methods in a deeply nested structure, progressively reducing precision from double-precision to fp16 toward the innermost solver. To avoid meaningless computations beyond precision limits, the low-precision inner solvers perform only a few iterations per invocation, while the nested structure ensures their frequent execution. Nume",
+  "candidates": [
+   {
+    "url": "https://github.com/suzuki-hpc/F3R",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "# F3R: A Mixed-Precision Linear Solver\n\nThis repository contains the software artifact accompanying the following research paper:\n\n**Kengo Suzuki** and **Takeshi Iwashita**.\n<br>\"A Nested Krylov Method Using Half-Precision Arithmetic.\"\n<br>In *The International Conference for High Performance Computing, Networking, Storage and Analysis (SC '25)*, November 16–21, 2025, St. Louis, MO, USA.\n<br>DOI: 10.1145/3712285.3759807\n\n## About This Repository\n\nVersion **v1.0.2** was used in the reproducibility evaluation process.\nHowever, compilation issues were reported on some GPU systems.\nTo improve portability and reproducibility, we updated the source code and released **v2.0.0**.\n\nIn addition, the files and scripts used to reproduce the results reported in the SC '25 paper have been moved to the `sc25` directory.\nThe repository has also been reorganized to provide a more general framework for using the developed solvers.\n\nFor detailed instructions on reproducing the numerical results presented in the paper, please refer to the documentation in the `sc25` directory.\n\n## Compilation Tests\n\nWe provide a set of simple unit tests based on **doctest**. The tests can be compiled and executed separately for both CPU and GPU targets as shown below.\nBefore using the source code, we recommend running these tests to verify that the software compiles and executes correctly on your system.\n\n```bash\ngit clone --recursive https://github.com/suzuki-hpc/F3R.git\ncd F3R/test\n```\n\n### CPU Test\n```bash\ncm"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/HuangDLC25",
+  "title": "GPU Lossy Compression for HPC Can Be Versatile and Ultra-Fast",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Yafan Huang",
+   "Sheng Di",
+   "Guanpeng Li",
+   "Franck Cappello"
+  ],
+  "abstract": "This work proposes VGC, a versatile and ultra-fast GPU lossy compression framework designed to address the growing data challenges in high-performance computing (HPC). VGC captures dimension information in scientific data and supports three compression algorithms, achieving high compression ratios across diverse HPC domains. Built with a highly optimized GPU kernel, VGC delivers state-of-the-art throughput with error control. In addition to compression ratio and speed, VGC supports two distinctive modes that enhance its versatility. Memory-efficient Compression uses a kernel fission design to compute compressed size, allocate only the required GPU memory, and compress data without waste, eff",
+  "candidates": [
+   {
+    "url": "https://github.com/szcompressor/cuSZp",
+    "desc": "Fast GPU error-bounded lossy compressor for floating-point data.",
+    "stars": 68,
+    "readme_head": "# cuSZp\n<a href=\"./LICENSE\"><img src=\"https://img.shields.io/badge/License-BSD%203--Clause-blue.svg\"></a>\n[![codecov](https://codecov.io/github/szcompressor/cuSZp/graph/badge.svg?token=Y9S48L75L7)](https://codecov.io/github/szcompressor/cuSZp)\n[![Documentation Status](https://readthedocs.org/projects/cuszp-documentation/badge/?version=latest)](https://cuszp-documentation.readthedocs.io/en/latest/?badge=latest)\n[![Build status](https://ci.appveyor.com/api/projects/status/sr6nbou988c9opv2?svg=true)](https://ci.appveyor.com/project/hyfshishen/cuszp)\n[![GitHub release](https://img.shields.io/github/v/release/szcompressor/cuSZp)](https://github.com/szcompressor/cuSZp/releases)\n\ncuSZp is an ultra-fast and user-friendly GPU error-bounded lossy compressor for floating-point data array (both single- and double-precision). In short, cuSZp has several key features:\n\n1. Fusing entire compression/decompression phase into **one CUDA kernel function**.\n2. Various system-level optimizations -- targeting **ultra-fast end-to-end throughput** (~300 GB/s on A100).\n3. Dimensionality (1D, 2D, and 3D) and three encoding modes (fixed, plain, or outlier modes) supported, ensuring **high compression ratio** for different data patterns.\n    - *fixed*: Only fixed-length encoding is used. This mode is designed for compressing unsmooth and non-structured scientific data or machine learning weights/tokens.\n    - *plain*: Dimension-aware delta encoding + fixed-length encoding. This mode is designed for scie"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/ZhangA25",
+  "title": "High-Performance Branch-Free Algorithms for Extended-Precision Floating-Point Arithmetic",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "David Kai Zhang",
+   "Alex Aiken"
+  ],
+  "abstract": "We present new branch-free algorithms for floating-point arithmetic at double, triple, or quadruple the native machine precision. These algorithms are the fastest known by at least an order of magnitude and are conjectured to be optimal, not only in an asymptotic sense, but in their exact FLOP count and circuit depth. Unlike previous algorithms, which either use complex branching logic or are only correct on specific classes of inputs, our algorithms have computer-verified proofs of correctness for all floating-point inputs within machine overflow and underflow thresholds. Compared to state-of-the-art multiprecision libraries, our algorithms achieve up to 11.7 × the peak performance of QD, 3",
+  "candidates": [
+   {
+    "url": "https://github.com/htymjun/FmaX",
+    "desc": "A fypp-powered GPU device function generator to maximize Fortran's performance with hardware-native FMA optimization. Inspired by MatX.",
+    "stars": 1,
+    "readme_head": "# FmaX\n\n## 🎯 Our Mission\n\nIn GPU computing, developers are often forced to choose between **elegant code** and **maximum speed**. CUDA Fortran is no exception—writing bare-metal, ultra-fast kernels usually requires writing bloated, hard-to-maintain scalar codes with manual register mapping.\n\n**FmaX changes this.** Our mission is to:\n1.  **Elevate CUDA Fortran Usability:** Let you write intuitive, familiar Fortran codes (resembling CPU implementations) and automatically transform them into optimal GPU instructions.\n2.  **Democratize High-Precision GPU Computing:** Bring robust multiple/mixed-precision capabilities to CUDA Fortran, removing the complexity of low-level GPU arithmetic.\n\n## 💡 The Name: The FmaX Identity\n\nThe name **FmaX** represents the fusion of our core technical pillars:\n\n*   **F** (for **Fortran**): Keeping the elegance, readability, and multi-dimensional array power of Fortran alive on GPUs.\n*   **fma** (the core of arithmetic): Refers both to our compile-time **FMA (Fused Multiply-Add)** optimizations and our focus on **Fast Mixed-precision & Arithmetic** models.\n*   **X** (inspired by NVIDIA's **MatX**): Directly inspired by the C++ MatX library's philosophy of maximizing hardware-level performance while providing modern, high-level abstractions.\n*   **max** (as in **maximize**): Built to **maximize** both developer productivity and GPU hardware efficiency.\n\n## 🚀 Key Features\n\n### 1. Multi-Precision Math (MatX `fltflt.h` Port)\nFmaX features a complete, pure"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/WangHZSJWDZ25",
+  "title": "Rethinking Back Transformation in 2-stage Eigenvalue Decomposition on Heterogeneous Architectures",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Hansheng Wang",
+   "Dajun Huang",
+   "Gaoyuan Zou",
+   "Lu Shi",
+   "Xu Jiang 0004"
+  ],
+  "abstract": "The 2-stage eigenvalue decomposition (EVD) method outperforms conventional 1-stage method on GPUs and heterogeneous architectures, especially when eigenvectors are not required. However, its performance advantage diminishes when performing back transformation to obtain eigenvectors. To address this, we propose two key solutions: 1) replacing BLAS3 operations with BLAS2 operations during the bulge-chasing back transformation for better performance, and 2) reordering the back transformation workflow from a backward pattern to a new parallelism-driven pattern to hide divide-and-conquer latency, at the cost of one additional GEMM computation. Experimentally, the proposed back transformation algo",
+  "candidates": [
+   {
+    "url": "https://github.com/hansheng1001/EVD4SC2025",
+    "desc": "",
+    "stars": 1,
+    "readme_head": "# this is open code for SC25's paper \"Rethinking Back Transformation in 2-Stage Eigenvalue Decomposition on Heterogeneous Architectures\"\n\n# build\ncmake -B bulid -S .\ncmake --build build/ -j\n\n# test\n./bulid/src/EVD/myEVD {n} 32 1024 (e.g. ./bulid/src/EVD/myEVD 16384 32 1024) \n\n"
+   },
+   {
+    "url": "https://github.com/cben484/evdsc25_4096",
+    "desc": "Orthogonality && Backforward error pass",
+    "stars": 0,
+    "readme_head": "# this is open code for SC25's paper \"Rethinking Back Transformation in 2-Stage Eigenvalue Decomposition on Heterogeneous Architectures\"\n\n# build\ncmake -B bulid -S .\ncmake --build build/ -j\n\n# test\n./bulid/src/EVD/myEVD {n} 32 1024 (e.g. ./bulid/src/EVD/myEVD 16384 32 1024) \n\n"
+   }
+  ]
+ },
+ {
+  "key": "conf/sc/MaACSH25",
+  "title": "Sparsified Preconditioned Conjugate Gradient Solver on GPUs",
+  "venue": "SC",
+  "year": 2025,
+  "authors": [
+   "Da Ma",
+   "Khalid Ahmad",
+   "Kazem Cheshmi",
+   "Hari Sundar",
+   "Mary W. Hall"
+  ],
+  "abstract": "Preconditioned iterative sparse linear solvers are memory-efficient for large scientific simulations, but the dependences between iterations introduced by preconditioners limit parallelization. This issue is exacerbated on GPUs, which feature many parallel cores. We propose a sparsified preconditioned conjugate gradient (SPCG) solver that increases parallelism by reducing dependences through sparsification, while preserving convergence behavior. We evaluate the proposed SPCG using both ILU(0) and ILU(K) preconditioners on a wide range of symmetric positive definite (SPD) matrices. The proposed SPCG improves the performance of the iterative phase of SPCG by a geometric mean speedup of 1.23 × ",
+  "candidates": [
+   {
+    "url": "https://github.com/SwiftWare-Lab/SPCG",
+    "desc": "",
+    "stars": 3,
+    "readme_head": "# SPCG: Sparsified Preconditioned Conjugate Gradient Solver on GPUs\n\nThis repository contains GPU and CPU implementations of sparse matrix iterative solvers with ILU0 and ILUK preconditioning.\n\n## Build Targets\n\nThis project provides three main executable targets:\n\n1. **ilu0_gpu** - GPU-accelerated ILU0 preconditioned conjugate gradient solver\n2. **iluk_gpu** - GPU-accelerated ILUK preconditioned conjugate gradient solver  \n3. **ilu0_cpu** - CPU-based ILU0 preconditioned conjugate gradient solver\n\n## Prerequisites\n\n### System Dependencies\n\n**For GPU targets:**\n- CUDA Toolkit (version 11.0 or later)\n- CMake 3.20 or later\n- C++17 compatible compiler\n- Git\n\n**For CPU target:**\n- OpenMP\n- Eigen3 library\n- CMake 3.0 or later\n- C++17 compatible compiler\n\n**For matrix preparation:**\n- Python 3.x\n- Required Python packages:\n  ```bash\n  pip install numpy scipy pandas matplotlib ssgetpy\n  ```\n\n### Installing Dependencies\n\n**On Ubuntu/Debian:**\n```bash\n# Install basic development tools\nsudo apt update\nsudo apt install cmake build-essential git\n\n# Install Eigen3 and OpenMP\nsudo apt install libeigen3-dev libomp-dev\n\n# Install CUDA Toolkit (follow NVIDIA's official guide)\nwget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu20.04/x86_64/cuda-ubuntu20.04.pin\nsudo mv cuda-ubuntu20.04.pin /etc/apt/preferences.d/cuda-repository-pin-600\nwget https://developer.download.nvidia.com/compute/cuda/12.2.0/local_installers/cuda-repo-ubuntu20.04-12-2-local_12.2.0-535.54.03-1_amd64.deb\nsud"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/ZhangLW20",
+  "title": "High Performance GPU Tensor Completion With Tubal-Sampling Pattern",
+  "venue": "TPDS",
+  "year": 2020,
+  "authors": [
+   "Tao Zhang 0046",
+   "Xiao-Yang Liu",
+   "Xiaodong Wang 0001"
+  ],
+  "abstract": "Data completion is a problem of filling missing or unobserved elements of partially observed datasets. Data completion algorithms have received wide attention and achievements in diverse domains including data mining, signal processing, and computer vision. We observe a ubiquitous tubal-sampling pattern in big data and Internet of Things (IoT) applications, which is introduced by many reasons such as high data acquisition cost, downsampling for data compression, sensor node failures, and packet losses in low-power wireless transmissions. To meet the time and accuracy requirements of applications, data completion methods are expected to be accurate as well as fast. However, the existing metho",
+  "candidates": [
+   {
+    "url": "https://github.com/YangletLiu/cuTensor_CUDA_Library_for_Transform_based_Tensors",
+    "desc": "T. Zhang, X.-Y. Liu, X. Wang, and A. Walid. cuTensor-tubal: Efficient primitives for tubal-rank tensor operations on GPUs. IEEE Transactions on Parallel and Distributed Systems, 2019.",
+    "stars": 2,
+    "readme_head": "#                  cuTensor CUDA Library for Tensors\n\nWe implement the cuTensor library for the transform-based tensor model.  \n>    | CuOperations | tfft | tproduct | tsvd | tqr | tinv | tnorm |\n>    | :---: | :---:| :---:| :---: | :---: | :---: | :---: |\n>    | based | √ | √ | √ | √ | √ | √ |\n>    | streamed | √ | √ | √ | √ |  √ | √ |\n>    | batched | √ | √ | √ | √ | √ | √ |\n\n[1] T. Zhang, X.-Y. Liu, X. Wang, and A. Walid. cutensor-tubal: Efficient primitives for tubal-rank tensor operations on GPUs. IEEE Transactions on Parallel and Distributed Systems, 2019.\n\n[2] T. Zhang, X.-Y. Liu, and X. Wang. High Performance GPU tensor completion with tubal-sampling pattern. IEEE Transactions on Parallel and Distributed Systems, 2020.\n\n[3] X.-Y. Liu, S. Aeron, V. Aggarwal*, X. Wang. Low-tubal-rank tensor completion using alternating minimization. IEEE Transactions on Information Theory, 2019.\n\n\n## INSTALLION\n\n**1.get CuTensor library from git repository**  \n```   \n    $ git clone https://github.com/hust512/cuTensor_CUDA_Library_for_Tensors\n```\n**2.go into cuTensor_CUDA_Library_for_Tensors folder**  \n```\n    $ cd cuTensor_CUDA_Library_for_Tensors\n```\n**3.edit make.inc file**  \n```\n     provide path for third party libraries.you can refer to make.inc_example.  \n```\n**4.make cuTensor_CUDA_Library_for_Tensors**  \n```\n    $ make\n```\n## RESULT\n<div style=\"float:left\"><img width=\"300\" height=\"300\" src=\"https://github.com/lihailihai/Tensor_/blob/master/RESULT/tprod13.png\"/></div>\n<div style="
+   },
+   {
+    "url": "https://github.com/YangletLiu/Graph-tensor",
+    "desc": "",
+    "stars": 2,
+    "readme_head": "# cuGraph-Tensor\ncuGraph-Tensor library implements eight key graph-tensor operations on top of CUDA libraries including cuBLAS, cuSolver, and existing libraries including Magma and KBLAS. We encapsulate these operations into an opensource library and provide BLAS-like interfaces for ease of use. In addition, cuGraph-Tensor builds a graph data completiona pplicaitonf or fast and accurate reconstruction of incomplete graph data.\n\n## References\n[1] Tao Zhang, Xiao-Yang Liu, Xiaodong Wang, and Anwar Walid, “cuTensor-Tubal: Efficient primitives for tubal-rank tensor learning operations on GPUs,” IEEE Transactions on Parallel and Distributed Systems, vol. 31, no. 3, pp. 595–610, 2020.\n\n[2] Tao Zhang and Xiao-Yang Liu, “cuTensor-tubal: Optimized GPU library for low-tubal-rank tensors,” in 44th IEEE Int. Conf. Acoust., Speech and Signal Proces. IEEE, 2019, pp. 8583–8587.\n\n[3] Tao Zhang, Xiao-Yang Liu, and Xiaodong Wang, “High performance GPU tensor completion with tubal-sampling pattern,” IEEE Trans. Parallel Distrib. Syst., vol. 31, no. 7, pp. 1724–1739, 2020.\n\n[4] Xiao-Yang Liu, Shuchin Aeron, Vaneet Aggarwal, Xiaodong Wang. Low-tubal-rank tensor completion using alternating minimization. IEEE Transactions on Information Theory, 2019.\n\n## Graph-tensor Operations\ngraph shift (g-shift), graph Fourier transform (g-Ft), inverse graph Fourier transform (inverse g-Ft), graph filter (g-filter), graph convolution (g-convolution), graph-tensor product (g-product), graph-tensor SVD (g-SVD) a"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/AllegrettiBG20",
+  "title": "Optimized Block-Based Algorithms to Label Connected Components on GPUs",
+  "venue": "TPDS",
+  "year": 2020,
+  "authors": [
+   "Stefano Allegretti",
+   "Federico Bolelli",
+   "Costantino Grana"
+  ],
+  "abstract": "Connected Components Labeling (CCL) is a crucial step of several image processing and computer vision pipelines. Many efficient sequential strategies exist, among which one of the most effective is the use of a block-based mask to drastically cut the number of memory accesses. In the last decade, aided by the fast development of Graphics Processing Units (GPUs), a lot of data parallel CCL algorithms have been proposed along with sequential ones. Applications that entirely run in GPU can benefit from parallel implementations of CCL that allow to avoid expensive memory transfers between host and device. In this paper, two new eight-connectivity CCL algorithms are proposed, namely Block-based U",
+  "candidates": [
+   {
+    "url": "https://github.com/zsef123/Connected_components_PyTorch",
+    "desc": "A PyTorch implementation of Connected Components Labeling",
+    "stars": 125,
+    "readme_head": "# Connected Components Labeling for PyTorch\n\nReferences\n- [YACCLAB : Yet Another Connected Components Labeling Benchmark](https://github.com/prittt/YACCLAB)\n\n- <p align=\"justify\"> Allegretti, Stefano; Bolelli, Federico; Grana, Costantino \"Optimized Block-Based Algorithms to Label Connected Components on GPUs.\" IEEE Transactions on Parallel and Distributed Systems, 2019. <a title=\"BibTex\" href=\"http://imagelab.ing.unimore.it/files2/yacclab/YACCLAB_TPDS2019_BibTex.html\">BibTex</a>. <a title=\"Download\" href=\"https://iris.unimore.it/retrieve/handle/11380/1179616/225393/2018_TPDS_Optimized_Block_Based_Algorithms_to_Label_Connected_Components_on_GPUs.pdf\"><img src=\"https://raw.githubusercontent.com/prittt/YACCLAB/master/doc/pdf_logo.png\" alt=\"Download.\" /></a></p>\n\n<hr>\n\nFollwing Block-based Union Find Algorithm from YACCLAB.\n\n - Running on GPU.\n - PyTorch Interface\n - Fix some bit alignment problem\n - little refactoring\n\n\n## Example\n\nTested on [scikit-image example](https://scikit-image.org/docs/dev/auto_examples/segmentation/plot_label.html) ,follows [example.ipynb](example.ipynb)\n\n![img.png](https://user-images.githubusercontent.com/18730255/95699234-e60daa80-0c7e-11eb-9a1d-6059586c1899.png)\n\n## Install\n\n```\n> python3 setup.py install\n\n> python3 setup.py test\n```\n"
+   },
+   {
+    "url": "https://github.com/prittt/YACCLAB",
+    "desc": "YACCLAB: Yet Another Connected Components Labeling Benchmark",
+    "stars": 246,
+    "readme_head": "# Yet Another Connected Components Labeling Benchmark\n[![release](https://img.shields.io/github/v/release/prittt/YACCLAB)](https://github.com/prittt/YACCLAB/releases/latest/)\n[![license](https://img.shields.io/github/license/prittt/YACCLAB)](https://github.com/prittt/YACCLAB/blob/master/LICENSE)<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->\n[![contributors](https://img.shields.io/badge/all_contributors-8-orange.svg?style=flat)](#contributors)\n<!-- ALL-CONTRIBUTORS-BADGE:END -->\n\n\n<table>\n<thead>\n<tr>\n    <th>OS</th>\n    <th>Build</th>\n    <th>Compiler</th>\n    <th>OpenCV</th>\n    <th>CMake</th>\n    <th>GPU</th>\n    <!--<th width=\"200px\">Travis CI</th>-->\n    <th width=\"200px\">GitHub Actions</th>\n    <th width=\"200px\">Jenkins</th>\n</tr>\n<thead>\n<tbody>\n<!--\n<tr>\n    <td align=\"center\">Ubuntu<br/>16.04 LTS</td>\n    <td align=\"center\">x32</td>\n    <td align=\"center\">gcc 5.4.0</td>\n    <td align=\"center\">3.0.0</td>\n    <td align=\"center\">3.13.5</td>\n    <td align=\"center\">None</td>\n    <td align=\"center\"><a href=\"https://github.com/prittt/YACCLAB/actions\"><img src=\"https://github.com/prittt/YACCLAB/workflows/linux32/badge.svg?branch=master\" alt=\"Build Status\"/></a></td>\n    <td align=\"center\">N/A</td>\n</tr>\n-->\n<tr>\n    <td align=\"center\">Ubuntu<br/>18.04 LTS</td>\n    <td align=\"center\">x64</td>\n    <td align=\"center\">gcc 9.3.0</td>\n    <td align=\"center\">4.1.2</td>\n    <td align=\"center\">3.13.5</td>\n    <td align=\"center\">None</td>\n    <td align=\"ce"
+   },
+   {
+    "url": "https://github.com/lime-j/component_drop",
+    "desc": "This repo contains the impl of \"Component Drop\", a part of our work \"Deep Flexible Structure Preserving Image Smoothing\"",
+    "stars": 2,
+    "readme_head": "# Component Drop for PyTorch\n\nThis repository implements a heuristic way to drop trivial edges, which is used in our paper \"Deep Flexible Structure Preserving Image Smoothing, ACM MM 2022\"\n\nReferences\n- [YACCLAB : Yet Another Connected Components Labeling Benchmark](https://github.com/prittt/YACCLAB)\n\n- <p align=\"justify\"> Allegretti, Stefano; Bolelli, Federico; Grana, Costantino \"Optimized Block-Based Algorithms to Label Connected Components on GPUs.\" IEEE Transactions on Parallel and Distributed Systems, 2019. <a title=\"BibTex\" href=\"http://imagelab.ing.unimore.it/files2/yacclab/YACCLAB_TPDS2019_BibTex.html\">BibTex</a>. <a title=\"Download\" href=\"https://iris.unimore.it/retrieve/handle/11380/1179616/225393/2018_TPDS_Optimized_Block_Based_Algorithms_to_Label_Connected_Components_on_GPUs.pdf\"><img src=\"https://raw.githubusercontent.com/prittt/YACCLAB/master/doc/pdf_logo.png\" alt=\"Download.\" /></a></p>\n\n- [Connected_components_PyTorch](https://github.com/zsef123/Connected_components_PyTorch)\n\n## Install\n\n```\n> python3 setup.py install\n\n> python3 setup.py test\n```\n"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/TangCZC21",
+  "title": "A Resource and Performance Optimization Reduction Circuit on FPGAs",
+  "venue": "TPDS",
+  "year": 2021,
+  "authors": [
+   "Linhuai Tang",
+   "Gang Cai",
+   "Yong Zheng 0002",
+   "Jiamin Chen"
+  ],
+  "abstract": "Reduce is a fundamental computing pattern, which is widely involved in scientific and engineering applications. For example, accumulation, the most common example of reduce pattern, is the core of applications such as dot product, matrix multiplication, and finite impulse response (FIR) filter. However, there is a trade-off between performance and area in the hardware implementation of the reduce pattern. To solve this problem, we propose an optimized reduction method that can handle multiple arbitrary-length sets. The performance of the proposed method is evaluated for both a single data set and numerous data sets. Moreover, to quickly differentiate the data of different sets in the reducti",
+  "candidates": [
+   {
+    "url": "https://github.com/Bandaanusha/Scalable-Systolic-Array-Multiplier-Optimized-by-Sparse-Matrix",
+    "desc": "",
+    "stars": 6,
+    "readme_head": "# **Scalable-Systolic-Array-Multiplier-Optimized-by-Sparse-Matrix**\n\n## **Introduction**\n\n## Systolic Array\nSystolic arrays are hardware structures built for fast and efficient operation of regular algorithms that perform the same task with different data at different time instants.The typical dataflows for systolic array includes the output stationary, weight stationary and input stationary.\n\n### Output Stationary Systolic Array\nIn output stationary architecture, the results stay and the inputs and weights move in opposite directions.Each PE stores and accumulates the partial results. The x(i)'s and w(i)'s move systolically in opposite directions, such that when an x meets a w, they are computed and result is added to the partial result at that PE.\n### Weight Stationary Systolic Array\nIn weight-stationary architecture, the weights are pre-loaded into the computation units and the activations are marched in from the activation storage buffer.The weights stay stationary and the inputs are streamed in.\n### Input Stationary Systolic Array\nIn Input-stationary architecture, the Inputs are pre-loaded into the computation units and the activations are marched in from the activation storage buffer.The inputs stay stationary and the weights are streamed in. \n\n## Traditional Sysytolic Array Structure\n\nMatrix1 (M1) represents the multiplier matrix, and M1 (m, n) represents the data in the m-th row and n-th column of the multiplier matrix M1. Matrix2 (M2) has the same representation as M"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/AhmadYU21",
+  "title": "A Split Execution Model for SpTRSV",
+  "venue": "TPDS",
+  "year": 2021,
+  "authors": [
+   "Najeeb Ahmad",
+   "Buse Yilmaz",
+   "Didem Unat"
+  ],
+  "abstract": "Sparse Triangular Solve (SpTRSV) is an important and extensively used kernel in scientific computing. Parallelism within SpTRSV depends upon matrix sparsity pattern and, in many cases, is non-uniform from one computational step to the next. In cases where the SpTRSV computational steps have contrasting parallelism characteristics- some steps are more parallel, others more sequential in nature, the performance of an SpTRSV algorithm may be limited by the contrasting parallelism characteristics. In this work, we propose a split-execution model for SpTRSV to automatically divide SpTRSV computation into two sub-SpTRSV systems and an SpMV, such that one of the sub-SpTRSVs has more parallelism tha",
+  "candidates": [
+   {
+    "url": "https://github.com/ParCoreLab/Split_SpTRSV",
+    "desc": "The split execution framework can automatically determine the suitability of an SpTRSV for split-execution, find the appropriate split point, and execute SpTRSV in a split fashion using two SpTRSV algorithms while automatically managing any required inter-platform communication.  The model is implemented as a C++/CUDA library supporting multiple CPU-GPU algorithms.",
+    "stars": 6,
+    "readme_head": "# SpTRSV Split Execution Framework\nThe sparse triangular solve split execution framework for CPU-GPU heterogeneous systems can automatically determine the suitability of SpTRSV for a given input matrix for split-execution, find the appropriate split point, and execute SpTRSV in a split fashion using two SpTRSV algorithms while automatically managing any required inter-platform communication.  The model is implemented as a C++/CUDA library supporting multiple CPU-GPU algorithms.\n\nFor more details and performance evaluation and analysis results of the framework, refer to our paper titled [\"A Split Execution Model for SpTRSV\"](https://ieeexplore.ieee.org/document/9409717) [1]\n\n## Pre-requisites\nFollowing are the pre-requisites to use or test the framework:\n\n### 1) Hardware Platform\nThe framework is designed to work on heterogeneous CPU-GPU systems with current support for Intel CPUs and NVIDIA GPUs (Compute capability 6.0 or later). In [1], the framework has been evaluated on two heterogeneous machines, (i) Intel Xeon Gold (6148) CPU with NVIDIA Tesla V100 GPU, and (ii) Intel Core I7 (8700K) CPU with NVIDIA GTX1080 Ti GPU. \n\n### 2) Software Tools\nThe framework requires following software tools to be available (installed) on the machine for compilation and execution.\n\n#### i) OS:\nThe framework has been evaluated on CentOS (release 7.4.1708) and Ubuntu 18.04.1\n\n#### i) libUFget Library:\nThe [libUFget library](https://zenodo.org/record/3894753#.YTO8YykzZuQ) provides a C interface t"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/WeiCT21",
+  "title": "Accelerating the Bron-Kerbosch Algorithm for Maximal Clique Enumeration Using GPUs",
+  "venue": "TPDS",
+  "year": 2021,
+  "authors": [
+   "Yi-Wen Wei",
+   "Wei-Mei Chen",
+   "Hsin-Hung Tsai"
+  ],
+  "abstract": "Maximal clique enumeration (MCE) is a classic problem in graph theory to identify all complete subgraphs in a graph. In prior MCE work, the Bron-Kerbosch algorithm is one of the most popular solutions, and there are several improved algorithms proposed on CPU platforms. However, while few studies have focused on the related issue of parallel implementation, recently, there have been numerous explorations of the acceleration of general purpose applications using a graphics processing unit (GPU) to reduce the computing power consumption. In this article, we develop a GPU-based Bron-Kerbosch algorithm that efficiently solves the MCE problem in parallel by optimizing the process of subproblem de",
+  "candidates": [
+   {
+    "url": "https://github.com/bpranjic/cudaTriangleCount",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "# Implementing Graph Mining Algorithms on GPUs based on SISA\"\nThis repository contains the public code for my Bachelor's Thesis\n\n## Problem and Motivation\nGraph mining as part of data mining is becoming increasingly important, as it allows one to\nfind a general solution to many problems from different fields of science, like in chemistry\n[14], social sciences [15] and medicine [16]. Graph pattern matching is a subclass of graph\nmining, with many applications in different fields [17-20], where the goal is to find subgraphs\ncorresponding to a certain pattern. Well-known algorithms for these types of problems do not\neffectively utilize parallel hardware solutions because of non-straightforward parallelism.\nAlso, most well-known algorithms are vertex- or edge-centric, which entails huge\ncomplexities for large datasets, such as social media networks (e.g., SNAP dataset [21]).\nMore and more data gets digitized and this data growth requires more efficient algorithms.\n\n## Goal\nThe goal is to accelerate graph mining algorithms on GPU and to create a CUDA-based\nlibrary that will solve different graph related problems efficiently.\n\n## Key Idea\nThe idea is to use set-centric formulations of graph mining algorithms, like in SISA [1], and\nto implement them on CUDA enabled GPUs. Set operations are a crucial part to many graph\nmining algorithms and offer rich and simple parallelism at multiple levels and offer\nunprecedented improvements [1]. GPUs are a good fit for this problem as they have "
+   },
+   {
+    "url": "https://github.com/pranjicb/bt",
+    "desc": "",
+    "stars": 1,
+    "readme_head": "# Implementing Graph Mining Algorithms on GPUs based on SISA\"\nThis repository contains the public code for my Bachelor's Thesis\n\n## Problem and Motivation\nGraph mining as part of data mining is becoming increasingly important, as it allows one to\nfind a general solution to many problems from different fields of science, like in chemistry\n[14], social sciences [15] and medicine [16]. Graph pattern matching is a subclass of graph\nmining, with many applications in different fields [17-20], where the goal is to find subgraphs\ncorresponding to a certain pattern. Well-known algorithms for these types of problems do not\neffectively utilize parallel hardware solutions because of non-straightforward parallelism.\nAlso, most well-known algorithms are vertex- or edge-centric, which entails huge\ncomplexities for large datasets, such as social media networks (e.g., SNAP dataset [21]).\nMore and more data gets digitized and this data growth requires more efficient algorithms.\n\n## Goal\nThe goal is to accelerate graph mining algorithms on GPU and to create a CUDA-based\nlibrary that will solve different graph related problems efficiently.\n\n## Key Idea\nThe idea is to use set-centric formulations of graph mining algorithms, like in SISA [1], and\nto implement them on CUDA enabled GPUs. Set operations are a crucial part to many graph\nmining algorithms and offer rich and simple parallelism at multiple levels and offer\nunprecedented improvements [1]. GPUs are a good fit for this problem as they have "
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/LiAY21",
+  "title": "Adaptive SpMV/SpMSpV on GPUs for Input Vectors of Varied Sparsity",
+  "venue": "TPDS",
+  "year": 2021,
+  "authors": [
+   "Min Li",
+   "Yulong Ao",
+   "Chao Yang 0002"
+  ],
+  "abstract": "Despite numerous efforts for optimizing the performance of Sparse Matrix and Vector Multiplication (SpMV) on modern hardware architectures, few works are done to its sparse counterpart, Sparse Matrix and Sparse Vector Multiplication (SpMSpV), not to mention dealing with input vectors of varied sparsity. The key challenge is that depending on the sparsity levels, distribution of data, and compute platform, the optimal choice of SpMV/SpMSpV kernel can vary, and a static choice does not suffice. In this article, we propose an adaptive SpMV/SpMSpV framework, which can automatically select the appropriate SpMV/SpMSpV kernel on GPUs for any sparse matrix and vector at the runtime. Based on systema",
+  "candidates": [
+   {
+    "url": "https://github.com/hpc-research-2020/spmspv-adaptive",
+    "desc": "",
+    "stars": 3,
+    "readme_head": "# Adaptive SpMV/SpMSpV on GPUs for Input Vectors of Varied Sparsity\n\nDespite numerous efforts for optimizing the performance of Sparse Matrix and Vector Multiplication (SpMV) on modern hardware architectures, few works are done to its sparse counterpart, Sparse Matrix and Sparse Vector Multiplication (SpMSpV), not to mention dealing with input vectors of varied sparsity. We propose an adaptive SpMV/SpMSpV framework, which can automatically select the appropriate SpMV/SpMSpV kernel on GPUs for any sparse matrix and vector at the runtime. Based on systematic analysis on key factors such as computing pattern, workload distribution and write-back strategy, eight candidate SpMV/SpMSpV kernels are encapsulated into the framework to achieve high performance in a seamless manner. A machine learning based kernel selector is designed to choose the kernel and adapt with the varieties of both the input and hardware. For more detailed information, please refer to our paper, which will be relesed latter.\n\n# Dependency\n\n  * nvcc\n  * cmake\n  * cub\n  * ModernGPU\n\n\n\n# Compile\n\n```c++\n  cd hice-spmspv/hice/la/;\n  mkdir build;\n  cd build;\n  cmake ..;\n  make -j4\n```\n\n# Run\n\n```python\n\n  #The execution scripts are in the following path: \n  cd hice-spmspv/hice/la/script\n\n  #Generate training data set:\n  run generate_mat_feature.sh\n  run generate_model_data.sh\n\n  #Train the models\n  cd model\n  ## generate the label\n  python 1-generate_matrix_class.py\n  ## train the decision tree model:\n  python 1-te"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/SalvanaAHLSGK21",
+  "title": "High Performance Multivariate Geospatial Statistics on Manycore Systems",
+  "venue": "TPDS",
+  "year": 2021,
+  "authors": [
+   "Mary Lai O. Salvaña",
+   "Sameh Abdulah",
+   "Huang Huang",
+   "Hatem Ltaief",
+   "Ying Sun 0002"
+  ],
+  "abstract": "Modeling and inferring spatial relationships and predicting missing values of environmental data are some of the main tasks of geospatial statisticians. These routine tasks are accomplished using multivariate geospatial models and the cokriging technique. The latter requires the evaluation of the expensive Gaussian log-likelihood function, which has impeded the adoption of multivariate geospatial models for large multivariate spatial datasets. However, this large-scale cokriging challenge provides a fertile ground for supercomputing implementations for the geospatial statistics community as it is paramount to scale computational capability to match the growth in environmental data coming fro",
+  "candidates": [
+   {
+    "url": "https://github.com/ecrc/exageostat",
+    "desc": "A High Performance Unified Framework for Geostatistics on Manycore Systems.",
+    "stars": 39,
+    "readme_head": "### ⚠️ Project Notice\n\n> **Important:** Active development has moved to a new repository:  \n👉 [**ExaGeoStatCPP**](https://github.com/ecrc/ExaGeoStatCPP)  \nThe codebase has been migrated from **C to C++** as part of this transition.  \nThe new version also includes support for **R package installation**.  \nThis repository is now archived and no longer maintained.\n\nWhat is ExaGeoStat?\n================\n\nThe **Exascale GeoStatistics** project (ExaGeoStat) is a parallel high performance unified framework for computational geostatistics on many-core systems. The project aims at optimizing the likelihood function for a given spatial data to provide an efficient way to predict missing observations in the context of climate/weather forecasting applications. This machine learning framework proposes a unified simulation code structure to target various hardware architectures, from commodity x86 to GPU accelerator-based shared and distributed-memory systems. ExaGeoStat enables statisticians to tackle computationally challenging scientific problems at large-scale, while abstracting the hardware complexity through state-of-the-art high performance linear algebra software libraries.\n\n\n\nVision of ExaGeoStat\n=================\n\nExaGeoStat is a collaboration between the KAUST Spatial Statistics group and the Extreme Computing Research\nCenter (ECRC). Its contribution lies not in a new algorithm nor in a new data set,\nbut in demonstrating the routine use of the larger data sets becoming available "
+   },
+   {
+    "url": "https://github.com/ecrc/ExaGeoStatCPP",
+    "desc": "",
+    "stars": 15,
+    "readme_head": "# ExaGeoStat\n\nThe **Exascale GeoStatistics** project (ExaGeoStat) is a parallel high-performance unified framework for computational\ngeostatistics on many-core systems. The project aims to optimize the likelihood function for a given spatial data to\nefficiently predict missing observations in the context of climate/weather forecasting applications.\nThis machine learning framework proposes a unified simulation code structure to target various hardware architectures,\nfrom commodity x86 to GPU accelerator-based shared and distributed-memory systems. ExaGeoStat enables statisticians to\ntackle computationally challenging scientific problems at large-scale while abstracting the hardware complexity through\nstate-of-the-art high-performance linear algebra software libraries.\n\n### ExaGeoStatCPP\nExaGeoStatCPP is a C++ API for ExaGeoStat that aims to offer a user-friendly and efficient API for C++ developers, essentially\nmaintaining traditional practices and embracing contemporary C++ elements like namespaces, templates, and exceptions to enhance functionality.\n\n### ExaGeoStatR : R Interface of ExaGeoStat\nR is a powerful and versatile tool for scientific computing, offering a wide range of statistical and graphical\ntechniques, strong community support, and the flexibility to integrate with other programming languages.\nIts open-source nature and extensive package ecosystem make it an invaluable resource for researchers and data scientists.\nTherefore, we decided to create ExaGeoStatR: An "
+   },
+   {
+    "url": "https://github.com/zpgeng/gpucmg_new",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "What is ExaGeoStat?\n================\n\nThe **Exascale GeoStatistics** project (ExaGeoStat) is a parallel high performance unified framework for computational geostatistics on many-core systems. The project aims at optimizing the likelihood function for a given spatial data to provide an efficient way to predict missing observations in the context of climate/weather forecasting applications. This machine learning framework proposes a unified simulation code structure to target various hardware architectures, from commodity x86 to GPU accelerator-based shared and distributed-memory systems. ExaGeoStat enables statisticians to tackle computationally challenging scientific problems at large-scale, while abstracting the hardware complexity through state-of-the-art high performance linear algebra software libraries.\n\n\n\nVision of ExaGeoStat\n=================\n\nExaGeoStat is a collaboration between the KAUST Spatial Statistics group and the Extreme Computing Research\nCenter (ECRC). Its contribution lies not in a new algorithm nor in a new data set,\nbut in demonstrating the routine use of the larger data sets becoming available to geospatial\nstatisticians, thanks to the implementation of state-of-the-art statistical algorithms on\nhigh-performance computing (HPC) hardware. \n\nWe have built a standalone software framework (ExaGeoStat) that is able to run on a variety\nof hardware resources, including GPUs and massively distributed systems such as Shaheen-II,\nKAUST's Cray XC40 supercomputer,"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/ShiLXSH21",
+  "title": "Planetary Normal Mode Computation: Parallel Algorithms, Performance, and Reproducibility",
+  "venue": "TPDS",
+  "year": 2021,
+  "authors": [
+   "Jia Shi 0004",
+   "Ruipeng Li",
+   "Yuanzhe Xi",
+   "Yousef Saad",
+   "Maarten V. de Hoop"
+  ],
+  "abstract": "This article is an extension of work entitled “Computing planetary interior normal modes with a highly parallel polynomial filtering eigensolver.” by Shi <italic xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">et al.</i> , <xref ref-type=\"bibr\" rid=\"ref1\" xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">[1]</xref> originally presented at the SC18 conference. A highly parallel polynomial filtered eigensolver was developed and exploited to calculate the planetary normal modes. The proposed method is ideally suited for computing interior eigenpairs for large-scale eigenvalue problems as it greatly enhances memory",
+  "candidates": [
+   {
+    "url": "https://github.com/js1019/NormalModes",
+    "desc": "Normal Modes at Planetary Scales",
+    "stars": 32,
+    "readme_head": "# Normal Modes at Planetary Scales\n<img src=\"https://img.shields.io/github/issues/js1019/NormalModes.svg\"><img src=\"https://img.shields.io/github/languages/code-size/js1019/NormalModes.svg\"> <img src=\"https://img.shields.io/github/forks/js1019/NormalModes.svg\"> <img src=\"https://img.shields.io/github/stars/js1019/NormalModes.svg\"> <img src=\"https://img.shields.io/github/license/js1019/NormalModes.svg\">\n\n\nThis repository applied a combination of several highly parallel algorithms to compute the planetary interior normal modes. \nThe elastic-gravitational system is discretized using the Continuous Galerkin mixed finite element method. \nA Lanczos approach with polynomial filtering is utilized for solving the resulting generalized eigenvalue problems. \n\nSelf-gravitation and rotation are included in the branch \"**rotation**\".  \n\n------\n**News**: This work has been selected to serve as the benchmark for [the student cluster competition](http://www.studentclustercompetition.us/) reproducibility challenge at [SC'19](https://sc19.supercomputing.org). \nPlease see [the official announcement](https://sc19.supercomputing.org/2019/04/19/from-sc-papers-to-student-cluster-competition-benchmarks-joining-forces-to-promote-reproducibility-in-hpc/) \nand [teams named](https://sc19.supercomputing.org/2019/06/10/teams-named-for-sc19-student-cluster-competition/). \nIf you look for the code for the competition, please see SCC19 version in the release. \n\n## Outcome of this work\nMany different modes are"
+   },
+   {
+    "url": "https://github.com/js1019/PlanetaryModels",
+    "desc": "Build 3D planetary models on deformable meshes",
+    "stars": 19,
+    "readme_head": "Planetary Model Builder \n================================================================\n<img src=\"https://img.shields.io/github/languages/code-size/js1019/PlanetaryModels.svg?style=social\"><img src=\"https://img.shields.io/github/issues/js1019/PlanetaryModels.svg?style=social\"> <img src=\"https://img.shields.io/github/forks/js1019/PlanetaryModels.svg?style=social\"> <img src=\"https://img.shields.io/github/stars/js1019/PlanetaryModels.svg?style=social\"> <img src=\"https://img.shields.io/github/license/js1019/PlanetaryModels.svg?style=social\">\n\nThis repository provides scripts to build a planetary model on a deformable tetrahedal mesh\nas well as its reference gravity. It supports and provides input files for the repository [\"normal mode computation at planetary scales\"](https://github.com/js1019/NormalModes).  \n\n<p align=\"center\">\n   <img src=\"figs/PREM_vp.gif\" width=\"375\"/> <img src=\"figs/PREM_vs.gif\" width=\"375\"/>\n</p>\n\nThe above are two animations for [compressional wave speed of PREM](https://www.youtube.com/watch?v=4AeXhXGClcY) and [shear wave speed of PREM](https://www.youtube.com/watch?v=22yVo2G2e0k). \n\nContents\n----------------------------------------------------------------\n+ **Demos**: scripts to build 3D planetary models; \n+ **bin**: a script to run the Matlab scripts in the Demos/; \n+ **figs**: figures and animation of different planetary models; \n+ **modelbuilder**: scripts to build finite-element matrices and other information;\n+ **packages**: external packages to b"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/LichtBMH21",
+  "title": "Transformations of High-Level Synthesis Codes for High-Performance Computing",
+  "venue": "TPDS",
+  "year": 2021,
+  "authors": [
+   "Johannes de Fine Licht",
+   "Maciej Besta",
+   "Simon Meierhans",
+   "Torsten Hoefler"
+  ],
+  "abstract": "Spatial computing architectures promise a major stride in performance and energy efficiency over the traditional load/store devices currently employed in large scale computing systems. The adoption of high-level synthesis (HLS) from languages such as C++ and OpenCL has greatly increased programmer productivity when designing for such platforms. While this has enabled a wider audience to target spatial computing architectures, the optimization principles known from traditional software design are no longer sufficient to implement high-performance codes, due to fundamentally distinct aspects of hardware design, such as programming for deep pipelines, distributed memory resources, and scalable ",
+  "candidates": [
+   {
+    "url": "https://github.com/spcl/hls_tutorial_examples",
+    "desc": "Examples shown as part of the tutorial \"Productive parallel programming on FPGA with high-level synthesis\".",
+    "stars": 207,
+    "readme_head": "### Content\n\nThese are examples used in the tutorial _Productive Parallel Programming on FPGA\nwith High-Level Synthesis_, given at PPoPP'18, SC'18, SC'19, HiPEAC'20, SC'20,\nISC'21, and SC'21.\n\nFor comprehensive coverage of HLS transformations for HPC, we refer to our work\n_Transformations of High-Level Synthesis Codes for High-Performance Computing_,\n[available on arXiv](https://arxiv.org/abs/1805.08288) [1]. \n\n### Dependencies \n\nThese examples depend on [hlslib](https://github.com/definelicht/hlslib) as a\nsubmodule [2]. Make sure you clone with the `--recursive` flag, or run `git\nsubmodule update --init` after cloning.\n\nAll examples use CMake to configure and build both Xilinx and Intel kernels. The\nconfiguration relies on scripts to find the Xilinx and/or Intel tools on your\nsystem by looking for the `xocc` and `aoc` binaries, respectively. To ensure\nthat the tools are found, make sure these are on your `PATH`.\n\n### Building and running\n\nTo build the examples, create a build folder and configure it using CMake:\n\n```bash\nmkdir build\ncd build\ncmake ..\n```\n\nDepending on your installation of the Intel FPGA tools, you might have to\nspecify a board package available to your installation, e.g.,\n`-DINTEL_FPGA_BOARD=p520_hpc_sg280l`, to build the Intel emulation kernels.\n\nEach example has one or more synthesis targets (we recommend using a shell that\ncan autocomplete GNU make targets). For example, from your build directory:\n\n```bash\ncd example_0\nmake synthesize_example0\n```\n\nEach X"
+   },
+   {
+    "url": "https://github.com/spcl/gemm_hls",
+    "desc": "Scalable systolic array-based matrix-matrix multiplication implemented in Vivado HLS for Xilinx FPGAs.",
+    "stars": 387,
+    "readme_head": "Scalable matrix matrix multiplication on FPGA\n=============================================\n\n[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3952084.svg)](https://doi.org/10.5281/zenodo.3952084)\n\nThis repository includes a pure Vitis HLS implementation of matrix-matrix multiplication (A\\*B=C) for Xilinx FPGAs, using Xilinx Vitis to instantiate memory and PCIe controllers and interface with the host. \n\nExperiments run on a [VCU1525](https://www.xilinx.com/products/boards-and-kits/vcu1525-a.html) achieved 462 GFLOP/s, 301 GFLOP/s and 132 GFLOP/s for half, single, and double precision, respectively, with routing across the three SLRs being the primary bottleneck preventing further scaling. The code is not device-specific, and can be configured for any Xilinx FPGA supported by the Xilinx OpenCL runtime.  Kernels have also been verified to execute on TUL KU115, Alveo U250, and Alveo U280 boards with similar results.\n\nThe implementation uses a systolic array approach, where linearly connected processing elements compute distinct contributions to the outer product of tiles of the output matrix. \n\nThe approach used to implement this kernel was presented at [FPGA'20](https://spcl.inf.ethz.ch/Publications/.pdf/gemm-fpga.pdf) [1].  For a general description of the optimization techniques that we apply, we refer to our article on [HLS transformations](https://spcl.inf.ethz.ch/Publications/.pdf/hls-transformations.pdf) [2].  We also gave [a tutorial on HLS](https://spcl.inf.ethz.ch/Te"
+   },
+   {
+    "url": "https://github.com/Red-Portal/kyr-awesome-papers",
+    "desc": "Kyurae Kim's Awesome Reads",
+    "stars": 20,
+    "readme_head": "# Kyurae Kim's Awesome Papers\nThe papers that made me stay awake all night long.\nLet me know if you have anything interesting to share!\n\n## Interests\n* High-performance computing\n* Probabilistic machine learning\n* Bayesian Statistics\n* Bayesian inference\n* Bayesian optimization\n* Heterogeneous, specialized hardware\n* Image processing\n* Signal Processing\n\n## Awesome Papers\n* Blei, David M., Andrew Y. Ng, and Michael I. Jordan. [**\"Latent Dirichlet Allocation.\"**](http://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf) *Journal of machine Learning research* 3.Jan (2003): 993-1022.\n    \n* Neal, Radford M. [**\"Bayesian Learning for Neural Networks.\"**](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.446.9306&rep=rep1&type=pdf) Vol. 118. Springer Science & Business Media, 2012.\n\n* Chaney, Allison, et al. [**\"Detecting and Characterizing Events.\"**](http://dirichlet.net/pdf/chaney16detecting.pdf) *Proceedings of the Conference on Empirical Methods in Natural Language Processing*. 2016.\n\n* Regier, Jeffrey, et al. [**\"Approximate inference for constructing astronomical catalogs from images.\"**](https://projecteuclid.org/journals/annals-of-applied-statistics/volume-13/issue-3/Approximate-inference-for-constructing-astronomical-catalogs-from-images/10.1214/19-AOAS1258.full) *The Annals of Applied Statistics* 13.3 (2019): 1884-1926.\n    * [Juliacon 2017 Talk](https://juliacomputing.com/case-studies/celeste.html)\n    \n* Shanbhag, Naresh R., et al. [**\"Shannon-inspired Statistica"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/AbdulahCPBDGKLS22",
+  "title": "Accelerating Geostatistical Modeling and Prediction With Mixed-Precision Computations: A High-Productivity Approach With PaRSEC",
+  "venue": "TPDS",
+  "year": 2022,
+  "authors": [
+   "Sameh Abdulah",
+   "Qinglei Cao",
+   "Yu Pei",
+   "George Bosilca",
+   "Jack J. Dongarra"
+  ],
+  "abstract": "Geostatistical modeling, one of the prime motivating applications for exascale computing, is a technique for predicting desired quantities from geographically distributed data, based on statistical models and optimization of parameters. Spatial data are assumed to possess properties of stationarity or non-stationarity via a kernel fitted to a covariance matrix. A primary workhorse of stationary spatial statistics is Gaussian maximum log-likelihood estimation (MLE), whose central data structure is a dense, symmetric positive definite covariance matrix of the dimension of the number of correlated observations. Two essential operations in MLE are the application of the inverse and evaluation of",
+  "candidates": [
+   {
+    "url": "https://github.com/ecrc/exageostat",
+    "desc": "A High Performance Unified Framework for Geostatistics on Manycore Systems.",
+    "stars": 39,
+    "readme_head": "### ⚠️ Project Notice\n\n> **Important:** Active development has moved to a new repository:  \n👉 [**ExaGeoStatCPP**](https://github.com/ecrc/ExaGeoStatCPP)  \nThe codebase has been migrated from **C to C++** as part of this transition.  \nThe new version also includes support for **R package installation**.  \nThis repository is now archived and no longer maintained.\n\nWhat is ExaGeoStat?\n================\n\nThe **Exascale GeoStatistics** project (ExaGeoStat) is a parallel high performance unified framework for computational geostatistics on many-core systems. The project aims at optimizing the likelihood function for a given spatial data to provide an efficient way to predict missing observations in the context of climate/weather forecasting applications. This machine learning framework proposes a unified simulation code structure to target various hardware architectures, from commodity x86 to GPU accelerator-based shared and distributed-memory systems. ExaGeoStat enables statisticians to tackle computationally challenging scientific problems at large-scale, while abstracting the hardware complexity through state-of-the-art high performance linear algebra software libraries.\n\n\n\nVision of ExaGeoStat\n=================\n\nExaGeoStat is a collaboration between the KAUST Spatial Statistics group and the Extreme Computing Research\nCenter (ECRC). Its contribution lies not in a new algorithm nor in a new data set,\nbut in demonstrating the routine use of the larger data sets becoming available "
+   },
+   {
+    "url": "https://github.com/ecrc/ExaGeoStatCPP",
+    "desc": "",
+    "stars": 15,
+    "readme_head": "# ExaGeoStat\n\nThe **Exascale GeoStatistics** project (ExaGeoStat) is a parallel high-performance unified framework for computational\ngeostatistics on many-core systems. The project aims to optimize the likelihood function for a given spatial data to\nefficiently predict missing observations in the context of climate/weather forecasting applications.\nThis machine learning framework proposes a unified simulation code structure to target various hardware architectures,\nfrom commodity x86 to GPU accelerator-based shared and distributed-memory systems. ExaGeoStat enables statisticians to\ntackle computationally challenging scientific problems at large-scale while abstracting the hardware complexity through\nstate-of-the-art high-performance linear algebra software libraries.\n\n### ExaGeoStatCPP\nExaGeoStatCPP is a C++ API for ExaGeoStat that aims to offer a user-friendly and efficient API for C++ developers, essentially\nmaintaining traditional practices and embracing contemporary C++ elements like namespaces, templates, and exceptions to enhance functionality.\n\n### ExaGeoStatR : R Interface of ExaGeoStat\nR is a powerful and versatile tool for scientific computing, offering a wide range of statistical and graphical\ntechniques, strong community support, and the flexibility to integrate with other programming languages.\nIts open-source nature and extensive package ecosystem make it an invaluable resource for researchers and data scientists.\nTherefore, we decided to create ExaGeoStatR: An "
+   },
+   {
+    "url": "https://github.com/ecrc/hicma-x",
+    "desc": "",
+    "stars": 10,
+    "readme_head": "# HiCMA-PaRSEC\n\n## Table of Contents\n- [Overview](#overview)\n- [Features](#features)\n- [Building](#building)\n- [Testing](#testing)\n- [Literature](#literature)\n\n## Overview\n\nHiCMA-PaRSEC, i.e., Hierarchical Computations on Manycore Architectures (HiCMA) powered by Parallel Runtime Scheduler and Execution Controller (PaRSEC), combines the linear algebraic contributions of mixed-precision and low-rank computations. The framework features adaptive memory management and precision selection capabilities to optimize performance and accuracy for extreme-scale scientific computing applications.\n\n<p align=\"center\">\n  <a href=\"docs/HiCMA-PaRSEC_flyer_SC25.pdf\">\n    <img src=\"docs/HiCMA-PaRSEC_flyer_SC25.png\" alt=\"HiCMA-PaRSEC poster\" width=\"860\">\n  </a><br>\n</p>\n\n## Features\n\n### Core Computational Capabilities\n- **Matrix Operations**: Matrix multiplication, Cholesky factorization, rank-k updates, etc.\n- **Tile Low-Rank (TLR) Computations**: Hierarchical matrix representations for sparse problems\n- **Mixed Precision Support**: Double, single, half, and FP8 precision arithmetic\n- **Adaptive Memory Management**: Dynamic memory allocation and precision selection\n- **GPU Acceleration**: CUDA and HIP support for heterogeneous computing\n\n### Runtime and Parallelism\n- **PaRSEC Dynamic Runtime**: Task-based parallel execution with automatic load balancing\n- **Multi-Platform Support**: Shared and distributed-memory environments\n- **Multi-GPU Systems**: Scalable GPU acceleration across multiple d"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/AzadSHGB22",
+  "title": "Combinatorial BLAS 2.0: Scaling Combinatorial Algorithms on Distributed-Memory Systems",
+  "venue": "TPDS",
+  "year": 2022,
+  "authors": [
+   "Ariful Azad",
+   "Oguz Selvitopi",
+   "Md Taufique Hussain",
+   "John R. Gilbert",
+   "Aydin Buluç"
+  ],
+  "abstract": "Combinatorial algorithms such as those that arise in graph analysis, modeling of discrete systems, bioinformatics, and chemistry, are often hard to parallelize. The Combinatorial BLAS library implements key computational primitives for rapid development of combinatorial algorithms in distributed-memory systems. During the decade since its first introduction, the Combinatorial BLAS library has evolved and expanded significantly. This article details many of the key technical features of Combinatorial BLAS version 2.0, such as communication avoidance, hierarchical parallelism via in-node multithreading, accelerator support via GPU kernels, generalized semiring support, implementations of key d",
+  "candidates": [
+   {
+    "url": "https://github.com/PASSIONLab/CombBLAS",
+    "desc": "The Combinatorial BLAS (CombBLAS) is an extensible distributed-memory parallel graph library offering a small but powerful set of linear algebra primitives specifically targeting graph analytics.",
+    "stars": 82,
+    "readme_head": "* This is the development repository of Combinatorial BLAS. \n\n**Copyright** \n\nCombinatorial BLAS, Copyright (c) 2020, The Regents of the University of California, through Lawrence Berkeley National Laboratory (subject to receipt of any required approvals from the U.S. Dept. of Energy) and University of California, Santa Barbara. All rights reserved.\n\nIf you have questions about your rights to use or distribute this software, please contact Berkeley Lab's Innovation & Partnerships Office.\n\nNOTICE. This Software was developed under funding from the U.S. Department of Energy and the U.S. Government consequently retains certain rights. As such, the U.S. Government has been granted for itself and others acting on its behalf a paid-up, nonexclusive, irrevocable, worldwide license in the Software to reproduce, distribute copies to the public, prepare derivative works, and perform publicly and display publicly, and to permit other to do so.\n\nThis material is based upon work supported by the National Science Foundation under Grant No. 0709385 and by the Department of Energy, Office of Science, ASCR Contract No. DE-AC02-05CH11231\\. Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the National Science Foundation (NSF) and the Department of Energy (DOE). This software is released under the following [license](https://github.com/PASSIONLab/CombBLAS/blob/master/LICENSE).\n\n**Introducti"
+   },
+   {
+    "url": "https://github.com/KtrauM/IntegratedCombblas",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "* This is the development repository of Combinatorial BLAS. \n\n**Copyright** \n\nCombinatorial BLAS, Copyright (c) 2020, The Regents of the University of California, through Lawrence Berkeley National Laboratory (subject to receipt of any required approvals from the U.S. Dept. of Energy) and University of California, Santa Barbara. All rights reserved.\n\nIf you have questions about your rights to use or distribute this software, please contact Berkeley Lab's Innovation & Partnerships Office.\n\nNOTICE. This Software was developed under funding from the U.S. Department of Energy and the U.S. Government consequently retains certain rights. As such, the U.S. Government has been granted for itself and others acting on its behalf a paid-up, nonexclusive, irrevocable, worldwide license in the Software to reproduce, distribute copies to the public, prepare derivative works, and perform publicly and display publicly, and to permit other to do so.\n\nThis material is based upon work supported by the National Science Foundation under Grant No. 0709385 and by the Department of Energy, Office of Science, ASCR Contract No. DE-AC02-05CH11231\\. Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the National Science Foundation (NSF) and the Department of Energy (DOE). This software is released under the following [license](https://github.com/PASSIONLab/CombBLAS/blob/master/LICENSE).\n\n**Introducti"
+   },
+   {
+    "url": "https://github.com/lucat1/combblas-spgemm1d",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "* This is the development repository of Combinatorial BLAS. \n\n**Copyright** \n\nCombinatorial BLAS, Copyright (c) 2020, The Regents of the University of California, through Lawrence Berkeley National Laboratory (subject to receipt of any required approvals from the U.S. Dept. of Energy) and University of California, Santa Barbara. All rights reserved.\n\nIf you have questions about your rights to use or distribute this software, please contact Berkeley Lab's Innovation & Partnerships Office.\n\nNOTICE. This Software was developed under funding from the U.S. Department of Energy and the U.S. Government consequently retains certain rights. As such, the U.S. Government has been granted for itself and others acting on its behalf a paid-up, nonexclusive, irrevocable, worldwide license in the Software to reproduce, distribute copies to the public, prepare derivative works, and perform publicly and display publicly, and to permit other to do so.\n\nThis material is based upon work supported by the National Science Foundation under Grant No. 0709385 and by the Department of Energy, Office of Science, ASCR Contract No. DE-AC02-05CH11231\\. Any opinions, findings and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the National Science Foundation (NSF) and the Department of Energy (DOE). This software is released under the following [license](https://github.com/PASSIONLab/CombBLAS/blob/master/LICENSE).\n\n**Introducti"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/LiuDZJWCTFC22",
+  "title": "Optimizing Error-Bounded Lossy Compression for Scientific Data With Diverse Constraints",
+  "venue": "TPDS",
+  "year": 2022,
+  "authors": [
+   "Yuanjian Liu",
+   "Sheng Di",
+   "Kai Zhao 0008",
+   "Sian Jin",
+   "Cheng Wang"
+  ],
+  "abstract": "Vast volumes of data are produced by today's scientific simulations and advanced instruments. These data cannot be stored and transferred efficiently because of limited I/O bandwidth, network speed, and storage capacity. Error-bounded lossy compression can be an effective method for addressing these issues: not only can it significantly reduce data size, but it can also control the data distortion based on user-defined error bounds. In practice, many scientific applications have specific requirements or constraints for lossy compression, in order to guarantee that the reconstructed data are valid for post hoc analysis. For example, some datasets contain irrelevant data that should be isolate",
+  "candidates": [
+   {
+    "url": "https://github.com/szcompressor/SZ3",
+    "desc": "Error-bounded Lossy Data Compressor (for floating-point/integer datasets) ",
+    "stars": 123,
+    "readme_head": "SZ3: A Modular Error-bounded Lossy Compression Framework for Scientific Datasets\n=====\n(C) 2016 by Mathematics and Computer Science (MCS), Argonne National Laboratory. See COPYRIGHT in the top-level directory.\n\n* Major Authors: Sheng Di, Kai Zhao, Xin Liang, Jinyang Liu\n* Supervisor: Franck Cappello\n* Other Contributors: Robert Underwood, Sihuan Li, Ali M. Gok\n\n## Installation\n\n* mkdir build && cd build\n* cmake -DCMAKE_INSTALL_PREFIX:PATH=[INSTALL_DIR] ..\n* make\n* make install\n\nThen, you'll find all the executables in [INSTALL_DIR]/bin and header files in [INSTALL_DIR]/include\n\n\n## How to run\n\n#### SZ3 Executable\n* You can use the executable 'tools/sz3/sz3' to do the compression/decompression.\n\n#### SZ3 C++ API\n* Located in 'include/SZ3/api/sz.hpp'. \n* Requiring a modern C++ compiler.  \n* Different with SZ2 API.\n\n#### SZ3 C API\n* Located in 'tools/sz3c/include/sz3c.h'\n* Compatible with SZ2 API\n\n#### SZ3 Python API\n* available via `pip install pysz`\n* [Source code in 'tools/pysz'](https://github.com/szcompressor/SZ3/tree/master/tools/pysz)\n\n#### H5Z-SZ3\n* Located in 'tools/H5Z-SZ3'\n* Please add \"-DBUILD_H5Z_FILTER=ON\" to enable this function for CMake.\n* sz3ToHDF5 and HDF5ToSz3 are provided for testing.\n\n#### ParaView SZ3 Reader\n* Located in 'tools/paraview'\n* Please add \"-DBUILD_PARAVIEW_PLUGIN=ON\" to enable this function for CMake.\n* Developed using SZ3 C++ API.\n* More instructions can be viewed [here](tools/paraview/README.md).\n\n\n#### Third-Party APIs\n\n* [SZ3 Fortran API](h"
+   },
+   {
+    "url": "https://github.com/szcompressor/cuSZ",
+    "desc": "A GPU accelerated error-bounded lossy compression for scientific data.",
+    "stars": 100,
+    "readme_head": "<!-- <h3 align=\"center\"><img src=\"https://user-images.githubusercontent.com/10354752/81179956-05860600-8f70-11ea-8b01-856f29b9e8b2.jpg\" width=\"150\"></h3> -->\n\n<h3 align=\"center\">\npSZ/cuSZ: A GPU-Based Error-Bounded Lossy Compressor for Scientific Data\n</h3>\n\n<p align=\"center\">\n<a href=\"./LICENSE\"><img src=\"https://img.shields.io/badge/License-BSD%203--Clause-blue.svg\"></a>\n</p>\n\npSZ/cuSZ (cuSZ for short) is a GPU implementation of the seminal [SZ algorithm](https://github.com/szcompressor/SZ). It is the *first* GPU-practical framework of error-bounded lossy compression on GPU for scientific data (circa 2020), aiming to improve SZ's throughput on heterogeneous HPC systems. pSZ/cuSZ primarily focuses on CUDA backend support, with other GPU-parallel backends in development. pSZ/cuSZ is formerly known as cuSZ, which is also the short form of its current name. \n\n(c) 2025 by Argonne National Laboratory and Oakland University. See [COPYRIGHT](https://github.com/szcompressor/cuSZ/blob/master/LICENSE) in top-level directory.\n\n- Developers: (primary/PI) Jiannan Tian, (deployment) Robert Underwood, (cuSZ-*i*/Hi) Jinyang Liu, Shixun Wu, Jinwen Pan, (Huffman coding) Cody Rivera, (administrative PIs) Sheng Di, Franck Cappello.\n- Contributors (alphabetic): Jon Calhoun, Wenyu Gai, Megan Hickman Fulp, Xin Liang, Kai Zhao.\n- Special thanks to Dingwen Tao for advising this project from 2020 to 2024.\n- Special thanks to Dominique LaSalle (NVIDIA) for serving as Mentor in Argonne GPU Hackaton 202"
+   },
+   {
+    "url": "https://github.com/hpdslab/SZauto",
+    "desc": "",
+    "stars": 7,
+    "readme_head": "SZauto: SZ C++ Version that Supports Second-Order Prediction and Parameter Optimization\n=====\n(C) 2016 by Mathematics and Computer Science (MCS), Argonne National Laboratory.\nSee COPYRIGHT in top-level directory.\n\n* Major Authors: Sheng Di, Kai Zhao, Xin Liang\n* Supervisor: Franck Cappello\n* Other Contributors: Robert Underwood, Sihuan Li, Ali M. Gok\n\n## Citations\n**Kindly note**: If you mention SZ in your paper, the most appropriate citation is including these three references (***ICDE21, HPDC2020, Bigdata2018***), because they cover the design and implementation of the latest version of SZ.\n\n* SZ3 Algorithm: Kai Zhao, Sheng Di, Maxim Dmitriev, Thierry-Laurent D. Tonellot, Zizhong Chen, and Franck Cappello. \"[Optimizing Error-Bounded Lossy Compression for Scientiﬁc Data by Dynamic Spline Interpolation](https://ieeexplore.ieee.org/document/9458791)\", Proceeding of the 37th IEEE International Conference on Data Engineering (ICDE 21), Chania, Crete, Greece, Apr 19 - 22, 2021. (code: https://github.com/szcompressor/SZ3/)\n\n* SZauto: Kai Zhao, Sheng Di, Xin Liang, Sihuan Li, Dingwen Tao, Zizhong Chen, and Franck Cappello. \"[Significantly Improving Lossy Compression for HPC Datasets with Second-Order Prediction and Parameter Optimization](https://dl.acm.org/doi/10.1145/3369583.3392688)\", Proceedings of the 29th International Symposium on High-Performance Parallel and Distributed Computing (HPDC 20), Stockholm, Sweden, 2020. \n\n* SZ 2.0+: Xin Liang, Sheng Di, Dingwen Tao, Zizhong Che"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/ChenC22",
+  "title": "Workload Balancing via Graph Reordering on Multicore Systems",
+  "venue": "TPDS",
+  "year": 2022,
+  "authors": [
+   "YuAng Chen",
+   "Yeh-Ching Chung"
+  ],
+  "abstract": "In a shared-memory multicore system, the intrinsic irregular data structure of graphs leads to poor cache utilization, and therefore deteriorates the performance of graph analytics. To address the problem, prior works have proposed a variety of lightweight reordering methods with focus on the optimization of cache locality. However, there is a compromise between cache locality and workload balance. Little insight has been devoted into the issue of workload imbalance for the underlying multicore system, which degrades the effectiveness of parallel graph processing. In this work, a measurement approach is proposed to quantify the imbalance incurred by the concentration of vertices. Inspired by",
+  "candidates": [
+   {
+    "url": "https://github.com/yuang-chen/Corder-TPDS-21",
+    "desc": "",
+    "stars": 2,
+    "readme_head": "# Corder-TPDS-21\nTPDS'21: Workload Balancing via Graph Reordering on Multicore Systems\n\nTwo variants of Corder and contemporary degree-based reordering techniques can be found in this folder.\n\nOne variant is implemented for [GPOP](https://github.com/souravpati/GPOP)-like frameworks, which adopts CSR partitioning strategy under the partition-centric paradigm. \n\nThe other variant is implemented for [Ligra](https://github.com/faldupriyank/dbg)-like frameworks that follow the classic vertex-centric paradigm.\n\nThe processing speed of GPOP is significantly faster than that of Ligra. However, its data structure (CSR) consumes far more time to construct a new graph after the vertex is reordered.  \n\nDetailed descriptions and usages regarding the two frameworks are offered in respective Github repositories. \n\n## Dataset\nThe data should be formatted in CSR, following GPOP's instruction. A toy dataset is provided for play. However, its size is too small to exploit the L2-cache-sized partitioning strategy. Please use large graphs as our paper mentioned. \n\n## Environment && Dependencies\n* Intel Skylake Processor \n    * Intel(R) Xeon(R) Silver 4210 CPU @ 2.20GHz \n    * 1MB L2 Cache\n* g++ 9.3.0\n* Boost 1.75\n\n\n## Usage\n### GPOP\n```make clean && make```\n\n```./corder -d /path/to/your/data -a 7 -s 1024 -o /path/to/store/data```\n\n    ./corder\n    -d [ --data ] arg           input data path\n    -o [ --output ] arg         output file path\n    -s [ --size ] arg (=1024)   partition size\n    -a [ --a"
+   },
+   {
+    "url": "https://github.com/UVA-LavaLab/GraphBrew",
+    "desc": "Brewing GAPBS with vertex reordering and graph segmentation",
+    "stars": 1,
+    "readme_head": "[![Build Status](https://app.travis-ci.com/UVA-LavaLab/GraphBrew.svg?branch=main)](https://app.travis-ci.com/UVA-LavaLab/GraphBrew)\n[![Wiki](https://img.shields.io/badge/📚_Wiki-Documentation-blue?style=flat)](https://github.com/UVA-LavaLab/GraphBrew/wiki)\n\n[<p align=\"center\"><img src=\"./docs/figures/logo.svg\" width=\"200\" ></p>](#graphbrew)\n\n# GraphBrew <img src=\"./docs/figures/logo_left.png\" width=\"50\" align=\"center\">\n\nA graph reordering and benchmarking framework built on the [GAP Benchmark Suite (GAPBS)](https://github.com/sbeamer/gapbs). GraphBrew reorders graph vertices to improve cache locality and speed up graph algorithms — with **17 algorithm IDs** (13 reorderers + 2 baselines + 2 meta), an **ML-based adaptive selector**, and a **one-click experiment pipeline**.\n\n> **📖 Full documentation:** [Wiki](https://github.com/UVA-LavaLab/GraphBrew/wiki) · [Quick Start](https://github.com/UVA-LavaLab/GraphBrew/wiki/Quick-Start) · [Command-Line Reference](https://github.com/UVA-LavaLab/GraphBrew/wiki/Command-Line-Reference)\n\n---\n\n## Quick Start\n\n```bash\n# Clone and build\ngit clone https://github.com/UVA-LavaLab/GraphBrew.git\ncd GraphBrew\nmake all\n\n# Run PageRank with AdaptiveOrder (ML-selected best algorithm)\n./bench/bin/pr -g 20 -o 14\n\n# Run BFS with GraphBrewOrder (community-based reordering)\n./bench/bin/bfs -f graph.mtx -o 12\n```\n\n### Build\n\nRabbitOrder is enabled by default and requires Boost, libnuma, and google-perftools.\nSee [Installation Wiki](https://github.com/UVA-LavaL"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/BaltyCG23",
+  "title": "FLUPS - A Flexible and Performant Massively Parallel Fourier Transform Library",
+  "venue": "TPDS",
+  "year": 2023,
+  "authors": [
+   "Pierre Balty",
+   "Philippe Chatelain",
+   "Thomas Gillis"
+  ],
+  "abstract": "Massively parallel Fourier transforms are widely used in computational sciences, and specifically in computational fluid dynamics which involves unbounded Poisson problems. In practice the latter is usually the most time-consuming operation due to its inescapable all-to-all communication pattern. The original <monospace xmlns:mml=\"http://www.w3.org/1998/Math/MathML\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"><b>flups</b></monospace> library tackles that issue with an implementation of the distributed Fourier transform tailor-made for successive resolutions of unbounded Poisson problems. However the proposed implementation lacks of flexibility as it only supports cell-centered data layout and",
+  "candidates": [
+   {
+    "url": "https://github.com/vortexlab-uclouvain/flups",
+    "desc": "a Fourier-based Library of Unbounded Poisson Solvers",
+    "stars": 20,
+    "readme_head": "# FLUPS - A Fourier-based Library of Unbounded Poisson Solvers\n\n## Licensing and authorship\n> FLUPS is distributed under BSD-3 clause license, copyright (c) UCLouvain 2022.\n\nThe main authors are (by alphabetical order):\n- Pierre Balty (`v2.x`)\n- Denis-Gabriel Caprace (`v1.x`)\n- Thomas Gillis (`v1.x` and `v2.x`)\n\nFor the list of all the contributors to the development of FLUPS, description and a complete License: see `LICENSE` file.\n\n\n### Citation information\n\nFLUPS' design, implementation, and performances are described in two papers.\n\nIf you use FLUPS, please cite them in your publications:\n- [Balty et al.](https://arxiv.org/abs/2211.07777), **FLUPS - a flexible and performant massively parallel Fourier transform library**, IEEE Transactions on Parallel and Distributed Systems, 2023\n- [Caprace et al.](https://arxiv.org/abs/2006.09300), **FLUPS - A Fourier-based Library of Unbounded Poisson Solvers**, SIAM Journal on Scientific Computing, 2021\n\n\nThe high-order Lattice Green's functions (LGF and MEHR) available in FLUPS are described in a third paper. If you use those kernels, please cite the related paper in your publications:\n- [Gabbard et al.](https://arxiv.org/abs/2309.13503), **Lattice Green’s Functions for High-Order Finite Difference Stencils**, SIAM Journal on Numerical Analysis, 2024\n\n## Why should you use FLUPS?\n- You can solve the Poisson on rectangular and uniform distributed grids;\n- You can use either cell-centred or node-centred data layout;\n- You can use any bo"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/LaukemannHACSTRGPC25",
+  "title": "Accelerating Sparse Tensor Decomposition Using Adaptive Linearized Representation",
+  "venue": "TPDS",
+  "year": 2025,
+  "authors": [
+   "Jan Laukemann",
+   "Ahmed E. Helal",
+   "S. Isaac Geronimo Anderson",
+   "Fabio Checconi",
+   "Yongseok Soh"
+  ],
+  "abstract": "High-dimensional sparse data emerge in many critical application domains such as healthcare and cybersecurity. To extract meaningful insights from massive volumes of these multi-dimensional data, scientists employ unsupervised analysis tools based on tensor decomposition (TD) methods. However, real-world sparse tensors exhibit highly irregular shapes and data distributions, which pose significant challenges for making efficient use of modern parallel processors. This study breaks the prevailing assumption that compressing sparse tensors into coarse-grained structures (i.e., tensor slices or blocks) or along a particular dimension/mode (i.e., mode-specific) is more efficient than keeping them",
+  "candidates": [
+   {
+    "url": "https://github.com/abikoushi/ALTOCP",
+    "desc": "CP decomposition using ALTO format",
+    "stars": 0,
+    "readme_head": "# ALTOCP\n\nTensor decomposition is a widely-applicable method in many fields that projects the high-dimensional tensor into the low-dimensional space and recognizes the latent pattern of the data. Especially, nonnegative tensor decomposition has the advantage that nonnegative constraint helps our interpretation.\n\nIn practical applications of tensor decomposition, the data is often large-scale, and several computationally efficient algorithms have been proposed. \nBeta-negative binomial canonical PARAFAC decomposition BNBCP is scalable statistical formulation CP decomposition. Adaptive liberalized tensor operation ALTO is the data formats suitable tensor decomposition.\n\nIn one line, this R package is a combine the advantages of BNBCP and ALTO.\n\n- Hu, C., Rai, P., Chen, C., Harding, M., and Carin, L. (2015). Scalable bayesian non-negative tensor factorization for massive count data. In Appice, A., Rodrigues, P. P., Santos Costa, V., Gama, J., Jorge, A., and Soares, C., editors, Machine Learning and Knowledge Discovery in Databases, pages 53–70, Cham. Springer International Publishing.\n- Laukemann, J., Helal, A. E., Anderson, S. I. G., Checconi, F., Soh, Y., Tithi, J. J., Ranadive, T., Gravelle, B. J., Petrini, F., and Choi, J. (2025). Accelerating sparse tensor decomposition using adaptive linearized representation. IEEE Transactions on Parallel and Distributed Systems, 36(5):1025–1041.\n\n## Install\n\n```r\ndevtools::install_github(\"abikoushi/ALTOCP\", build_vignettes = TRUE)\n```\n\n##"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/QinLLTW25",
+  "title": "An Efficient GPU Algorithm for Lattice Boltzmann Method on Sparse Complex Geometries",
+  "venue": "TPDS",
+  "year": 2025,
+  "authors": [
+   "Zhangrong Qin",
+   "Xusheng Lu",
+   "Long Lv",
+   "Zhongxiang Tang",
+   "Binghai Wen"
+  ],
+  "abstract": "Many fluid flow problems, such as the porous media, arterial blood flow and tissue fluid, contain sparse complex geometries. Although the lattice Boltzmann method is good at dealing with the complex boundaries, these sparse complex geometries cause the low computational performance and high memory consumption when the graphics processing unit (GPU) is used to accelerate the numerical computation. These problems would be addressed by compact memory layout, sophisticated memory access and enhanced thread utilization. This paper proposes a GPU-based algorithm to improve the lattice Boltzmann simulations with sparse complex geometries. An access pattern for a single set of distribution functions",
+  "candidates": [
+   {
+    "url": "https://github.com/csqzr/SemiDIR_OPT",
+    "desc": "",
+    "stars": 0,
+    "readme_head": "\r\nAlgorithm: SemiDIR_OPT references from the literature \"An efficient GPU algorithm for lattice Boltzmann method on sparse complex geometries\"\r\n\r\n*****************************************************************************************************************************************************\r\nMany fluid flow problems, such as the porous media and arterial blood flow, contain sparse complex geometries. However, when the lattice Boltzmann method (LBM) based on graphics processing unit (GPU) is used to simulate these problems, it tends to suffer from low computational performance and high memory consumption. In this paper, a GPU-based LBM algorithm (SemiDIR_OPT) for sparse complex geometries with high computational performance and low memory consumption is proposed. The collected structure of arrays (CSOA) storage layout and AA access pattern are adopted to enhance memory access efficiency and reduce memory consumption, respectively. A semi-direct addressing scheme is employed to further reduce memory consumption, and then it is improved by using an address index array to increase the utilization of GPU threads and a node classification coding scheme to reduce access to global memory. The validated numerical results indicate that the present algorithm has an optimal computational performance and its highest computational performance can be improved several times relative to the other algorithms compared. Furthermore, the memory consumption of the algorithm is significantly lo"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/NavarroQMFH25",
+  "title": "CAT: Cellular Automata on Tensor Cores",
+  "venue": "TPDS",
+  "year": 2025,
+  "authors": [
+   "Cristóbal A. Navarro",
+   "Felipe A. Quezada",
+   "Enzo Meneses",
+   "Héctor Ferrada",
+   "Nancy Hitschfeld"
+  ],
+  "abstract": "Cellular automata (CA) are simulation models that can produce complex emergent behaviors from simple local rules. Although state-of-the-art GPU solutions are already fast due to their data-parallel nature, their performance can rapidly degrade in CA with a large neighborhood radius. With the inclusion of tensor cores across the entire GPU ecosystem, interest has grown in finding ways to leverage these fast units outside the field of artificial intelligence, which was their original purpose. In this work, we present CAT, a GPU tensor core approach that can accelerate CA in which the cell transition function acts on a weighted summation of its neighborhood. CAT is evaluated theoretically, usin",
+  "candidates": [
+   {
+    "url": "https://github.com/temporal-hpc/CAT",
+    "desc": "Fast Multi-Radii Cellular Automata simulation on GPU using Tensor Cores",
+    "stars": 3,
+    "readme_head": "# CAT: Cellular Automata on Tensor Cores\n\n## Overview\n\nThe CAT project is a CUDA-based library designed to simulate Larger than Life Cellular automata using GPU tensor cores.\n\nA CPU version of CAT can be found here: https://github.com/kezada94/CAT_cpu\n\n## Abstract\nCellular automata (CA) are simulation models that can produce complex emergent behaviors from simple local rules. Although state-of-the-art GPU solutions are already fast due to their data-parallel nature, their performance can rapidly degrade in CA with a large neighborhood radius. With the inclusion of tensor cores across the entire GPU ecosystem,  interest has grown in finding ways to leverage these fast units outside the field of artificial intelligence, which was their original purpose. \nIn this work, we present CAT, a GPU tensor core approach that can accelerate CA in which the cell transition function acts on a weighted summation of its neighborhood. CAT is evaluated theoretically, using an extended PRAM cost model, as well as empirically using the Larger Than Life (LTL) family of CA as case studies. The results confirm that the cost model is accurate, showing that CAT exhibits constant time throughout the entire radius range $1 \\le r \\le 16$, and its theoretical speedups agree with the empirical results. At low radius $r=1,2$, CAT is competitive and is only surpassed by the fastest state-of-the-art GPU solution. Starting from $r=3$, CAT progressively outperforms all other approaches, reaching speedups of up "
+   },
+   {
+    "url": "https://github.com/kezada94/CAT_cpu",
+    "desc": "",
+    "stars": 1,
+    "readme_head": "# CAT: Cellular Automata on Tensor Cores\n\nCAT is a WIP library to perform Fast Larger than Life (LtL) Cellular Automata (CA)simulations using tensor cores. It's programmed using CUDA and C++.\n\n#### Requirements\n\n- CUDA 11+\n- C++17\n- A tensor core NVIDIA GPU\n\n#### Compilation\n\n- Modify the Makefile to suite your needs. Architecture microcode, Radius, LtL rules, GPU Block size (we recomed using `16x16`), and the number of regions to use for CAT (we recomend using `NREGIONS_H=2, NREGIONS_V=5` for low shared memory GPUs and `NREGIONS_H=1, NREGIONS_V=13` otherwise, although result may vary).\n- Perform the compilation `make -j 10`. If debug information is needed, compile using `make debug -j 10`.\n\n#### Execution\n\nDepending on the compilation performed, the main executable should be `bin/prog` or `debug/prog`. To execute, simply run `bin/prog <method> <n> <steps>`, where `method` is the solver algorithm, `n` is the side length without halo, and `steps` is the number of steps to simulate. Below is a complete list of the supported arguments which can be accesed using `bin/prog -h`:\n\n```\nUsage: CAT: Celular Automata on Tensor Cores [--help] [--version] [--deviceId VAR] [--density VAR] [--seed VAR] [--doVerify] n solver steps\n\nPositional arguments:\n  n               Size of the data domain \n  solver          Solver to use:\n                        0 - BASE: Global Memory\n                        1 - SHARED: Shared Memory\n                        2 - CAT: Fast Tensor Core\n                  "
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/SinghU25",
+  "title": "Efficient Parallel Sparse Tensor Contraction",
+  "venue": "TPDS",
+  "year": 2025,
+  "authors": [
+   "Somesh Singh 0001",
+   "Bora Uçar"
+  ],
+  "abstract": "We investigate the performance of algorithms for sparse tensor-sparse tensor multiplication (SpGETT). This operation, also called sparse tensor contraction, is a higher order analogue of the sparse matrix-sparse matrix multiplication (SpGEMM) operation. Therefore, SpGETT can be performed by first converting the input tensors into matrices, then invoking high performance variants of SpGEMM, and finally reconverting the resultant matrix into a tensor. Alternatively, one can carry out the scalar operations underlying SpGETT in the realm of tensors without matrix formulation. We discuss the building blocks in both approaches and formulate a hashing-based method to avoid costly search or redirect",
+  "candidates": [
+   {
+    "url": "https://github.com/ssomesh/parTC",
+    "desc": "",
+    "stars": 1,
+    "readme_head": "# Efficient Parallel Sparse Tensor Contraction\n\nThis repository contains the source code accompanying the manuscript \n\n**Somesh Singh and Bora Uçar**. *Efficient Parallel Sparse Tensor Contraction*.\n\n## Building and Usage\n\n### Prerequisites\n* g++ (gcc) version 13.2.0 or higher, with support for *OpenMP*\n* [Boost](https://www.boost.org/) C++ libraries version 1.67.0 or higher\n\n### Building\n\nThe codes are written in C++.\n\n* To build the code run `make`\n\nThe executable will be generated within the top-level directory of the repository\n\n### Usage\n\n* For running experiments on real-life tensors from [FROSTT](http://frostt.io/tensors/)\n```\nOMP_NUM_THREADS=4 ./a.out nips.tns 4d.meta 0 1\n```\n\nProduces the following ouput:\n\n<pre><code>\n2482 2862 14036 17\nNumber of elements inserted = 3101609\nTotal time for insertion = 0.76703 (s)\nNumber of elements inserted = 3101609\nTotal time for insertion = 0.101242 (s)\nTotal time for preprocessing = 0.65588 (s)\nTotal time for tensor contraction = 2.12908 (s)\nTotal number of nonzeros in the output tensor = 28334\n</code></pre>\n\n\n"
+   }
+  ]
+ },
+ {
+  "key": "journals/tpds/WangMGWSFHWYXY26",
+  "title": "SMEStencil: Optimizing High-Order Stencils on ARM Multicore Using SME Unit",
+  "venue": "TPDS",
+  "year": 2026,
+  "authors": [
+   "Yinuo Wang",
+   "Tianqi Mao",
+   "Lin Gan 0008",
+   "Wubing Wan",
+   "Zeyu Song"
+  ],
+  "abstract": "Matrix-accelerated stencil computation is a hot research topic, yet its application to 3 dimensional (3D) high-order stencils and HPC remains underexplored. With the emergence of Scalable Matrix Extension(SME) on ARMv9-A CPU, we analyze SME-based accelerating strategies and tailor an optimal approach for 3D high-order stencils. We introduce algorithmic optimizations based on Scalable Vector Extension(SVE) and SME unit to address strided memory accesses, alignment conflicts, and redundant accesses. We propose memory optimizations to boost on-package memory efficiency, and a novel multi-thread parallelism paradigm to overcome data-sharing challenges caused by the absence of shared data caches.",
+  "candidates": [
+   {
+    "url": "https://github.com/FrankTrek/SMEStencil_Baselines",
+    "desc": "contains baseline implementations for paper: SMEStencil",
+    "stars": 3,
+    "readme_head": "# SMEStencil_Baselines\n\nThis repository is intended **only** for reproducibility studies. Any other use of the code requires permission from the authors of the paper *“SMEStencil: Optimizing High-order Stencils on ARM Multicore using SME Unit”*.\n\n## Repo Structure\n\n- sve_brick_1642/:  corresponding to \"highly optimized SIMD version\" baselines, in single precision and brick layout of (16, 4, 2)\n- sme_brick_1644/:  our optimized stencil kernels based on SME instrunction set, in single precision and brick layout of (16, 4, 4)\n- test_scripts/:  containing \"compiler optimized stencil\" baselines and scripts to generate benchmarks from kernel\n- RTM/: containing our optimized SIMD version and SME accelerated RTM TTI kernel implementations\n\n## Test Environment\n\nThe platform information is not yet revealed\n\nCompiler: Bisheng 5.0.0\n\ncompile command for naive and simd version:\n\n```bash\nclang++ -O3 -march=armv8.4-a+sve -ffast-math -mcpu=hip11 -fomit-frame-pointer -fopenmp -stdlib=libc++ -rtlib=compiler-rt <your benchmark.cpp> -o <your executable>\n```\n\ncompile command for sme version:\n\n```bash\nclang++ -O3 -march=armv8.4-a+sve+sme -ffast-math -mcpu=hip11 -fomit-frame-pointer -fopenmp -Wno-undefined-arm-za -stdlib=libc++ -rtlib=compiler-rt <your benchmark.cpp> -o <your executable>\n```\n\nrun your program:\n\n```bash\nOMP_NUM_THREADS=38 OMP_PROC_BIND=close numactl --membind=16 --cpubind=0 ./<program> <domain size>\n```\n\n## How to Generate Benchmarks \n\nfirst enter test_script/ directory, then use py"
+   }
+  ]
+ }
+]

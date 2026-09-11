@@ -1,0 +1,1139 @@
+[
+ {
+  "key": "conf/asplos/QiuJ020",
+  "venue": "ASPLOS",
+  "year": 2020,
+  "title": "Challenging Sequential Bitstream Processing via Principled Bitwise Speculation",
+  "abstract": "Many performance-critical applications traverse bitstreams with bitwise computations for better performance or higher space efficiency, such as multimedia processing and bitmap indexing. However, when these bitwise computations carry dependences, the entire bitstream traversal becomes serial, fundamentally limiting the scalability. In this work, we show that bitstream-carried dependences are actually \"breakable\" in many cases, with the adoption of a systematic treatment - principled bitwise speculation (PBS). The core idea of PBS stems from an analogy drawn between bitstream programs and sequential circuits, both of which transform binary sequences. In this new perspective, it becomes natural to model the dependences in bitstream programs with finite-state machines (FSM), a basic model for sequential circuits. To achieve this, PBS features an assembly of static analyses that reason about bitstream programs down to the bit level to identify the bits causing dependences, then it treats the value combinations of dependent bits as states to construct FSMs. The modeling, for the first time, enables the use of FSM speculation techniques to parallelize bitstream programs. Basically, by leveraging the state convergence of FSMs, the values of dependent bits can be predicted with much higher accuracies. In cases the prediction fails, PBS tries to directly \"rectify\" the wrong outputs based on bitwise logic, minimizing the mis-speculation costs. In addition, FSM shows even higher execution efficiency than the original program in some cases, making itself an optimized version to accelerate serial bitstream processing. We prototyped PBS using LLVM. Evaluation with real-world bitstream programs confirms the effectiveness of PBS, showing up to near-linear speedup on multicore/manycore machines.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "bitstream/FSM processing"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "FSM-based speculative parallelization of serial bitstream kernels; near-linear speedup on multicore"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/0001HMBM21",
+  "venue": "ASPLOS",
+  "year": 2021,
+  "title": "Logical abstractions for noisy variational Quantum algorithm simulation",
+  "abstract": "Due to the unreliability and limited capacity of existing quantum computer prototypes, quantum circuit simulation continues to be a vital tool for validating next generation quantum computers and for studying variational quantum algorithms, which are among the leading candidates for useful quantum computation. Existing quantum circuit simulators do not address the common traits of variational algorithms, namely: 1) their ability to work with noisy qubits and operations, 2) their repeated execution of the same circuits but with different parameters, and 3) the fact that they sample from circuit final wavefunctions to drive a classical optimization routine. We present a quantum circuit simulation toolchain based on logical abstractions targeted for simulating variational algorithms. Our proposed toolchain encodes quantum amplitudes and noise probabilities in a probabilistic graphical model, and it compiles the circuits to logical formulas that support efficient repeated simulation of and sampling from quantum circuits for different parameters. Compared to state-of-the-art state vector and density matrix quantum circuit simulators, our simulation approach offers greater performance when sampling from noisy circuits with at least eight to 20 qubits and with around 12 operations on each qubit, making the approach ideal for simulating near-term variational quantum algorithms. And for simulating noise-free shallow quantum circuits with 32 qubits, our simulation approach offers a 66× reduction in sampling cost versus quantum circuit simulation techniques based on tensor network contraction.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "tensor"
+   ],
+   "kernels": [
+    "quantum circuit simulation"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "low",
+   "one_liner": "Graphical-model-based noisy quantum circuit simulator on classical HW; 66x cheaper sampling vs tensor networks"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/ChenMCA21",
+  "venue": "ASPLOS",
+  "year": 2021,
+  "title": "VeGen: a vectorizer generator for SIMD and beyond",
+  "abstract": "Vector instructions are ubiquitous in modern processors. Traditional compiler auto-vectorization techniques have focused on targeting single instruction multiple data (SIMD) instructions. However, these auto-vectorization techniques are not sufficiently powerful to model non-SIMD vector instructions, which can accelerate applications in domains such as image processing, digital signal processing, and machine learning. To target non-SIMD instruction, compiler developers have resorted to complicated, ad hoc peephole optimizations, expending significant development time while still coming up short. As vector instruction sets continue to rapidly evolve, compilers cannot keep up with these new hardware capabilities.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la",
+    "ml_kernels"
+   ],
+   "kernels": [
+    "dot product",
+    "convolution"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Auto-generates vectorizers for non-SIMD ISAs; speeds up DSP/image/ML kernels over LLVM on CPU"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/RootASA0R23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Fast Instruction Selection for Fast Digital Signal Processing",
+  "abstract": "Modern vector processors support a wide variety of instructions for fixed-point digital signal processing. These instructions support a proliferation of rounding, saturating, and type conversion modes, and are often fused combinations of more primitive operations. While these are common idioms in fixed-point signal processing, it is difficult to use these operations in portable code. It is challenging for programmers to write down portable integer arithmetic in a C-like language that corresponds exactly to one of these instructions, and even more challenging for compilers to recognize when these instructions can be used. Our system, Pitchfork, defines a portable fixed-point intermediate representation, FPIR, that captures common idioms in fixed-point code. FPIR can be used directly by programmers experienced with fixed-point, or Pitchfork can automatically lift from integer operations into FPIR using a term-rewriting system (TRS) composed of verified manual and automatically-synthesized rules. Pitchfork then lowers from FPIR into target-specific fixed-point instructions using a set of target-specific TRSs. We show that this approach improves runtime performance of portably-written fixed-point signal processing code in Halide, across a range of benchmarks, by geomean 1.31x on x86 with AVX2, 1.82x on ARM Neon, and 2.44x on Hexagon HVX compared to a standard LLVM-based compiler flow, while maintaining or improving existing compile times.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "fixed-point DSP kernels"
+   ],
+   "platform": [
+    "cpu",
+    "arm-cpu",
+    "other"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Term-rewriting instruction selection compiles fixed-point DSP kernels; 1.3-2.4x over LLVM on x86/Neon/HVX."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/MaXSM0K0ZSH23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "GZKP: A GPU Accelerated Zero-Knowledge Proof System",
+  "abstract": "Zero-knowledge proof (ZKP) is a cryptographic protocol that allows one party to prove the correctness of a statement to another party without revealing any information beyond the correctness of the statement itself. It guarantees computation integrity and confidentiality, and is therefore increasingly adopted in industry for a variety of privacy-preserving applications, such as verifiable outsource computing and digital currency.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "fft_spectral",
+    "primitives"
+   ],
+   "kernels": [
+    "MSM",
+    "NTT"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "GPU zero-knowledge proof system built on optimized MSM and NTT kernels."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/HagedornFCCGG23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Graphene: An IR for Optimized Tensor Computations on GPUs",
+  "abstract": "Modern GPUs accelerate computations and data movements of multi-dimensional tensors in hardware. However, expressing optimized tensor computations in software is extremely challenging even for experts. Languages like CUDA C++ are centered around flat buffers in one-dimensional memory and lack reasonable abstractions for multi-dimensional data and threads. Existing tensor IRs are not expressive enough to represent the complex data-to-thread mappings required by the GPU tensor instructions.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la",
+    "ml_kernels"
+   ],
+   "kernels": [
+    "GEMM",
+    "fused DL kernels"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "GPU IR expressing optimized tensor computations (GEMM, fused DL kernels) with tensor-core thread mappings."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/Bi0LZWGZ0DL0023",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Heron: Automatically Constrained High-Performance Library Generation for Deep Learning Accelerators",
+  "abstract": "Deep Learning Accelerators (DLAs) are effective to improve both performance and energy efficiency of compute-intensive deep learning algorithms. A flexible and portable mean to exploit DLAs is using high-performance software libraries with well-established APIs, which are typically either manually implemented or automatically generated by exploration-based compilation approaches. Though exploration-based approaches significantly reduce programming efforts, they fail to find optimal or near-optimal programs from a large but low-quality search space because the massive inherent constraints of DLAs cannot be accurately characterized.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels",
+    "dense_la"
+   ],
+   "kernels": [
+    "GEMM",
+    "conv2d"
+   ],
+   "platform": [
+    "nvidia-gpu",
+    "cpu"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Constraint-based autotuner generating DLA kernel libraries (tensor-core GEMM/conv) beating prior auto-tuners."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/GienieczkoMP23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Supporting Descendants in SIMD-Accelerated JSONPath",
+  "abstract": "Harnessing the power of SIMD can bring tremendous performance gains in data processing. In querying streamed JSON data, the state of the art leverages SIMD to fast forward significant portions of the document. However, it does not provide support for descendant, which excludes many real-life queries and makes formulating many others hard. In this work, we aim to change this: we consider the fragment of JSONPath that supports child, descendant, wildcard, and labels. We propose a modular approach based on novel depth-stack automata that process a stream of events produced by a state-driven classifier, allowing fast forwarding parts of the input document irrelevant at the current stage of the computation. We implement our solution in Rust and compare it with the state of the art, confirming that our approach allows supporting descendants without sacrificing performance, and that reformulating natural queries using descendants brings impressive performance gains in many cases.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "JSONPath streaming query"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "SIMD-accelerated streaming JSONPath engine adding descendant support while matching state-of-the-art speed."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/BisbasLB0FMRJKS24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "A shared compilation stack for distributed-memory parallelism in stencil DSLs",
+  "abstract": "Domain Specific Languages (DSLs) increase programmer productivity and provide high performance. Their targeted abstractions allow scientists to express problems at a high level, providing rich details that optimizing compilers can exploit to target current- and next-generation supercomputers. The convenience and performance of DSLs come with significant development and maintenance costs. The siloed design of DSL compilers and the resulting inability to benefit from shared infrastructure cause uncertainties around longevity and the adoption of DSLs at scale. By tailoring the broadly-adopted MLIR compiler framework to HPC, we bring the same synergies that the machine learning community already exploits across their DSLs (e.g. Tensorflow, PyTorch) to the finite-difference stencil HPC community. We introduce new HPC-specific abstractions for message passing targeting distributed stencil computations. We demonstrate the sharing of common components across three distinct HPC stencil-DSL compilers: Devito, PSyclone, and the Open Earth Compiler, showing that our framework generates high-performance executables based upon a shared compiler ecosystem.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "stencil_pde"
+   ],
+   "kernels": [
+    "FD stencil"
+   ],
+   "platform": [
+    "cpu",
+    "distributed"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Shared MLIR stack with distributed message-passing codegen for stencil DSLs (Devito/PSyclone/OEC)"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/Ji0X024",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Accelerating Multi-Scalar Multiplication for Efficient Zero Knowledge Proofs with Multi-GPU Systems",
+  "abstract": "Zero-knowledge proof is a cryptographic primitive that allows for the validation of statements without disclosing any sensitive information, foundational in applications like verifiable outsourcing and digital currency. However, the extensive proof generation time limits its widespread adoption. Even with GPU acceleration, proof generation can still take minutes, with Multi-Scalar Multiplication (MSM) accounting for about 78.2% of the workload. To address this, we present DistMSM, a novel MSM algorithm tailored for distributed multi-GPU systems. At the algorithmic level, DistMSM adapts Pippenger's algorithm for multi-GPU setups, effectively identifying and addressing bottlenecks that emerge during scaling. At the GPU kernel level, DistMSM introduces an elliptic curve arithmetic kernel tailored for contemporary GPU architectures. It optimizes register pressure with two innovative techniques and leverages tensor cores for specific big integer multiplications. Compared to state-of-the-art MSM implementations, DistMSM offers an average 6.39× speedup across various elliptic curves and GPU counts. An MSM task that previously took seconds on a single GPU can now be completed in mere tens of milliseconds. It showcases the substantial potential and efficiency of distributed multi-GPU systems in ZKP acceleration.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "MSM",
+    "big-integer multiplication",
+    "elliptic curve arithmetic"
+   ],
+   "platform": [
+    "nvidia-gpu",
+    "distributed"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Multi-GPU multi-scalar multiplication for ZKPs with tensor-core big-int kernels; 6.39x avg speedup"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/ZhouHSZY24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Boost Linear Algebra Computation Performance via Efficient VNNI Utilization",
+  "abstract": "Intel's Vector Neural Network Instruction (VNNI) provides higher efficiency on calculating dense linear algebra (DLA) computations than conventional SIMD instructions. However, existing auto-vectorizers frequently deliver suboptimal utilization of VNNI by either failing to recognize VNNI's unique computation pattern at the innermost loops/basic blocks, or producing inferior code through constrained and rudimentary peephole optimizations/pattern matching techniques. Auto-tuning frameworks might generate proficient code but are hampered by the necessity for sophisticated pattern templates and extensive search processes.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la"
+   ],
+   "kernels": [
+    "GEMM",
+    "dense linear algebra"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Compiler technique for efficient Intel VNNI utilization in dense linear algebra kernels"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/ChenKCKWD024",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "EVT: Accelerating Deep Learning Training with Epilogue Visitor Tree",
+  "abstract": "As deep learning models become increasingly complex, the deep learning compilers are critical for enhancing the system efficiency and unlocking hidden optimization opportunities. Although excellent speedups have been achieved in inference workloads, existing compilers face significant limitations in training. Firstly, the training computation graph involves intricate operations challenging to fuse, such as normalization, loss functions, and reductions, which limit optimization opportunities like kernel fusion. Secondly, the training graph's additional edges connecting forward and backward operators pose challenges in finding optimal and feasible partitions for kernel fusion. More importantly, existing compilers cannot either generate kernels with state-of-the-art performance on modern GPUs or accommodate diverse fusion patterns.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels",
+    "dense_la"
+   ],
+   "kernels": [
+    "fused GEMM epilogue",
+    "kernel fusion"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Epilogue Visitor Tree compiler generating fused SOTA GPU kernels for DNN training graphs"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/GuanYZLLG24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Fractal: Joint Multi-Level Sparse Pattern Tuning of Accuracy and Performance for DNN Pruning",
+  "abstract": "Model pruning, which eliminates redundant parameters and reduces computational complexity, emerges as a viable strategy for efficient deep neural network (DNN) deployment. Owing to the irregular memory access and computation patterns in the sparse DNN models after pruning, existing arts have suggested various structured sparse patterns to enhance sparse DNN performance. In this work, we propose a unique perspective of understanding existing sparse pattern design as computation-skipping after tiling the tensor computation into multi-level hierarchies. This unified perspective opens up a new design space of multi-level sparse tiling to maximize the sparsity benefits of DNNs, as opposed to the single-level choice in current practices. We present Fractal, an auto-tuning system for sparse patterns that identifies the optimal multi-level sparse tiling pattern. We introduce PatternIR, a novel high-level intermediate representation (IR), to express a diverse range of multi-level sparse patterns. By leveraging insights from prior dense operator optimizations, we translate PatternIR into low-level compiler IRs, facilitating further operator optimization and code generation. Our evaluations demonstrate that Fractal yields substantial speedups of up to on average 3.16× on CUDA Core, 2.52× on TensorCore of GPUs compared to the state-of-art dense baseline under 75% sparsity while upholding minimal accuracy degradation compared to prior sparse operator libraries.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "sparse_la",
+    "ml_kernels"
+   ],
+   "kernels": [
+    "sparse GEMM",
+    "pruned DNN operators"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Auto-tunes multi-level sparse tiling patterns for pruned DNN ops; up to 3.16x at 75% sparsity on GPUs"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/WuH0HZNH24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Hector: An Efficient Programming and Compilation Framework for Implementing Relational Graph Neural Networks in GPU Architectures",
+  "abstract": "Relational graph neural networks (RGNNs) are graph neural networks with dedicated structures for modeling the different types of nodes and edges in heterogeneous graphs. While RGNNs have been increasingly adopted in many real-world applications due to their versatility and accuracy, they pose performance and system design challenges: inherent memory-intensive computation patterns, the gap between the programming interface and kernel APIs, and heavy programming effort required to optimize kernels caused by their coupling with data layout and heterogeneity. To systematically address these challenges, we propose Hector, a novel two-level intermediate representation and its code generator framework that (a) captures the key properties of RGNN models, and opportunities to reduce memory accesses in inter-operator scheduling and materialization, (b) generates code with flexible data access schemes to eliminate redundant data copies, and (c) decouples model semantics, data layout, and operators-specific optimizations from each other to reduce programming effort. By building on one general matrix multiply (GEMM) template and a node/edge traversal template, Hector achieves up to 9.9× speed-up in inference and 43.7× speed-up in training compared with the state-of-the-art public systems on select models, RGCN, RGAT and HGT, when running heterogeneous graphs provided by Deep Graph Library (DGL) and Open Graph Benchmark (OGB). In addition, Hector does not trigger any out-of-memory (OOM) exception in these tests. We also propose linear operator reordering and compact materialization to further accelerate the system by up to 3.8×. As an indicator of the reduction of programming effort, Hector takes in 51 lines of code expressing the three models and generates a total of 8K lines of CUDA and C++ code. Through profiling, we found that higher memory efficiency allows Hector to accommodate larger input and therefore attain higher throughput in forward propagation, while backward propagation is bound by latency introduced by atomic updates and outer products.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels",
+    "sparse_la"
+   ],
+   "kernels": [
+    "GEMM",
+    "SpMM"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Two-level IR + code generator for RGNN GPU kernels (GEMM + traversal), up to 43.7x training speedup"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/LiuNLFGCLG024",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "JUNO: Optimizing High-Dimensional Approximate Nearest Neighbour Search with Sparsity-Aware Algorithm and Ray-Tracing Core Mapping",
+  "abstract": "Approximate nearest neighbor (ANN) search is a widely applied technique in modern intelligent applications, such as recommendation systems and vector databases. Therefore, efficient and high-throughput execution of ANN search has become increasingly important. In this paper, we first characterize the state-of-the-art product quantization-based method of ANN search and identify a significant source of inefficiency in the form of unnecessary pairwise distance calculations and accumulations. To improve efficiency, we propose Juno, an end-to-end ANN search system that adopts a carefully designed sparsity- and locality-aware search algorithm. We also present an efficient hardware mapping that utilizes ray tracing cores in modern GPUs with pipelined execution on tensor cores to execute our sparsity-aware ANN search algorithm. Our evaluations on four datasets from 1 to 100 million search points demonstrate 2.2×-8.5× improvements in search throughput. Moreover, our algorithmic enhancements alone achieve a maximal 2.6× improvement on the hardware without the acceleration of the RT core.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "ANN search"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Sparsity/locality-aware ANN search mapped to GPU ray-tracing + tensor cores, 2.2-8.5x throughput"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/YuLZCFX24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Optimizing Dynamic-Shape Neural Networks on Accelerators via On-the-Fly Micro-Kernel Polymerization",
+  "abstract": "In recent times, dynamic-shape neural networks have gained widespread usage in intelligent applications to address complex tasks, introducing challenges in optimizing tensor programs due to their dynamic nature. As the operators' shapes are determined at runtime in dynamic scenarios, the compilation process becomes expensive, limiting the practicality of existing static-shape tensor compilers. To address the need for effective and efficient optimization of dynamic-shape neural networks, this paper introduces MikPoly, a novel dynamic-shape tensor compiler based on micro-kernel polymerization. MikPoly employs a two-stage optimization approach, dynamically combining multiple statically generated micro-kernels using a lightweight cost model based on the shape of a tensor operator known at runtime. We evaluate the effectiveness of MikPoly by employing popular dynamic-shape operators and neural networks on two representative accelerators, namely GPU Tensor Cores and Ascend NPUs. Our experimental results demonstrate that MikPoly effectively optimizes dynamic-shape workloads, yielding an average performance improvement of 1.49× over state-of-the-art vendor libraries.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "tensor",
+    "ml_kernels"
+   ],
+   "kernels": [
+    "GEMM"
+   ],
+   "platform": [
+    "nvidia-gpu",
+    "other"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Micro-kernel polymerization generates dynamic-shape tensor kernels, 1.49x over vendor libraries on GPU/NPU"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/BlockGMAT24",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "Two-Face: Combining Collective and One-Sided Communication for Efficient Distributed SpMM",
+  "abstract": "Sparse matrix dense matrix multiplication (SpMM) is commonly used in applications ranging from scientific computing to graph neural networks. Typically, when SpMM is executed in a distributed platform, communication costs dominate. Such costs depend on how communication is scheduled. If it is scheduled in a sparsity-unaware manner, such as with collectives, execution is often inefficient due to unnecessary data transfers. On the other hand, if communication is scheduled in a fine-grained sparsity-aware manner, communicating only the necessary data, execution can also be inefficient due to high software overhead.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "sparse_la"
+   ],
+   "kernels": [
+    "SpMM"
+   ],
+   "platform": [
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Distributed SpMM combining collective + one-sided communication to cut unnecessary data movement"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/XieZLCJ024",
+  "venue": "ASPLOS",
+  "year": 2024,
+  "title": "VertexSurge: Variable Length Graph Pattern Match on Billion-edge Graphs",
+  "abstract": "Variable-Length Graph Pattern Matching (VLGPM) is a critical functionality in graph databases, pivotal for identifying patterns where the number of connecting edges between two matched vertices is variable. This function plays a vital role in analyzing complex and dynamic networks such as social networks or bank transfers networks, where relationships can vary extensively in both length and structure. However, despite its importance, current graph databases, optimized primarily for single-hop subgraph matching, struggle with VLGPM over large graphs.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "variable-length graph pattern matching"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Engine for variable-length graph pattern matching on billion-edge graphs, beating graph databases"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/LuCW0CZ25",
+  "venue": "ASPLOS",
+  "year": 2025,
+  "title": "BatchZK: A Fully Pipelined GPU-Accelerated System for Batch Generation of Zero-Knowledge Proofs",
+  "abstract": "Zero-knowledge proof (ZKP) is a cryptographic primitive that enables one party to prove the validity of a statement to other parties without disclosing any secret information. With its widespread adoption in applications such as blockchain and verifiable machine learning, the demand for generating zero-knowledge proofs has increased dramatically. In recent years, considerable efforts have been directed toward developing GPU-accelerated systems for proof generation. However, these previous systems only explored efficiently generating a single proof by reducing latency rather than batch generation to provide high throughput.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "fft_spectral",
+    "primitives"
+   ],
+   "kernels": [
+    "NTT",
+    "MSM"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Fully pipelined GPU kernels (NTT/MSM modules) for high-throughput batch zero-knowledge proof generation"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/LiuRS25",
+  "venue": "ASPLOS",
+  "year": 2025,
+  "title": "Generalizing Reuse Patterns for Efficient DNN on Microcontrollers",
+  "abstract": "Deep Neural Networks (DNNs) face challenges in deployment on resource-constrained devices due to their high computational demands. Leveraging redundancy in input data and activation maps for computation reuse is an effective way to accelerate DNN inference, especially for microcontrollers where the computing power is very limited. This work points out an important limitation in current reuse-based DNN optimizations, the narrow definition of reuse patterns in data. It proposes the concept of generalized reuse and uncovers the relations between generalized reuse patterns and row/column reorder of a matrix view of the input or activation map of a DNN. It revolutionizes the conventional view of explorable reuse patterns, drastically expanding the reuse space. It further develops two novel analytical models for analyzing the impacts of reuse patterns on the accuracy and latency of DNNs, enabling efficient selection of appropriate reuse patterns. Experiments show that generalized reuse consistently brings significant benefits, regardless of the differences among DNNs or microcontroller hardware. It delivers 1.03-2.2x speedups or 1-8% accuracy improvement over conventional reuse.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels"
+   ],
+   "kernels": [
+    "DNN inference (conv/GEMM computation reuse)"
+   ],
+   "platform": [
+    "arm-cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Generalized computation reuse via row/column reordering speeds DNN inference 1.03-2.2x on MCUs"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/XuWLXRB0HSH0DZJ25",
+  "venue": "ASPLOS",
+  "year": 2025,
+  "title": "Mosaic: Exploiting Instruction-Level Parallelism on Deep Learning Accelerators with iTex Tessellation",
+  "abstract": "Deep learning has achieved great success in numerous application areas at the cost of high computational complexity. To meet the ever-increasing computational demand, commodity hardware platforms (e.g., CPUs and GPUs) offer abundant computing resources including scalar, vector, and tensor units for deep learning that could execute in parallel. However, existing top-down tiling-based deep learning compilers often generate a homogeneous mapping from the given tensor computation task to hardware arithmetic instructions, failing to utilize different computing units simultaneously to achieve higher performance.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels",
+    "tensor"
+   ],
+   "kernels": [
+    "DL tensor operators (GEMM/conv)"
+   ],
+   "platform": [
+    "other"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Compiler tessellates tensor ops across scalar/vector/tensor units concurrently for higher ILP"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/SunSGKM25",
+  "venue": "ASPLOS",
+  "year": 2025,
+  "title": "Optimizing Datalog for the GPU",
+  "abstract": "Modern Datalog engines (e.g., LogicBlox, Soufflé, ddlog) enable their users to write declarative queries which compute recursive deductions over extensional facts, leaving high-performance operationalization (query planning, semi-naïve evaluation, and parallelization) to the engine. Such engines form the backbone of modern high-throughput applications in static analysis, network monitoring, and social-media mining. In this paper, we present a methodology for implementing a modern in-memory Datalog engine on data center GPUs, allowing us to achieve significant (up to 45×) gains compared to Soufflé (a modern CPU-based engine) on context-sensitive points-to analysis of httpd. We present GPUlog, a Datalog engine backend that implements iterated relational algebra kernels over a novel range-indexed data structure we call the hash-indexed sorted array (HISA). HISA combines the algorithmic benefits of incremental range-indexed relations with the raw computation throughput of operations over dense data structures. Our experiments show that GPUlog is significantly faster than CPU-based Datalog engines, while achieving favorable memory footprint compared to contemporary GPU-based joins.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "hash join",
+    "relational algebra ops"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "GPU Datalog engine with HISA range-indexed structure for relational join kernels; up to 45x over Souffle."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/Qiao0HFZZZCATLY25",
+  "venue": "ASPLOS",
+  "year": 2025,
+  "title": "Pruner: A Draft-then-Verify Exploration Mechanism to Accelerate Tensor Program Tuning",
+  "abstract": "Tensor program tuning is essential for the efficient deployment of deep neural networks. Search-based approaches have demonstrated scalability and effectiveness in automatically finding high-performance programs for specific hardware. However, the search process is often inefficient, taking hours or even days to discover optimal programs due to the exploration mechanisms guided by an accurate but slow-learned cost model. Meanwhile, the learned cost model trained on one platform cannot seamlessly adapt online to another, which we call cross-platform online unawareness. In this work, we propose Pruner and MoA-Pruner. Pruner is a ''Draft-then-Verify'' exploration mechanism that accelerates the schedule search process. Instead of applying the complex learned cost model to all explored candidates, Pruner drafts small-scale potential candidates by introducing a naive Symbol-based Analyzer (draft model), then identifies the best candidates by the learned cost model. MoA-Pruner introduces a Momentum online Adaptation strategy to address the cross-platform online unawareness.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels",
+    "tensor"
+   ],
+   "kernels": [
+    "tensor programs",
+    "DNN operators"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Draft-then-verify search speeds tensor-program autotuning, finding fast DNN kernels with fewer cost-model queries."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/0003WH0DHWY0LYL25",
+  "venue": "ASPLOS",
+  "year": 2025,
+  "title": "TempGraph: An Efficient Chain-driven Temporal Graph Computing Framework on the GPU",
+  "abstract": "Tackling temporal path problems in temporal graphs is essential for time-sensitive applications. Although many solutions have been proposed to handle temporal path problems, due to the intrinsic time constraints, these solutions require the vertices of the temporal graph to be sequentially handled along the time-dependent chains (i.e., the temporal dependencies between these vertices) to form the temporal path. This sequential temporal nature poses the challenges of poor parallelism and slow convergence speed, preventing existing solutions from fully leveraging the massive parallelism and high internal bandwidth of GPU to handle temporal path problems. To overcome these challenges, this paper proposes TempGraph, an efficient chain-driven GPU-based temporal graph computing framework. Specifically, it transforms the temporal graph into a set of disjoint time-dependent chains that can elegantly expose the temporal dependency between the vertices while facilitating the fast path exploration along these chains over GPU. Furthermore, TempGraph employs a novel Generate-Activate-Compute execution model to decouple the temporal dependency between different chains through maintaining a set of shortcuts for them, which enables multiple chains to be concurrently handled by massive GPU threads, achieving fast convergence speed and high parallelism on the GPU. Experiments on an A100 GPU show that TempGraph outperforms the state-of-the-art GPU-based solutions by 3.0-16.2×. Besides, TempGraph on an A100 GPU gains 33.9-368.9× speedups compared to the cutting-edge CPU-based system TeGraph on a 128-core CPU machine.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "temporal path traversal"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Chain-driven GPU temporal-path computation; 3.0-16.2x over state-of-the-art GPU temporal graph solutions."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/0001SLL0C0XA00Z25",
+  "venue": "ASPLOS",
+  "year": 2025,
+  "title": "Voyager: Input-Adaptive Algebraic Transformations for High-Performance Graph Neural Networks",
+  "abstract": "Graph neural networks (GNNs) are gaining popularity in diverse application domains and growing in complexity.As a result, it is crucial to achieve high-performance GNN execution.Among various techniques, algebraic transformations, including operator reordering and operator fusion, have been successfully applied to improve the computation and memory access efficiencies of DNN models.However,",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels",
+    "sparse_la"
+   ],
+   "kernels": [
+    "SpMM",
+    "GNN aggregation"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Input-adaptive operator reordering/fusion transformations generating faster GNN (SpMM-like) computations."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/0017WZLXSZH0W26",
+  "venue": "ASPLOS",
+  "year": 2026,
+  "title": "Bat: Efficient Generative Recommender Serving with Bipartite Attention",
+  "abstract": "Generative Recommenders (GRs) have recently emerged as promising alternatives to traditional Deep Learning Recommendation Models (DLRMs). Despite their potential, GRs remain computationally expensive in inference, exhibiting compute-bound characteristics similar to the prefill stage of Large Language Model (LLM) inference. Prefix caching can reduce redundant computation by reusing previously constructed KV caches. However, the unique properties of GRs, i.e., highly personalized user profiles and real-time item retrieval, make cache reuse across queries challenging, resulting in limited computational savings.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels"
+   ],
+   "kernels": [
+    "attention"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "low",
+   "one_liner": "Bipartite attention enabling KV reuse in generative recommender serving; kernel novelty unclear from abstract."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/0004CJ00DZJ026",
+  "venue": "ASPLOS",
+  "year": 2026,
+  "title": "Dynamic Sparsity in Large-Scale Video DiT Training",
+  "abstract": "Diffusion Transformers (DiTs) have shown remarkable performance in generating high-quality videos. However, the quadratic complexity of 3D full attention remains a bottleneck in scaling DiT training, especially with high-definition, lengthy videos, where it can consume up to 95% of processing time and demand specialized context parallelism.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels"
+   ],
+   "kernels": [
+    "sparse attention"
+   ],
+   "platform": [
+    "nvidia-gpu",
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "low",
+   "one_liner": "Exploits dynamic attention sparsity in large-scale video DiT training; abstract truncated, kernel detail unclear."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/LuL00S26",
+  "venue": "ASPLOS",
+  "year": 2026,
+  "title": "I/O Analysis is All You Need: An I/O Analysis for Long-Sequence Attention",
+  "abstract": "As GPUs and other accelerators become increasingly popular, optimizing I/O operations between on-chip and off-chip memory is increasingly critical. I/O analysis, however, is complex, requiring a deep understanding of application dataflow and memory hierarchy. Developing a practical I/O analysis methodology remains a timely challenge. Self-attention is employed extensively in transformer models, but its quadratic memory complexity poses significant challenges to modern memory systems. In this study, we explore how to use I/O analysis to develop optimal solutions for accelerating exact long-sequence self-attention. We first introduce a novel I/O analysis for tall-and-skinny matrix-matrix multiplication, which captures the dominant data movement behavior of long-sequence self-attention. Guided by systematic I/O analysis, we develop AttenIO, an I/O-driven accelerator for exact long-sequence self-attention with three key optimizations: (1) an analytically derived I/O-optimal tiling and scheduling to minimize I/O operations, (2) fine-grained three-level communication-computation overlapping to hide I/O stalls, and (3) parallel execution patterns for efficient softmax. Our evaluation shows that AttenIO achieves a 1.6×-8.8× speedup over the state-of-the-art solutions. Although AttenIO is designed for self-attention, it also highlights the broader potential of I/O analysis as a principled foundation for guiding high-performance I/O optimizations.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels",
+    "dense_la"
+   ],
+   "kernels": [
+    "attention",
+    "tall-skinny GEMM",
+    "softmax"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "I/O-optimal tiling and overlap for exact long-sequence attention; 1.6-8.8x over SOTA attention kernels."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/ZhiCDHPWCC26",
+  "venue": "ASPLOS",
+  "year": 2026,
+  "title": "LOOPRAG: Enhancing Loop Transformation Optimization with Retrieval-Augmented Large Language Models",
+  "abstract": "Loop transformations are semantics-preserving optimization techniques applied at the source level, widely used in compilers to maximize objectives such as vectorization and parallelism. Despite decades of research, applying the optimal composition of loop transformations remains challenging due to inherent complexities, including dependency analysis and cost modeling for optimization objectives. Recent studies have explored the potential of Large Language Models (LLMs) for code optimization. However, our key observation is that LLMs often struggle with effective loop transformation optimization, frequently leading to errors or suboptimal optimization, thereby missing significant opportunities for performance improvements. To bridge this gap, we propose LOOPRAG, a novel retrieval-augmented generation framework designed to guide LLMs in performing effective loop optimization on Static Control Part (SCoP). We introduce a parameter-driven method to harness loop properties, which trigger various loop transformations, and generate diverse yet legal example codes serving as a demonstration source. To effectively obtain the most informative demonstrations, we propose a loop-aware algorithm based on loop features, which balances similarity and diversity for code retrieval. To enhance correct and efficient code generation, we introduce a feedback-based iterative mechanism that incorporates compilation, testing and performance results as feedback to guide LLMs. Each optimized code generated by LOOPRAG undergoes mutation, coverage and differential testing to perform equivalence checking. We evaluate LOOPRAG on PolyBench, TSVC and LORE benchmark suites, and compare it against compilers (GCC-Graphite, Clang-Polly, Perspective and ICX) and representative LLMs (DeepSeek and GPT-4). The results demonstrate average speedups over compilers of up to 11.20×, 14.34×, and 9.29× for PolyBench, TSVC, and LORE, respectively, and speedups over base LLMs of up to 11.97×, 5.61×, and 11.59×.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "dense_la",
+    "stencil_pde"
+   ],
+   "kernels": [
+    "PolyBench kernels",
+    "TSVC loops"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "RAG-guided LLM loop-transformation optimizer; up to 14x over Polly/Graphite-class compilers on PolyBench/TSVC."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/0001CGRNLS0TRM26",
+  "venue": "ASPLOS",
+  "year": 2026,
+  "title": "Linear Layouts: Robust Code Generation of Efficient Tensor Computation Using F_2",
+  "abstract": "Efficient tensor computation is a cornerstone of modern deep learning (DL) workloads, yet existing approaches struggle to achieve flexible and performant design and implementation of tensor layouts -- mappings between logical tensors and hardware resources. The increasing complexity of DL algorithms and hardware demands a generic and systematic approach to handling tensor layouts. In this work, we introduce Linear Layouts, a novel approach that models tensor layouts using linear algebra over F2. By representing tensor layouts as binary matrices acting on the bits of the hardware representation, our approach enables a generic layout definition—as opposed to the classical case-by-case approach -- and allows for generic layout-to-layout conversions, eliminating the quadratic explosion that plagues existing solutions. We integrate linear layouts with Triton and demonstrate their effectiveness in optimizing individual Triton operators as well as kernels written in Triton. We also show that linear layouts reduce engineering effort in the compiler backend while fixing several bugs in Triton's legacy layout system.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels",
+    "tensor",
+    "dense_la"
+   ],
+   "kernels": [
+    "Triton operators",
+    "GEMM",
+    "layout conversion"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "F2 linear-algebra tensor layouts in Triton enabling robust, efficient GPU kernel codegen and layout conversion."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/WangHZN0026",
+  "venue": "ASPLOS",
+  "year": 2026,
+  "title": "Maverick: Rethinking TFHE Bootstrapping on GPUs via Algorithm-Hardware Co-Design",
+  "abstract": "Fully homomorphic encryption (FHE) enables arbitrary computation over encrypted data (ciphertext) without compromising confidentiality. Within this family, TFHE features versatile bootstrapping mechanisms that is attractive for security-critical applications. However, its prohibitive computational cost severely limits practical deployment. While hardware acceleration is promising, mere compute scaling fails to overcome the inherent barriers. In particular, the combination of limited algorithmic parallelism and inadequate understanding of hardware behaviors prevents full exploitation of the available performance headroom.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "fft_spectral"
+   ],
+   "kernels": [
+    "TFHE bootstrapping",
+    "NTT"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "low",
+   "one_liner": "TFHE bootstrapping on GPUs via algorithm-hardware co-design; truncated abstract, may include HW proposals."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/TangLWSLXZL26",
+  "venue": "ASPLOS",
+  "year": 2026,
+  "title": "RedFuser: An Automatic Operator Fusion Framework for Cascaded Reductions on AI Accelerators",
+  "abstract": "Operator fusion, as a key performance optimization technique in the deployment of AI models, significantly improves execution efficiency and has been widely adopted in modern AI compilers. However, for cascaded reduction operations involving multiple loops with inter-loop data dependencies, such as the safe softmax followed by GEMM within attention mechanisms, existing compilers lack effective automated fusion and kernel generation capabilities. Although some works have addressed specific instances through hand-crafted fusion strategies, their solutions are limited in generality and difficult to extend to other similar structures. Given the prevalence of such computational patterns in deep learning models, there remains significant untapped potential in achieving general and automated fusion optimization. In this paper, we present a formal theoretical methodology for analyzing cascaded reductions which can fuse them into a single loop and introduce an incremental computation form. Based on this methodology, we design Red uction Fuser (RedFuser), a framework that automatically identifies supported cascaded reduction patterns and generates optimized fused kernels. Experiments show that RedFuser successfully fuses diverse workloads, achieving up to 2× to 5× speedup over state-of-the-art AI compilers and matching the performance of highly optimized hand-written kernels.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels",
+    "dense_la",
+    "primitives"
+   ],
+   "kernels": [
+    "fused softmax+GEMM",
+    "attention",
+    "cascaded reductions"
+   ],
+   "platform": [
+    "other"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Automatic fusion of cascaded reductions (e.g. softmax+GEMM) into single kernels; 2-5x over AI compilers."
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/ZhangJJY0LLH26",
+  "venue": "ASPLOS",
+  "year": 2026,
+  "title": "SwiftSpec: Disaggregated Speculative Decoding and Fused Kernels for Low-Latency LLM Inference",
+  "abstract": "Low-latency, single-request decoding of large language models is critical for interactive systems with tight SLA demands. Prior work reduces latency through speculative decoding (combining a small draft model with a larger target model), but the draft model remains on the critical path, and communication overhead limits scaling across GPUs due to the small batch size associated with single-request decoding. To address these limitations, this paper introduces SwiftSpec: a system architecture that disaggregates draft and target models across homogeneous GPUs within a single node and utilizes NCCL-low-latency primitives directly to improve the performance of core GEMM and attention kernels. Our implementation includes 3k lines of custom CUDA for fused kernels and an evolving tree cache for KV-cache consistency and maximized reuse between draft and target models. On a single 8×H800 GPU node, SwiftSpec achieves 347 tokens/s for Llama-3-70B---1.3× faster than NVIDIA's own benchmarks on a higher-performance 8×H200 setup---and averages 1.75× faster decoding than state-of-the-art speculative decoding across five model families and six datasets. Specifically, we find that for Llama-3-70B SwiftSpec is significantly faster across all 480 tested queries, showing 1.7× speedup over the best open-source baseline for 95th percentile requests. Code for SwiftSpec will be available at https://github.com/ByteDance-Seed/SwiftSpec",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels",
+    "dense_la"
+   ],
+   "kernels": [
+    "fused GEMM",
+    "attention"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Custom fused CUDA GEMM/attention kernels with NCCL primitives for speculative decoding; 1.75x faster"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/SongTHLWMXSJY0L26",
+  "venue": "ASPLOS",
+  "year": 2026,
+  "title": "XY-Serve: End-to-End Versatile Production Serving for Dynamic LLM Workloads",
+  "abstract": "Meeting growing demands for low latency and cost efficiency in production-grade large language model (LLM) serving systems requires integrating advanced optimization techniques. However, dynamic and unpredictable input-output lengths of LLM, compounded by these optimizations, exacerbate the issues of workload variability, making it difficult to maintain high efficiency on AI accelerators, especially DSAs with tile-based programming models. To address this challenge, we introduce XY-Serve, a versatile, Ascend NPU native, end-to-end production LLM-serving system. The core idea is an abstraction mechanism that smooths out the workload variability by decomposing computations into unified, hardware-friendly, fine-grained meta primitives. Then, kernels can efficiently execute without concerning the irregularity of workload. After this abstraction mechanism, for Attention, we propose a meta-kernel that computes the basic pattern of GEMM-Softmax-GEMM with architectural-aware tile sizes. For Linear, we introduce a virtual padding scheme that adapts to dynamic shape changes while using highly efficient GEMM primitives with assorted fixed tile sizes. XY-Serve sits harmoniously with vLLM. Experimental results show up to 95% end-to-end throughput improvement compared with current publicly available baselines on Ascend NPUs. We also set a new performance record for Linear (average 14.6% faster) and Attention (average 21.5% faster) kernels relative to existing libraries. Lastly, we demonstrate the generality of our technologies on GPU platform.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels",
+    "dense_la"
+   ],
+   "kernels": [
+    "attention",
+    "GEMM"
+   ],
+   "platform": [
+    "other",
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Ascend NPU serving with meta-primitive attention/GEMM kernels; kernel records, 14.6-21.5% faster"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/asplos/GargaryL026",
+  "venue": "ASPLOS",
+  "year": 2026,
+  "title": "cuJSON: A Highly Parallel JSON Parser for GPUs",
+  "abstract": "JSON (JavaScript Object Notation) data is widely used in modern computing, yet its parsing performance can be a major bottleneck. Conventional wisdom suggests that GPUs are ill-suited for parsing due to the branch-heavy nature of parsing algorithms. This work challenges that notion by presenting cuJSON, a novel JSON parser built on a new parsing algorithm, specifically tailored for GPU architectures with minimal branching and maximal parallelism.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "JSON parsing"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Branch-minimal, highly parallel JSON parsing algorithm and kernel for GPUs"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/usenix/ChenHDZ20",
+  "venue": "ATC",
+  "year": 2020,
+  "title": "Lock-free Concurrent Level Hashing for Persistent Memory",
+  "abstract": "With high memory density, non-volatility, and DRAM-scale latency, persistent memory (PM) is promising to improve the storage system performance. Hashing-based index structures have been widely used in storage systems to provide fast query services. Recent research proposes crash-consistent and write-efficient hashing indexes for PM. However, existing PM hashing schemes suffer from limited scalability due to expensive lock-based concurrency control, thus making multi-core parallel programing inefficient in PM. The coarse-grained locks used in hash table resizing and queries (i.e., search/insertion/update/deletion) exacerbate the contention. Moreover, the cache line flushes and memory fences for crash consistency in the critical path increase the latency. In order to address the lock contention for concurrent hashing indexes in PM, we propose clevel hashing, a lock-free concurrent level hashing, to deliver high performance with crash consistency. In the clevel hashing, we design a multi-level structure for concurrent resizing and queries. Resizing operations are performed by background threads without blocking concurrent queries. For concurrency control, atomic primitives are leveraged to enable lock-free search/insertion/update/deletion. We further propose context-aware schemes to guarantee the correctness of interleaved queries. Using real Intel Optane DC PMM, experimental results with real-world YCSB workloads show that clevel hashing obtains up to 4.2X speedup than the state-of-the-art PM hashing index.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "concurrent hash table"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Lock-free concurrent level hashing on Optane persistent memory; up to 4.2x over prior PM hashing"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/usenix/Feng0WCWY0D22",
+  "venue": "ATC",
+  "year": 2022,
+  "title": "Faith: An Efficient Framework for Transformer Verification on GPUs",
+  "abstract": "Transformer verification draws increasing attention in machine learning research and industry. It formally verifies the robustness of transformers against adversarial attacks such as exchanging words in a sentence with synonyms. However, the performance of transformer verification is still not satisfactory due to bound-centric computation which is significantly different from standard neural networks. In this paper, we propose Faith, an efficient framework for transformer verification on GPUs. We first propose a semantic-aware computation graph transformation to identify semantic information such as bound computation in transformer verification. We exploit such semantic information to enable efficient kernel fusion at the computation graph level. Second, we propose a verification-specialized kernel crafter to efficiently map transformer verification to modern GPUs. This crafter exploits a set of GPU hardware supports to accelerate verification specialized operations which are usually memory-intensive. Third, we propose an expert-guided autotuning to incorporate expert knowledge on GPU backends to facilitate large search space exploration. Extensive evaluations show that Faith achieves $2.1\\times$ to $3.4\\times$ ($2.6\\times$ on average) speedup over state-of-the-art frameworks.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels"
+   ],
+   "kernels": [
+    "fused bound-propagation kernels"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Fused, hand-crafted + autotuned GPU kernels for transformer robustness verification; 2.6x avg speedup"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/usenix/GuiL0023",
+  "venue": "ATC",
+  "year": 2023,
+  "title": "Cyclosa: Redundancy-Free Graph Pattern Mining via Set Dataflow",
+  "abstract": "Graph pattern mining is an essential task in many fields, which explores all the instances of user-interested patterns in a data graph. Pattern-centric mining systems transform the patterns into a series of set operations to guide the exploration and substantially outperform the embedding-centric counterparts that exhaustively enumerate all subgraphs. These systems provide novel specializations to achieve optimum search space, but the inherent redundancies caused by recurrent set intersections on the same or different subgraph instances remain and are difficult to trace, significantly degrading the performance. In this paper, we propose a dataflow-based graph pattern mining framework named Cyclosa to eliminate the above redundancies by utilizing the concept of computation similarity. Cyclosa is characterized by three features. First, it reorganizes the set operations for a pattern into a set dataflow representation which can elegantly indicate the possibility of redundancies while sustaining the optimal scheduling for high performance. Second, the dataflow-guided parallel execution engine decouples data access and computations to enable efficient results sharing. Third, the memory-friendly data management substrate can automatically manage the computation results with high reuse possibility. Evaluation of different patterns demonstrates that Cyclosa outperforms state-of-the-art pattern-centric systems GraphPi and SumPA by up to 16.28× and 5.52×, respectively.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "graph pattern mining",
+    "set intersection"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Set-dataflow GPM engine eliminating redundant set intersections; up to 16.3x over GraphPi"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/usenix/KimPNHKLL25",
+  "venue": "ATC",
+  "year": 2025,
+  "title": "PathWeaver: A High-Throughput Multi-GPU System for Graph-Based Approximate Nearest Neighbor Search",
+  "abstract": "Graph-based Approximate Nearest Neighbor Search (ANNS) is widely adopted in numerous applications, such as recommendation systems, natural language processing, and computer vision. While recent works on GPU-based acceleration have significantly advanced ANNS performance, the ever-growing scale of datasets now demands efficient multi-GPU solutions. However, the design of existing works overlooks multi-GPU scalability, resulting in naive approaches that treat additional GPUs as a means to extend memory capacity for large datasets. This inefficiency arises from partitioning the dataset and independently searching for data points similar to the queries in each GPU. We therefore propose PathWeaver, a novel multi-GPU framework designed to scale and accelerate ANNS for large datasets. First, we propose pipelining-based path extension, a GPU-aware pipelining mechanism that reduces prior work's redundant search iterations by leveraging GPU-to-GPU communication. Second, we design ghost staging that leverages a representative dataset to identify optimal query starting points, reducing the search space for challenging queries. Finally, we introduce direction-guided selection, a data selection technique that filters irrelevant points early in the search process, minimizing unnecessary memory accesses and distance computations. Comprehensive evaluations across diverse datasets demonstrate that PathWeaver achieves 3.24$\\times$ geomean speedup and up to 5.30$\\times$ speedup on 95% recall rate over state-of-the-art multi-GPU-based ANNS frameworks.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "graph"
+   ],
+   "kernels": [
+    "graph ANNS search"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Multi-GPU graph-based ANNS with pipelined path extension and pruning; 3.24x geomean over SOTA"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/JavanmardAKPCH20",
+  "venue": "CGO",
+  "year": 2020,
+  "title": "Deriving parametric multi-way recursive divide-and-conquer dynamic programming algorithms using polyhedral compilers",
+  "abstract": "We present a novel framework to automatically derive highly efficient parametric multi-way recursive divide&conquer algorithms for a class of dynamic programming (DP) problems. Standard two-way or any fixed R-way recursive divide&conquer algorithms may not fully exploit many-core processors. To run efficiently on a given machine, the value of R may need to be different for every level of recursion based on the number of processors available and the sizes of memory/caches at different levels of the memory hierarchy. The set of R values that work well on a given machine may not work efficiently on another machine with a different set of machine parameters. To improve portability and efficiency, Multi-way Autogen generates parametric multi-way recursive divide&conquer algorithms where the value of R can be changed on the fly for every level of recursion. We present experimental results demonstrating the performance and scalability of the parallel programs produced by our framework.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "dynamic programming recursion"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Polyhedral generation of parametric multi-way recursive divide-and-conquer DP kernels for many-core CPUs"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/KoehlerS21",
+  "venue": "CGO",
+  "year": 2021,
+  "title": "Towards a Domain-Extensible Compiler: Optimizing an Image Processing Pipeline on Mobile CPUs",
+  "abstract": "Halide and many similar projects have demonstrated the great potential of domain specific optimizing compilers. They enable programs to be expressed at a convenient high-level, while generating high-performance code for parallel architectures. As domains of interest expand towards deep learning, probabilistic programming and beyond, it becomes increasingly clear that it is unsustainable to redesign domain specific compilers for each new domain. In addition, the rapid growth of hardware architectures to optimize for poses great challenges for designing these compilers. In this paper, we show how to extend a unifying domain-extensible compiler with domain-specific as well as hardware-specific optimizations. The compiler operates on generic patterns that have proven flexible enough to express a wide range of computations. Optimizations are not hard-coded into the compiler but are expressed as user-defined rewrite rules that are composed into strategies controlling the optimization process. Crucially, both computational patterns and optimization strategies are extensible without modifying the core compiler implementation. We demonstrate that this domain-extensible compiler design is capable of expressing image processing pipelines and well-known image processing optimizations. Our results on four mobile ARM multi-core CPUs, often used for image processing tasks, show that the code generated for the Harris operator outperforms the image processing library OpenCV by up to 16× and achieves performance close to - or even up to 1.4 × better than - the state-of-the-art image processing compiler Halide.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "stencil_pde"
+   ],
+   "kernels": [
+    "Harris corner detection",
+    "image processing pipeline"
+   ],
+   "platform": [
+    "arm-cpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Rewrite-based extensible compiler generates Harris kernels up to 16x over OpenCV, up to 1.4x over Halide on ARM"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/AlappatSHKRW21",
+  "venue": "CGO",
+  "year": 2021,
+  "title": "YaskSite: Stencil Optimization Techniques Applied to Explicit ODE Methods on Modern Architectures",
+  "abstract": "The landscape of multi-core architectures is growing more complex and diverse. Optimal application performance tuning parameters can vary widely across CPUs, and finding them in a possibly multidimensional parameter search space can be time consuming, expensive and potentially infeasible. In this work, we introduce YaskSite, a tool capable of tackling these challenges for stencil computations. YaskSite is built upon Intel's YASK framework. It combines YASK's flexibility to deal with different target architectures with the Execution-Cache-Memory performance model, which enables identifying optimal performance parameters analytically without the need to run the code. Further we show that YaskSite's features can be exploited by external tuning frameworks to reliably select the most efficient kernel(s) for the application at hand. To demonstrate this, we integrate YaskSite into Offsite, an offline tuner for explicit ordinary differential equation methods, and show that the generated performance predictions are reliable and accurate, leading to considerable performance gains at minimal code generation time and autotuning costs on the latest Intel Cascade Lake and AMD Rome CPUs.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "stencil_pde"
+   ],
+   "kernels": [
+    "stencil"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "autotuning",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "YaskSite: ECM-model-guided stencil tuning for explicit ODE methods on Cascade Lake and Rome CPUs"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/BastoulZRLSJFJC22",
+  "venue": "CGO",
+  "year": 2022,
+  "title": "Optimizing GPU Deep Learning Operators with Polyhedral Scheduling Constraint Injection",
+  "abstract": "Automatic parallel code generation from high-level abstractions such as those manipulated by artificial intelligence and deep learning (AI/DL) frameworks heavily rely on compiler techniques for automatic parallelization and optimization. Many recent advances rely on the polyhedral framework for this task because of its ability to model and to apply a wide range of loop transformations. However, modeling the complexity of the target architecture and of efficient cost models to decide about the best transformation is in general out of reach for a framework based on linear/affine constraints. In this work, we propose to decouple the polyhedral framework into linear and non-linear components. We introduce the constraint tree abstraction which may be generated by a non-linear optimizer and injected to the polyhedral optimization process to build better solutions. We present how to benefit from such a mechanism to generate efficient codes for GPU in the context of AI/DL operators. Our constraint injection allows to drive the polyhedral scheduler towards efficient solutions for load/store vectorization relying both on memory coalescing and vector types. We implemented our scheduler supporting constraint injection and our constraint construction system within a production AI/DL framework. Experiments on well known neural networks show the efficiency of this approach with respect to state-of-the-art polyhedral scheduling for GPU.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels",
+    "dense_la"
+   ],
+   "kernels": [
+    "DNN operators",
+    "conv"
+   ],
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Polyhedral scheduling with constraint injection generating vectorized, coalesced GPU deep-learning operator kernels"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/SommerA022",
+  "venue": "CGO",
+  "year": 2022,
+  "title": "SPNC: An Open-Source MLIR-Based Compiler for Fast Sum-Product Network Inference on CPUs and GPUs",
+  "abstract": "Sum-Product Networks (SPNs) are an alternative to the widely used Neural Networks (NNs) for machine learning. SPNs can not only reason about (un)certainty by qualifying their output with a probability, they also allow fast (tractable) inference by having run-times that are just linear w.r.t. the network size.We present SPNC, the first tool flow for generating fast native code for SPN inference on both CPUs and GPUs,including the use of vectorized/SIMD execution. To this end, we add two SPN-specific dialects to the MLIR framework and discuss their lowering towards the execution targets.We evaluate our approach on two applications, for which we consider performance, scaling to very large SPNs, and compile vs execution-time trade-offs. In this manner, we achieve multiple orders of magnitude in speed-ups over existing SPN support libraries.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "ml_kernels"
+   ],
+   "kernels": [
+    "SPN inference"
+   ],
+   "platform": [
+    "cpu",
+    "nvidia-gpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "MLIR compiler generating vectorized CPU/GPU sum-product-network inference kernels, orders of magnitude over libraries"
+  },
+  "mode": "confirm-include"
+ },
+ {
+  "key": "conf/cgo/KandiahLVNH23",
+  "venue": "CGO",
+  "year": 2023,
+  "title": "Parsimony: Enabling SIMD/Vector Programming in Standard Compiler Flows",
+  "abstract": "Achieving peak throughput on modern CPUs requires maximizing the use of single-instruction, multiple-data (SIMD) or vector compute units. Single-program, multiple-data (SPMD) programming models are an effective way to use high-level programming languages to target these ISAs. Unfortunately, many SPMD frameworks have evolved to have either overly-restrictive language specifications or under-specified programming models, and this has slowed the widescale adoption of SPMD-style programming. This paper introduces Parsimony (PARallel SIMd), a SPMD programming approach built with semantics designed to be compatible with multiple languages and to cleanly integrate into the standard optimizing compiler toolchains for those languages. We first explain the Parsimony programming model semantics and how they enable a standalone compiler IR-to-IR pass that can perform vectorization independently of other passes, improving the language and toolchain compatibility of SPMD programming. We then demonstrate a LLVM prototype of the Parsimony approach that matches the performance of ispc, a popular but more restrictive SPMD approach, and achieves 97% of the performance of hand-written AVX-512 SIMD intrinsics on over 70 benchmarks ported from the Simd Library. We finally discuss where Parsimony has exposed parts of existing language and compiler flows where slight improvements could further enable improved SPMD program vectorization.",
+  "current_verdict": {
+   "is_kernel_opt": true,
+   "categories": [
+    "primitives"
+   ],
+   "kernels": [
+    "SIMD/vector kernels (Simd Library)"
+   ],
+   "platform": [
+    "cpu"
+   ],
+   "approach": "codegen",
+   "excluded_reason": null,
+   "confidence": "medium",
+   "one_liner": "Parsimony SPMD compiler reaches 97% of hand-written AVX-512 across 70 vector kernels"
+  },
+  "mode": "confirm-include"
+ }
+]

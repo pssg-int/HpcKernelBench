@@ -1,0 +1,220 @@
+kernel: sparse-attention
+summary: >
+  Fused attention restricted to a 0/1 sparsity mask (softmax(QK^T/sqrt(d) +
+  mask)V computed only over allowed positions), measured as steady-state
+  kernel throughput with BOTH an effective (mask-nnz-based) and a
+  dense-equivalent FLOP count reported side by side so speedup claims state
+  which convention they use, split into a structured/swept-ratio variant
+  (sequence-based, sparsity ratio as a first-class swept parameter) and a
+  real-graph-adjacency variant (Fused3S's GNN-style sparse attention, where
+  sparsity is a fixed dataset property, not a tunable knob) — plus a
+  mandatory downstream quality-gate report that no surveyed paper currently
+  provides.
+operation: >
+  O[B,H,S,d] = softmax( (Q[B,H,S,d] @ K[B,H,S,d]^T) / sqrt(d) + mask ) @
+  V[B,H,S,d], mask in {0,-inf}^{S x S} (or, for the graph-adjacency variant,
+  O[N,d] = softmax_row(A ⊙ (Q K^T / sqrt(d))) V over N = graph node count and
+  A = the graph's sparse adjacency matrix in CSR)
+
+variants:
+  - id: sparse-attn-structured-mask-kernel-fp16
+    claim: >
+      steady-state fused sparse-attention kernel throughput under a
+      structured, parametrically-swept sparsity mask (sliding-window,
+      block-local+global, dilated, or a model-defined dynamic/regional ViT
+      mask), at a stated and measured sparsity ratio, with preprocessing
+      (mask/adjacency construction, structural reordering, ILP-schedule
+      solve, autotuning/operator-fusion search) excluded from per-iteration
+      time and reported separately. This is the common denominator STOF's
+      `benchmk_attn_unified.py` and TomczakK25's 6 kernel variants both
+      measure, and what ipdps-26_vit's ILP-scheduled tile execution is a
+      drop-in candidate for (its DynamicViT/RegionViT/VisionLongformer masks
+      are treated as fixed sparsity patterns at their own native ratio,
+      submitted at whatever Sf they produce).
+    inputs:
+      suite: >
+        union of STOF's 5 named mask types (causal, sliding, Longformer,
+        BigBird, dilated) swept over sequence length, TomczakK25's swept
+        sparsity-factor range applied to its Local/Local-1D-Dilated/
+        Local-2D-Dilated/Global/COO/CSR kernels, and ipdps-26_vit's 3 named
+        ViT sparse-mask sources (DynamicViT, RegionViT, VisionLongformer) at
+        their own native (unswept) sparsity ratio.
+      selection: >
+        fix a canonical sparsity-factor sweep since STOF (fixed
+        band/global-width = sqrt(S)) and TomczakK25 (Sf swept 1e-4 to 1.0)
+        disagree on how sparsity is parameterized: Sf in {0.001, 0.01, 0.05,
+        0.1, 0.25, 0.5}, applied at each of S in {1024, 4096, 16384} for the
+        sliding/dilated/global-local kernel family (Longformer/BigBird-style
+        constructions become memory-prohibitive to materialize explicitly
+        above S=4096 per STOF's own extended-sweep cutoff, so those two mask
+        types are capped at S<=4096). ipdps-26_vit's 3 ViT masks are
+        submitted once each at their model's native resolution/sparsity
+        (not swept), since sparsity there is a property of the trained model,
+        not a benchmark parameter.
+      recommended_subset:
+        - {name: causal-s1024, S: 1024, mask: causal, B: 8, H: 12, d: 64}
+        - {name: sliding-s1024-sf01, S: 1024, mask: sliding_window, Sf: 0.1, B: 8, H: 12, d: 64}
+        - {name: sliding-s4096-sf01, S: 4096, mask: sliding_window, Sf: 0.1, B: 4, H: 32, d: 128}
+        - {name: sliding-s16384-sf001, S: 16384, mask: sliding_window, Sf: 0.01, B: 1, H: 32, d: 128}
+        - {name: longformer-s1024-sf01, S: 1024, mask: longformer_local_global, Sf: 0.1, band: 32, global: 32, B: 8, H: 12, d: 64}
+        - {name: longformer-s4096-sf005, S: 4096, mask: longformer_local_global, Sf: 0.05, band: 64, global: 64, B: 2, H: 32, d: 128}
+        - {name: bigbird-s1024-sf01, S: 1024, mask: bigbird_local_global_random, Sf: 0.1, band: 32, global: 32, fill_rate: 0.1, B: 8, H: 12, d: 64}
+        - {name: dilated-s4096-sf005, S: 4096, mask: dilated_1d, Sf: 0.05, dilation: 2, B: 4, H: 32, d: 128}
+        - {name: dilated2d-s4096-sf005, S: 4096, mask: dilated_2d_block, Sf: 0.05, block: 32, dilation: 2, B: 4, H: 32, d: 128}
+        - {name: dynamicvit-vit-l, model: DynamicViT, resolution: 224, note: "native dynamic top-k token-pruning ratio, not swept"}
+        - {name: regionvit-vit-l, model: RegionViT, resolution: 224, note: "native regional block-sparse ratio, not swept"}
+        - {name: visionlongformer-hires, model: VisionLongformer, resolution: 1024, note: "native sliding+global ratio; high-resolution image is this paper's headline use case"}
+        - {name: sf-sweep-microbench, S: 8192, Sf: [0.0001, 0.001, 0.01, 0.1, 1.0], mask: coo_arbitrary, B: 1, H: 1, d: 64, note: "TomczakK25's own microbenchmark sweep, kept as a dedicated fine-grained-Sf sub-case"}
+      dense_operand: >
+        fp16 (STOF's and ipdps-26_vit's default), bf16 optional; fp32
+        supported for the CPU/reference path only. Q,K,V initialized
+        N(0,1) or U(-1,1) (either acceptable, must be fixed and reported).
+    protocol:
+      warmup: 10
+      reps: >
+        100 minimum (raising both STOF's code-verified 20 and TomczakK25's
+        15 to this project's >=20-sample convention; see Divergences —
+        STOF's own paper text claims 100 but its released script only runs
+        20, so this spec does not silently inherit either paper's own
+        practice)
+      statistic: "median (report min/max) — not the average-only statistic both STOF's code and TomczakK25 actually use"
+      timer: "device-side events (CUDA/HIP events), one pair per iteration"
+      timing_scope: "kernel only; mask/adjacency construction, structural reordering (ipdps-26_vit's HC/IC/RCM), ILP-schedule solve, and any autotuning/operator-fusion search (STOF's Table-4 tuning cost) excluded and reported separately, once"
+      preprocessing_reported: "separately, once: mask-construction time, reorder+block-extraction+ILP-solve time (ipdps-26_vit), operator-fusion-template search time (STOF)"
+      measured_sparsity_reported: "mandatory: report the ACTUAL measured mask density (nnz/S^2) alongside the nominal Sf target, since BigBird's random component and ipdps-26_vit's model-defined masks do not land exactly on a requested ratio"
+    metric:
+      primary: >
+        effective TFLOP/s: flops = 2 * 2 * B * H * nnz(mask) * d (QK^T +
+        PV, 2 flops/MAC, nnz = actual number of unmasked (query,key) pairs
+        — NOT S^2). This is the "useful work done" number.
+      secondary: >
+        dense-equivalent TFLOP/s computed on the SAME wall time using the
+        attn-prefill-kernel-fp16bf16 causal-aware dense formula (flops =
+        (mask spans full S^2 ? 4 : 2) * B*H*S^2*d) — reported alongside the
+        effective number specifically so the ratio (effective/dense =
+        measured sparsity-derived speedup-vs-a-hypothetical-dense-kernel-at-
+        the-same-wall-time) is visible. Neither number alone answers "is
+        this fast because of sparsity or because of a fast dense kernel" —
+        this spec requires BOTH, correcting the track's own practice where
+        STOF/ipdps-26_vit report neither and TomczakK25/Fused3S report only
+        one convention each without the other for comparison.
+      tertiary: "ms latency; measured sparsity ratio (nnz/S^2)"
+    correctness: >
+      max abs error < 1e-2 vs. a fp32-accumulate dense masked-softmax
+      reference (PyTorch `scaled_dot_product_attention` with an explicit
+      additive -inf mask, computed in fp32) — a single, mandatory, hard-
+      gated pre-timing check for EVERY candidate, closing the gap where
+      STOF's and Fused3S's own correctness scripts are disconnected from
+      their perf benchmarks and ipdps-26_vit's timed path has no check at
+      all. (TomczakK25's own `allclose(atol=1e-8, rtol=1e-5)` is tighter
+      than this spec's 1e-2; candidates MAY additionally report against that
+      tighter bound but 1e-2 is the pass/fail gate, matching this project's
+      attn-prefill-kernel-fp16bf16 convention for fp16 arithmetic.)
+    quality_gate: >
+      MANDATORY, once per named mask family (not per shape): for the 3
+      ipdps-26_vit ViT configs, report top-1 accuracy on ImageNet-1K val
+      (or the model's own reported eval set) at the tested sparsity ratio
+      vs. the model's dense-attention baseline; for the causal-LM-shaped
+      STOF/TomczakK25/sf-sweep configs, report perplexity on a fixed small
+      held-out LM eval set (e.g. WikiText-103 val) for a small causal LM
+      (GPT-2-small scale) run with the candidate sparse-attention kernel
+      substituted in vs. its dense baseline. NONE of the 4 surveyed papers
+      implements this — see Divergences. This is a spec-mandated fix to a
+      real gap, not a reproduction of current practice, and is why this
+      variant is not simply "adopt whichever paper already does it best."
+
+  - id: sparse-attn-graph-adjacency-kernel-fp16
+    claim: >
+      steady-state fused SDDMM+softmax+SpMM graph-attention kernel
+      throughput over a REAL graph's own sparse adjacency (not a synthetic
+      or parametrically-swept mask), preprocessing (CSR to tensor-core-block
+      conversion) excluded and reported separately. This is Fused3S's own
+      claim and the only legitimate comparison point for it — its
+      "sparsity ratio" is a fixed dataset property (typically <1% density
+      for citation/social graphs), not a value any candidate chooses, so
+      pooling it with the structured-mask variant above would force an
+      artificial ratio framing onto data that does not have one.
+    inputs:
+      suite: >
+        Fused3S's own 15 named single-graph datasets plus its 9 named
+        batched-graph datasets (LRGB/OGB), the union the paper's own
+        `scripts/downloadDataset.py` fetches.
+      selection: >
+        all 15 single-graph datasets Fused3S's own benchmark script iterates
+        by default, spanning 3 orders of magnitude in node count (citation
+        networks ~2K-20K nodes to social/product graphs in the millions),
+        plus the 9 batched small-molecular/vision-scene-graph datasets for
+        the batched-graph sub-case.
+      recommended_subset:
+        - {name: citeseer, nodes: "~3.3K", note: "citation network, smallest"}
+        - {name: cora, nodes: "~2.7K", note: "citation network"}
+        - {name: pubmed, nodes: "~19.7K", note: "citation network"}
+        - {name: github, note: "social network"}
+        - {name: com-amazon.ungraph, note: "product co-purchase network"}
+        - {name: amazon0505, note: "product co-purchase network"}
+        - {name: yelp, note: "social/review network, large"}
+        - {name: reddit, note: "social network, large, Fused3S's own default dataset (-d reddit)"}
+        - {name: ogbn-products, note: "OGB product co-purchase, large"}
+        - {name: amazonProducts, note: "large"}
+        - {name: igb_medium, note: "synthetic large-scale IGB benchmark graph"}
+        - {name: ZINC, batched: true, note: "molecular graphs, LRGB/DGL batched"}
+        - {name: Peptides-func, batched: true, note: "peptide molecular graphs, LRGB"}
+        - {name: PascalVOC-SP, batched: true, note: "vision superpixel scene graphs, LRGB"}
+        - {name: ogbg-molhiv, batched: true, note: "OGB molecular graph classification"}
+      dense_operand: "embedding_dim in {64, 128} (Fused3S's own defaults); Q,K,V fp32-generated then cast fp16 for the fused kernel, matching Fused3S's own test harness"
+    protocol:
+      warmup: 3
+      reps: 20
+      statistic: "median (report mean and std alongside) — raising Fused3S's own code-verified niter=10 to this project's >=20-sample floor; Fused3S is already the best-behaved paper in the track on this axis (median+mean+std, CUDA events) so this variant otherwise adopts its practice directly"
+      timer: "device-side CUDA events, one pair per iteration"
+      timing_scope: "kernel only; CSR-to-tensor-core-block preprocessing (F3S.preprocess_gpu) excluded, reported once per dataset"
+      preprocessing_reported: "separately, once per dataset: CSR->block-format conversion time"
+    metric:
+      primary: >
+        effective GFLOP/s using Fused3S's own formula: flops = nnz*d*2
+        (SDDMM) + nnz*5 (softmax) + nnz*d*2 (SpMM); throughput =
+        flops*1000/time_ms.
+      secondary: >
+        dense-equivalent GFLOP/s computed with N^2 substituted for nnz in
+        the same formula (N = graph node count), reported alongside so the
+        effective/dense ratio (== the graph's measured density) is visible
+        — Fused3S's own release computes only the effective number; this
+        spec adds the dense-equivalent side by side per this track's FLOP-
+        accounting fairness principle (see sparse-attn-structured-mask-
+        kernel-fp16's metric section for the same fix applied there).
+      tertiary: "ms latency; measured graph density (nnz/N^2)"
+    correctness: >
+      relative Frobenius-norm error < 1e-2 vs. a fp32 PyTorch dense masked-
+      softmax reference (`||fused - true_fp32|| / ||true_fp32||`), computed
+      for the full fused output — Fused3S's own metric, but made a
+      MANDATORY hard-gated pre-timing check (the released
+      `test_f3s_accuracy.py` only prints this value with no threshold or
+      assert, disconnected from `baseline_comp_kernel_only.py`'s perf loop).
+    quality_gate: >
+      MANDATORY, once per dataset (not per algorithm variant): report
+      node-classification (or the dataset's native task) accuracy/F1 using
+      the candidate's sparse graph-attention kernel as a GNN layer vs. a
+      dense-attention or standard GAT/GCN baseline layer on the same graph.
+      Not implemented by Fused3S's own release (see Divergences) — a
+      spec-mandated fix, matching the structured-mask variant's quality_gate
+      rationale.
+
+notes_on_fairness:
+  - "STOF's released benchmark script (warmup=10, running_iters=20, mean-only) contradicts its own paper text ('run 100 times... average performance') — this spec does not adopt either number from STOF as-is; it raises the floor to 100 reps with median+min/max, per this project's general convention (see benchspecs/attention-kernel/spec.yaml's identical treatment of PAT/MEATTEN)."
+  - "No paper in this track reports both an effective (sparse/nnz-based) AND a dense-equivalent FLOP count for the same measurement: TomczakK25 states the two complexities analytically (O(SfL^2d) vs O(L^2d+SfL^2d)) but does not measure both; Fused3S measures only the effective number; STOF and ipdps-26_vit measure neither. Both variants in this spec require reporting both numbers side by side, directly implementing this track's key fairness axis (a speedup claim must state which FLOP convention it uses)."
+  - "None of the 4 papers implements a downstream model-quality gate (perplexity or task accuracy) at the sparsity ratios they benchmark — all four only check numerical closeness of the attention OUTPUT TENSOR to a dense reference, never that the sparsity PATTERN preserves the model's actual task performance. Both variants' quality_gate sections are therefore spec additions, not adoptions of existing practice; flagged explicitly rather than silently invented, per the instruction to be an engineer and fix a literature gap rather than paper over it."
+  - "Fused3S's graph-attention kernel cannot share a variant with the other 3 papers' sequence-attention kernels: its 'sparsity ratio' is a fixed property of a real dataset (typically <1% density), not a value a candidate can choose or that a benchmark can sweep, and its 'sequence length' is a graph's node count. Pooling it into the swept-Sf variant would either force an artificial ratio framing onto real data or silently drop the ratio-sweep requirement for one candidate only — kept as a fully separate variant instead, matching this project's precedent of splitting variants along genuinely different input-suite axes (see attention-kernel's GPU-vs-CPU and prefill-vs-decode splits)."
+  - "Correctness-check enforcement is disconnected from the performance benchmark in 3 of 4 papers (STOF, Fused3S, and — absent entirely — ipdps-26_vit); only TomczakK25 appears to genuinely gate on allclose. This spec makes the correctness gate mandatory and part of the SAME run as the timed measurement for every candidate in both variants."
+
+open_questions:
+  - "ipdps-26_vit: the aggregation from per-block mean_ms/p50_ms (run_bench.py's actual output) up to the paper's headline end-to-end '2.1x over FlashAttention' claim is not visible in the surveyed script — unclear whether it's a wall-time sum, a weighted average by block count, or a full-model forward-pass wrapper not included in the repo's src/ directory."
+  - "STOF: whether the arXiv text's stated '100 iterations' applies to a different script than benchmk_attn_unified.py (e.g. tuning_STOF_cost.py or the MCFuser/Bolt-specific paths) was not independently checked within this survey's time budget; the 20-iteration count is confirmed only for the MHA-comparison script behind fig9-10.sh."
+  - "TomczakK25: the exact dtype (fp16 vs fp32) used for the allclose(atol=1e-8, rtol=1e-5) correctness comparison was not confirmed from the fetched excerpt — those tolerances are unusually tight for fp16 arithmetic, suggesting the comparison may run in fp32, but this is not verified against source."
+  - "Fused3S: the default --embedding_dim (128, confirmed) and --batch_size (1024 for batched graphs, confirmed) in baseline_comp_kernel_only.py's own CLI were read, but the full sweep the paper's Figures 5/6/7 actually use (fixed at these defaults, or swept?) was not independently cross-checked against the plotting scripts (time_comp_figure.py was not read in depth)."
+  - "Whether the quality_gate requirement (perplexity / ViT top-1 / node-classification accuracy) added by this spec is achievable within a reasonable Phase-2 benchmarking budget, given it requires running a full downstream model/task rather than just the isolated kernel, is left as a Phase-2 scoping question rather than resolved here."
+
+evidence:
+  conf/ipps/LiK26: "ILP-scheduled tile-aware sparse ViT attention (DynamicViT/RegionViT/VisionLongformer masks); adjacency-matrix + HC/IC/RCM reordering + Gurobi ILP scheduling; run_bench.py: CUDA-event mean+p50(median), CLI warmup/iters (README default 10/100); NO correctness check in the timed path; NO FLOP/throughput metric, only per-block ms; claims up to 2.1x vs FlashAttention fixed tiling; no arXiv id found."
+  conf/ppopp/DaiDRYLL0CS26: "STOF: row/block-wise sparse-attention kernels + searched operator-fusion templates; 5 named mask types (causal/sliding/Longformer/BigBird/dilated), seq_len 128-16384; source-code-confirmed warmup=10,running=20,mean-only (contradicts paper text's claimed 100); check_tensor() prints max/mean diff but is never called from the perf script; NO FLOP metric, only speedup-vs-PyTorch-Native latency and tuning-cost seconds; 8 baselines; A100/4090/H20."
+  conf/ics/LiC25: "Fused3S: fused SDDMM+softmax+SpMM graph attention over REAL graph adjacency (15 single-graph + 9 batched-graph datasets, not a swept ratio); source-code-confirmed warmup=3,niter=10, median+mean+std reported (best-behaved timing in the track); explicit effective-only (nnz-based) FLOP formula, no dense-equivalent; relative-Frobenius-norm correctness check exists but not gated/enforced; A30/H100/GH200; up to 16.3x vs SOTA."
+  conf/ipps/TomczakK25: "graph-computing view of attention; 6 kernel variants (COO/CSR explicit + Local/Dilated-1D/Dilated-2D/Global implicit), Sf swept 1e-4 to 1.0, L up to 160M tokens on 1 A100; warmup=10,reps=15,average-only; allclose(atol=1e-8,rtol=1e-5) is the tightest correctness bound in the track; explicit O(SfL^2d) effective vs O(L^2d+SfL^2d) dense-equivalent complexity statement — clearest FLOP-accounting framing surveyed; A100/L40/V100; vs PyTorch SDPA/FlashAttention."

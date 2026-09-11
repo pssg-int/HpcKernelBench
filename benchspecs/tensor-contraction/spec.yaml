@@ -1,0 +1,304 @@
+kernel: tensor-contraction
+summary: >
+  General tensor-contraction / einsum evaluation, covering four
+  structurally distinct contraction-shape families found in this track's
+  literature: dense multi-operand contraction trees (TCCG + tensor-network
+  applications), small batched irregular fused contractions (knowledge-
+  graph embedding score functions), Kronecker-structured contraction
+  chains, and extreme-scale imbalanced tensor-network contraction
+  (quantum-circuit simulation). No single suite spans all four shape
+  families, so this spec defines one variant per family rather than
+  forcing an artificial common denominator.
+operation: >
+  General form: given tensors {T_1, ..., T_k} and an einsum expression
+  string over multi-indices, compute the output tensor via a sequence of
+  binary contractions (a contraction tree/path), each binary step being
+  C[free_C] = sum_{contracted} A[idx_A] * B[idx_B], with any necessary
+  index permutation performed as part of the same timed step (never
+  amortized out -- see notes_on_fairness).
+variants:
+  - id: tccg-tree-kernel-fp32
+    claim: >
+      steady-state kernel throughput on dense multi-operand tensor-
+      contraction trees drawn from the TCCG benchmark and named tensor-
+      network/tensorized-ML applications, index permutation included,
+      fp32
+    inputs:
+      suite: "TCCG (Springer & Bientinesi 2018) binary-contraction cases,
+        plus named tensor-network application contraction trees"
+      selection: >
+        the ~24 TCCG cases in the track's 'adjusted' configuration
+        (einsum string + explicit per-dimension sizes + contraction path,
+        as used by Einsum Trees) for the binary-contraction sub-suite;
+        SYN, TT, FCTN, TW, GETD, TRN, MERA, TNLM named application trees
+        for the multi-operand sub-suite (>2 input tensors each)
+      recommended_subset:
+        - "efbad,cf->abcde  48,36,24,36,48,36  (0,1)"
+        - "dbea,ec->abcd  96,84,24,96,96  (0,1)"
+        - "bda,dc->abc  384,384,24,384  (0,1)"
+        - "ac,cb->ab  7248,7240,7248  (0,1)"
+        - "aebf,fdec->abcd  96,84,84,84,84,96  (0,1)"
+        - SYN (synthetic contraction tree, alphabetically-sorted dim
+          sizes 24,48,12,56,32,64,8,84,8,72)
+        - TT (tensor-train decomposition contraction tree)
+        - MERA (multi-scale entanglement renormalization ansatz tree)
+        - TNLM (tensor-network language-model inference query tree)
+      dense_operand: "n/a (all operands are the contraction's own dense
+        input tensors, fp32, initialized U(-1,1))"
+    protocol:
+      format: "dense row-major tensors, given (no sparse format involved)"
+      warmup: 10
+      reps: 50
+      statistic: median (report min/max)
+      timer: device-side events (CUDA events) for GPU targets; std::chrono
+        steady clock for CPU targets -- NOT the 1-warmup/1-run protocol
+        Einsum Trees' own benchmark driver uses (see notes_on_fairness)
+      timing_scope: >
+        contraction execution only, index permutation ALWAYS included
+        in-kernel (all 4 papers in this track agree permutation must not
+        be excluded); one-time contraction-path search/compile reported
+        separately, once, never amortized into the per-call GFLOP/s
+      preprocessing_reported: "separately: contraction-path search time
+        (e.g. CoTenGra/opt_einsum path-finding) and any IR-lowering/
+        compile time, both once"
+    metric:
+      primary: "GFLOP/s (standard einsum flop count: 2 * product of all
+        contracted-and-free dimension sizes, summed over every binary
+        step in the path, matching the FLOP convention used for BLAS-
+        level GEMM accounting)"
+      secondary: ms
+    correctness: "max relative error vs. a reference numpy/opt_einsum
+      fp64 evaluation of the same expression < 1e-4 (fp32 kernel)"
+  - id: kge-batched-fused-kernel-fp32
+    claim: >
+      steady-state throughput of small, batched, irregular fused tensor
+      contractions (knowledge-graph-embedding score functions) on real
+      graphs, including the in-kernel runtime index-deduplication cost
+    inputs:
+      suite: "4 real knowledge graphs (FB15k, FB15k-237, BioKG, WN18)"
+      selection: "all 4 named graphs, exact node/edge/relation counts
+        fixed per graph (FB15k: 14951/592213/1345; FB15k-237:
+        14541/310116/237; BioKG: 93773/5088434/51; WN18: 40943/151442/18)"
+      recommended_subset:
+        - fb15k
+        - fb15k-237
+        - biokg
+        - wn18
+      dense_operand: >
+        batch_size in {4096, 8192}, embedding dim in {512, 1024}, fp32;
+        5 score functions swept as the contraction shape:
+        TransE, TransH, TransR, TransF, RESCAL (TransR/RESCAL involve a
+        genuine batched-matrix contraction operand, not vector-only)
+    protocol:
+      format: "dense embedding tables + integer edge-index arrays (given)"
+      warmup: 10
+      reps: 50
+      statistic: median (report min/max) -- NOT the raw 3000-training-
+        iteration average cuKE itself reports, since that statistic
+        conflates warmup dilution with steady state
+      timer: device-side events (CUDA events)
+      timing_scope: >
+        forward score-function kernel only (report backward/gradient
+        kernel separately if evaluated); in-kernel runtime index
+        deduplication (the paper's own optimization) always included,
+        never treated as separate preprocessing
+      preprocessing_reported: "n/a -- no format conversion step exists for
+        this workload; note this explicitly rather than leaving it blank"
+    metric:
+      primary: "GFLOP/s (score-function-specific flop count per edge,
+        e.g. TransE: 3*dim per edge; TransR: 2*dim*dim + dim per edge --
+        must be stated explicitly per score function, since no paper in
+        this track gives a single unified formula, see open_questions)"
+      secondary: "global memory traffic (MB/GB, reported alongside every
+        GFLOP/s number, following cuKE's own practice of never reporting
+        GFLOPS without the memory-traffic figure that explains it)"
+    correctness: "max relative error vs. a reference PyTorch/TorchScript
+      fp64 evaluation of the same score function < 1e-4"
+  - id: kron-matmul-kernel-fp32-fp64
+    claim: >
+      steady-state throughput of Kronecker-structured contraction chains
+      (X times the Kronecker product of N factor matrices), a shape
+      distinct enough from general einsum contraction (fixed chain
+      topology, identical small factors) to warrant its own variant,
+      permutation-free by algorithmic design and reported at both
+      precisions
+    inputs:
+      suite: "FastKron microbenchmark grid + 28 real-world Kron-Matmul
+        sizes (Table 4 of FastKron: LSTM/RNN, ML compression, HyPA,
+        Kronecker graphs, computational biology, drug-target prediction,
+        Gaussian-Process kernel interpolation)"
+      selection: >
+        microbenchmarks: M=1024, P in {8,16,32,64,128}, N swept to the
+        largest allocatable P^N; real-world: all 28 named cases with
+        their exact (M, P_i x Q_i, N_i) shapes as given
+      recommended_subset:
+        - "M=1024, P=8, N=6 (8^6)"
+        - "M=1024, P=64, N=3 (64^3)"
+        - "M=1024, P=128, N=3 (128^3)"
+        - "SKI GP kernel, M=16, P=8^7 (autompg dataset)"
+        - "LSTM/RNN compression, M=20, factors 2^9 x 2^9, N=9"
+        - "Kronecker graph model, M=1024, factors 3^7 x 3^7, N=7"
+      dense_operand: "N/A -- X and the N Kronecker factors ARE the
+        operands; fp32 primary, fp64 reported as a labeled secondary
+        result (only FastKron among this track's 4 papers compares both)"
+    protocol:
+      format: "dense row-major (no sparse format)"
+      warmup: 10
+      reps: 100
+      statistic: median (report min/max) -- FastKron itself reports mean
+        of 100 runs after 10-run warmup; this spec keeps the same
+        warmup/rep counts but switches to median per the track-wide
+        fairness rule (prefer median, report min/max) rather than mean
+      timer: device-side events (CUDA events)
+      timing_scope: >
+        Kron-Matmul kernel only, permutation/transpose cost is ZERO for
+        the shuffle-avoiding algorithm by construction, but MUST be
+        included in-kernel for any baseline that needs it (e.g. the
+        shuffle-algorithm baseline's transpose step, shown by FastKron's
+        own Table 1 to take up to 80% of total time) -- never strip
+        transpose out of a shuffle-algorithm baseline's reported number
+      preprocessing_reported: >
+        separately: autotuning/kernel-parameter search time (FastKron's
+        own autotuner takes <2 minutes per problem shape, searching up to
+        10,000 tile-size configurations in parallel) -- reported once,
+        never amortized into per-call GFLOP/s
+    metric:
+      primary: "achieved TFLOP/s using the algorithm-level complexity
+        O(M*P*sum_{i=1..N} Q^{N-i}*P^i) as the flop count"
+      secondary: "speedup vs. shuffle-algorithm and FTMMT-algorithm
+        baselines; percent of GPU peak FLOPS achieved"
+    correctness: "max relative error vs. explicit-Kronecker-matrix-then-
+      matmul reference in fp64 < 1e-5 (fp32 kernel) / < 1e-10 (fp64 kernel)"
+  - id: quantum-circuit-contraction-kernel-fp32-mixed
+    claim: >
+      sustained throughput and time-to-solution for extreme-scale,
+      structurally imbalanced tensor-network contraction (random-quantum-
+      circuit simulation), single- and mixed-precision, permutation fully
+      fused into the timed kernel by design
+    inputs:
+      suite: "named random-quantum-circuit tensor networks"
+      selection: >
+        10x10x(1+40+1)-qubit circuit (PEPS-sliced, near-uniform rank~5-6/
+        dim-32 pairwise contractions) and the 53-qubit/20-cycle Google
+        Sycamore circuit (CoTenGra-searched path, imbalanced rank-30-vs-
+        rank-4/dim-2 pairwise contractions) -- both circuits are fixed,
+        published, and independently reproducible targets, not a
+        selectable "suite" in the usual sense given the extreme cost of
+        each data point
+      recommended_subset:
+        - "10x10x(1+40+1) RQC, PEPS-sliced contraction path"
+        - "Sycamore 53-qubit x 20-cycle, CoTenGra-searched contraction
+          path"
+      dense_operand: "n/a -- tensor-network amplitude tensors are the
+        operands; fp32 and mixed fp32/fp16 (adaptive per-tensor scaling)
+        -- fp64 is explicitly never used for this shape family (memory-
+        bandwidth-bound design choice, unlike every other variant in
+        this track)"
+    protocol:
+      format: "given tensor network + a pre-computed slicing/contraction
+        path (path search itself reported separately, once, per the
+        preprocessing rule below)"
+      warmup: 10
+      reps: 25
+      statistic: median (report min/max) -- SWQsim itself reports mean
+        of only 3 runs; this spec raises the repetition count for any
+        reproduction at feasible (non-full-machine) scale, while noting
+        that full-machine-scale reproductions (tens of millions of cores)
+        may only be able to afford SWQsim's own 3-run practice, which
+        should be disclosed explicitly if used
+      timer: wall-clock (MPI_Wtime or equivalent) at the full-application
+        granularity, since the kernel is distributed across the whole
+        machine
+      timing_scope: >
+        full contraction (permutation ALWAYS fused in, per this track's
+        one point of universal agreement); one-time contraction-path/
+        slicing-scheme search reported separately
+      preprocessing_reported: "separately, once: contraction-path search
+        (CoTenGra hyper-optimized search) and slicing-scheme selection"
+    metric:
+      primary: "sustained PFLOP/s or EFLOP/s, using the CONSERVATIVE
+        counted-instruction flop method (not the hardware perf-counter
+        method, which SWQsim's own paper shows reads 10-20% high due to
+        temporary-operation generation -- state which method was used)"
+      secondary: "achieved memory-bandwidth utilization (% of peak);
+        wall-clock time-to-solution for the full sampling task"
+    correctness: >
+      NOT a fixed elementwise tolerance (meaningless for stochastically-
+      sampled quantum amplitudes). Instead: (1) computed-amplitude
+      probability distribution must match the theoretical Porter-Thomas
+      distribution (Kolmogorov-Smirnov or equivalent goodness-of-fit);
+      (2) mixed-precision relative error vs. an fp32 reference run must
+      converge below 1% once >=300 aggregated contraction-path blocks are
+      summed, with <2% of individual mixed-precision paths discarded for
+      under/overflow
+notes_on_fairness:
+  - "Permutation/transpose is the one point of universal agreement across
+    all 4 papers in this track: never strip it out of a timed kernel or
+    amortize it separately, even for baselines whose transpose cost is
+    large (FastKron's own Table 1 shows the shuffle-algorithm baseline
+    spending up to 80% of its time on transpose -- that 80% stays in the
+    reported number for that baseline)."
+  - "Einsum Trees' own benchmark driver uses a single warmup call and a
+    single timed call with no repetition statistic at all; this spec
+    fixes warmup=10/reps=50 (or reps=100 for the Kron-Matmul variant,
+    matching FastKron's own already-adequate protocol) and mandates
+    median+min/max reporting instead."
+  - "SWQsim explicitly demonstrates that hardware flop counters read
+    10-20% higher than an instruction-level count due to temporary
+    operations, and deliberately chooses the lower, conservative number.
+    This spec adopts that same conservative-counting principle for the
+    quantum-circuit variant and asks every variant to state its flop-
+    counting method explicitly, since Einsum Trees and cuKE do not."
+  - "fp64 is NOT assumed available or default in this track the way it is
+    in the MTTKRP track: SWQsim never uses it, cuKE and Einsum Trees'
+    reported figures are fp32-only. Only the Kron-Matmul variant reports
+    both fp32 and fp64 as co-primary, following FastKron's own practice;
+    the other three variants are fp32 by default with fp64 an optional
+    secondary result only where the underlying system implements it."
+open_questions:
+  - "No paper in this track gives a single unified flop-counting formula
+    usable across score functions/contraction shapes; the kge-batched
+    variant's metric section flags this explicitly rather than papering
+    over it with a single generic formula that would misrepresent
+    TransE (vector-only) vs. TransR/RESCAL (matrix-operand) cost."
+  - "Einsum Trees' internal `num_ops()` counter definition was not
+    directly inspected (only its call site in bench_expression.cpp was
+    visible); whether it matches the 2*flops-per-multiply-add convention
+    used elsewhere in this spec was not independently verified."
+  - "None of the 4 papers' accessible text states an explicit numeric
+    correctness tolerance (SWQsim's statistical/convergence checks are the
+    partial exception); the tolerances given above for the other 3
+    variants are this spec's own additions, not verified against any
+    paper's actual validation code."
+  - "The ACM-paywalled Einsum Trees paper itself (only the poster and
+    GitHub repo were accessible) may contain evaluation details --
+    exact TCCG case count, exact permutation-cost breakdown numbers --
+    not captured in this survey; a reader with ACM Digital Library access
+    should cross-check against the full paper."
+evidence:
+  conf/asplos/BreuerBEGHKR25: "TCCG-adjusted binary contractions + 8 named tensor-
+    network application trees, FP32 headline figures (FP64 implemented
+    but not shown), permutation always in-kernel by IR design, 1-warmup/
+    1-run single-shot timing (no repetition statistic), 2 CPU platforms
+    only (Grace, Xeon 8488C), ET-TPP/ET-TBLIS/TVM-Ansor/ATen/OE-Torch
+    baselines"
+  conf/ipps/HuLJ24: "4 real KGE graphs x 5 score functions x {batch_size, dim} grid,
+    fp32 only, in-kernel runtime-inspection dedup always included,
+    average-of-3000-training-iterations timing (no separate warmup/reps
+    statistic), no flop formula stated (GFLOPS backed out via memory
+    traffic), TorchScript/TVM/hand-optimized-CUDA baselines"
+  conf/ppopp/JangdaY24: "microbenchmark grid + 28 real-world Kron-Matmul shapes, both
+    fp32 and fp64 compared, transpose cost explicitly shown to be up to
+    80% of the shuffle-algorithm baseline's time (never excluded),
+    explicit algorithm-level flop formula, warmup=10/reps=100/mean
+    (the most rigorously specified protocol in the track), GPyTorch/
+    COGENT/cuTensor/CTF/DISTAL baselines"
+  conf/sc/LiuLLFYSZWPCGHW21: "2 fixed extreme-scale RQC tensor networks (10x10x(1+40+1),
+    Sycamore-53), fp32 + mixed fp32/fp16 only (never fp64), permutation
+    fused into the timed kernel by explicit design (headline
+    contribution), 2-method flop accounting with the conservative method
+    explicitly chosen, only 3 repetitions timed (weakest in the track),
+    correctness via Porter-Thomas statistical fit + mixed-precision
+    convergence rather than a fixed tolerance, literature (not same-
+    machine) baseline comparison against qFlex/Summit/AliCloud/60-GPU
+    prior work"

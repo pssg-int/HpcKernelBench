@@ -1,0 +1,138 @@
+diff --git a/data/cg_performance.csv b/data/cg_performance.csv
+index e69de29..8db2fff 100644
+--- a/data/cg_performance.csv
++++ b/data/cg_performance.csv
+@@ -0,0 +1,14 @@
++test/add20.mtx,100,4.031,17319,inf,2.278163e-03
++test/add20.mtx,100,4.035,17319,inf,2.278163e-03
++/pscratch/sd/c/cunyang/msu/hpc-bench/kernel-papers/bench/matrices/cant.mtx,100,0.867,4007383,2.729587e-01,1.274232e+04
++/tmp/millefeuille_g1q4aj4n/matrix.mtx,100,1.650,2784,2.915259e-09,4.016879e-08
++/tmp/millefeuille_g1q4aj4n/matrix.mtx,100,1.666,2784,2.915259e-09,4.016879e-08
++/tmp/millefeuille_g1q4aj4n/matrix.mtx,100,1.582,2784,2.915259e-09,4.016879e-08
++/tmp/millefeuille_c0e4tnxt/matrix.mtx,100,2.478,11328,9.209163e-05,2.570630e-03
++/tmp/millefeuille_c0e4tnxt/matrix.mtx,100,2.246,11328,9.207308e-05,2.570113e-03
++/tmp/millefeuille_c0e4tnxt/matrix.mtx,100,2.249,11328,9.201940e-05,2.568614e-03
++/tmp/millefeuille_qggg8u35/matrix.mtx,100,1.659,6400,inf,1.880779e-16
++/tmp/millefeuille_qggg8u35/matrix.mtx,100,1.670,6400,inf,6.823559e-16
++/tmp/millefeuille_qggg8u35/matrix.mtx,100,1.678,6400,inf,3.927498e-16
++/tmp/millefeuille_wu07nypu/matrix.mtx,100,6.315,4007383,1.030846e+00,1.659923e+02
++/tmp/millefeuille_zero3utx/matrix.mtx,100,71.272,4007383,3.166632e-01,5.105983e+01
+diff --git a/src/main-cg.cu b/src/main-cg.cu
+index f0e3344..1b61e22 100644
+--- a/src/main-cg.cu
++++ b/src/main-cg.cu
+@@ -1,5 +1,7 @@
+ #include <stdio.h>
+ #include <sys/time.h>
++#include <cstdlib>  // getenv/atoi -- needed for the HPC-KernelBench adapter's
++                    // env-var-driven maxiter/RHS-file/x-dump hooks below
+ #include "./biio2.0/src/biio.h"
+ #include "Mille-feuille-cg.h"
+ 
+@@ -242,7 +244,13 @@ extern "C" void cg_solve_reduce(int *RowPtr, int *ColIdx, MAT_VAL_TYPE *Val, MAT
+     cudaMemcpy(d_tile_rowidx, tile_rowidx, sizeof(int) * (tilenum), cudaMemcpyHostToDevice);
+     cudaDeviceSynchronize();
+     gettimeofday(&t1, NULL);
+-    while (iterations < 10000)
++    // HPC-KernelBench Patch 1a: the shipped artifact hardcoded "10000" here,
++    // ignoring the `maxiter` argument the function signature already
++    // receives (the call site passes maxiter=10) -- a real, independently
++    // documented bug (see this project's benchspecs/cg-krylov/survey.md).
++    // `iterations` is already declared (line ~130) and incremented at the
++    // bottom of this loop, so respecting `maxiter` is a one-token fix.
++    while (iterations < maxiter)
+     //while (iterations < 1000 && sqrt(snew) > epsilon)
+     {
+         cudaMemset(k_q, 0, n * sizeof(double));
+@@ -281,7 +289,15 @@ extern "C" void cg_solve_reduce(int *RowPtr, int *ColIdx, MAT_VAL_TYPE *Val, MAT
+     cudaMemcpy(x, k_x, sizeof(double) * (n), cudaMemcpyDeviceToHost);
+     gettimeofday(&t2, NULL);
+     double time_cg = (t2.tv_sec - t1.tv_sec) * 1000.0 + (t2.tv_usec - t1.tv_usec) / 1000.0;
+-    printf("time_cg=%lf ms\n",time_cg/100);
++    // HPC-KernelBench Patch 1b: the shipped artifact divided by the literal
++    // 100 here, not by `iterations` (which ran a hardcoded 10000 times
++    // before Patch 1a, so the printed "per-iteration" number was off by
++    // ~100x). Print the RAW total-loop time plus the true iteration count;
++    // the adapter (Python side) does the per-iteration division itself,
++    // where it can be cross-checked exactly. This also makes cg_solve_reduce
++    // consistent with cg_solve_inc/cg_solve_sync, which already print/log
++    // raw (undivided) time_cg in this same position.
++    printf("time_cg=%lf ms iterations=%d\n", time_cg, iterations);
+     double time_total = time_spmv + time_dot + time_axpy;
+     double *b_new = (double *)malloc(sizeof(double) * n);
+     memset(b_new, 0, sizeof(double) * n);
+@@ -322,7 +338,16 @@ extern "C" void cg_solve_reduce(int *RowPtr, int *ColIdx, MAT_VAL_TYPE *Val, MAT
+     }
+     double l2_norm = sqrt(sum) / sqrt(sum_ori);
+     char *s = (char *)malloc(sizeof(char) * 200);
+-    sprintf(s, "%d,%.3f,%d,%e,%e\n", 100, time_cg/100, nnzR, l2_norm,sqrt(snew));
++    // HPC-KernelBench Patch 1b (CSV side): same literal-100 divisor bug as
++    // the printf above -- fixed the same way (raw time_cg). The LEADING
++    // "100" literal (1st field) is left untouched: it is not iteration-
++    // related -- cg_solve_inc/cg_solve_sync (main-cg.cu's other two solver
++    // paths) write this identical literal "100" in the same CSV column
++    // despite having no maxiter=10000-style host loop at all, so it is some
++    // other undocumented/dead placeholder value, not a mis-set iteration
++    // count; no CSV header row exists anywhere in this artifact to confirm
++    // its intended meaning. See STATUS.md for the full writeup.
++    sprintf(s, "%d,%.3f,%d,%e,%e\n", 100, time_cg, nnzR, l2_norm,sqrt(snew));
+     FILE *file1 = fopen("data/cg_performance.csv", "a");
+     if (file1 == NULL)
+     {
+@@ -1664,10 +1689,53 @@ int main(int argc, char **argv)
+         for (int j = RowPtr[i]; j < RowPtr[i + 1]; j++)
+             Y_golden[i] += Val[j] * X[ColIdx[j]];
+ 
++    // HPC-KernelBench Patch 3 (optional, opt-in only): override the
++    // manufactured b=A@ones(n) RHS above with an externally supplied one
++    // (the harness uses this to match benchspecs/cg-krylov's b~U(-1,1)
++    // seed=42 convention). A no-op unless MF_RHS_FILE is set, so default
++    // behavior (this artifact's own run_cg.sh, etc.) is unchanged.
++    // Side benefit: `n` here may be truncated to a multiple of BLOCK_SIZE
++    // (see below) while ColIdx indexes the ORIGINAL untruncated column
++    // range, so for matrices whose dimension is not a multiple of
++    // BLOCK_SIZE, the Y_golden loop above can read X[] out of its allocated
++    // bounds (X has only the truncated `n` entries) -- a separate,
++    // pre-existing artifact issue unrelated to Patch 1/2, documented in
++    // STATUS.md. Supplying Y_golden directly here sidesteps it.
++    {
++        const char* rhs_path = getenv("MF_RHS_FILE");
++        if (rhs_path) {
++            FILE* f = fopen(rhs_path, "rb");
++            if (f) { size_t nread = fread(Y_golden, sizeof(double), n, f); fclose(f); (void)nread; }
++        }
++    }
++
++    // HPC-KernelBench variant wiring: thread a configurable maxiter through
++    // instead of the hardcoded literal 10 at this call site (required for
++    // Patch 1a's `while (iterations < maxiter)` fix inside cg_solve_reduce
++    // to mean anything end-to-end). Defaults to the artifact's own original
++    // literal (10) when unset, so default behavior is unchanged.
++    int mf_maxiter = 10;
++    {
++        const char* e = getenv("MF_MAXITER");
++        if (e) mf_maxiter = atoi(e);
++    }
++
+     if(nnzR<10000)
+-    cg_solve_inc(RowPtr, ColIdx, Val, Val_Low, X, Y_golden, n, &iter, 10, 1e-5, filename, nnzR, ori);
++    cg_solve_inc(RowPtr, ColIdx, Val, Val_Low, X, Y_golden, n, &iter, mf_maxiter, 1e-5, filename, nnzR, ori);
+     else if(nnzR<100000&&nnzR>=10000)
+-    cg_solve_sync(RowPtr, ColIdx, Val, Val_Low, X, Y_golden, n, &iter, 10, 1e-5, filename, nnzR, ori);
++    cg_solve_sync(RowPtr, ColIdx, Val, Val_Low, X, Y_golden, n, &iter, mf_maxiter, 1e-5, filename, nnzR, ori);
+     else if(nnzR>=100000)
+-    cg_solve_reduce(RowPtr, ColIdx, Val, Val_Low, X, Y_golden, n, &iter, 10, 1e-5, filename, nnzR, ori);
++    cg_solve_reduce(RowPtr, ColIdx, Val, Val_Low, X, Y_golden, n, &iter, mf_maxiter, 1e-5, filename, nnzR, ori);
++
++    // HPC-KernelBench Patch 2: dump the final solution X (n doubles, host
++    // memory, confirmed holding cg_solve_reduce's cudaMemcpy'd-back result)
++    // for independent correctness verification from the adapter. A no-op
++    // unless MF_X_OUT_FILE is set.
++    {
++        const char* x_out = getenv("MF_X_OUT_FILE");
++        if (x_out) {
++            FILE* f = fopen(x_out, "wb");
++            if (f) { fwrite(X, sizeof(double), n, f); fclose(f); }
++        }
++    }
+ }

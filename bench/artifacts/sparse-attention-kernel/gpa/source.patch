@@ -1,0 +1,19 @@
+diff --git a/Sparse_FlashAttention_CSR/sp_flatt_csr_kernel.cu b/Sparse_FlashAttention_CSR/sp_flatt_csr_kernel.cu
+index cc93acf..5eb0a72 100644
+--- a/Sparse_FlashAttention_CSR/sp_flatt_csr_kernel.cu
++++ b/Sparse_FlashAttention_CSR/sp_flatt_csr_kernel.cu
+@@ -267,7 +267,13 @@ torch::Tensor spfa_csr_cuda_forward(
+ 
+   // Dispatcher that handles launching the correctly typed function from the generic implementation.
+   // AT_DISPATCH_FLOATING_TYPES(Q.type(), "spfa_csr_forward_cuda", ([&] {
+-  AT_DISPATCH_FLOATING_TYPES_AND_HALF(Q.type(), "spfa_csr_forward_cuda", ([&] {
++  // PATCH (torch-version compatibility, see build.sh / STATUS.md): `Q.type()`
++  // returns the deprecated `at::DeprecatedTypeProperties`, which this torch
++  // version's AT_DISPATCH_* macro internals can no longer implicitly convert
++  // to `c10::ScalarType` (compile error: "no suitable conversion function").
++  // `Q.scalar_type()` is the modern, semantically-identical replacement --
++  // same dtype dispatch, no change to kernel logic/algorithm.
++  AT_DISPATCH_FLOATING_TYPES_AND_HALF(Q.scalar_type(), "spfa_csr_forward_cuda", ([&] {
+     spfa_csr_cuda_forward_kernel<scalar_t><<<blocks, threads, maxSMemPB>>>(
+         Q.packed_accessor64<scalar_t, 2, torch::RestrictPtrTraits>(),
+         K.packed_accessor64<scalar_t, 2, torch::RestrictPtrTraits>(),

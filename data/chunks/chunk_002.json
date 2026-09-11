@@ -1,0 +1,456 @@
+[
+ {
+  "key": "conf/asplos/MaCWDS0G23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Efficient Scheduler Live Update for Linux Kernel with Modularization",
+  "abstract": "The scheduler is a critical component of the operating system (OS)and is tightly coupled with Linux. Production-level clouds often host various workloads, and these workloads require different schedulers to achieve high performance. Thus the capability of updating the scheduler lively without rebooting the OS is crucial for the production environments. However, emerging live update techniques only apply for the fine-grained function-level updates or require extra constraints such as microkernel. It fails to update the entire heavy process scheduler subsystem lively. We therefore propose Plugsched to enable scheduler live update, and there are two key novelties. First of all, with the idea of modularization, Plugsched decouples the scheduler from the Linux kernel to be an independent module; Secondly, Plugsched uses the data rebuild technique to migrate the state from the old scheduler to the new one. This scheme can be directly applied to the Linux kernel scheduler in production environments without modifying kernel code. Unlike current function-level live update solutions, Plugsched allows developers to update the entire scheduler subsystem and modify internal scheduler data via the rebuilding technique. Moreover, an optimized stack inspection method is introduced to further effectively reduce the downtime due to the update. Experimental and production results show that Plugsched can effectively update kernel scheduler lively and the downtime is less than tens of milliseconds.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/GuZZXHCYHJL23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "ElasticFlow: An Elastic Serverless Training Platform for Distributed Deep Learning",
+  "abstract": "This paper proposes ElasticFlow, an elastic serverless training platform for distributed deep learning. ElasticFlow provides a serverless interface with two distinct features: (i) users specify only the deep neural network (DNN) model and hyperparameters for a job, but not the number of GPUs; (ii) users specify the deadline for a job, but not the amount of time to occupy GPUs. In contrast to existing server-centric platforms, ElasticFlow provides performance guarantees in terms of meeting deadlines while alleviating tedious, low-level, and manual resource management for deep learning developers. The characteristics of distributed training introduce two challenges. First, the training throughput scales non-linearly with the number of GPUs. Second, the scaling efficiency is affected by worker placement. To address these challenges, we propose Minimum Satisfactory Share to capture the resource usage of training jobs to meet deadlines, and ElasticFlow performs admission control based on it. We develop a greedy algorithm that dynamically allocates resources to admitted jobs based on diminishing returns. We apply buddy allocation to worker placement to eliminate the effect of topology. Evaluation results on a cluster of 128 GPUs show that ElasticFlow increases the number of jobs that can meet their deadlines by 1.46–7.65× compared to existing solutions.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/YasukataTA23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Exit-Less, Isolated, and Shared Access for Virtual Machines",
+  "abstract": "This paper explores Exit-Less, Isolated, and Shared Access (ELISA), a novel in-memory object sharing scheme for Virtual Machines (VMs). ELISA has the isolation advantage over the shared memory directly exposed to guest VMs while its overhead is smaller than that of host-interposition relying on the costly exit from the VM context. In a nutshell, ELISA isolates shared in-memory objects by Extended Page Table (EPT) separation, and a guest VM accesses them by switching the EPT context using VMFUNC, a low-overhead CPU instruction of Intel CPUs. Our experiment shows that the overhead of ELISA is 3.5 times smaller than that of VMCALL-oriented host-interposition. We demonstrate the benefits of ELISA through two use cases; by replacing VMCALL with ELISA, a VM networking system and an in-memory key-value store exhibit 163% and 64% higher performance respectively.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/JinHCHZZ23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Exploiting the Regular Structure of Modern Quantum Architectures for Compiling and Optimizing Programs with Permutable Operators",
+  "abstract": "A critical feature in today's quantum circuit is that they have permutable two-qubit operators. The flexibility in ordering the permutable two-qubit gates leads to more compiler optimization opportunities. However, it also imposes significant challenges due to the additional degree of freedom. Our Contributions are two-fold. We first propose a general methodology that can find structured solutions for scalable quantum hardware. It breaks down the complex compilation problem into two sub-problems that can be solved at small scale. Second, we show how such a structured method can be adapted to practical cases that handle sparsity of the input problem graphs and the noise variability in real hardware. Our evaluation evaluates our method on IBM and Google architecture coupling graphs for up to 1,024 qubits and demonstrate better result in both depth and gate count - by up to 72% reduction in depth, and 66% reduction in gate count. Our real experiments on IBM Mumbai show that we can find better expected minimal energy than the state-of-the-art baseline.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/asplos/KaoSAYK23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "FLAT: An Optimized Dataflow for Mitigating Attention Bottlenecks",
+  "abstract": "Attention mechanisms, primarily designed to capture pairwise correlations between words, have become the backbone of machine learning, expanding beyond natural language processing into other domains. This growth in adaptation comes at the cost of prohibitively large memory requirements and computational complexity, especially at higher number of input elements. This limitation is due to inherently limited data reuse opportunities and quadratic growth in memory footprints, leading to severe memory-boundedness and limited scalability of input elements. This work addresses these challenges by devising a tailored dataflow optimization, called FLAT, for attention mechanisms without altering their functionality. This dataflow processes costly attention operations through a unique fusion mechanism, transforming the memory footprint quadratic growth to merely a linear one. To realize the full potential of this bespoke mechanism, we propose a tiling approach to enhance the data reuse across attention operations. Our method both mitigates the off-chip bandwidth bottleneck as well as reduces the on-chip memory requirement. FLAT delivers 1.94x (1.76x) speedup and 49% and (42%) of energy savings compared to the state-of-the-art Edge (Cloud) accelerators with no customized dataflow optimization. When on-chip resources are scarce (20 KB-200 KB), FLAT yields, on average, 1.5x end-to-end latency reduction across a diverse range of conventional attention-based models with input sequence lengths ranging from 512-token to 64K-token. Our evaluations demonstrate that state-of-the-art DNN dataflow applied to attention operations reach the efficiency limit for inputs above 512 elements. In contrast, FLAT unblocks transformer models for inputs with up to 64K elements.",
+  "hint_categories": [
+   "primitives",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/RootASA0R23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Fast Instruction Selection for Fast Digital Signal Processing",
+  "abstract": "Modern vector processors support a wide variety of instructions for fixed-point digital signal processing. These instructions support a proliferation of rounding, saturating, and type conversion modes, and are often fused combinations of more primitive operations. While these are common idioms in fixed-point signal processing, it is difficult to use these operations in portable code. It is challenging for programmers to write down portable integer arithmetic in a C-like language that corresponds exactly to one of these instructions, and even more challenging for compilers to recognize when these instructions can be used. Our system, Pitchfork, defines a portable fixed-point intermediate representation, FPIR, that captures common idioms in fixed-point code. FPIR can be used directly by programmers experienced with fixed-point, or Pitchfork can automatically lift from integer operations into FPIR using a term-rewriting system (TRS) composed of verified manual and automatically-synthesized rules. Pitchfork then lowers from FPIR into target-specific fixed-point instructions using a set of target-specific TRSs. We show that this approach improves runtime performance of portably-written fixed-point signal processing code in Halide, across a range of benchmarks, by geomean 1.31x on x86 with AVX2, 1.82x on ARM Neon, and 2.44x on Hexagon HVX compared to a standard LLVM-based compiler flow, while maintaining or improving existing compile times.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/Munoz-MartinezG23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Flexagon: A Multi-dataflow Sparse-Sparse Matrix Multiplication Accelerator for Efficient DNN Processing",
+  "abstract": "Sparsity is a growing trend in modern DNN models.",
+  "hint_categories": [
+   "dense_la",
+   "sparse_la"
+  ]
+ },
+ {
+  "key": "conf/asplos/QureshiMGMMPXNV23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "GPU-Initiated On-Demand High-Throughput Storage Access in the BaM System Architecture",
+  "abstract": "Graphics Processing Units (GPUs) have traditionally relied on the host CPU to initiate access to the data storage. This approach is well-suited for GPU applications with known data access patterns that enable partitioning of their dataset to be processed in a pipelined fashion in the GPU. However, emerging applications such as graph and data analytics, recommender systems, or graph neural networks, require fine-grained, data-dependent access to storage. CPU initiation of storage access is unsuitable for these applications due to high CPU-GPU synchronization overheads, I/O traffic amplification, and long CPU processing latencies. GPU-initiated storage removes these overheads from the storage control path and, thus, can potentially support these applications at much higher speed. However, there is a lack of systems architecture and software stack that enable efficient GPU-initiated storage access. This work presents a novel system architecture, BaM, that fills this gap. BaM features a fine-grained software cache to coalesce data storage requests while minimizing I/O traffic amplification. This software cache communicates with the storage system via high-throughput queues that enable the massive number of concurrent threads in modern GPUs to make I/O requests at a high rate to fully utilize the storage devices and the system interconnect. Experimental results show that BaM delivers 1.0x and 1.49x end-to-end speed up for BFS and CC graph analytics benchmarks while reducing hardware costs by up to 21.7x over accessing the graph data from the host memory. Furthermore, BaM speeds up data-analytics workloads by 5.3x over CPU-initiated storage access on the same hardware.",
+  "hint_categories": [
+   "graph",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/YeVC0BDMT23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "GRACE: A Scalable Graph-Based Approach to Accelerating Recommendation Model Inference",
+  "abstract": "The high memory bandwidth demand of sparse embedding layers continues to be a critical challenge in scaling the performance of recommendation models. While prior works have exploited heterogeneous memory system designs and partial embedding sum memoization techniques, they offer limited benefits. This is because prior designs either target a very small subset of embeddings to simplify their analysis or incur a high processing cost to account for all embeddings, which does not scale with the large sizes of modern embedding tables. This paper proposes GRACE-a lightweight and scalable graph-based algorithm-system co-design framework to significantly improve the embedding layer performance of recommendation models. GRACE proposes a novel Item Co-occurrence Graph (ICG) that scalably records item co-occurrences. GRACE then presents a new system-aware ICG clustering algorithm to find frequently accessed item combinations of arbitrary lengths to compute and memoize their partial sums. High-frequency partial sums are stored in a software-managed cache space to reduce memory traffic and improve the throughput of computing sparse features. We further present a cache data layout and low-cost address computation logic to efficiently lookup item embeddings and their partial sums. Our evaluation shows that GRACE significantly outperforms the state-of-the-art techniques SPACE and MERCI by 1.5x and 1.4x, respectively.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/MaXSM0K0ZSH23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "GZKP: A GPU Accelerated Zero-Knowledge Proof System",
+  "abstract": "Zero-knowledge proof (ZKP) is a cryptographic protocol that allows one party to prove the correctness of a statement to another party without revealing any information beyond the correctness of the statement itself. It guarantees computation integrity and confidentiality, and is therefore increasingly adopted in industry for a variety of privacy-preserving applications, such as verifiable outsource computing and digital currency.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/Yin0023",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Glign: Taming Misaligned Graph Traversals in Concurrent Graph Processing",
+  "abstract": "In concurrent graph processing, different queries are evaluated on the same graph simultaneously, sharing the graph accesses via the memory hierarchy. However, different queries may traverse the graph differently, especially for those starting from different source vertices. When these graph traversals are ”misaligned”, the benefits of graph access sharing can be seriously compromised. As more concurrent queries are added to the evaluation batch, the issue tends to become even worse.",
+  "hint_categories": [
+   "graph"
+  ]
+ },
+ {
+  "key": "conf/asplos/NarayanGTRM0FVL23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Going beyond the Limits of SFI: Flexible and Secure Hardware-Assisted In-Process Isolation with HFI",
+  "abstract": "We introduce Hardware-assisted Fault Isolation (HFI), a simple extension to existing processors to support secure, flexible, and efficient in-process isolation. HFI addresses the limitations of existing software-based isolation (SFI) systems including: runtime overheads, limited scalability, vulnerability to Spectre attacks, and limited compatibility with existing code. HFI can seamlessly integrate with current SFI systems (e.g., WebAssembly), or directly sandbox unmodified native binaries. To ease adoption, HFI relies only on incremental changes to the data and control path of existing high-performance processors. We evaluate HFI for x86-64 using the gem5 simulator and compiler-based emulation on a mix of real and synthetic workloads.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/HagedornFCCGG23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Graphene: An IR for Optimized Tensor Computations on GPUs",
+  "abstract": "Modern GPUs accelerate computations and data movements of multi-dimensional tensors in hardware. However, expressing optimized tensor computations in software is extremely challenging even for experts. Languages like CUDA C++ are centered around flat buffers in one-dimensional memory and lack reasonable abstractions for multi-dimensional data and threads. Existing tensor IRs are not expressive enough to represent the complex data-to-thread mappings required by the GPU tensor instructions.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/Bi0LZWGZ0DL0023",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Heron: Automatically Constrained High-Performance Library Generation for Deep Learning Accelerators",
+  "abstract": "Deep Learning Accelerators (DLAs) are effective to improve both performance and energy efficiency of compute-intensive deep learning algorithms. A flexible and portable mean to exploit DLAs is using high-performance software libraries with well-established APIs, which are typically either manually implemented or automatically generated by exploration-based compilation approaches. Though exploration-based approaches significantly reduce programming efforts, they fail to find optimal or near-optimal programs from a large but low-quality search space because the massive inherent constraints of DLAs cannot be accurately characterized.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/DingYZLWP23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Hidet: Task-Mapping Programming Paradigm for Deep Learning Tensor Programs",
+  "abstract": "As deep learning models nowadays are widely adopted by both cloud services and edge devices, reducing the latency of deep learning model inferences becomes crucial to provide efficient model serving. However, it is challenging to develop efficient tensor programs for deep learning operators due to the high complexity of modern accelerators (e.g., NVIDIA GPUs and Google TPUs) and the rapidly growing number of operators.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/SwitzerMKP23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Junkyard Computing: Repurposing Discarded Smartphones to Minimize Carbon",
+  "abstract": "1.5 billion smartphones are sold annually, and most are decommissioned less than two years later. Most of these unwanted smartphones are neither discarded nor recycled but languish in junk drawers and storage units. This computational stockpile represents a substantial wasted potential: modern smartphones have increasingly high-performance and energy-efficient processors, extensive networking capabilities, and a reliable built-in power supply. This project studies the ability to reuse smartphones as \"junkyard computers.\" Junkyard computers grow global computing capacity by extending device lifetimes, which supplants the manufacture of new devices. We show that the capabilities of even decade-old smartphones are within those demanded by modern cloud microservices and discuss how to combine phones to perform increasingly complex tasks. We describe how current operation-focused metrics do not capture the actual carbon costs of compute. We propose Computational Carbon Intensity---a performance metric that balances the continued service of older devices with the superlinear runtime improvements of newer machines. We use this metric to redefine device service lifetime in terms of carbon efficiency. We develop a cloudlet of reused Pixel 3A phones. We analyze the carbon benefits of deploying large, end-to-end microservice-based applications on these smartphones. Finally, we describe system architectures and associated challenges to scale to cloudlets with hundreds and thousands of smartphones.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/LiuG023",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "KIT: Testing OS-Level Virtualization for Functional Interference Bugs",
+  "abstract": "Container isolation is implemented through OS-level virtualization, such as Linux namespaces. Unfortunately, these mechanisms are extremely challenging to implement correctly and, in practice, suffer from functional interference bugs, which compromise container security. In particular, functional interference bugs allow an attacker to extract information from another container running on the same machine or impact its integrity by modifying kernel resources that are incorrectly isolated. Despite their impact, functional interference bugs in OS-level virtualization have received limited attention in part due to the challenges in detecting them. Instead of causing memory errors or crashes, many functional interference bugs involve hard-to-catch logic errors that silently produce semantically incorrect results.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/ChenQ23a",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Khuzdul: Efficient and Scalable Distributed Graph Pattern Mining Engine",
+  "abstract": "This paper proposes Khuzdul, a distributed execution engine with a well-defined abstraction that can be integrated with existing single-machine graph pattern mining (GPM) systems to provide efficiency and scalability at the same time. The key novelty is the extendable embedding abstraction which can express pattern enumeration algorithms, allow fine-grained task scheduling, and enable low-cost GPM-specific data reuse to reduce communication cost. The effective BFS-DFS hybrid exploration generates sufficient concurrent tasks for communication-computation overlapping with bounded memory consumption. Two scalable distributed GPM systems are implemented by porting Automine and GraphPi on Khuzdul. Our evaluation shows that Khuzdul based systems significantly outperform state-of-the-art distributed GPM systems with partitioned graphs by up to 75.5× (on average 19.0×), achieve similar or even better performance compared with the fastest distributed GPM systems with replicated graph, and scale to massive graphs with more than one hundred billion edges with a commodity cluster.",
+  "hint_categories": [
+   "graph",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/LiCLRGY23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "LightRidge: An End-to-end Agile Design Framework for Diffractive Optical Neural Networks",
+  "abstract": "To lower the barrier to diffractive optical neural networks (DONNs) design, exploration, and deployment, we propose LightRidge, the first end-to-end optical ML compilation framework, which consists of (1) precise and differentiable optical physics kernels that enable complete explorations of DONNs architectures, (2) optical physics computation kernel acceleration that significantly reduces the runtime cost in training, emulation, and deployment of DONNs, and (3) versatile and flexible optical system modeling and user-friendly domain-specific-language (DSL). As a result, LightRidge framework enables efficient end-to-end design and deployment of DONNs, and significantly reduces the efforts for programming, hardware-software codesign, and chip integration. Our results are experimentally conducted with physical optical systems, where we demonstrate: (1) the optical physics kernels precisely correlated to low-level physics and systems, (2) significant speedups in runtime with physics-aware emulation workloads compared to the state-of-the-art commercial system, (3) effective architectural design space exploration verified by the hardware prototype and on-chip integration case study, and (4) novel DONN design principles including successful demonstrations of advanced image classification and image segmentation task using DONNs architecture and topology.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/LevineGCBLN0023",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "MC Mutants: Evaluating and Improving Testing for Memory Consistency Specifications",
+  "abstract": "Shared memory platforms provide a memory consistency specification (MCS) so that developers can reason about the behaviors of their parallel programs. Unfortunately, ensuring that a platform conforms to its MCS is difficult, as is exemplified by numerous bugs in well-used platforms. While existing MCS testing approaches find bugs, their efficacy depends on the testing environment (e.g. if synthetic memory pressure is applied). MCS testing environments are difficult to evaluate since legitimate MCS violations are too rare to use as an efficacy metric. As a result, prior approaches have missed critical MCS bugs.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/HsiaGAAZW0W23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "MP-Rec: Hardware-Software Co-design to Enable Multi-path Recommendation",
+  "abstract": "Deep learning recommendation systems serve personalized content under diverse tail-latency targets and input-query loads. In order to do so, state-of-the-art recommendation models rely on terabyte-scale embedding tables to learn user preferences over large bodies of contents. The reliance on a fixed embedding representation of embedding tables not only imposes significant memory capacity and bandwidth requirements but also limits the scope of compatible system solutions. This paper challenges the assumption of fixed embedding representations by showing how synergies between embedding representations and hardware platforms can lead to improvements in both algorithmic- and system performance. Based on our characterization of various embedding representations, we propose a hybrid embedding representation that achieves higher quality embeddings at the cost of increased memory and compute requirements. To address the system performance challenges of the hybrid representation, we propose MP-Rec — a co-design technique that exploits heterogeneity and dynamic selection of embedding representations and underlying hardware platforms.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/CowanMMSX23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "MSCCLang: Microsoft Collective Communication Language",
+  "abstract": "Machine learning models with millions or billions of parameters are increasingly trained and served on large multi-GPU systems. As models grow in size and execute on more GPUs, collective communication becomes a bottleneck. Custom collective algorithms optimized for both particular network topologies and application-specific communication patterns can alleviate this bottleneck and help these applications scale. However, implementing correct and efficient custom algorithms is challenging.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/EmamiKKPRL23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Manticore: Hardware-Accelerated RTL Simulation with Static Bulk-Synchronous Parallelism",
+  "abstract": "The demise of Moore's Law and Dennard Scaling has revived interest in specialized computer architectures and accelerators. Verification and testing of this hardware depend heavily upon cycle-accurate simulation of register-transfer-level (RTL) designs. The fastest software RTL simulators can simulate designs at 1--1000 kHz, i.e., more than three orders of magnitude slower than hardware. Improved simulators can increase designers' productivity by speeding design iterations and permitting more exhaustive exploration.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/JinXLDH023",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Mapping Very Large Scale Spiking Neuron Network to Neuromorphic Hardware",
+  "abstract": "Neuromorphic hardware is a multi-core computer system specifically designed to run Spiking Neuron Network (SNN) applications. As the scale of neuromorphic hardware increases, it becomes very challenging to efficiently map a large SNN to hardware. In this paper, we proposed an efficient approach to map very large scale SNN applications to neuromorphic hardware, aiming to reduce energy consumption, spike latency, and on-chip network communication congestion. The approach consists of two steps. Firstly, it solves the initial placement using the Hilbert curve, a space-filling curve with unique properties that are particularly suitable for mapping SNNs. Secondly, the Force Directed (FD) algorithm is developed to optimize the initial placement. The FD algorithm formulates the connections of clusters as tension forces, thus converts the local optimization of placement as a force analysis problem. The proposed approach is evaluated with the scale of 4 billion neurons, which is more than 200 times larger than previous research. The results show that our approach achieves state-of-the-art performance, significantly exceeding existing approaches.",
+  "hint_categories": [
+   "unstructured_amr"
+  ]
+ },
+ {
+  "key": "conf/asplos/Moffitt23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "MiniMalloc: A Lightweight Memory Allocator for Hardware-Accelerated Machine Learning",
+  "abstract": "We present a new approach to static memory allocation, a key problem that arises in the compilation of machine learning models onto the resources of a specialized hardware accelerator. Our methodology involves a recursive depth-first search that limits exploration to a special class of canonical solutions, dramatically reducing the size of the search space. We also develop a spatial inference technique that exploits this special structure by pruning unpromising partial assignments and backtracking more effectively than otherwise possible. Finally, we introduce a new mechanism capable of detecting and eliminating dominated solutions from consideration. Empirical results demonstrate orders of magnitude improvement in performance as compared to the previous state-of-the-art on many benchmarks, as well as a substantial reduction in library size.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/asplos/FengXTWLS23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Mobius: Fine Tuning Large-Scale Models on Commodity GPU Servers",
+  "abstract": "Fine-tuning on cheap commodity GPU servers makes large-scale deep learning models benefit more people. However, the low inter-GPU communication bandwidth and pressing communication contention on the commodity GPU server obstruct training efficiency.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/0004JTZE23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "NUBA: Non-Uniform Bandwidth GPUs",
+  "abstract": "The parallel execution model of GPUs enables scaling to hundreds of thousands of threads, which is a key capability that many modern high-performance applications exploit. GPU vendors are hence increasing the compute and memory resources with every GPU generation — resulting in the need to efficiently stitch together a plethora of Symmetric Multiprocessors (SMs), Last-Level Cache (LLC) slices and memory controllers while maximizing bandwidth and keeping power consumption and design complexity in check. Conventional GPUs are Uniform Bandwidth Architectures (UBAs) as they provide equal bandwidth between all SMs and all LLC slices. UBA GPUs require a uniform high-bandwidth Network-on-Chip (NoC), and our key observation is that provisioning a NoC to match the LLC slice bandwidth incurs a hefty power and complexity overhead. We propose the Non-Uniform Bandwidth Architecture (NUBA), a GPU system architecture aimed at fully utilizing LLC slice bandwidth. A NUBA GPU consists of partitions that each feature a few SMs and LLC slices as well as a memory controller — hence exposing the complete LLC bandwidth to the SMs within a partition since they can be connected with point-to-point links — and a NoC between partitions — to enable access to remote data.Exploiting the potential of NUBA GPUs however requires carefully co-designing system software, the compiler and architectural policies. The critical system software component is our Local-And-Balanced (LAB) page placement policy which enables the GPU driver to place data in local partitions while avoiding load imbalance. Moreover, we propose Model-Driven Replication (MDR) which identifies read-only shared data with data-flow analysis at compile time. At run time, MDR leverages an architectural mechanism that replicates read-only shared data across LLC slices when this can be done without pressuring cache capacity. With LAB and MDR, our NUBA GPU improves average performance by 23.1% and 22.2% (and up to 183.9% and 182.4%) compared to iso-resource memory-side and SM-side UBA GPUs, respectively. When the NUBA concept is leveraged to reduce overhead while maintaining similar performance, NUBA reduces NoC power consumption by 12.1× and 9.4×, respectively.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/WangZYCMJW23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "NosWalker: A Decoupled Architecture for Out-of-Core Random Walk Processing",
+  "abstract": "Out-of-core random walk system has recently attracted a lot of attention as an economical way to run billions of walkers over large graphs. However, existing out-of-core random walk systems are all built upon general out-of-core graph processing frameworks, and hence do not take advantage of the unique properties of random walk applications. Different from traditional graph analysis algorithms, the sampling process of random walk can be decoupled from the processing of the walkers. It enables the system to reserve only pre-sample results in memory, which are typically much smaller than the entire edge set. Moreover, in random walk, it is not the number of walkers but the number of steps moved per second that dominates the overall performance. Thus, with independent walkers, there is no need to process all the walkers simultaneously.",
+  "hint_categories": [
+   "graph",
+   "primitives",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/ZhangOLWZWZOSWX23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Occamy: Elastically Sharing a SIMD Co-processor across Multiple CPU Cores",
+  "abstract": "SIMD extensions are widely adopted in multi-core processors to exploit data-level parallelism. However, when co-running workloads on different cores, compute-intensive workloads cannot take advantage of the underutilized SIMD lanes allocated to memoryintensive workloads, reducing the overall performance. This paper proposes Occamy, a SIMD co-processor that can be shared by multiple CPU cores, so that their co-running workloads can spatially share its SIMD lanes. The key idea is to enable elastic spatial sharing by dynamically partitioning all the SIMD lanes across different workloads based on their phase behaviors, so that each workload may execute in variable-length SIMD mode. We also introduce an Occamy compiler to support such variable-length vectorization by analyzing such phase behaviors and generating the vectorized code that works with varying vector lengths. We demonstrate that Occamy can improve SIMD utilization, and consequently, performance over three representative SIMD architectures, with negligible chip area cost.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/SongYJJKKL23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Optimus-CC: Efficient Large NLP Model Training with 3D Parallelism Aware Communication Compression",
+  "abstract": "In training of modern large natural language processing (NLP) models, it has become a common practice to split models using 3D parallelism to multiple GPUs. Such technique, however, suffers from a high overhead of inter-node communication. Compressing the communication is one way to mitigate the overhead by reducing the inter-node traffic volume; however, the existing compression techniques have critical limitations to be applied for NLP models with 3D parallelism in that 1) only the data parallelism traffic is targeted, and 2) the existing compression schemes already harm the model quality too much.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/WangWSDIHCMMZKG23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Overlap Communication with Dependent Computation via Decomposition in Large Deep Learning Models",
+  "abstract": "Large deep learning models have shown great potential with state-of-the-art results in many tasks. However, running these large models is quite challenging on an accelerator (GPU or TPU) because the on-device memory is too limited for the size of these models. Intra-layer model parallelism is an approach to address the issues by partitioning individual layers or operators across multiple devices in a distributed accelerator cluster. But, the data communications generated by intra-layer model parallelism can contribute to a significant proportion of the overall execution time and severely hurt the computational efficiency.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/BharadwajDMBK23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Predict; Don't React for Enabling Efficient Fine-Grain DVFS in GPUs",
+  "abstract": "With the continuous improvement of on-chip integrated voltage regulators (IVRs) and fast, adaptive frequency control, dynamic voltage-frequency scaling (DVFS) transition times have shrunk from the microsecond to the nanosecond regime, providing immense opportunity to improve energy efficiency. The key to unlocking the continued improvement in V/f circuit technology is the creation of new, smarter DVFS mechanisms that better adapt to rapid fluctuations in workload demand.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/SongKMME23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Prism: Optimizing Key-Value Store for Modern Heterogeneous Storage Devices",
+  "abstract": "As data generation has been on an upward trend, storing vast volumes of data cost-effectively as well as efficiently accessing them is paramount. At the same time, today's storage landscape continues to diversify, from high-bandwidth storage devices such as NVMe SSDs to low-latency non-volatile memory (e.g., Intel Optane DCPMM). These heterogeneous storage devices have the potential to deliver high performance in terms of bandwidth and latency with cost efficiency, while achieving the performance and cost targets together still remains a challenging problem. We provide our solution, Prism, a novel key-value store that utilizes modern heterogeneous storage devices. Prism uses heterogeneous storage devices synergistically to harness the advantages of each storage device while suppressing their downsides. We devise new techniques to balance the latency-bandwidth tradeoff when reading from SSD. For ensuring multicore scalability and crash consistency of data across heterogeneous storage media, Prism proposes cross-storage concurrency control and cross-storage crash consistency protocols. Our evaluation shows that Prism outperforms state-of-the-art key-value stores by up to 13.1× with significantly lower tail latency.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/ShenPLKTL23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Propeller: A Profile Guided, Relinking Optimizer for Warehouse-Scale Applications",
+  "abstract": "While profile guided optimizations (PGO) and link time optimiza-tions (LTO) have been widely adopted, post link optimizations (PLO)have languished until recently when researchers demonstrated that late injection of profiles can yield significant performance improvements. However, the disassembly-driven, monolithic design of post link optimizers face scaling challenges with large binaries andis at odds with distributed build systems. To reconcile and enable post link optimizations within a distributed build environment, we propose Propeller, a relinking optimizer for warehouse scale work-loads. To enable flexible code layout optimizations, we introduce basic block sections, a novel linker abstraction. Propeller uses basic block sections to enable a new approach to PLO without disassembly. Propeller achieves scalability by relinking the binary using precise profiles instead of rewriting the binary. The overhead of relinking is lowered by caching and leveraging distributed compiler actions during code generation. Propeller has been deployed to production at Google with over tens of millions of cores executing Propeller optimized code at any time. An evaluation of internal warehouse-scale applications show Propeller improves performance by 1.1% to 8% beyond PGO and ThinLTO. Compiler tools such as Clang improve by 7% while MySQL improves by 1%. Compared to the state of the art binary optimizer, Propeller achieves comparable performance while lowering memory overheads by 30%-70% on large benchmarks.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/LittekenSCNCB23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Qompress: Efficient Compilation for Ququarts Exploiting Partial and Mixed Radix Operations for Communication Reduction",
+  "abstract": "Quantum computing is in an era of limited resources. Current hardware lacks high fidelity gates, long coherence times, and the number of computational units required to perform meaningful computation. Contemporary quantum devices typically use a binary system, where each qubit exists in a superposition of the 0 and 1 states. However, it is often possible to access the 2 or even 3 states in the same physical unit by manipulating the system in different ways. In this work, we consider automatically encoding two qubits into one four-state ququart via a compression scheme. We use quantum optimal control to design efficient proof-of-concept gates that fully replicate standard qubit computation on these encoded qubits.",
+  "hint_categories": [
+   "primitives"
+  ]
+ },
+ {
+  "key": "conf/asplos/PanZ0WLWQB0023",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "RECom: A Compiler Approach to Accelerating Recommendation Model Inference with Massive Embedding Columns",
+  "abstract": "Embedding columns are important for deep recommendation models to achieve high accuracy, but they can be very time-consuming during inference. Machine learning (ML) compilers are used broadly in real businesses to optimize ML models automatically. Unfortunately, no existing work uses compilers to automatically accelerate the heavy embedding column computations during recommendation model inferences. To fill this gap, we propose RECom, the first ML compiler that aims at optimizing the massive embedding columns in recommendation models on the GPU. RECom addresses three major challenges. First, generating an efficient schedule on the GPU for the massive operators within embedding columns is difficult. Existing solutions usually lead to numerous small kernels and also lack inter-subgraph parallelism. We adopt a novel codegen strategy that fuses massive embedding columns into a single kernel and maps each column into a separate thread block on the GPU. Second, the complex shape computations under dynamic shape scenarios impede further graph optimizations. We develop a symbolic expression-based module to reconstruct all shape computations. Third, ML frameworks inevitably introduce redundant computations due to robustness considerations. We develop a subgraph optimization module that performs graph-level simplifications based on the entire embedding column context. Experiments on both in-house and open-source models show that RECom can achieve 6.61X and 1.91X over state-of-the-art baselines in terms of end-to-end inference latency and throughput, respectively. RECom's source code is publicly available at https://github.com/AlibabaResearch/recom.",
+  "hint_categories": [
+   "graph",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/WangB23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "RepCut: Superlinear Parallel RTL Simulation with Replication-Aided Partitioning",
+  "abstract": "Register transfer level (RTL) simulation is an invaluable tool for developing, debugging, verifying, and validating hardware designs. Despite the parallel nature of hardware, existing parallel RTL simulators yield speedups unattractive for practical application due to high communication and synchronization costs incurred by typical circuit topologies.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/KhazraeeFPSS23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Rosebud: Making FPGA-Accelerated Middlebox Development More Pleasant",
+  "abstract": "We introduce an approach to designing FPGA-accelerated middleboxes that simplifies development, debugging, and performance tuning by decoupling the tasks of hardware-accelerator implementation and software-application programming. Rosebud is a framework that links hardware accelerators to a high-performance packet processing pipeline through a standardized hardware/software interface. This separation of concerns allows hardware developers to focus on optimizing custom accelerators while freeing software programmers to reuse, configure, and debug accelerators in a fashion akin to software libraries. We show the benefits of the Rosebud framework by building a firewall based on a large blacklist and porting the Pigasus IDS pattern-matching accelerator in less than a month. Our experiments demonstrate that Rosebud delivers high performance, serving ∼200 ‍Gbps of traffic while adding only 0.7–7 microseconds of latency.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/ChirkovW23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "SMAPPIC: Scalable Multi-FPGA Architecture Prototype Platform in the Cloud",
+  "abstract": "Traditionally, architecture prototypes are built on top of FPGA infrastructure, with two associated problems. First, very large FPGAs are prohibitively expensive for most people and institutions. Second, the burden of FPGA development adds to an already uneasy life of researchers, especially those who focus on software. Large designs that do not fit into a single FPGA exacerbate these issues even more. This work presents SMAPPIC — the first open-source prototype platform for shared memory multi-die architectures on cloud FPGAs. SMAPPIC leverages the OpenPiton/BYOC infrastructure and AWS F1 instances to make FPGA-based prototypes of System-on-Chips, processor cores, accelerators, cache subsystems, etc., cheap, scalable, and straightforward. SMAPPIC enables many use cases that are not possible or significantly more complicated in existing software and FPGA tools. This work has the potential to accelerate the rate of innovation in computer engineering fields in the nearest future.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/PandeyKB23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Scoped Buffered Persistency Model for GPUs",
+  "abstract": "While the implications of persistent memory (PM) on CPU hardware and software are well-explored, the same is not true for GPUs (Graphics Processing Units). A recent work, GPM, demonstrated how GPU programs can benefit from the fine-grain persistence of PM. However, in the absence of a persistency model, one cannot reason about the correctness of PM-aware GPU programs. Persistency models define the order in which writes to PM are persisted. We explore persistency models for GPUs.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/0001RO23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Sigma: Compiling Einstein Summations to Locality-Aware Dataflow",
+  "abstract": "Most dataflow accelerator compilers achieve high performance by mapping each node in a dataflow program to a dedicated hardware element on a dataflow accelerator. However, this approach misses critical data reuse optimizations required to exploit the data bandwidth from fine-grained memory elements, e.g., FIFOs and pipeline registers. Moreover, writing performant dataflow programs requires users to have domain expertise in the underlying dataflow accelerators.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/TineSSSACK23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Skybox: Open-Source Graphic Rendering on Programmable RISC-V GPUs",
+  "abstract": "Graphics rendering remains one of the most compute intensive and memory bound applications of GPUs and has been driving their push for performance and energy efficiency since its inception. Early GPU architectures focused only on accelerating graphics rendering and implemented dedicated fixed- function rasterizer hardware to speed-up their rendering pipeline. As GPUs have become more programmable and ubiquitous in other application domains such as scientific computing, machine learning, graph analytics, and crypto-currency, generalizing GPU microarchitectures for area and power efficiency becomes necessary, especially for mobile and IoT devices. In this work, we present Skybox, a full-stack open-source GPU architecture with integrated software, compiler, hardware, and simulation environment, that enables end-to-end GPU research. Using Skybox, we explore the design space of software versus hardware graphics rendering and propose and hybrid micro-architecture that accelerates the state-of-the art Vulkan graphics API. Skybox also introduces novel compiler and system optimizations to support its unique RISC-V ISA baseline. We evaluated Skybox on high- end Altera and also Xilinx FPGAs. We were able to generate and execute a 32 cores (512 threads) Skybox graphics processor on Altera Stratix 10 FPGA, delivering a peak fill rate of 3.7 GPixels at 230 MHz. Skybox is the first open-source full-stack GPU software and hardware implementation that supports the Vulkan API",
+  "hint_categories": [
+   "graph"
+  ]
+ },
+ {
+  "key": "conf/asplos/GanLZZWJ23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Sleuth: A Trace-Based Root Cause Analysis System for Large-Scale Microservices with Graph Neural Networks",
+  "abstract": "Cloud microservices are being scaled up due to the rising demand for new features and the convenience of cloud-native technologies. However, the growing scale of microservices complicates the remote procedure call (RPC) dependency graph, exacerbates the tail-of-scale effect, and makes many of the empirical rules for detecting the root cause of end-to-end performance issues unreliable. Additionally, existing open-source microservice benchmarks are too small to evaluate performance debugging algorithms at a production-scale with hundreds or even thousands of services and RPCs.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/LiLCNZX023",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Spada: Accelerating Sparse Matrix Multiplication with Adaptive Dataflow",
+  "abstract": "Sparse matrix-matrix multiplication (SpGEMM) is widely used in many scientific and deep learning applications. The highly irregular structures of SpGEMM limit its performance and efficiency on conventional computation platforms, and thus motivate a large body of specialized hardware designs. Existing SpGEMM accelerators only support specific types of rigid execution dataflow such as inner/output-product or row-based schemes. Each dataflow is only optimized for certain sparse patterns and fails to generalize with robust performance to the widely diverse SpGEMM workloads across various domains. We propose Spada, a combination of three novel techniques for SpGEMM accelerators to efficiently adapt to various sparse patterns. First, we describe a window-based adaptive dataflow that can be flexibly adapted to different modes to best match the data distributions and realize different reuse benefits. Then, our hardware architecture efficiently supports this dataflow template, with flexible, fast, and low-cost reconfigurability and effective load balancing features. Finally, we use a profiling-guided approach to detect the sparse pattern and determine the optimized dataflow mode to use, based on the key observations of sparse pattern similarity in nearby matrix regions. Our evaluation results demonstrate that Spada is able to match or exceed the best among three state-of-the-art SpGEMM accelerators, and avoid the performance degradation of the others if data distribution and dataflow mismatch. It achieves an average 1.44× speedup across a wide range of sparse matrices and compressed neural network models.",
+  "hint_categories": [
+   "dense_la",
+   "sparse_la"
+  ]
+ },
+ {
+  "key": "conf/asplos/YeLSCC23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "SparseTIR: Composable Abstractions for Sparse Compilation in Deep Learning",
+  "abstract": "Sparse tensors are rapidly becoming critical components of modern deep learning workloads. However, developing high-performance sparse operators can be difficult and tedious, and existing vendor libraries cannot satisfy the escalating demands from new operators. Sparse tensor compilers simplify the development of operators, but efficient sparse compilation for deep learning remains challenging because a single sparse format cannot maximize hardware efficiency, and single-shot compilers cannot keep up with latest hardware and system advances. In this paper, we observe that the key to addressing both these challenges is to leverage composable formats and composable transformations. We propose SparseTIR, a sparse tensor compilation abstraction that offers composable formats and composable transformations for deep learning workloads. SparseTIR constructs a search space over these composable components for performance tuning. With these improvements, SparseTIR obtains consistent performance speedups vs vendor libraries on GPUs for single operators: 1.20-2.34x for GNN operators, 1.05-2.98x for sparse attention operators, and 0.56-7.45x for sparse convolution operators. SparseTIR also accelerates end-to-end GNNs by 1.08-1.52x for GraphSAGE training, and 4.20-40.18x for RGCN inference.",
+  "hint_categories": [
+   "sparse_la",
+   "ml_kernels"
+  ]
+ },
+ {
+  "key": "conf/asplos/GienieczkoMP23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "Supporting Descendants in SIMD-Accelerated JSONPath",
+  "abstract": "Harnessing the power of SIMD can bring tremendous performance gains in data processing. In querying streamed JSON data, the state of the art leverages SIMD to fast forward significant portions of the document. However, it does not provide support for descendant, which excludes many real-life queries and makes formulating many others hard. In this work, we aim to change this: we consider the fragment of JSONPath that supports child, descendant, wildcard, and labels. We propose a modular approach based on novel depth-stack automata that process a stream of events produced by a state-driven classifier, allowing fast forwarding parts of the input document irrelevant at the current stage of the computation. We implement our solution in Rust and compare it with the state of the art, confirming that our approach allows supporting descendants without sacrificing performance, and that reformulating natural queries using descendants brings impressive performance gains in many cases.",
+  "hint_categories": []
+ },
+ {
+  "key": "conf/asplos/ZhaiZLCPJZ23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "TLP: A Deep Learning-Based Cost Model for Tensor Program Tuning",
+  "abstract": "Tensor program tuning is a non-convex objective optimization problem, to which search-based approaches have proven to be effective. At the core of the search-based approaches lies the design of the cost model. Though deep learning-based cost models perform significantly better than other methods, they still fall short and suffer from the following problems. First, their feature extraction heavily relies on expert-level domain knowledge in hardware architectures. Even so, the extracted features are often unsatisfactory and require separate considerations for CPUs and GPUs. Second, a cost model trained on one hardware platform usually performs poorly on another, a problem we call cross-hardware unavailability.",
+  "hint_categories": [
+   "tensor"
+  ]
+ },
+ {
+  "key": "conf/asplos/FengHJLSLYZY0C23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "TensorIR: An Abstraction for Automatic Tensorized Program Optimization",
+  "abstract": "Deploying deep learning models on various devices has become an important topic. The wave of hardware specialization brings a diverse set of acceleration primitives for multi-dimensional ten- sor computations. These new acceleration primitives, along with the emerging machine learning models, bring tremendous engineering challenges. In this paper, we present TensorIR, a compiler abstraction for optimizing programs with these tensor computation primitives. TensorIR generalizes the loop nest representation used in existing machine learning compilers to bring tensor computation as the first-class citizen. Finally, we build an end-to-end framework on top of our abstraction to automatically optimize deep learning models for given tensor computation primitives. Experimental results show that TensorIR compilation automatically uses the tensor computation primitives for given hardware backends and delivers performance that is competitive to state-of-art hand-optimized systems across platforms.",
+  "hint_categories": [
+   "tensor"
+  ]
+ },
+ {
+  "key": "conf/asplos/HsuSSWOEHK23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "The Sparse Abstract Machine",
+  "abstract": "We propose the Sparse Abstract Machine (SAM), an abstract machine model for targeting sparse tensor algebra to reconfigurable and fixed-function spatial dataflow accelerators. SAM defines a streaming dataflow abstraction with sparse primitives that encompass a large space of scheduled tensor algebra expressions. SAM dataflow graphs naturally separate tensor formats from algorithms and are expressive enough to incorporate arbitrary iteration orderings and many hardware-specific optimizations. We also present Custard, a compiler from a high-level language to SAM that demonstrates SAM's usefulness as an intermediate representation. We automatically bind from SAM to a streaming dataflow simulator. We evaluate the generality and extensibility of SAM, explore the performance space of sparse tensor algebra optimizations using SAM, and show SAM's ability to represent dataflow hardware.",
+  "hint_categories": [
+   "sparse_la",
+   "tensor"
+  ]
+ },
+ {
+  "key": "conf/asplos/JayarajanZSP23",
+  "venue": "ASPLOS",
+  "year": 2023,
+  "title": "TiLT: A Time-Centric Approach for Stream Query Optimization and Parallelization",
+  "abstract": "Stream processing engines (SPEs) are widely used for large scale streaming analytics over unbounded time-ordered data streams. Modern day streaming analytics applications exhibit diverse compute characteristics and demand strict latency and throughput requirements. Over the years, there has been significant attention in building hardware-efficient stream processing engines (SPEs) that support several query optimization, parallelization, and execution strategies to meet the performance requirements of large scale streaming analytics applications. However, in this work, we observe that these strategies often fail to generalize well on many real-world streaming analytics applications due to several inherent design limitations of current SPEs. We further argue that these limitations stem from the shortcomings of the fundamental design choices and the query representation model followed in modern SPEs. To address these challenges, we first propose TiLT, a novel intermediate representation (IR) that offers a highly expressive temporal query language amenable to effective query optimization and parallelization strategies. We subsequently build a compiler backend for TiLT that applies such optimizations on streaming queries and generates hardware-efficient code to achieve high performance on multi-core stream query executions. We demonstrate that TiLT achieves up to 326× (20.49× on average) higher throughput compared to state-of-the-art SPEs (e.g., Trill) across eight real-world streaming analytics applications. TiLT source code is available at https://github.com/ampersand-projects/tilt.git.",
+  "hint_categories": [
+   "ml_kernels"
+  ]
+ }
+]

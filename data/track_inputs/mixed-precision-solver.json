@@ -1,0 +1,78 @@
+{
+ "kernel": "mixed-precision-solver",
+ "papers": [
+  {
+   "key": "conf/sc/SuzukiI25",
+   "title": "A Nested Krylov Method Using Half-Precision Arithmetic",
+   "venue": "SC",
+   "year": 2025,
+   "doi": "10.1145/3712285.3759807",
+   "arxiv": "",
+   "oa_url": "https://doi.org/10.1145/3712285.3759807",
+   "artifact_url": "https://github.com/suzuki-hpc/F3R",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Low-precision computing is essential for efficiently utilizing memory bandwidth and computing cores. While many mixed-precision algorithms have been developed for iterative sparse linear solvers, effectively leveraging half-precision (fp16) arithmetic remains challenging. This study introduces a novel nested Krylov approach that integrates the FGMRES and Richardson methods in a deeply nested structure, progressively reducing precision from double-precision to fp16 toward the innermost solver. To avoid meaningless computations beyond precision limits, the low-precision inner solvers perform only a few iterations per invocation, while the nested structure ensures their frequent execution. Numerical experiments show that incorporating fp16 into the approach directly enhances solver performance without compromising convergence, achieving speedups of up to 1.65 × and 2.42 × over double-precis",
+   "one_liner": "Nested FGMRES/Richardson Krylov solver exploiting fp16 inner iterations, up to 2.42x speedup"
+  },
+  {
+   "key": "conf/sc/AbdulahBBCCGKKL24",
+   "title": "Boosting Earth System Model Outputs And Saving PetaBytes in Their Storage Using Exascale Climate Emulators",
+   "venue": "SC",
+   "year": 2024,
+   "doi": "10.1109/SC41406.2024.00008",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/ecrc/hicma-x",
+   "artifact_status": "likely",
+   "platform": [
+    "amd-gpu",
+    "nvidia-gpu",
+    "distributed"
+   ],
+   "approach": "manual",
+   "abstract": "We present the design and scalable implementation of an exascale climate emulator for addressing the escalating computational and storage requirements of high-resolution Earth System Model simulations. We utilize the spherical harmonic transform to stochastically model spatio-temporal variations in climate data. This provides tunable spatio-temporal resolution and significantly improves the fidelity and granularity of climate emulation, achieving an ultra-high spatial resolution of $0.034^{\\circ}(\\sim 3.5 \\mathbf{~ k m})$ in space. Our emulator, trained on 318 billion hourly temperature data points from a 35 -year and 31 billion daily data points from an 83-year global simulation ensemble, generates statistically consistent climate emulations. We extend linear solver software to mixed-precision arithmetic GPUs, applying different precisions within a single solver to adapt to different co",
+   "one_liner": "Mixed-precision BLAS3 PaRSEC linear solver for climate emulation, 0.976 EFlop/s on Frontier"
+  },
+  {
+   "key": "conf/sc/LuMOEJW22",
+   "title": "Climbing the Summit and Pushing the Frontier of Mixed Precision Benchmarks at Extreme Scale",
+   "venue": "SC",
+   "year": 2022,
+   "doi": "10.1109/SC41404.2022.00083",
+   "arxiv": "",
+   "oa_url": "https://www.osti.gov/servlets/purl/1997799",
+   "artifact_url": "https://github.com/at-aaims/OpenMxP",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu",
+    "amd-gpu",
+    "distributed"
+   ],
+   "approach": "manual",
+   "abstract": "The rise of machine learning (ML) applications and their use of mixed precision to perform interesting science are driving forces behind AI for science on HPC. The convergence of ML and HPC with mixed precision offers the possibility of transformational changes in computational science. The HPL-AI benchmark is designed to measure the performance of mixed precision arithmetic as opposed to the HPL benchmark which measures double precision performance. Pushing the limits of systems at extreme scale is nontrivial -little public literature explores optimization of mixed precision computations at this scale. In this work, we demonstrate how to scale up the HPL-AI benchmark on the pre-exascale Summit and exascale Frontier systems at the Oak Ridge Leadership Computing Facility (OLCF) with a cross-platform design. We present the implementation, performance results, and a guideline of optimizatio",
+   "one_liner": "Scaling/optimizing the mixed-precision HPL-AI benchmark on Summit and Frontier across GPU vendors"
+  },
+  {
+   "key": "conf/sc/CaoAAPNBDGKLS22",
+   "title": "Reshaping Geostatistical Modeling and Prediction for Extreme-Scale Environmental Applications",
+   "venue": "SC",
+   "year": 2022,
+   "doi": "10.1109/SC41404.2022.00007",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/ecrc/exageostat",
+   "artifact_status": "likely",
+   "platform": [
+    "arm-cpu",
+    "distributed"
+   ],
+   "approach": "manual",
+   "abstract": "We extend the capability of space-time geostatistical modeling using algebraic approximations, illustrating application-expected accuracy worthy of double precision from majority low-precision computations and low-rank matrix approximations. We exploit the mathematical structure of the dense covariance matrix whose inverse action and determinant are repeatedly required in Gaussian log-likelihood optimization. Geostatistics augments first-principles modeling approaches for the prediction of environmental phenomena given the availability of measurements at a large number of locations; however, traditional Cholesky-based approaches grow cubically in complexity, gating practical extension to continental and global datasets now available. We combine the linear algebraic contributions of mixed-precision and low-rank computations within a tile based Cholesky solver with on-demand casting of pre",
+   "one_liner": "Mixed-precision, low-rank tile Cholesky for geostatistics covariance matrices, 12x speedup on Fugaku"
+  }
+ ]
+}

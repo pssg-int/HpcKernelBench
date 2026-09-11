@@ -1,0 +1,226 @@
+kernel: hamiltonian-simulation
+summary: >
+  Classical (non-quantum-hardware) time evolution e^{-iHt}|psi_0> of sparse
+  quantum Hamiltonians via Trotterization, benchmarked both end-to-end
+  (diagonal-budgeted step-count search + repeated propagator application)
+  and as an isolated diagonal-sparse SpMV/matrix-exponential kernel,
+  gated by state fidelity against a dense NumPy reference where memory
+  permits (system size in {qubits}, matching the parent task's suggested
+  axis directly -- see survey.md Divergences #4).
+
+operation: >
+  Given Hamiltonian H (sum of Pauli-string terms, read from a HamLib HDF5
+  file) and final time T: (1) [diaq method only, one-time preprocessing]
+  binary/exponential-search the smallest step count r such that
+  num_diagonals(exp(-i*H*(T/r))) <= D_max (a user-set diagonal budget);
+  (2) compute the per-step propagator U = exp(-i*H*(T/r)) once (dense
+  matrix exponential over the Hamiltonian's sparse/diagonal representation);
+  (3) apply U to the initial state vector r times via repeated diagonal-
+  sparse matrix-vector multiplication (SpMV): psi_r = U^r psi_0.
+
+variants:
+  - id: hamsim-e2e-hamlib-diagonal-budget
+    claim: >
+      end-to-end wall-clock time for full Hamiltonian time evolution
+      (diagonal-budget step-count search, included as reported one-time
+      preprocessing, PLUS r repeated propagator applications), across
+      HamLib's 4 problem families and the paper's own qubit-count range,
+      compared against 6 baselines run in the SAME driver script (fair,
+      same-harness comparison per survey.md)
+    inputs:
+      suite: "HamLib (Sawaya et al. 2024), hosted on the NERSC public portal (portal.nersc.gov/cfs/m888/dcamps/hamlib/), same HDF5 files the paper itself downloads (paper-confirmed wget commands in README)"
+      selection: >
+        4 families, all instances the paper evaluates (Table 3, confirmed
+        from fulltext, not a further-subsampled cherry-pick): TSP
+        (8-16 qubits, 6 instances, purely diagonal), MaxCut (10-16 qubits,
+        8 instances, purely diagonal), Heisenberg (6-14 qubits, 7
+        instances, ~19 active diagonals at 10 qubits), TFIM (7-16 qubits,
+        6 instances, ~21 active diagonals at 10 qubits); diagonal counts
+        1-33 and sparsity 93.75%-99.9985% across the full instance set
+        (Table 3)
+      recommended_subset:
+        - "tfim: graph-1D-grid-pbc-qubitnodes_Lx-10_h-6 (paper's own README usage example)"
+        - "tfim, heisenberg, maxcut, tsp: smallest instance per family (paper's own low end, ~6-10 qubits) for a fast correctness+performance sanity pass"
+        - "tfim, heisenberg, maxcut, tsp: largest instance per family (paper's own high end, 14-16 qubits) for the paper's headline speedup regime, fidelity check skipped by construction above 15 qubits (see correctness below)"
+      dense_operand: "N/A -- state vector of dimension 2^num_qubits (complex128), Hamiltonian as a sum of Pauli-string terms converted to DiaQ's diagonal-sparse layout"
+      diagonal_budget: >
+        PERCENT_DIAGONALS swept in {10, 30, 50} (percent of 2*dim-1 maximum
+        possible diagonals), matching the CLI argument's own semantics
+        (confirmed from app2_hamlib_latest.py: max_d = max(1500,
+        PERCENT_DIAGONALS * (2*dim-1) // 100)); the paper's README usage
+        example uses 10 -- this spec's 30/50 points are its own addition
+        for a budget-vs-speed/fidelity tradeoff curve the paper's own
+        Table 3 does not fully sweep, flagged as not individually
+        paper-verified
+      final_time: "T=1.8 (script's own default, matches the README usage example exactly)"
+    protocol:
+      timestep_count: >
+        NUM_TIMESTEPS is NOT an independent input for the diaq method --
+        it is the OUTPUT of the diagonal-budget search
+        (estimate_min_timesteps_diaq(), confirmed read from source) run
+        once per (Hamiltonian, PERCENT_DIAGONALS) pair; all baseline
+        methods in the same run use the SAME resolved NUM_TIMESTEPS
+        (confirmed: all methods share one `exact_times` list built after
+        the search resolves), so step count is held fixed across methods
+        within one comparison, per survey.md Divergences #3
+      warmup: >
+        1 discarded iteration -- a benchmark-spec ADDITION: the artifact's
+        own script (app2_hamlib_latest.py, confirmed read) times and PRINTS
+        the first iteration (no discard) before running ITRS-1 more; this
+        spec inserts an explicit untimed warmup call before the first
+        recorded iteration, since a first-call-included measurement risks
+        conflating one-time JIT/cache/allocator warmup with steady-state
+        cost, per this project's standing fairness principle
+      reps: >
+        10 -- matching the PAPER'S OWN reported protocol ("averaged over
+        10 runs," fulltext), NOT the script's bare CLI default of ITRS=5
+        (survey.md Divergences #1); a reproducer must pass ITRS=10
+        explicitly on the command line to match the paper
+      statistic: "median, report min/max and standard deviation (paper's own fulltext reports mean +/- stddev via bar-chart whiskers; this spec adds median/min/max per the standing project fairness principle, without dropping the paper's own stddev reporting)"
+      timer: "time.perf_counter() (confirmed directly from source: `from time import perf_counter`, used to bracket each method call)"
+      timing_scope: >
+        per-method total wall time for r propagator applications ONLY;
+        the one-time diagonal-budget search (preprocessing) and the
+        one-time propagator-matrix computation (U = exp(-i*H*dt), computed
+        once before the repetition loop for diaq/csr/dia/csc methods,
+        confirmed from run_diaq()/run_sparse() source) are explicitly
+        OUTSIDE the ITRS-repeated timed region for those methods -- but for
+        qiskit-aer and expm_multiply, EACH repetition reconstructs/re-
+        applies the operator from scratch inside the timed loop (confirmed
+        from run_qiskit()/run_expm_multiply_csr() source: no U is
+        precomputed and reused across the loop for these two methods).
+        This asymmetry is a REAL property of the compared methods, not a
+        spec artifact: Qiskit's PauliEvolutionGate-based circuit
+        construction and expm_multiply's action-without-forming-the-
+        operator design do not have an equivalent one-shot-U-then-reapply
+        structure the way DiaQ/CSR/DIA's explicit matrix exponential does.
+      preprocessing_reported: >
+        diagonal-budget search time and one-shot propagator-matrix
+        construction time reported SEPARATELY, once, not amortized into
+        the per-iteration ITRS measurements (matches the paper's own "one-
+        time preprocessing...negligible compared to the overall simulation
+        cost" framing, and is structurally confirmed from the script as
+        described above)
+    metric:
+      primary: "speedup vs. Qiskit-Aer = median(T_qiskit-aer) / median(T_method), per Hamiltonian family and qubit count (paper's own primary comparison axis)"
+      secondary: "wall time (s) per method, speedup vs. each of the 5 other baselines (expm_multiply, CSR, DIA, NumPy dense, Qiskit-Aer-GPU), diagonal-budget-search time (one-time), propagator-construction time (one-time)"
+    correctness: >
+      state fidelity (Qiskit's state_fidelity()) between each method's
+      final state and a NumPy-dense reference computed via
+      scipy.linalg.expm applied to the FULL (untrotterized) Hamiltonian --
+      matches the paper's OWN correctness check exactly, not invented
+      (survey.md Divergences #4). Threshold: fidelity >= 0.999 required to
+      count as a valid timed result (paper's own reported HamSim fidelities
+      are ~1.0; Aer's own fidelity is reported as low as 0.03-0.18 on some
+      instances, which the paper treats as a BASELINE FAILURE, not a
+      tolerance to relax -- this spec preserves that framing rather than
+      loosening the threshold to make Aer "pass"). SCALE LIMIT, inherited
+      directly from the artifact's own guard (confirmed from source): the
+      dense reference, and therefore this correctness gate, is
+      automatically SKIPPED for num_qubits >= 16 "to avoid memory issues"
+      -- at that scale only the performance numbers are reportable, with no
+      independent correctness check, exactly as in the paper's own
+      artifact.
+
+  - id: hamsim-microbench-diagonal-spmv
+    claim: >
+      isolated diagonal-sparse SpMV kernel throughput, separating the core
+      linear-algebra primitive from Trotter-step orchestration and HamLib
+      I/O overhead the end-to-end variant also pays -- included because the
+      parent task's "per-step time" axis is most directly answered by this
+      isolated kernel, not the end-to-end application number
+    inputs:
+      suite: "synthetic diagonal-sparse matrices generated by the repo's own microbench_spmv.py generator (confirmed present in repo), not drawn from HamLib HDF5 files directly"
+      selection: "--qubits swept in {8, 10, 12, 14, 16}, --diag-frac (diagonal density) swept in {0.01, 0.05, 0.1, 0.3} (fractions bracketing the 93.75%-99.9985% SPARSITY range Table 3 reports for real HamLib instances, i.e. diag-frac in [0.00015, 0.0625]-equivalent -- this spec's own choice of representative points, flagged as not individually paper-verified), --format in {diaq, dia, csr, numpy} (all 4 formats the script itself supports, confirmed from README)"
+      dense_operand: "state vector of dimension 2^qubits, complex128"
+    protocol:
+      warmup: "1 discarded call per (qubits, diag-frac, format) combination -- benchmark-spec addition, not confirmed present in the microbenchmark script (not read in as much depth as app2_hamlib_latest.py; flagged as unconfirmed)"
+      reps: 10
+      statistic: "median, report min/max"
+      timer: "time.perf_counter(), consistent with the end-to-end script's own choice (not independently confirmed for this specific microbenchmark file, since only its CLI-flag interface was read from the README, not its full source)"
+      timing_scope: "single SpMV call only (U applied once to the state vector), matrix construction/format-conversion excluded and reported separately"
+      preprocessing_reported: "matrix generation and format conversion (e.g. dense-to-DiaQ, dense-to-CSR) reported once, separately, not amortized into the per-SpMV time"
+    metric:
+      primary: "GFLOP/s = 2 * nnz(U) * 2^qubits (complex mul-add, counted as 2 real flops each way, standard complex-GEMV flop count) / spmv_time_seconds"
+      secondary: "wall time (ms) per SpMV call, speedup of diaq format vs. dia/csr/numpy at matched diag-frac"
+    correctness: "output state vector compared to a numpy dense matmul reference at the same (qubits, diag-frac) point, relative error < 1e-10 (double precision, exact SpMV has no approximation error beyond floating-point rounding, so this is a bit-level correctness check, not a quality/speed tradeoff)"
+
+notes_on_fairness:
+  - >
+    The artifact script's own CLI default (ITRS=5) undercounts relative to
+    the paper's own reported protocol (10 runs, fulltext) -- this spec uses
+    10 explicitly and flags the discrepancy so a naive re-run with no
+    arguments does not silently diverge from the paper's own numbers.
+  - >
+    The artifact's timing loop does not discard a first-iteration warmup
+    (confirmed from source); this spec adds one, per the project's standing
+    fairness principle, while preserving the paper's fidelity/threshold
+    framing (see correctness field) rather than loosening it.
+  - >
+    The one-shot-U-then-reapply vs. reconstruct-every-iteration asymmetry
+    between diaq/csr/dia/csc and qiskit-aer/expm_multiply (protocol,
+    timing_scope) is a genuine structural difference between the compared
+    methods' own APIs, not a spec choice to favor one side -- reported
+    explicitly rather than papered over, matching this project's "be an
+    engineer, not a diplomat" instruction.
+  - >
+    The correctness gate is automatically unavailable above 15 qubits,
+    inherited directly from the artifact's own memory-driven guard; this
+    spec does not invent a substitute large-scale correctness check (e.g.
+    a cheaper approximate fidelity estimator) since the paper's own
+    artifact does not have one either -- flagged as a genuine scale
+    limitation of the track's evaluation methodology, not just of this
+    spec.
+
+open_questions:
+  - >
+    Exact diag-frac / qubit sweep points used in the paper's own
+    microbench_spmv.py / microbench_spgemm.py / microbench_expm.py results
+    (referenced in the README and file listing, but their source was not
+    read in the same depth as app2_hamlib_latest.py -- only the CLI-flag
+    interface is confirmed, not the internal generator/timing-loop
+    structure).
+  - >
+    Whether the paper's own reported 10-run protocol used a discarded
+    warmup iteration that simply isn't visible in the current public
+    script state (e.g. if the paper's actual experiment used a
+    since-modified version of app2_hamlib_latest.py) is unconfirmed.
+  - >
+    Exact PERCENT_DIAGONALS values swept in the paper's own Table 3 /
+    speedup figures (only the README's single usage example, 10, is
+    directly confirmed; the paper likely sweeps more values given the
+    "diagonal-budget" framing, but the exact set was not extracted from
+    the fulltext).
+  - >
+    Whether DiaQ's SpMV kernel selection (CPU SIMD/multithreaded vs. CUDA)
+    is automatic or requires the separate diaq_gpu Python module + a
+    different build flag for the microbenchmark scripts specifically
+    (confirmed required for the end-to-end diaq-gpu method from README, not
+    independently confirmed for microbench_spmv.py).
+
+evidence:
+  chundury_ics26: >
+    Diagonal-budgeted Trotterization (HamSim/DiaQ): adaptively searches for
+    the minimal Trotter step count r keeping the per-step propagator's
+    diagonal count under a user budget D_max, one-time preprocessing per
+    (H, budget) confirmed structurally from source; diagonal-sparse
+    C++/CUDA kernels (DiaQ library) bypass CSR overhead; AMD EPYC 8124P
+    (16-core/32-SMT-thread, 192GB DDR5, GCC 12.3 -O3) CPU + NVIDIA H100 NVL
+    (94GB HBM3, nvcc -O3) GPU; HamLib suite, 4 families (TSP 8-16q/6inst,
+    MaxCut 10-16q/8inst, Heisenberg 6-14q/7inst, TFIM 7-16q/6inst), 1-33
+    active diagonals / 93.75-99.9985% sparsity (Table 3); paper's own
+    protocol: 10 runs averaged, stddev via whiskers (fulltext) -- DIFFERS
+    from the artifact script's own CLI default of ITRS=5; perf_counter()
+    wall-clock timing, one-shot propagator matrix for diaq/csr/dia/csc
+    methods vs. reconstruct-every-call for qiskit-aer/expm_multiply
+    (structural asymmetry, confirmed from source); 6 same-harness baselines
+    (numpy, csr, dia, expm_multiply, qiskit-aer, qiskit-aer-gpu); fidelity
+    vs. dense NumPy reference via scipy.linalg.expm, TEST_FIDELITY guard
+    auto-skips above 16 qubits "to avoid memory issues" (confirmed from
+    source); reported CPU speedups TSP 182-1269x/MaxCut 543-1269x/
+    Heisenberg 4.8-841x/TFIM 3.2-841x vs. various baselines, with Aer's OWN
+    fidelity as low as 0.03-0.18 on some instances (accuracy failure, not
+    just a speed loss); GPU 7.8-37.1x (8-10q) up to 178x (12-16q); 3
+    separate isolated microbenchmarks (spmv/spgemm/expm) with
+    --qubits/--diag-frac/--format flags, confirmed present but not read in
+    full source depth.

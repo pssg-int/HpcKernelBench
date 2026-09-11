@@ -1,0 +1,568 @@
+kernel: qr
+summary: >
+  QR factorization spanning four claims this track's own literature treats as
+  genuinely different: dense single-node/GPU Householder QR with pivoting
+  strategy (none / column-pivoted-RRQR / PAQR's pivoting-avoiding variant)
+  as a required, disclosed parameter alongside shape and rank-deficiency
+  location; distributed ScaLAPACK PDGEQRF at scale with tile size and
+  process grid as required parameters (inheriting ScaLAPACK's own internal
+  residual-check convention); sparse multifrontal QR with symbolic-analysis
+  reordering strategy as a required, disclosed parameter; and batched
+  transform-domain (tensor, "t-QR") QR of many small-to-medium frontal
+  slices. No paper in this 4-paper track targets TSQR/Communication-
+  Avoiding-QR specifically or an explicitly tall-skinny (M >> N) benchmark
+  shape — this is a genuine gap in the track's own literature, not a
+  disagreement to reconcile (see survey.md); this spec's dense variant still
+  sweeps shape (square and tall-skinny) using the Householder/RRQR/PAQR
+  algorithms this track's own papers DO implement, and flags TSQR/CAQR's
+  absence explicitly rather than fabricating evidence for an algorithm none
+  of the surveyed papers run.
+operation: >
+  A[M,N] = Q[M,M] * R[M,N] (or the economy form Q[M,N]*R[N,N] for M>=N),
+  Q orthogonal (Q^T*Q = I), R upper triangular. Column-pivoted variants
+  additionally produce a permutation Pi such that A*Pi = Q*R with |R_ii|
+  non-increasing (rank-revealing); PAQR produces the same asymptotic cost as
+  unpivoted QR while approaching QRCP's forward-error accuracy on
+  rank-deficient A, WITHOUT physically pivoting columns. Sparse multifrontal
+  QR additionally performs a symbolic fill-reducing reordering pass before
+  numerical factorization. Batched/tensor QR (t-QR) treats a 3rd-order
+  tensor's tube dimension as a batch axis: an M x N x K tensor's t-QR is K
+  independent 2D QR factorizations of the frontal slices in transform
+  (FFT) domain.
+
+variants:
+  - id: qr-dense-single-node-pivot-kernel
+    claim: >
+      steady-state single-node (CPU or single-GPU) dense Householder QR
+      factorization time, with PIVOTING STRATEGY (none / column-pivoted-RRQR
+      / PAQR) and matrix SHAPE (square vs. tall-skinny) both required,
+      disclosed, swept parameters, plus RANK-DEFICIENCY LOCATION as a third
+      swept axis for the rank-deficient cases — this is the axis
+      SidLakhdarCBALGTJWDDA23 (PAQR, this track's central paper) is built
+      around: unpivoted QR (dgeqrf), column-pivoted QRCP (dgeqp3), and PAQR
+      (dgepoqrf) are compared on the SAME matrix at the SAME shape, with
+      deficient-column location (beginning/middle/end/random) itself swept
+      as a first-class parameter, since a pivoting-avoidance algorithm's
+      behavior is sensitive to where in the elimination order the
+      deficiency falls.
+    inputs:
+      suite: >
+        synthetic dense matrices with a controlled numerical-rank
+        construction, matching SidLakhdarCBALGTJWDDA23's own
+        test_dgepoqrf.c generator: full-rank columns drawn U(-1,1), deficient
+        columns set to exactly zero, with deficiency LOCATION as a swept
+        parameter (see protocol below) rather than a single fixed pattern.
+      selection: >
+        two shape classes, since no paper in this track implements
+        TSQR/CAQR and this spec will not fabricate a communication-avoiding
+        baseline none of the surveyed papers run: (a) SQUARE, M=N, matching
+        SidLakhdarCBALGTJWDDA23's own LAPACK Table 2 point (10000x10000);
+        (b) TALL-SKINNY, M >> N (M/N in {10, 100}), exercising the same
+        three algorithms (dgeqrf/dgeqp3/dgepoqrf) at the shape regime where
+        Householder QR's per-column cost dominates and where a future
+        TSQR/CAQR baseline would be the natural comparison point once this
+        track's paper coverage expands (flagged in open_questions).
+      recommended_subset: >
+        square: N in {1000, 5000, 10000} (matches
+        SidLakhdarCBALGTJWDDA23's own Table 1/Table 2 points). tall-skinny:
+        (M,N) in {(10000,1000), (100000,1000), (100000,100)}.
+      dense_operand: fp64, matches SidLakhdarCBALGTJWDDA23's LAPACK/
+        ScaLAPACK arm exactly (its MAGMA batched arm additionally uses
+        fp32, reported as a separate precision point if run).
+    protocol:
+      pivoting_strategy: >
+        required, disclosed per run: one of {none (dgeqrf), column-pivoted
+        (dgeqp3/QRCP), paqr (dgepoqrf)}. All three MUST be run on the exact
+        same generated matrix instance per (shape, deficiency-location)
+        point, matching SidLakhdarCBALGTJWDDA23's own test-driver structure
+        exactly (create_matrix() is called once per algorithm with the same
+        srand(0) seed, giving all three algorithms an identical input).
+      rank_deficiency_location: >
+        required, disclosed, swept over {full-rank, deficient-at-beginning,
+        deficient-at-middle, deficient-at-end, random-50-50} (matches
+        SidLakhdarCBALGTJWDDA23's own type-0/2/4/5/6 sweep in
+        test_dgepoqrf.c exactly), at a fixed deficiency FRACTION of 50% of
+        columns (matches the paper's own default construction).
+      tile_size: >
+        required, disclosed per run (LAPACK block size, ILAENV-selected by
+        default); report the library default alongside one off-default
+        comparison point, matching this project's cholesky/lu-spec
+        tile-size-disclosure convention — no surveyed paper in this arm
+        discusses block size explicitly, so this is a spec addition to keep
+        this track internally consistent with its sibling dense-
+        factorization tracks.
+      preprocessing: >
+        one-shot: matrix generation happens once before the timed region,
+        reported separately, never amortized into per-call time.
+      warmup: >
+        1 full factorization (a spec addition: SidLakhdarCBALGTJWDDA23's own
+        LAPACK arm has NO warmup in its performance-measurement path at all;
+        its separate ScaLAPACK arm DOES warm up, with two full
+        factorizations before the measured run — this spec adopts the
+        ScaLAPACK arm's practice uniformly since it is the more conservative
+        choice found anywhere in this track).
+      reps: >
+        5 (a spec addition: SidLakhdarCBALGTJWDDA23's own LAPACK/ScaLAPACK
+        arms are BOTH single-shot with zero measured repetitions — the
+        least repetition-disciplined evidence found across this project's
+        three dense-factorization tracks so far, see survey.md's
+        Divergences section).
+      statistic: median (report min and max alongside) — a spec addition,
+        since no repeated-timing-loop exists in this arm's own literature
+        to state a divergent statistic from.
+      timer: >
+        host wall-clock (std::chrono or equivalent monotonic clock) for
+        CPU runs — NOT C `clock()` (CPU time), which
+        SidLakhdarCBALGTJWDDA23's own driver uses and which silently
+        excludes time spent blocked/descheduled, a measurement choice this
+        spec deliberately does not inherit; device-side event timer
+        (synchronized) for GPU/MAGMA runs.
+      timing_scope: kernel-only factorization time; matrix generation and
+        Q-formation (if Q is explicitly formed for the orthogonality check
+        below) are excluded and reported separately.
+      preprocessing_reported: separately, once.
+    metric:
+      primary: "GFLOP/s (square: (4/3)*N^3; tall-skinny M>N: 2*M*N^2 -
+        (2/3)*N^3 — standard Householder-QR FLOP counts, LAPACK convention)"
+      secondary: "ms (median, min, max); for the rank-deficient cases,
+        forward error vs. QRCP on a manufactured-solution least-squares
+        problem (see correctness below) as a secondary, non-gating
+        accuracy comparison — this is this variant's actual research
+        question per SidLakhdarCBALGTJWDDA23's own paper, kept as secondary
+        rather than primary since it is an accuracy claim, not a
+        performance claim"
+    correctness: >
+      TWO required, gating measurements — a deliberate spec addition, since
+      SidLakhdarCBALGTJWDDA23's own LAPACK/ScaLAPACK performance-measurement
+      path computes NEITHER (its accuracy claims live in a separate,
+      non-overlapping MATLAB harness per survey.md): (1) **orthogonality**,
+      the QR-track's mandatory correctness check per this project's design
+      brief: max|I - Q^T*Q| / (N*eps) < 30 (same LAPACK-testsuite-style
+      normalization and threshold as this track's sibling
+      cholesky/spec.yaml residual gate, applied here to Q instead of the
+      factorization residual, since no surveyed paper in this arm states a
+      numeric orthogonality threshold); (2) backward-error residual
+      ||A - Q*R||_F / (||A||_F * max(M,N) * eps) < 30 for the unpivoted and
+      PAQR arms, or ||A*Pi - Q*R||_F / (||A||_F * max(M,N) * eps) < 30 for
+      the column-pivoted arm. A run failing either gate does not count
+      toward reported throughput. SECONDARY (reported, non-gating): forward
+      error on a manufactured-solution least-squares problem (x_true =
+      [0..N-1], b = A*x_true, solve via the computed factors, report
+      ||x_computed - x_true||_2 / N) — this is LinYWT021's own accuracy-
+      check methodology (see variant qr-sparse-multifrontal-kernel below),
+      adopted here as a cross-variant convention this spec introduces for
+      consistency, since it is the only concrete forward-error methodology
+      recovered anywhere in this track's own artifacts.
+
+  - id: qr-dense-distributed-kernel
+    claim: >
+      distributed (multi-node) dense ScaLAPACK PDGEQRF at scale, with tile
+      size (mb, nb) AND process grid (p, q) as required, disclosed, tunable
+      parameters — matches ChoDKLLL23 (GPTuneCrowd)'s own tuning search
+      space for this exact routine, and inherits ScaLAPACK's own internal
+      factorization-residual gate (FRESID/PASSED against a disclosed THRESH)
+      rather than requiring a separately-implemented correctness check, since
+      this is the one variant in this track where a real correctness gate
+      was found already wired into the literature's own measurement path.
+    inputs:
+      suite: same construction as qr-dense-single-node-pivot-kernel
+        (synthetic dense, U(-1,1) full-rank columns; this variant does not
+        sweep rank-deficiency, since ChoDKLLL23's own PDGEQRF tuning target
+        is unpivoted QR, not a rank-revealing variant)
+      selection: >
+        square matrices up to a multi-node-but-not-full-machine range,
+        matching ChoDKLLL23's own example invocation's scale
+        (mmax=nmax=5000) extended to this project's Phase-2 scope.
+      recommended_subset: "N in {5000, 20000, 50000}; process counts P in
+        {4, 16, 64} nodes (p x q grid, p <= q, matches
+        cholesky/spec.yaml's distributed-variant convention)"
+      dense_operand: fp64.
+    protocol:
+      pivoting_strategy: none (PDGEQRF is unpivoted; this variant does not
+        cover a distributed column-pivoted or PAQR-style routine, since
+        none of this track's papers evaluate one at distributed scale).
+      tile_size: "required, disclosed per (N,P) combination: (mb, nb) in
+        GPTuneCrowd's own units-of-bunit convention; report both a
+        library-default point and the autotuned point ChoDKLLL23's own
+        method finds, if reproducing the autotuning claim."
+      process_grid: "p x q, p <= q, as square as possible, matches this
+        track's dense single-node variant and this project's cholesky/lu
+        conventions; disclosed per run."
+      correctness_threshold: "THRESH, ScaLAPACK's own internal residual-
+        check tolerance, required disclosed per run (not confirmed from
+        ChoDKLLL23's own paper what numeric value it uses — flagged in
+        open_questions; this spec adopts ScaLAPACK's own testing-suite
+        default of 30, matching this track's other residual thresholds,
+        pending confirmation)."
+      preprocessing: one-shot process-grid setup and matrix generation;
+        excluded from the timed region, reported separately once.
+      warmup: 1 full factorization per (N, P, tile-size) combination — a
+        spec addition (ChoDKLLL23's own driver has no explicit warmup
+        call, only the niter-repeated measured calls themselves).
+      reps: 5 per combination — a spec addition, DEVIATING from
+        ChoDKLLL23's own niter=2 (its example tuning-objective call) and
+        the routine's own niter=10 default, both chosen for tuner-search
+        cost reasons rather than measurement fidelity.
+      statistic: >
+        median (report min and max alongside) — a DELIBERATE and explicit
+        divergence from ChoDKLLL23's own measured practice: its
+        read_output() takes the STRICT MINIMUM over niter repeated runs
+        (`if (mytime < times[idxparam]): times[idxparam] = mytime`), the
+        most clear-cut best-of-N (optimistic) statistic found anywhere in
+        this project's three dense-factorization-track surveys.
+      timer: "wall-clock, matches ScaLAPACK PDQRDRIVER's own WTIME(1)
+        field convention."
+      timing_scope: kernel-only factorization time; excludes matrix
+        generation and process-grid setup.
+      preprocessing_reported: separately, once.
+    metric:
+      primary: "aggregate GFLOP/s ((4/3)*N^3 / time, summed across the
+        run — matches ScaLAPACK's own TMFLOPS field convention, adjusted
+        to this track's uniform (4/3)*N^3 square-QR FLOP count)"
+      secondary: "ms; FRESID (ScaLAPACK's own reported factorization
+        residual value, reported alongside this spec's own orthogonality
+        check for cross-validation, see correctness below)"
+    correctness: >
+      PRIMARY (required) gate: ScaLAPACK's own internal PDQRDRIVER
+      correctness check (FRESID against the disclosed THRESH; only
+      PASSED-flagged runs count toward reported throughput) — the one
+      variant in this track's spec that reuses a literature-evidenced gate
+      verbatim rather than adding one, since ChoDKLLL23's own artifact
+      already wires this in as a precondition for a configuration's timing
+      to be trusted at all. SECONDARY (reported, non-gating), matching this
+      track's cross-variant convention: orthogonality max|I - Q^T*Q| /
+      (N*eps) < 30, computed on a gathered or distributed-checked Q, for
+      cross-validation against ScaLAPACK's own FRESID (which is a backward-
+      error-style residual, not an orthogonality measurement, so the two
+      are complementary, not redundant).
+
+  - id: qr-sparse-multifrontal-kernel
+    claim: >
+      sparse multifrontal QR factorization of a SuiteSparse-collection
+      matrix, with SYMBOLIC-ANALYSIS REORDERING STRATEGY (AMD / COLAMD /
+      METIS / NESDIS, or a learned/adaptive choice among them) as a
+      required, disclosed parameter, reported separately from numerical
+      factorization time — matches LinYWT021 (STM-multifrontal QR)'s own
+      two-part evaluation structure exactly (symbolic analysis and
+      numerical factorization ARE separately timed in its own artifact, per
+      its QR_time.txt's "analysis factorization time, numerical
+      factorization time" columns).
+    inputs:
+      suite: >
+        SuiteSparse (University of Florida) Matrix Collection; selection
+        criterion matches LinYWT021's own stated (but not fully
+        artifact-reproducible) claim of "nearly 80%" of the collection —
+        this spec instead fixes the exact, reproducible 15-matrix demo list
+        LinYWT021's own artifact actually ships (test.txt), since the full
+        80% set is not recoverable from the artifact per survey.md, and
+        adds the requirement that any expansion beyond this list state its
+        own explicit inclusion criterion (nnz range, structural-symmetry
+        flag, etc.) rather than an unstated "nearly 80%".
+      recommended_subset: "dwt_992, lns_3937, bcsstk14, epb1,
+        reorientation_8, sme3Dc, 3D_51448_3D, cvxqp3, t2d_q9, xenon1,
+        bayer10, Zd_Jac2_db, ex18, c-67, language, mycielskian13 (all 16
+        matrices in LinYWT021's own artifact's test.txt/test.sh sweep,
+        verbatim)"
+      dense_operand: "N/A (sparse); values as stored in the .mtx file,
+        fp64"
+    protocol:
+      reordering_strategy: "required, disclosed per run: one of {AMD,
+        COLAMD, METIS, NESDIS, adaptive/GCN-selected}. All non-adaptive
+        strategies MUST be run and reported for the same matrix alongside
+        the adaptive choice, so the adaptive strategy's selection can be
+        checked against the brute-force optimum, matching LinYWT021's own
+        `-Dall_methods_time` brute-force-comparison build option."
+      tile_size: "N/A in the traditional dense sense; report the
+        multifrontal method's own internal chunk/relaxation parameters
+        (chunk_getSettings, Relaxfactor_setting in LinYWT021's own driver)
+        as the sparse-QR analogue of tile-size disclosure, since these
+        parameters play the same performance-tuning role dense tile size
+        plays elsewhere in this project's dense-factorization tracks."
+      preprocessing: >
+        symbolic analysis (reordering) is measured and reported SEPARATELY
+        from numerical factorization, never folded into a single combined
+        number — matches LinYWT021's own artifact practice exactly (its own
+        QR_time.txt logs both as separate columns) and this project's
+        general fairness principle of not silently mixing preprocessing
+        into per-iteration time.
+      warmup: >
+        1 full factorization (a spec addition — LinYWT021's own driver
+        has `cycleNum` hardcoded to 1 with no separate warmup call at all).
+      reps: 5 (a spec addition, deviating from LinYWT021's own
+        single-measurement practice — see survey.md).
+      statistic: median (report min and max alongside) — a spec addition,
+        same rationale as this track's other variants.
+      timer: "host wall-clock (gettimeofday or equivalent monotonic clock),
+        matches LinYWT021's own timer choice."
+      timing_scope: >
+        numerical factorization time reported separately from symbolic-
+        analysis (reordering) time; both excluded from a combined
+        "preprocessing" bucket since, unlike matrix generation elsewhere in
+        this track's spec, the reordering choice is itself the variable
+        under test, not incidental setup.
+      preprocessing_reported: "symbolic-analysis (reordering) time, reported
+        separately per reordering strategy, always (not one-shot-amortized,
+        since it is the primary object of comparison in this variant)."
+    metric:
+      primary: "GFLOP/s (SPQR_flopcount_bound, the multifrontal method's
+        own realized-flop estimate — NOT the dense (4/3)*N^3 formula, which
+        would badly overcount a sparse factorization's actual work; matches
+        LinYWT021's own commented-out `cc->SPQR_flopcount_bound` field,
+        which this spec requires be enabled and reported, not left
+        commented out as in the artifact's own default build)"
+      secondary: "ms, split into analysis time and numerical-factorization
+        time; memory overhead (%) vs. the reordering strategy's own
+        fill-in count"
+    correctness: >
+      PRIMARY (required) gate: LinYWT021's own manufactured-solution
+      forward-error check — x_true = [0, 1, ..., n-1], b = A*x_true, solve
+      via the computed QR factors, report ||x_computed - x_true||_2 / n <
+      tol, where tol = 20*(m+n)*eps*max2Norm(A) (LinYWT021's own internal
+      SuiteSparseQR-default tolerance formula, computed but NOT explicitly
+      gated against in the artifact's own driver — this spec makes the gate
+      explicit, closing that gap). SECONDARY (reported, non-gating), per
+      this track's cross-variant convention: orthogonality max|I - Q^T*Q| /
+      (N*eps) < 30, but SCOPED ONLY to matrices small enough that explicitly
+      forming Q is tractable (N below a few thousand rows) — explicitly NOT
+      required for the full recommended_subset, since forming Q explicitly
+      for a large sparse factorization is itself impractical/atypical usage
+      (most sparse-QR consumers apply Q implicitly via stored Householder
+      vectors) and requiring it universally would misrepresent how this
+      kernel is actually used, unlike the dense variants above where Q is
+      cheap to form.
+
+  - id: qr-batched-tensor-kernel
+    claim: >
+      batched QR factorization of many small-to-medium 2D frontal slices
+      from a 3rd-order tensor's transform (FFT) domain representation, with
+      the BATCHING STRATEGY (based / batched / streamed) as a required,
+      disclosed parameter — matches ZhangLWW20 (cuTensor-tubal)'s own t-QR
+      primitive exactly, a genuinely different QR-shape claim from the other
+      three variants (many independent small QRs, not one large matrix).
+    inputs:
+      suite: synthetic real-valued tensors cast to complex (FFT-domain
+        requirement), U(0,100) entries per ZhangLWW20's own testtqr.cpp
+        generator (`rand()/(RAND_MAX/100)`).
+      selection: >
+        m = n (square frontal slices, matches the artifact's own examples;
+        no rectangular-slice sweep script ships in the artifact per
+        survey.md) swept 200 to 2000 in steps of 100 (matches the sweep
+        pattern ZhangLWW20's own t-product/t-FFT sweep scripts use, applied
+        here to t-QR since no dedicated t-QR sweep script exists in the
+        artifact itself — flagged in open_questions), at tube length
+        (batch depth) `tupe` in {32, 128, 512}.
+      recommended_subset: "m=n in {200, 500, 1000, 2000}; tupe in {32, 128,
+        512}"
+      dense_operand: "single precision, cast to cuComplex (FFT-domain
+        requirement), matches ZhangLWW20's own precision exactly"
+    protocol:
+      batching_strategy: "required, disclosed per run: one of {based,
+        batched, streamed} — matches ZhangLWW20's own three implementation
+        variants exactly; all three MUST be run on the identical generated
+        tensor per (m, n, tupe) point for a fair comparison, matching the
+        artifact's own (disabled-by-default) cross-implementation check
+        intent."
+      tile_size: N/A (per-slice QR is small enough that tiling is not a
+        separate tuning axis in this artifact; report the underlying
+        cuSOLVER/cuBLAS batched-QR routine's own internal block-size choice
+        if exposed).
+      preprocessing: one-shot tensor generation and the forward FFT
+        (real-to-complex transform) are preprocessing, excluded from the
+        timed region and reported separately, since ZhangLWW20's own
+        library separates t-FFT as its own primitive from t-QR.
+      warmup: 1 full batched factorization — a spec addition (ZhangLWW20's
+        own testtqr.cpp has zero warmup calls).
+      reps: 10 (a spec addition; many small batched slices are cheap
+        enough that more repetitions than this track's other variants are
+        affordable — DEVIATES from ZhangLWW20's own single-measurement
+        practice).
+      statistic: median (report min and max alongside).
+      timer: "device-side event timer (CUDA events), NOT host-side C
+        `clock()` around an asynchronous GPU call, which is what
+        ZhangLWW20's own testtqr.cpp uses and which risks under- or
+        over-counting kernel time depending on implicit synchronization —
+        this spec does not inherit that measurement choice."
+      timing_scope: kernel-only batched factorization; excludes tensor
+        generation and the forward FFT transform.
+      preprocessing_reported: separately, once (tensor generation +
+        forward FFT).
+    metric:
+      primary: "aggregate GFLOP/s (tupe * (4/3)*n^3 for square m=n slices,
+        summed across the batch / time)"
+      secondary: "ms; per-slice GFLOP/s variance across the batch (flags
+        load imbalance specific to the batched/streamed implementations)"
+    correctness: >
+      TWO required, gating measurements, per this track's cross-variant
+      convention — a deliberate spec addition, since ZhangLWW20's own
+      shipped correctness path is a cross-implementation diff that is
+      compiled out by default and checks nothing against a ground-truth QR
+      property (see survey.md): (1) per-slice orthogonality, max over the
+      batch of max|I - Q_k^T*Q_k| / (n*eps) < 30; (2) per-slice backward-
+      error residual, max over the batch of ||A_k - Q_k*R_k||_F /
+      (||A_k||_F * n * eps) < 30. A batch with any slice failing either gate
+      does not count toward reported throughput. This spec REQUIRES these
+      checks be run at least once per (m, n, tupe, batching_strategy)
+      configuration to validate the harness, matching this project's
+      general fairness principle, even though the source artifact's own
+      correctness path is disabled by default.
+
+notes_on_fairness:
+  - >
+    Orthogonality (||Q^T*Q - I||) is REQUIRED, GATING correctness in every
+    dense/batched variant of this spec (relaxed to non-gating-on-a-subset
+    only for the sparse multifrontal variant, where forming Q explicitly is
+    itself atypical usage) — despite NO paper in this 4-paper track
+    computing it anywhere in a performance-measurement path. This is the
+    single largest gap this survey found relative to the task's own design
+    brief for this track (orthogonality named as the QR-specific mandatory
+    correctness check), and is treated as a required spec addition, not an
+    optional refinement, matching this project's "be an engineer, not a
+    diplomat" principle.
+  - >
+    Pivoting/reordering/batching STRATEGY (not just the resulting
+    performance number) is a required, disclosed parameter in every
+    variant, following the same principle already established across this
+    project's cholesky and lu specs: PAQR/QRCP/unpivoted-QR strategy for
+    the dense variant, AMD/COLAMD/METIS/NESDIS/adaptive reordering for the
+    sparse variant, based/batched/streamed for the tensor variant. An
+    undisclosed strategy choice would make cross-run comparison
+    meaningless, the same lesson generalized from this track's siblings.
+  - >
+    Timing statistic is fixed to median (with min/max reported) across
+    every variant, diverging MORE sharply from this track's own literature
+    than either the cholesky or lu specs had to: every one of this track's
+    4 papers is either single-shot (no repetition at all: PAQR's LAPACK
+    arm, STM-QR, cuTensor-tubal) or explicit best-of-N (GPTuneCrowd's
+    minimum-of-2/10) — no paper in this track states an averaging or
+    median statistic anywhere. This is the least repetition-disciplined
+    literature found across this project's three dense-factorization-track
+    surveys so far.
+  - >
+    Correctness-check-present-but-disabled-by-default is a pattern found in
+    this track too (cuTensor-tubal's `#if 0`-guarded diff), matching an
+    identical pattern already documented in this project's lu track
+    (OpenMxP's `--checksum`) and cholesky track (hicma-x's `--check`) — this
+    spec's REQUIRED (not optional) correctness gates across every variant
+    are a direct response to this now-3-track-wide pattern, not just a
+    per-track fix.
+  - >
+    TSQR/CAQR and an explicitly tall-skinny-only benchmark point are NOT
+    covered by any paper in this track's input set. Rather than fabricate
+    evidence for an algorithm none of the surveyed papers implement, this
+    spec's dense variant sweeps a tall-skinny SHAPE using the algorithms
+    this track's papers DO implement (Householder/QRCP/PAQR), and flags the
+    TSQR/CAQR gap explicitly in open_questions as a known limitation of this
+    track's current paper coverage, to be revisited if the track's input
+    set is expanded.
+
+open_questions:
+  - >
+    SidLakhdarCBALGTJWDDA23 (PAQR)'s own forward-error/accuracy measurement
+    methodology (presumably `matlab/src/test.m`) was not fetched during this
+    survey pass — needed to confirm whether ANY orthogonality or
+    backward-error check exists anywhere in this paper's own artifact, even
+    outside the LAPACK/ScaLAPACK performance-measurement path this spec
+    otherwise bases its protocol on.
+  - >
+    LinYWT021 (STM-QR)'s full "~80% of SuiteSparse" evaluation matrix set
+    (its own abstract's stated scope) is not reproducible from the
+    15-matrix demo list shipped in its artifact — this spec's
+    recommended_subset is therefore a small, fully-reproducible fraction of
+    what the paper itself evaluated, not the paper's own full scope.
+  - >
+    ZhangLWW20 (cuTensor-tubal) has no ready-to-run sweep script for t-QR
+    specifically (unlike t-product/t-FFT in the same artifact) — the exact
+    (m, n, tupe) sweep used to produce the paper's own reported t-QR figures
+    was not recoverable; this spec's recommended_subset is adapted from the
+    artifact's t-product/t-FFT sweep pattern, not confirmed against the
+    paper's own t-QR numbers.
+  - >
+    ChoDKLLL23 (GPTuneCrowd)'s ScaLAPACK PDQRDRIVER `THRESH` value used in
+    its own reported PDGEQRF-tuning results was not confirmed from the
+    extracted source — this spec's adoption of 30 (matching this project's
+    other residual thresholds) is a spec default, not confirmed evidence.
+  - >
+    Whether this track's assigned 4-paper input set omitting TSQR/CAQR
+    entirely reflects a genuine gap in the underlying corpus (i.e. no
+    TSQR/CAQR paper exists in the corpus this track's input was drawn from)
+    or a narrower selection within a broader available set was not
+    investigated during this survey pass.
+
+evidence:
+  conf/ipps/SidLakhdarCBALGTJWDDA23: >
+    Dense QR/QRCP/PAQR (dgeqrf/dgeqp3/dgepoqrf) head-to-head on the same
+    matrix; rank-deficiency LOCATION (beginning/middle/end/random) swept as
+    a first-class parameter; four separate pinned-version Docker reproduction
+    tiers (MATLAB/LAPACK/MAGMA/ScaLAPACK); LAPACK arm: C clock() (CPU time),
+    single-shot, no correctness check in the performance path (accuracy
+    measured separately in MATLAB, not fetched); ScaLAPACK arm: 2 warmup + 1
+    measured run each of QR/PAQR/QRCP. No arXiv/OA source available -
+    artifact repo luszczek/paqr (README + test_paqr_lapack.sh +
+    lapack/test_dgepoqrf.c, full source read) only.
+  conf/sc/LinYWT021: >
+    Sparse multifrontal QR; GCN-selected reordering (AMD/COLAMD/METIS/
+    NESDIS) for symbolic analysis + NUMA-aware task-stream numerical
+    factorization, evaluated separately (not jointly, per the repo's own
+    README); SuiteSparse matrices, "~80%" per abstract but only 15-matrix
+    demo list ships; manufactured-solution forward-error check
+    (||x_computed-x_true||/n) computed and logged but not explicitly gated
+    against its own computed tolerance; cycleNum hardcoded to 1 (no
+    repetition despite an averaging-loop code structure); MKL sparse QR and
+    original SuiteSparseQR baselines. No arXiv/OA source available -
+    artifact repo lsl036/STM-Multifrontal-QR-Factorization-Empowered-by-GCN
+    (README + STMMQR/README.md + STMMQR/test/qrtest.c, full source read)
+    only.
+  journals/tpds/ZhangLWW20: >
+    t-QR (transform-domain batched QR) as 1 of 7 tensor primitives; three
+    implementation variants (based/batched/streamed); tube dimension treated
+    as batch axis; single precision (complex-cast); host C clock() around
+    async GPU calls, single-shot, no warmup; cross-implementation diff
+    check present but compiled out (#if 0) by default, no ground-truth
+    orthogonality/residual check anywhere in the driver. No arXiv/OA source
+    available - artifact repo
+    YangletLiu/cuTensor_CUDA_Library_for_Transform_based_Tensors
+    (README + GPU/test/tqr/testtqr.cpp, full source read) only.
+  conf/ipps/ChoDKLLL23: >
+    GPTuneCrowd crowd-sourced transfer-learning autotuner; PDGEQRF tuning
+    (1.57x claimed vs. non-transfer-learning autotuner) is its
+    QR-track-relevant result; tuned params = mb/nb/p/q/nodes/cores/npernode
+    (same tile+grid axes as this project's cholesky/lu tracks); inherits
+    ScaLAPACK's OWN PDQRDRIVER correctness convention (FRESID/PASSED against
+    a disclosed THRESH) as a hard filter on which timings are even recorded;
+    timing statistic is explicit minimum-of-niter (niter=2 in the paper's
+    own example tuning call, niter=10 as the driver's own default) - the
+    clearest best-of-N (optimistic) statistic found across this project's
+    three dense-factorization-track surveys. No arXiv/OA source available -
+    artifact repo gptune/GPTune (examples/Scalapack-PDGEQRF/scalapack_MLA.py
+    + scalapack-driver/spt/pdqrdriver.py, full source read) only.
+
+artifact_repos:
+  luszczek/paqr: >
+    C (LAPACK-family) + MATLAB + ScaLAPACK reproduction tiers, MIT-family
+    license (not independently confirmed during this pass). Primary source
+    for qr-dense-single-node-pivot-kernel. `lapack/test_dgepoqrf.c` is the
+    single-file performance-measurement driver for all three dense
+    algorithms; `matlab/src/` (not fetched) is the separate accuracy-
+    measurement path.
+  lsl036/STM-Multifrontal-QR-Factorization-Empowered-by-GCN: >
+    C (SuiteSparseQR-derived) + Python/PyG (GCN classifier, kept separate
+    per the repo's own README). Primary source for
+    qr-sparse-multifrontal-kernel. `STMMQR/test/qrtest.c`'s `check_error()`
+    and inline `tol` computation are this spec's correctness-gate source;
+    `Makefile.option`'s `-Dall_methods_time`/`-Dwrite_graph` flags control
+    the brute-force reordering comparison and GCN-feature-generation modes
+    respectively.
+  YangletLiu/cuTensor_CUDA_Library_for_Transform_based_Tensors: >
+    C/CUDA. Primary source for qr-batched-tensor-kernel.
+    `GPU/test/tqr/testtqr.cpp` is the single-file driver for all three
+    batching-strategy variants; no dedicated t-QR sweep script ships
+    (unlike `tprod`/`tfft` in the same `GPU/test/` directory).
+  gptune/GPTune: >
+    Python + Fortran/ScaLAPACK, BSD-family license (not independently
+    confirmed during this pass). Primary source for
+    qr-dense-distributed-kernel's tile-size/process-grid tuning-parameter
+    convention and its ScaLAPACK-inherited correctness gate.
+    `examples/Scalapack-PDGEQRF/scalapack-driver/spt/pdqrdriver.py`'s
+    `write_input`/`read_output`/`pdqrdriver` functions are this spec's
+    direct source for the THRESH/FRESID/PASSED correctness mechanism and the
+    minimum-of-niter timing statistic.

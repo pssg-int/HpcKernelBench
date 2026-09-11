@@ -1,0 +1,18 @@
+# Provenance of source/ -- the clone itself is git-ignored (see kernel-papers/.gitignore).
+#
+# NOT a git clone. The paper's GitHub repo (the URL named in the task,
+# https://github.com/CGCL-codes/MP-SpMM_SC25) contains only a README.md
+# pointing at a Zenodo artifact-evaluation release -- `git clone --depth 1`
+# of the GitHub repo yields a single README file, no code.
+github_repo=https://github.com/CGCL-codes/MP-SpMM_SC25 (README-only pointer, no code)
+remote=https://zenodo.org/records/16933452/files/MP-SpMM_SC25.zip
+doi=10.5281/zenodo.16933452
+zenodo_version=v3 (2025-08-23)
+md5=7aacfbc60cdc0c535bf666538cbe2046
+size_bytes=113295021
+refetch=curl -L -o mp-spmm.zip "https://zenodo.org/records/16933452/files/MP-SpMM_SC25.zip?download=1" && \
+  md5sum mp-spmm.zip  # expect 7aacfbc60cdc0c535bf666538cbe2046 && \
+  unzip mp-spmm.zip -d source && mv source/MP-SpMM_SC25/* source/MP-SpMM_SC25/.[!.]* source/ && rmdir source/MP-SpMM_SC25
+patch=none          # tracked files unmodified; new files we wrote (wrapper.cu,
+                    # build.sh, adapter.py) live in mp-spmm/, not source/
+untracked_in_clone=1   # build.sh writes mpspmm_preprocess + libmpspmm_wrapper.so into mp-spmm/, not source/

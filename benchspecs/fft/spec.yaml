@@ -1,0 +1,540 @@
+kernel: fft
+summary: >
+  Throughput of the (Fast) Fourier Transform — forward and inverse,
+  complex-to-complex (C2C) and real-to-complex/complex-to-real (R2C/C2R),
+  1D/2D/3D, batched — across the four usage patterns this track's own papers
+  actually benchmark: a bare batched-kernel microbenchmark (TurboFFT,
+  TurboFNO, cuFalcon), an FFT embedded inside a larger scientific pipeline on
+  a dense regular grid (FFCz, CLAIRE, cuHPX's ring-FFT), a distributed
+  multi-node/multi-GPU transform whose all-to-all (or device-direct)
+  communication dominates at scale (FLUPS, CLAIRE), and the one-shot
+  plan-creation / kernel-codegen cost every one of those targets pays before
+  its first transform and which none of them consistently reports as its own
+  number (this track's analogue of "preprocessing").
+operation: >
+  Y = FFT_dims(X, direction), X a dense array of shape
+  [batch, N_1, ..., N_d] (d in {1,2,3}), direction in {forward, inverse};
+  C2C keeps X,Y complex of the same shape, R2C/C2R halve/double the last
+  transformed dimension per the standard Hermitian-symmetry packing. N_i may
+  be a power of two (the majority convention in this track's own papers) or
+  mixed-radix (FlashFFTStencil's PFA-decomposed 56/64/128, cuHPX's
+  ellmax=3*nside-1). "Plan creation" denotes whatever one-shot setup a given
+  implementation requires before its first transform of a given
+  (shape, precision, direction) configuration — a runtime plan object
+  (cufftPlan*/fftw_plan_dft*), a build-time kernel-codegen+compile step
+  (TurboFFT/TurboFNO), or a precomputed Green's-function+communication
+  pattern (FLUPS) — see survey.md Divergence 3.
+
+variants:
+  - id: fft-1d-batched-kernel
+    claim: >
+      Steady-state batched 1D FFT kernel throughput, power-of-two AND
+      mixed-radix lengths, both fp32 and fp64, with plan creation / kernel
+      codegen excluded from the timed region but measured once and reported
+      separately (never silently amortized in). This is the common
+      denominator across TurboFFT, TurboFNO, and cuFalcon's internal FFT use
+      — the three papers in this track that treat FFT as (or reduce to) a
+      bare batched-kernel call rather than a step inside a larger pipeline.
+    inputs:
+      suite: >
+        Power-of-two 1D C2C lengths spanning TurboFFT's own full sweep
+        (N = 2^9 .. 2^25), PLUS three mixed-radix lengths drawn from other
+        papers in this track so the suite is not power-of-two-only, per the
+        task instructions' explicit ask: 56 (FlashFFTStencil's PFA tile
+        size, = 2^3 * 7), 3071 (cuHPX's ellmax = 3*nside-1 at nside=1024,
+        prime-adjacent), 10000 (a 5-smooth control point, = 2^4 * 5^4, of
+        the kind FFTW/cuFFT both handle efficiently via mixed-radix
+        decomposition but naive radix-2-only implementations cannot).
+      selection: >
+        Union of every N value literally read out of a surveyed paper's own
+        code/config in this track (TurboFFT's power-of-two sweep bounds,
+        TurboFNO's N in {64,128}, FlashFFTStencil's 56/64/128,
+        cuHPX's 3*nside-1, cuFalcon's Falcon_N in {512,1024}), plus the one
+        5-smooth control point added for mixed-radix coverage since no
+        surveyed paper's own suite contains a "generic" mixed-radix length.
+      recommended_subset:
+        - 512      # cuFalcon Falcon-512 signing FFT size — small-N, NTT-adjacent regime
+        - 1024     # cuFalcon Falcon-1024; also TurboFNO's N upper bound
+        - 4096
+        - 56       # mixed-radix: FlashFFTStencil PFA tile (2^3 * 7)
+        - 65536    # 2^16
+        - 1048576  # 2^20
+        - 3071     # mixed-radix: cuHPX ellmax at nside=1024
+        - 4194304  # 2^22
+        - 10000    # mixed-radix control point (2^4 * 5^4)
+        - 16777216 # 2^24
+        - 33554432 # 2^25 — TurboFFT's own largest benchmarked size
+      batch: >
+        TWO required sweep modes, both reported, matching TurboFFT's own
+        `--if_bench 1` vs `--if_bench 2` distinction (survey.md's TurboFFT
+        subsection): (a) size-scaling — fix N, sweep
+        batch in {1, 8, 64, 512, 4096, 32768}; (b) fixed-total-work
+        batch/size tradeoff — fix N*batch = 2^25 (TurboFFT's own constant),
+        sweep N across the power-of-two suite above and set
+        batch = 2^25 / N accordingly. Mode (b) is the one that actually
+        stresses the "many small transforms" (crypto/NTT-adjacent) vs. "few
+        huge transforms" (scientific-HPC) regimes on equal total FLOP
+        footing, and is included specifically because it is the more
+        informative of the two, not merely the cheaper one to run.
+      dense_operand: >
+        complex interleaved input, BOTH fp32 and fp64 REQUIRED (not
+        primary/secondary — TurboFFT and FFCz are the two papers in this
+        track that benchmark both symmetrically on the same workload, and
+        this spec follows that convention rather than TurboFNO's fp32-only
+        practice), initialized U(-1,1) random (matching
+        TurboFFT/FlashFFTStencil's own random-fill convention, not
+        cherry-picked "nice" data like an impulse or a low-frequency
+        sinusoid that would be atypically compressible/predictable).
+      layout: >
+        BOTH in-place and out-of-place reported as separate numbers. This is
+        an explicit ADD by this spec: no paper surveyed in this track states
+        which layout its own reported numbers use, yet the choice materially
+        changes achievable memory bandwidth (in-place halves the traffic for
+        a pure-FFT kernel but forces extra synchronization/scratch-space
+        handling for multi-pass radix decompositions like TurboFFT's own
+        multi-kernel-launch design) — collapsing this to one unstated choice
+        would silently hide a real, paper-relevant performance axis.
+    protocol:
+      warmup: >
+        2 full launch-sequence passes, discarded. Strengthens TurboFFT's own
+        convention (1 undiscarded-but-excluded warmup pass) by a small
+        margin; does not change TurboFFT's own methodology in any way that
+        would make its numbers non-reproducible under this spec.
+      reps: 20
+      statistic: >
+        median (report min and max alongside it). THIS IS A DELIBERATE FIX:
+        TurboFFT reports the mean of ntest=10 reps and TurboFNO reports the
+        mean of "tens of runs" — neither reports a spread, and cuFalcon
+        reports a single untimed-loop measurement with no repetition at all
+        (survey.md Divergence 1). Median-of-20 with min/max is chosen
+        specifically because none of this track's own surveyed papers
+        already reports a distribution, so there is no existing convention
+        this contradicts, and a mean over few reps is sensitive to the
+        occasional outlier launch that a median absorbs.
+      timer: >
+        device-side event pair (CUDA/HIP events), with exactly ONE
+        synchronization call after all `reps` timed launches complete, not
+        one sync per individual kernel launch inside the loop. THIS IS A
+        DELIBERATE FIX: TurboFFT's own reference implementation calls
+        `cudaDeviceSynchronize()` after EVERY individual radix-stage kernel
+        launch inside its timed `ntest` loop (survey.md Divergence 2), which
+        adds `kernel_launch_times * ntest` sync-barrier stalls rather than
+        `ntest` — internally consistent for TurboFFT's own
+        TurboFFT-vs-cuFFT comparison (both timed the same way) but not
+        comparable to a differently-synchronized harness without correcting
+        for it. This spec requires the single-sync-at-the-end form uniformly.
+      timing_scope: >
+        transform kernel(s) only; H2D/D2H excluded. Whatever one-shot setup
+        an implementation needs before its first transform of a given
+        (N, precision, direction, layout) configuration — a runtime plan
+        object OR a build-time codegen+compile step (survey.md Divergence 3)
+        — is EXCLUDED from this variant's timed region and instead measured
+        by the dedicated `fft-plan-creation` variant below.
+      preprocessing_reported: >
+        separately, once per (N, precision, direction, layout)
+        configuration, via the `fft-plan-creation` variant; never amortized
+        into this variant's per-call number.
+    metric:
+      primary: >
+        GFLOP/s = 5 * N * log2(N) * batch / elapsed_s (the standard
+        radix-2 Cooley-Tukey FLOP-count convention, literally TurboFFT's own
+        formula) for power-of-two N. For the three mixed-radix N values in
+        the suite, this convention does not cleanly apply (mixed-radix FFT
+        algorithms have a different, decomposition-dependent operation
+        count) — report ms only for those points and do not force a
+        GFLOP/s number onto them (do not silently reuse the power-of-two
+        formula, which would misrepresent mixed-radix efficiency).
+      secondary:
+        - "ms per transform (median, min, max)"
+        - "GB/s effective bandwidth = 2 * N * batch * sizeof(dtype) / elapsed_s (TurboFFT's own convention; halved for the in-place layout sub-case)"
+    correctness: >
+      max relative error <= 1e-4 vs. cuFFT (or FFTW, CPU target) at the SAME
+      precision, for fp32 (TurboFFT's own tolerance, `utils::compareData`).
+      For fp64: max relative error <= 1e-10 against the same reference at
+      fp64 — THIS IS THIS SPEC'S OWN RECOMMENDATION, not sourced from any
+      surveyed paper (TurboFFT applies its 1e-4 tolerance uniformly to both
+      its fp32 and fp64 paths, which is unnecessarily loose for fp64 and
+      would not catch a real fp64-path regression); flagged as an open
+      question pending confirmation from a paper that states an
+      fp64-specific tolerance.
+
+  - id: fft-ndgrid-e2e
+    claim: >
+      End-to-end round-trip (forward + inverse) FFT throughput on a dense
+      2D/3D regular grid, with ONE-SHOT plan creation amortized over k
+      round trips (k reported explicitly) — representative of how FFT
+      actually appears in this track's application-embedded papers (FFCz's
+      compression-correction pass, CLAIRE's registration-solver
+      preconditioner, cuHPX's ring-FFT-plus-Legendre-transform, FLUPS's
+      Poisson solve) rather than as a bare kernel call.
+    inputs:
+      suite: >
+        Every named grid size literally reported by a surveyed paper in this
+        track (not a synthetic size invented for this spec): 256^3
+        (CLAIRE's single-GPU headline size), 512^3 (FFCz's own README usage
+        example), 1024x768x768 (CLAIRE's real, non-cubic CLARITY microscopy
+        dataset), 2048^3 (CLAIRE's largest weak-scaling point, ~25 billion
+        unknowns), plus two 2D sizes since cuHPX's ring-FFT and 2D-FNO
+        variants operate on 2D grids: 4096^2, 8192^2.
+      selection: >
+        Union of every grid size explicitly named in a surveyed paper's
+        README/abstract text for this variant's usage class (FFCz, CLAIRE);
+        the two 2D sizes are this spec's own addition (open question below)
+        since no surveyed paper states a headline 2D grid size — they are
+        included so the 2D axis is not silently dropped rather than being
+        sourced from a specific paper's own reported number.
+      recommended_subset:
+        - "256^3, fp64 (CLAIRE single-GPU headline case)"
+        - "512^3, fp32 AND fp64 (FFCz's own dual-precision example workload)"
+        - "1024x768x768, fp32 (CLAIRE CLARITY dataset — non-cubic, tests mixed-radix dimension handling since 768 = 2^8*3)"
+        - "2048^3, fp32 (CLAIRE largest weak-scaling point; single-node/GPU subset of this size for the e2e variant, full-scale only under fft-distributed-alltoall)"
+        - "4096^2, fp32 AND fp64 (2D control point; open question — not paper-sourced)"
+        - "8192^2, fp32 (2D control point; open question — not paper-sourced)"
+      dense_operand: >
+        real-valued input, real-to-complex (R2C) forward + complex-to-real
+        (C2R) inverse round trip (the natural pairing for real scientific
+        grid data — cosmology density fields, combustion scalar fields,
+        diffraction images per FFCz's own motivating domains). fp32 and
+        fp64 BOTH required per grid size where listed above, following
+        FFCz's own dual-precision CLI design (the only paper in this
+        track's e2e-usage class to test both explicitly).
+      layout: >
+        out-of-place by default (the safer, more common library default);
+        in-place reported as a secondary number when the target
+        implementation supports it for R2C/C2R (note: R2C/C2R in-place
+        requires padding the real array to the complex array's size, per
+        FFTW/cuFFT convention — this padding is NOT counted as a separate
+        "format conversion" cost, it is part of the transform's own memory
+        layout).
+    protocol:
+      plan_creation: >
+        performed ONCE per (grid size, precision, direction) configuration,
+        amortized over k=20 forward+inverse round trips for this variant's
+        steady-state number. k=20 is THIS SPEC'S OWN CHOICE — no surveyed
+        paper states a numeric amortization count, though FLUPS's own
+        README explicitly frames its precomputed Green's-function and
+        communication pattern as reusable "many times... at low cost,"
+        which this variant's design generalizes into a concrete, reportable
+        number (survey.md's FLUPS subsection).
+      warmup: 2 full round-trip passes after plan creation, discarded.
+      reps: 20
+      statistic: median (report min and max).
+      timer: >
+        device-side events (GPU targets) or wall-clock with an explicit
+        synchronization barrier at trial start and stop (CPU targets, e.g.
+        FLUPS's own FFTW-backed CPU path) — matching whichever mechanism is
+        native to the target, same convention as this track's
+        `fft-1d-batched-kernel` variant.
+      timing_scope: >
+        forward+inverse transform only, per round trip; H2D/D2H excluded
+        for GPU targets. Plan creation is excluded here and reported once,
+        separately, by the dedicated `fft-plan-creation` variant.
+      preprocessing_reported: >
+        separately, once per (grid size, precision, direction)
+        configuration, via `fft-plan-creation`; never amortized silently
+        into this variant's per-round-trip number (the amortization THIS
+        variant itself performs, over k=20, is reported as its own labeled
+        number, distinct from the zero-amortization plan-creation-only
+        measurement).
+    metric:
+      primary: >
+        ms per round trip (forward+inverse), median. Chosen as primary
+        instead of GFLOP/s because the GFLOP/s convention is genuinely
+        ambiguous across mixed 2D/3D/non-cubic grid shapes in this suite
+        (the 1024x768x768 case in particular has no single agreed
+        "N*log2(N)" convention once the dimensions differ) — see
+        survey.md Divergence 4's precision-coverage note for the parallel
+        issue in variant 1.
+      secondary:
+        - "GFLOP/s = 5 * N_total * log2(N_total) / elapsed_s, N_total = product of grid dims, reported ONLY when every grid dimension is individually power-of-two-decomposable (i.e. NOT for the 1024x768x768 case); N/A otherwise, never silently approximated"
+        - "effective GB/s = 2 * N_total * sizeof(dtype) / elapsed_s"
+    correctness: >
+      round-trip relative error ||x - iFFT(FFT(x))|| / ||x|| in the L2 norm,
+      <= 1e-5 for fp32 and <= 1e-12 for fp64 — generalizing cuHPX's own
+      round-trip-error methodology (the only paper in this track's
+      e2e-usage class with an explicitly stated, well-specified correctness
+      metric for a full forward+inverse pipeline; survey.md's cuHPX
+      subsection) to plain R2C/C2R grids. The fp32/fp64 tolerance SPLIT
+      itself is this spec's own addition (cuHPX's own text does not state
+      separate fp32 vs. fp64 numbers) — flagged as an open question.
+
+  - id: fft-distributed-alltoall
+    claim: >
+      Distributed multi-node/multi-GPU FFT weak-scaling throughput, with
+      local transform compute time and inter-rank communication
+      (all-to-all, non-blocking, or device-direct) time reported as TWO
+      SEPARATE numbers rather than one conflated total — representative of
+      FLUPS (CPU+MPI) and CLAIRE (multi-GPU+MPI), the only two papers in
+      this track that report genuinely distributed FFT numbers.
+    inputs:
+      suite: >
+        3D grid, per-rank problem size fixed at FLUPS's own README-stated
+        performance sweet spot (~128^3 unknowns per core) for the weak-
+        scaling sweep, so total problem size grows proportionally with rank
+        count. Rank/GPU counts are the literal points each paper's own text
+        reports, kept as two separate platform sub-cases rather than
+        unified onto one axis (survey.md Divergence 6): CPU/MPI counts
+        {1, 8, 64, 512, 4096, 49152} (FLUPS's own reported max);
+        GPU counts {1, 8, 64, 256} (CLAIRE's own reported max — 256 V100
+        GPUs across 64 nodes).
+      selection: >
+        FLUPS's and CLAIRE's own literally-reported scale points (49,152
+        cores; 256 GPUs / 64 nodes), with intermediate points added as a
+        geometric sweep so the weak-scaling curve has more than two data
+        points; no cherry-picking of a single "best" scale point.
+      recommended_subset:
+        - "CPU/MPI: 1, 8, 64, 512, 4096, 49152 ranks, ~128^3 unknowns/rank, fp64 (FLUPS-style)"
+        - "GPU: 1, 8, 64, 256 GPUs, 256^3 unknowns/GPU (CLAIRE's own per-GPU headline size), fp32 or fp64 (open question — CLAIRE's precision not confirmed, see survey.md)"
+      dense_operand: >
+        real-valued unbounded/semi-unbounded/periodic Poisson right-hand
+        side (FLUPS's own solved problem type) for the CPU/MPI sub-case;
+        real-valued registration/Poisson-preconditioner field (CLAIRE's own
+        solved problem type) for the GPU sub-case. Both are the actual
+        physically-motivated workload each paper solves, not a synthetic
+        FFT-only microbenchmark — this variant intentionally keeps the
+        solver-level framing since neither paper's own reported distributed
+        numbers isolate a bare distributed-FFT-only microbenchmark from
+        their full solve (open question).
+    protocol:
+      communication_pattern: >
+        THREE distinct sub-cases, reported separately and never averaged
+        together (survey.md Divergence 6): (1) CPU/MPI all-to-all
+        (`MPI_Alltoall`/`MPI_Alltoallv`, FLUPS's own "default robust
+        option"); (2) CPU/MPI non-blocking point-to-point (FLUPS's own
+        compile-time alternative, persistent-request or
+        `MPI_Datatype`-based); (3) GPU device-direct communication
+        (GPU-aware MPI / NCCL-style transport, CLAIRE's own described but
+        not further specified mechanism — flagged open question on the
+        exact primitive).
+      plan_creation: >
+        FFTW/cuFFT planner effort, Green's-function precomputation (CPU
+        sub-case), and communication-pattern construction ALL performed
+        once per (rank count, per-rank size, precision) configuration and
+        reported separately (FLUPS's own convention, generalized
+        track-wide); amortized over k=10 solves for this variant's
+        steady-state number (k lower than variant 2's k=20 because
+        distributed runs at 49,152 cores are substantially more expensive
+        to repeat).
+      warmup: >
+        1 full solve, discarded. Matches the reduced-repetition convention
+        this track borrows from the stencil track's own
+        `stencil-e2e-application` variant for physically/computationally
+        expensive distributed runs, since neither FLUPS nor CLAIRE's own
+        reachable text states a warmup convention for their large-scale
+        numbers at all.
+      reps: 3
+      statistic: >
+        median (report min and max). THIS IS A DELIBERATE FIX: neither
+        FLUPS's nor CLAIRE's reachable text states any repetition or
+        statistic convention for their own large-scale distributed numbers
+        (survey.md's FLUPS and CLAIRE subsections both flag this as
+        unrecoverable/unstated).
+      timer: >
+        `MPI_Wtime()` with a barrier immediately before start/stop (CPU
+        sub-case); CUDA-event-wrapped-in-host-timer with an explicit
+        cross-rank barrier (GPU sub-case) — matching each platform's own
+        natural mechanism.
+      timing_scope: >
+        local FFT compute time and communication time (all-to-all /
+        non-blocking / device-direct, per the sub-case) reported as TWO
+        SEPARATE numbers, plus their sum as total solve time. THIS SPLIT IS
+        AN EXPLICIT ADD by this spec: neither FLUPS's nor CLAIRE's reachable
+        text confirms this decomposition is already performed by default in
+        their own reported headline numbers, even though FLUPS's `PROF`
+        build flag and `h3lpr`-based profiler suggest the underlying
+        instrumentation to do so already exists in FLUPS's own codebase.
+      preprocessing_reported: >
+        separately, once per configuration, via `fft-plan-creation`; never
+        amortized silently into this variant's per-solve number beyond the
+        explicit k=10 amortization stated above.
+    metric:
+      primary: "time-to-solution (ms), median, plotted vs. rank/GPU count (weak-scaling curve)"
+      secondary:
+        - "parallel efficiency (%) relative to the single-rank/single-GPU baseline of the same per-rank problem size"
+        - "communication time as % of total solve time (isolates the all-to-all bottleneck this track's distributed-FFT papers are explicitly concerned with)"
+    correctness: >
+      relative error vs. an analytic solution (FLUPS's own convention for
+      its unbounded/semi-unbounded/periodic Poisson test cases) <= 1e-6,
+      OR — when no analytic reference exists for the chosen workload (e.g.
+      CLAIRE's registration solve) — the round-trip error convention from
+      `fft-ndgrid-e2e` applied to the FFT sub-step in isolation. FLUPS's own
+      correctness regime is substantially more thorough than this single
+      number (a 16,000-case nightly regression suite across boundary
+      conditions x Green's-function kernels x data layouts, per survey.md);
+      this spec's single tolerance is the minimum bar for a benchmark run,
+      not a replacement for that regression suite.
+
+  - id: fft-plan-creation
+    claim: >
+      Isolated, one-shot plan-creation / kernel-codegen / Green's-function-
+      and-communication-pattern-setup cost, measured ALONE and reported
+      once per configuration — never silently amortized into any other
+      variant's per-call number. This is this track's realization of the
+      "preprocessing" axis every other kernel track in this benchmark suite
+      separates out, generalized to cover BOTH a classical runtime plan
+      object (cuFFT `cufftPlan*`, FFTW `fftw_plan_dft*`) AND a build-time
+      kernel-codegen+compile step (TurboFFT/TurboFNO's own architecture,
+      which has NO runtime plan call at all — survey.md Divergence 3).
+    inputs:
+      suite: >
+        The same (N, precision, direction, layout) configurations as
+        `fft-1d-batched-kernel` (1D) and the same (grid size, precision,
+        direction) configurations as `fft-ndgrid-e2e` (2D/3D) — this
+        variant does not introduce a new input suite, it adds a
+        preprocessing-only measurement pass over the other two variants'
+        own suites.
+      recommended_subset: "same as fft-1d-batched-kernel.recommended_subset and fft-ndgrid-e2e.recommended_subset"
+    protocol:
+      what_is_measured: >
+        For runtime-plan targets (cuFFT, FFTW, FLUPS's Green's-function +
+        communication-pattern construction): wall-clock time of the
+        plan-creation call(s) themselves, isolated from any transform
+        execution. For build-time-codegen targets (TurboFFT/TurboFNO-style
+        templated kernels): wall-clock time of the offline Python codegen
+        step PLUS the nvcc/hipcc compilation time for the specific
+        (N, precision, GPU architecture) configuration under test — reported
+        as a one-time BUILD cost, explicitly outside any online/runtime
+        latency budget (it is not re-paid on every process launch the way a
+        cuFFT plan-creation call is).
+      planner_effort_levels: >
+        for FFTW-backed targets specifically, report at EACH of
+        `FFTW_ESTIMATE` / `FFTW_MEASURE` / `FFTW_PATIENT` (FLUPS's own
+        exposed compile-time flag, per survey.md) rather than collapsing to
+        one number — THIS IS AN EXPLICIT STRENGTHENING by this spec: FLUPS's
+        README exposes the flag but its own reported performance numbers do
+        not state which level was used, and planner effort trades directly
+        against per-call transform speed (a higher planner effort produces
+        a faster per-call kernel at a higher one-time plan-creation cost),
+        so reporting only one level would hide that tradeoff entirely.
+      reps: 5
+      statistic: median.
+      amortization_reporting: >
+        report the derived break-even iteration count =
+        plan_creation_ms / steady_state_per_call_ms (the corresponding
+        number from `fft-1d-batched-kernel` or `fft-ndgrid-e2e` at the same
+        configuration) — i.e. "how many transforms before the one-shot
+        setup cost pays for itself." This directly operationalizes FLUPS's
+        own stated design philosophy (solve "many times... at low cost
+        using precomputed Green's function and communication patterns") as
+        a concrete, comparable number rather than a qualitative claim.
+    metric:
+      primary: "plan-creation / codegen+compile time (ms), median"
+      secondary:
+        - "break-even iteration count (see amortization_reporting above)"
+    correctness: >
+      not applicable — this variant produces no numerical transform output;
+      the correctness gate for the transform itself lives in
+      `fft-1d-batched-kernel` / `fft-ndgrid-e2e` / `fft-distributed-alltoall`.
+
+notes_on_fairness:
+  - >
+    TurboFFT reports the mean of ntest=10 reps and TurboFNO reports the mean
+    of "tens of runs," with no spread reported by either; cuFalcon reports a
+    single, unrepeated measurement. All three code-level-verified papers in
+    this track skip the median-with-min/max convention this spec requires
+    uniformly across all four variants (survey.md Divergence 1).
+  - >
+    TurboFFT's own reference timing harness synchronizes the device after
+    EVERY individual kernel launch inside its timed rep loop, not once at
+    the end — this inflates measured time with extra sync-barrier stalls in
+    a way that is internally consistent for TurboFFT's own
+    TurboFFT-vs-cuFFT comparison but not comparable to a
+    differently-synchronized harness without correction. This spec requires
+    single-sync-at-the-end timing uniformly (survey.md Divergence 2).
+  - >
+    "Plan creation" means something architecturally different in every
+    surveyed codebase (runtime plan object vs. build-time codegen vs.
+    precomputed Green's-function+comm-pattern) and NONE of TurboFFT,
+    TurboFNO, or cuFalcon's own reported numbers include their respective
+    one-shot setup cost anywhere at all — it is simply absent from their
+    published throughput figures, not merely reported separately. The
+    dedicated `fft-plan-creation` variant fixes this by requiring the cost
+    be measured and reported for every configuration, not merely excluded
+    and left unquantified (survey.md Divergence 3).
+  - >
+    TurboFNO benchmarks fp32 only; FLUPS's precision is not stated in any
+    reachable source. TurboFFT and FFCz are the only two papers in this
+    track that explicitly benchmark both fp32 and fp64 on the identical
+    workload — this spec follows their (stricter) convention rather than
+    TurboFNO's fp32-only practice, requiring both precisions wherever a
+    variant's inputs section lists them (survey.md Divergence 4).
+  - >
+    No surveyed paper in this track states whether its own reported numbers
+    use in-place or out-of-place layout. Since this materially changes
+    achievable memory bandwidth, this spec requires both be reported as
+    separate numbers rather than leaving the choice unstated the way every
+    surveyed paper's own text does.
+  - >
+    FlashFFTStencil validates its STENCIL output against a direct
+    spatial-domain convolution reference, not its internal FFT's numerical
+    output against a reference FFT — its own correctness check is one level
+    removed from FFT accuracy. This spec's correctness gates in
+    `fft-1d-batched-kernel` and `fft-ndgrid-e2e` are genuine FFT-vs-FFT (or
+    FFT-round-trip) numerical checks, not proxied through a downstream
+    application's output (survey.md Divergence 7).
+
+open_questions:
+  - >
+    CLAIRE's precision, exact timing protocol (warmup/reps/statistic/timer),
+    and the exact distributed-communication primitive used for its FFT
+    ("device direct communication" — all-to-all, all-to-allv, or custom)
+    could not be recovered from reachable text: both `arxiv.org/pdf/2008.12820`
+    and its ar5iv mirror returned raw PDF binary in this environment
+    (no `pdftoppm`/poppler-utils available to render pages), and the plain
+    abstract page has no methodology section. The `fft-distributed-alltoall`
+    variant's GPU sub-case precision and communication-primitive
+    specificity are flagged accordingly.
+  - >
+    FLUPS's precision (single vs. double) is inferred as FFTW-double (the
+    library's likely implicit default) but not confirmed from any reachable
+    text — flagged in the `fft-distributed-alltoall` variant's CPU sub-case.
+  - >
+    TurboFNO's exact timer mechanism (CUDA events vs. host wall clock) was
+    not independently confirmed from the reachable arXiv text beyond
+    "averaged over tens of runs"; this spec assumes it follows its own
+    TurboFFT submodule's CUDA-event convention but this is inference, not a
+    directly sourced fact.
+  - >
+    No surveyed paper's own reported numbers state a numeric plan-creation
+    amortization count (the `k` in "amortized over k round trips/solves").
+    The k=20 (`fft-ndgrid-e2e`) and k=10 (`fft-distributed-alltoall`) values
+    in this spec are this spec's own choices, motivated by but not directly
+    sourced from FLUPS's qualitative "solve many times at low cost" framing.
+  - >
+    The two 2D grid sizes in `fft-ndgrid-e2e` (4096^2, 8192^2) are this
+    spec's own addition — no surveyed paper in this track's e2e-usage class
+    states a headline 2D grid size; they are included so the 2D axis is not
+    silently dropped from the suite.
+  - >
+    FFCz's own timing protocol, baselines, and metric could not be
+    determined — only its README was read this pass; its CPU/GPU source
+    directories were not opened. Its dual spatial+frequency correctness-gate
+    DESIGN is reflected in this spec's framing but its specific numeric
+    tolerances are not incorporated (no numbers were found to incorporate).
+  - >
+    cuFalcon's correctness-verification tolerance/comparison logic is
+    referenced in its README but was not located in the read portion of its
+    `main.cu` — its small-N/high-batch regime informs
+    `fft-1d-batched-kernel`'s N={512,1024} recommended_subset entries, but
+    no correctness number from cuFalcon itself was available to cite.
+  - >
+    The `cuTensor`/`cuTensor-tubal` shared repo's `t-fft` primitive exposes
+    a based/streamed/batched 3-way execution-mode axis that this spec does
+    NOT explicitly incorporate as a fifth variant (to stay within the
+    1-4-variant guidance) — its "batched" mode (a distinct code path using
+    a batched-plan API, not merely a larger batch-size parameter) is
+    conceptually folded into `fft-1d-batched-kernel`'s batch axis, but this
+    is an approximation, not a literal representation of that paper's own
+    three-way distinction.
+
+evidence:
+  conf/ppopp/WuZ0HJDDCC25: "TurboFFT: 1D C2C power-of-two FFT N=2^1..2^25, fp32+fp64, ntest=10 mean via CUDA events (per-launch device sync inside timed loop), vs. cuFFT (1e-4 tol) + VkFFT, GFLOP/s (5*N*log2N*bs) + GB/s, A100/T4."
+  conf/sc/WuZDZHC25: "TurboFNO: C2C FFT truncated to 64, fused FFT-GEMM-iFFT for FNO, fp32 only, bs/DX/DY/N/K swept per config files, averaged over tens of runs, vs. PyTorch/cuBLAS+cuFFT, 5-stage fusion ablation, speedup up to 150%, A100."
+  conf/ppopp/HanLCBZYCZCY25: "FlashFFTStencil: FFT-as-convolution for stencils via mixed-radix PFA (rfft=64,fft=128,pfa=56), fp64, plan created once outside timed loop, correctness vs. direct-conv reference (not vs. FFT reference), vs. cuFFT-based and cuDNN-based baselines, 2.57x avg / 103x 1D speedup, A100/H100."
+  journals/tpds/BaltyCG23: "FLUPS: distributed CPU FFTW-based unbounded/semi-unbounded/periodic Poisson FFT, up to 49152 cores, vs. AccFFT (periodic only), all-to-all vs. non-blocking comm (compile-time choice), FFTW planner effort + wisdom caching + precomputed Green's function/comm pattern all explicitly separated from per-solve time, validated vs. analytic solutions (16000-case regression suite)."
+  conf/sc/BrunnHBMM20: "CLAIRE: FFT as one of 3 co-optimized kernels in a multi-GPU diffeomorphic registration solver, 256^3 single-V100 (5s) up to 2048^3 on 64 nodes x 256 V100 (weak scaling), device-direct comm, 70% speedup vs. SOTA single-GPU; precision/timing-protocol unrecoverable from reachable text (PDF-only)."
+  conf/ipps/ChengSWB26: "cuHPX: ring-FFT + Legendre SHT on HEALPix, nside up to 1024 (ellmax=3*nside-1, mixed-radix), vs. healpy/ducc/S2FFT/torch-harmonics, round-trip L2/Linf + machine-precision agreement + differentiability check, 20x/200x/7x speedups, H100 primary."
+  journals/tpds/LiWSYDZ26: "cuFalcon: small fixed-N (512/1024) batched complex FFT inside Falcon post-quantum signing (ffSampling step), single-shot CUDA-event-timed batch across 16 streams, no repeated trials or warmup observed, NTT-adjacent size/batch/precision regime."
+  conf/ipps/RenUDKLYCG26: "FFCz: 1D/2D/3D real FFT for frequency-domain lossy-compression error correction, CPU(FFTW)+GPU(CUDA) both fp32/fp64, example workload 512^3 fp32, dual spatial+frequency error-bound gate (ABS/REL/PTW), timing protocol/baselines undetermined (README only)."
+  journals/tpds/ZhangLW20: "Tensor completion (tubal-sampling): uses the shared cuTensor library's t-fft primitive; no independent timing-protocol detail recovered (light coverage)."
+  journals/tpds/ZhangLWW20: "cuTensor-tubal: documents t-fft/t-product/t-svd/t-qr/t-inv/t-normalization each with based/streamed/batched execution-mode variants; no sizes/timing/precision recoverable from README alone (light coverage)."

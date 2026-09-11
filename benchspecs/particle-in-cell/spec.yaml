@@ -1,0 +1,213 @@
+kernel: particle-in-cell
+summary: >
+  Explicit electromagnetic particle-in-cell (PIC) cycle (push -> deposit ->
+  field-solve -> interpolate) on a 3D structured grid, benchmarked as
+  particles-processed/s with a per-timestep phase split
+  (interpolation+push / deposition / redistribution) matching this track's
+  sole paper's own decomposition, gated by a per-step charge/energy/
+  momentum conservation check (see survey.md for why this track's one
+  paper's own diagnostic already matches the parent task's suggested
+  correctness axis almost exactly). This track's paper's own artifact repo
+  is inaccessible (survey.md scope note); the spec is grounded in arXiv
+  fulltext only, flagged throughout wherever repo-level confirmation (exact
+  timer, warmup length) was not obtainable.
+
+operation: >
+  for each of NT timesteps: (1) Field Interpolation -- interpolate
+  E/B fields from the Yee-staggered grid to each particle's position,
+  reformulated as an MPU-friendly outer-product (3rd-order B-spline shape
+  factors); (2) Push -- advance particle velocity/position via the Boris
+  pusher; (3) Deposition -- scatter each particle's current contribution
+  back to the Yee grid (direct-current deposition); (4) Field solve --
+  update E/B on the grid (Yee FDTD update, grid-only, not part of the
+  particle-phase timing bucket); (5) Redistribute -- migrate particles that
+  crossed cell/rank boundaries to their new owning rank/cell, asynchronously
+  overlapped with (3).
+
+variants:
+  - id: pic-particle-phase-ppc-sweep
+    claim: >
+      steady-state particle-phase throughput (particles processed/s) across
+      a particles-per-cell (PPC) sweep, with the paper's own 3-way phase
+      split (interpolation+push / deposit / redistribute) reported
+      separately rather than blended into one number; field-solve
+      (grid-only Yee update) excluded from this variant since it carries no
+      per-particle cost and is not part of what this track's paper
+      contributes on
+    inputs:
+      suite: >
+        2 named 3D scenarios from the paper (no broader public benchmark
+        suite exists for this exact contribution -- see survey.md
+        Divergences #1; this is this track's biggest single-paper fairness
+        caveat, inherited rather than papered over)
+      selection: >
+        both scenarios the paper evaluates, used as-is (not
+        cherry-picked from a larger pool the paper itself drew from):
+        Uniform Plasma (grid 256x128x128) and Laser-Ion Acceleration
+        (grid 192x192x256, domain ~7.5um x 7.5um x 15um)
+      recommended_subset:
+        - "uniform-plasma-256x128x128 (paper default scenario)"
+        - "laser-ion-192x192x256 (paper's real-world application scenario, ~7.5x7.5x15um domain)"
+      dense_operand: "N/A -- no dense matrix operand; per-particle state arrays (position, velocity, weight) plus the Yee-staggered E/B/J grid fields"
+      accuracy_parameter: >
+        particles-per-cell (PPC), swept in {1, 4, 16, 64, 128, 256, 512}
+        (paper's own sweep range is PPC in [1,512]; this subset is this
+        spec's own choice of representative points within that range,
+        flagged since the paper's exact tested points were not resolved
+        from the extracted text); thermal velocity varied jointly with PPC
+        in the paper to control particle-migration intensity -- this spec
+        additionally recommends reporting at both a "low-migration" and
+        "high-turbulence" thermal-velocity setting per PPC point, matching
+        the paper's own weak-scaling stress-test framing (survey.md)
+    protocol:
+      timesteps_measured: 100
+      warmup: >
+        "an initial warm-up phase" per the paper's own text -- EXACT
+        warmup timestep count not stated in the extracted arXiv fulltext
+        and could not be cross-checked against source (artifact
+        inaccessible, survey.md scope note). This spec's own choice,
+        flagged as unconfirmed: warm up for 10 timesteps (10% of the
+        measured window) before starting the 100-timestep measured region.
+      reps: 3
+      statistic: >
+        median across the 3 repetitions, report min/max -- DEVIATES from
+        the paper's own "average execution time across these trials"
+        (mean of 3), per this project's fairness principle preferring
+        median+min/max over a bare mean (benchspec_instructions.md); flagged
+        explicitly rather than silently reproducing the paper's choice
+      timer: >
+        UNSPECIFIED in the extracted arXiv fulltext (wall-clock vs.
+        device/cycle counter not stated) -- this spec's recommendation,
+        flagged as not paper-verified: wall-clock time via a barrier-
+        synchronized MPI_Wtime()-equivalent around each phase, since the
+        paper's own secondary metric (CPP, cycles/particle) implies a
+        cycle-accurate counter is ALSO used for at least one reported
+        column, but which of TParticle/PPS/CPP uses which timer instrument
+        is not disambiguated in the extracted text
+      timing_scope: >
+        3 phases only, matching the paper's own decomposition exactly:
+        TInterpolation (bundles field interpolation + push + SoW +
+        re-packing, per the paper's own definition -- NOT split further
+        since the source does not support a finer split, survey.md
+        Divergences #4), Tdeposit, Tredistribute. Field-solve (Yee grid
+        update) explicitly excluded -- grid-only cost, not part of
+        TParticle by the paper's own construction.
+      preprocessing_reported: >
+        one-time initial particle-layout construction (physically-ordered
+        layout initialization) reported separately, once, not amortized
+        into the per-timestep measured window -- this spec's own addition
+        since the paper's text does not discuss whether/how this is
+        isolated from the 100-timestep measured region
+    metric:
+      primary: "PPS (Gparticles/s) = total particles processed / TParticle, matching the paper's own reported column exactly"
+      secondary: "TParticle (s), CPP (cycles/particle), per-phase ms (interpolation+push / deposit / redistribute), speedup vs. WarpX baseline"
+    correctness: >
+      per-timestep bounded-drift gate on 3 conserved/near-conserved
+      quantities, matching the paper's OWN diagnostic (not invented by
+      this spec, survey.md Divergences #3): total charge, total energy,
+      and longitudinal momentum must each remain within a tolerance band
+      of their initial value across the full measured window (paper states
+      these "remain stably bounded" but does not give a numeric tolerance
+      in the extracted text -- this spec recommends <1% relative drift over
+      the 100-timestep window as a starting bound, flagged as this spec's
+      own choice pending the paper's actual numeric threshold). SEPARATELY,
+      for the laser-ion scenario specifically, the paper's own MSE=3.198 /
+      MAE=0.8401 (~0.84% relative error) vs. a WarpX reference trajectory
+      is reported as an additional, paper-verified correctness data point,
+      though the exact reference quantity (fields? positions?) is
+      unconfirmed from the extracted text.
+
+  - id: pic-weak-scaling-migration-overlap
+    claim: >
+      weak-scaling efficiency of the particle-phase under a
+      particle-migration-heavy stress workload, isolating this paper's
+      central systems contribution (overlapping asynchronous particle
+      redistribution with Deposition) rather than single-node kernel
+      throughput alone -- included as a second variant specifically because
+      variant 1 alone would miss the paper's main claim, which is a
+      multi-node communication-overlap result, not a single-device kernel
+      speedup
+    inputs:
+      suite: "same 2 scenarios as variant 1, run under the paper's 'high-turbulence' / 'high-migration dynamic' thermal-velocity stress setting"
+      selection: "both scenarios, high-migration setting only (the setting under which the paper reports its weak-scaling numbers)"
+      node_count_sweep: "1, 8, 64, 512, 4096 nodes (paper's own endpoints are 1 and 4,096 nodes / >2M physical cores; intermediate points are this spec's own addition for a scaling curve, flagged as not individually paper-verified)"
+    protocol:
+      per_node_problem_size: "held fixed per node (weak scaling by construction) -- exact per-node grid/particle count not stated in the extracted text, left to the implementer to fix and report explicitly"
+      warmup: "same as variant 1 (10 timesteps), flagged unconfirmed"
+      reps: 3
+      statistic: "median, report min/max (same deviation from the paper's mean-of-3 as variant 1, for the same fairness-principle reason)"
+      timer: "wall-clock, barrier-synchronized across all ranks before/after the measured region"
+      timing_scope: "particle-phase only (TInterpolation+Tdeposit+Tredistribute), plus the measured communication-overlap ratio (fraction of Tredistribute hidden behind Tdeposit)"
+    metric:
+      primary: "weak-scaling efficiency (%) = T(1 node) / T(N nodes), at fixed per-node problem size"
+      secondary: "communication overlap ratio (%), PPS at each node count"
+    correctness: "same per-timestep charge/energy/momentum drift gate as variant 1, checked at the largest and smallest node count to confirm scaling does not silently degrade physical accuracy"
+
+notes_on_fairness:
+  - >
+    This track's paper's public artifact repo is inaccessible (survey.md
+    scope note) -- every protocol detail this spec could not verify against
+    source code (exact warmup length, exact timer instrument, exact PPC
+    sweep points, exact per-node problem size for weak scaling) is flagged
+    individually above rather than presented as paper-verified. A
+    submitter implementing this spec against a real PIC code should treat
+    those fields as this spec's own reasonable defaults, not reproductions.
+  - >
+    The paper reports mean of 3 trials; this spec substitutes
+    median+min/max per this project's standing fairness principle. Since
+    only 3 trials are specified (paper's own choice), min/max reporting is
+    especially informative here (median of 3 is just the middle value, so
+    min/max carries most of the variance information with only 3 samples).
+  - >
+    Only 2 named scenarios exist in the source (no larger suite to draw
+    a "standard" subset from, unlike e.g. SuiteSparse-based sparse-kernel
+    tracks in this project) -- both are used, in full, rather than a
+    cherry-picked subset.
+
+open_questions:
+  - >
+    Exact warm-up timestep count before the 100-timestep measured window
+    (paper says only "an initial warm-up phase") -- unresolved from arXiv
+    fulltext; would need artifact access (currently unavailable) or direct
+    author contact to confirm.
+  - >
+    Exact timer instrument(s) behind TParticle/PPS/CPP -- whether all three
+    share one wall-clock measurement or CPP specifically comes from a
+    separate hardware cycle counter, is not disambiguated in the extracted
+    text.
+  - >
+    Meaning of the G0-G7 interpolation-kernel variant labels in the
+    paper's Table 3 ablation (likely a tiling/blocking-factor sweep for the
+    MPU outer-product formulation, based on context, but not confirmed).
+  - >
+    Exact reference quantity behind the laser-ion MSE/MAE correctness
+    numbers (field values vs. particle positions/trajectories) is not
+    stated in the extracted text.
+  - >
+    Whether/how the physically-ordered particle layout's initial
+    construction cost is isolated from the 100-timestep measured region in
+    the paper's own harness (no repo access to confirm; this spec's
+    preprocessing_reported field is this spec's own assumption).
+
+evidence:
+  rao_hpdc26: >
+    Matrixized PIC (POLAR-PIC): MPU-friendly outer-product Field
+    Interpolation, physically-ordered particle layout, async
+    redistribution/Deposition overlap; LX2 CPU-based pilot-exascale system
+    (256+ cores/node, 2 dies x 4 NUMA domains, 128GB/die, LXLink 48GB/s/NIC
+    RDMA) vs. WarpX baseline (same HW + cross-platform on 2x28-core CPU +
+    8xA800 80GB HBM2e node); 2 scenarios (Uniform Plasma 256x128x128,
+    Laser-Ion 192x192x256 ~7.5x7.5x15um), PPC swept 1-512, 3rd-order
+    B-spline shape factors / Yee solver / DC deposition / Boris pusher;
+    100 measured timesteps after unspecified warmup, 3 trials, MEAN
+    reported (not median); TParticle=TInterp+Tdeposit+Tredistribute, PPS
+    (Gparticles/s) + CPP (cycles/particle) + speedup-vs-WarpX columns;
+    per-step charge/energy/longitudinal-momentum drift bounded (no numeric
+    tolerance given), MSE=3.198/MAE=0.8401 (~0.84% rel. err.) vs. WarpX
+    reference for laser-ion scenario; weak scaling 1-4096 nodes (>2M
+    cores), 67.5% efficiency (POLAR-PIC) vs. 42.5% (WarpX) under
+    high-turbulence stress, 99.1% communication-overlap ratio; 13.2% of
+    theoretical peak on LX2-CPU vs. 9.6% on A800-GPU (WarpX). Artifact repo
+    (github.com/sherry-roar/polarpic-ad) returns 404, not independently
+    verified; all facts above sourced from arXiv fulltext
+    (arxiv.org/html/2604.19337) only.

@@ -1,0 +1,191 @@
+kernel: quantized-gemm
+summary: >
+  Fused (or explicit) dequantize-then-multiply GEMM for LLM linear layers:
+  a full/half-precision activation matrix times a low-precision weight
+  matrix (INT4/W3/FP6/FP8/INT8, optionally per-group or MX-block scaled),
+  measured across the batch-size axis from memory-bound decode to
+  compute-bound batched/prefill regimes, with model-level accuracy
+  (perplexity delta) reported as a mandatory companion to every speed
+  number, never as an afterthought.
+operation: >
+  C[M,N] = A[M,K](fp16/bf16 activation, row-major) * B[K,N](quantized
+  weight). B is stored packed at b in {3,4,6,8} bits per element (uniform
+  or MX-microscaled), with per-group (default group=128 columns of K) or
+  per-block scale factors s[K/group, N]. Dequantization of B to fp16/bf16
+  happens either FUSED inside the GEMM kernel (the dominant pattern:
+  MARLIN, Tilus, FP6-LLM, QFactory, Quantix, ZipServ) or as a SEPARATE
+  pre-pass producing a dense fp16 B' consumed by a standard dense GEMM
+  (the naive/explicit baseline every fused kernel is compared against).
+  variant qgemm-w8a8-mx additionally quantizes A (both operands in FP8
+  E4M3, MX block-scaled).
+variants:
+  - id: qgemm-w4a16-decode-kernel
+    claim: >
+      steady-state fused-dequant kernel throughput in the memory-bound
+      small-batch decode regime (batch=1..32), preprocessing (weight
+      packing/quantization) excluded and reported separately once.
+    inputs:
+      suite: "union of per-layer weight shapes from 5 real LLM configs (not a single-family suite — closes the no-shared-suite gap; see survey Divergences)"
+      selection: >
+        every linear-layer GEMM shape in a transformer decoder block
+        (fused-QKV proj, O-proj, fused-gate-up MLP, down-proj) plus the
+        vocab/lm_head projection, for one small/mid/large model from each
+        of 4 distinct architecture families (dense-MHA, GQA, and one
+        extreme-K outlier) actually used across the surveyed papers
+      recommended_subset:
+        - {model: Llama-2-7B,  layer: qkv_proj,     K: 4096,  N: 12288}
+        - {model: Llama-2-7B,  layer: o_proj,       K: 4096,  N: 4096}
+        - {model: Llama-2-7B,  layer: gate_up_proj, K: 4096,  N: 22016}
+        - {model: Llama-2-7B,  layer: down_proj,    K: 11008, N: 4096}
+        - {model: Llama-2-13B, layer: qkv_proj,     K: 5120,  N: 15360}
+        - {model: Llama-2-13B, layer: o_proj,       K: 5120,  N: 5120}
+        - {model: Llama-2-13B, layer: gate_up_proj, K: 5120,  N: 27648}
+        - {model: Llama-2-13B, layer: down_proj,    K: 13824, N: 5120}
+        - {model: Llama-2-70B, layer: qkv_proj_gqa, K: 8192,  N: 10240, note: "GQA: 8 kv heads x 128 = 1024, not 3x8192"}
+        - {model: Llama-2-70B, layer: o_proj,       K: 8192,  N: 8192}
+        - {model: Llama-2-70B, layer: gate_up_proj, K: 8192,  N: 57344}
+        - {model: Llama-2-70B, layer: down_proj,    K: 28672, N: 8192}
+        - {model: Llama-3-8B,  layer: qkv_proj_gqa, K: 4096,  N: 6144, note: "GQA: 8 kv heads x 128 = 1024"}
+        - {model: Llama-3-8B,  layer: gate_up_proj, K: 4096,  N: 28672}
+        - {model: Llama-3-8B,  layer: lm_head,      K: 4096,  N: 128256, note: "vocab projection: extreme-N stress case"}
+        - {model: Mistral-7B,  layer: qkv_proj_gqa, K: 4096,  N: 6144}
+        - {model: Mistral-7B,  layer: gate_up_proj, K: 4096,  N: 28672}
+        - {model: Falcon-180B, layer: fused_attn_fc, K: 14848, N: 75264, note: "MARLIN's exact benchmarked shape: parallel attn+FC fusion, extreme-N"}
+        - {model: Falcon-180B, layer: fused_fc2,     K: 74240, N: 14848, note: "MARLIN's exact benchmarked shape: extreme-K"}
+        - {model: GPT-NeoX-20B, layer: attn_qkv,     K: 6144,  N: 6144, note: "MXBLAS's literal shape, non-Llama family"}
+        - {model: GPT-NeoX-20B, layer: mlp_up,       K: 6144,  N: 24576}
+        - {model: GPT-NeoX-20B, layer: mlp_down,     K: 24576, N: 6144}
+        - {model: GPT-NeoX-20B, layer: lm_head,      K: 6144,  N: 50432}
+      dense_operand: "A: M in {1,2,4,8,16,32}, fp16/bf16, activations initialized N(0,1) (matches MARLIN/Tilus test-harness convention)"
+      weight_formats: "INT4 (dominant), INT3, FP6 (e3m2), FP5 (e2m2); group size in {128, per-column(-1)}"
+    protocol:
+      format: "weight pre-packed and pre-quantized ahead-of-time; packing/quantization NOT timed in this variant"
+      warmup: 20
+      reps: 100
+      statistic: median (report min/max alongside)
+      timer: device-side CUDA events
+      l2_flush: "mandatory: flush/evict L2 (e.g. touch a >L2-size dummy buffer) before each timed rep -- MXBLAS's flush_l2=False default is rejected as unrepresentative of multi-request serving (see survey Divergences)"
+      timing_scope: kernel only; H2D/D2H and weight packing excluded
+      preprocessing_reported: "separately, once per (model, format, group_size) combination: report weight-packing wall time"
+      throttle_control: "cool-down pause between distinct (shape, format) configs to avoid GPU clock throttling bias (MARLIN's 1s sleep convention)"
+    metric:
+      primary: "speedup vs. fp16 dense cuBLAS/cuBLASLt (dimensionless x)"
+      secondary: "TFLOP/s (2*M*N*K/time), effective GB/s (packed-weight bytes read + activation + output)"
+    correctness: >
+      round-trip check: kernel output vs. reference GEMM using the SAME
+      quantized weights dequantized to fp16 on the host -- isolates kernel
+      bugs from quantization-algorithm accuracy loss (MARLIN's test.py
+      convention). Gate: mean(|C - C_ref|) / mean(|C_ref|) < 1e-3.
+
+  - id: qgemm-w4a16-batched-kernel
+    claim: >
+      same fused-dequant kernel family and shape suite as
+      qgemm-w4a16-decode-kernel, but swept into the compute-bound
+      large-batch/prefill regime where quantization speedup shrinks or
+      reverses -- FP6-LLM's own numbers show 0.94x (a SLOWDOWN) vs.
+      TensorRT coarse-grained W4A16 at batch=32, invisible if only small
+      batches are reported. This variant exists specifically to prevent
+      single-batch cherry-picking (see survey Divergences).
+    inputs:
+      suite: same recommended_subset as qgemm-w4a16-decode-kernel
+      dense_operand: "A: M in {64, 128, 256, 512, 1024, 2048, 4096}, fp16/bf16"
+      weight_formats: same as qgemm-w4a16-decode-kernel
+    protocol:
+      format: same as qgemm-w4a16-decode-kernel
+      warmup: 20
+      reps: 50
+      statistic: median (report min/max alongside)
+      timer: device-side CUDA events
+      l2_flush: mandatory (see qgemm-w4a16-decode-kernel)
+      timing_scope: kernel only
+      preprocessing_reported: not re-measured (identical packed weights reused from qgemm-w4a16-decode-kernel run)
+    metric:
+      primary: "speedup vs. fp16 dense cuBLAS/cuBLASLt (dimensionless x), reported as a curve over M -- the crossover batch size (speedup crosses 1.0x) is a required derived statistic, not just the endpoints"
+      secondary: "TFLOP/s, achieved % of the GPU's peak fp16 tensor-core FLOP/s (denominator for compute-bound-regime context)"
+    correctness: "identical gate as qgemm-w4a16-decode-kernel (1e-3 relative L1), spot-checked at 3 batch sizes minimum (smallest, middle, largest)"
+
+  - id: qgemm-w8a8-mx
+    claim: >
+      both-operand-quantized GEMM (INT8 or FP8-E4M3 MX-microscaled),
+      structurally distinct arithmetic from weight-only W4A16 above --
+      covers MixQ's W8A8 and MXBLAS's MX-FP8 regimes.
+    inputs:
+      suite: same recommended_subset shapes as qgemm-w4a16-decode-kernel (reused for comparability), plus MXBLAS's square stress shapes M=N=K in {2048, 4096, 8192}
+      selection: "same union-of-model-families rationale as the W4A16 variants"
+      dense_operand: "A quantized to INT8 (per-token/per-row scale) or FP8-E4M3 (MX block-scaled, block size 32 along K, matching MXBLAS's default); M in {1, 16, 128, 1024}"
+      scaling_patterns: "at minimum: per-tensor (TT), per-block (GB, block=32) -- MXBLAS's full sweep (TT/BB/GB/CC) is optional/extended"
+    protocol:
+      format: "both operands pre-quantized; quantization/scale-computation NOT in the timed path for this kernel-only variant"
+      warmup: 30
+      reps: 100
+      statistic: "median (report min/max alongside) -- NOTE: this deliberately overrides MXBLAS's own default (mean) for consistency with the other variants in this spec"
+      timer: device-side CUDA events (MXBLAS's Kineto path is an acceptable alternative if it reports per-kernel isolation)
+      l2_flush: mandatory (reject MXBLAS's flush_l2=False default)
+      timing_scope: kernel only
+      preprocessing_reported: "separately, once: activation quantization (scale computation + cast) wall time per shape, since unlike weight quantization this happens on the hot path in real serving and papers must not silently fold it into GEMM time"
+    metric:
+      primary: "speedup vs. fp16 dense cuBLAS/cuBLASLt (dimensionless x)"
+      secondary: "TFLOP/s, achieved % of peak INT8/FP8 tensor-core FLOP/s"
+    correctness: >
+      dual gate because relative-L1 error behaves poorly near zero for
+      FP8's coarse mantissa: (1) mean(|C-C_ref|)/mean(|C_ref|) < 5e-3
+      (looser than the W4A16 gate, since FP8 quantizes BOTH operands) and
+      (2) cosine-similarity diff 1 - 2(C.C_ref)/(|C|^2+|C_ref|^2) < 1e-3
+      (MXBLAS's calc_diff convention), reference = fp32 GEMM on
+      dequantized operands.
+
+  - id: qgemm-model-accuracy
+    claim: >
+      mandatory companion measurement, NOT a speed variant: does the
+      quantization scheme (any of the formats above) still produce a
+      usable model? Required to accompany every reported speedup number
+      above -- only 2 of 13 surveyed papers (FP6-LLM, MixQ) treat this as
+      first-class, and the task's own instructions require accuracy
+      alongside speed.
+    inputs:
+      model: "Llama-2-7B (canonical choice: smallest model appearing across the most surveyed papers -- MARLIN, FP6-LLM, MixQ, QFactory-class artifacts all target this or a sibling size)"
+      calibration: "GPTQ-style, 128 samples from C4 (or WikiText2 train split), matching the MARLIN/GPTQ/QFactory/Quantix convention observed in the surveyed artifacts"
+      eval_set: "WikiText2 raw test split, full-document perplexity (the field's de facto standard, used verbatim by FP6-LLM Table 1/2 and MixQ's evalppl.py/runppl.sh)"
+      formats_to_gate: "every weight_formats / scaling_patterns value exercised in qgemm-w4a16-* and qgemm-w8a8-mx above, at group=128"
+    protocol:
+      statistic: "PPL_quant - PPL_fp16 (absolute delta, not ratio -- ratios compress small-but-real degradation at PPL~5-8, the typical LLM range)"
+      repetitions: 1 (deterministic given fixed calibration seed; report the seed)
+    metric:
+      primary: "perplexity delta (points) vs. fp16 baseline on WikiText2 test"
+      secondary: "optional downstream task accuracy delta (MMLU 5-shot, following MixQ's mmlu.sh) for formats below 4 bits, where perplexity alone is known to under-report degradation"
+    correctness: >
+      recommended (not hard-enforced, see open_questions): flag any
+      (format, group_size) combination with PPL delta > 0.5 points as
+      "accuracy-compromised" in the report -- speed numbers for such
+      configs must be reported alongside this flag, never presented alone.
+
+notes_on_fairness:
+  - "MixQ's headline throughput number is a full autoregressive decode loop through the whole model (tokenizer/attention/KV-cache/sampling included), not an isolated GEMM kernel time -- never compare it directly against MARLIN/Tilus/MXBLAS kernel-only numbers; the spec keeps qgemm-w4a16-* strictly kernel-only for this reason."
+  - "MARLIN's own benchmark script syncs the GPU only once before a 10-iteration timed loop (not per-iteration), explicitly to hide launch-overhead the way a real inference server's queued kernel launches would -- this is a deliberate design choice in MARLIN's own repo, but it produces a systematically lower/noisier per-call time than a properly CUDA-event-timed rep; the spec requires CUDA events with L2 flush per rep instead, at the cost of not reproducing MARLIN's literal README numbers exactly."
+  - "MXBLAS explicitly disables L2 cache flushing (flush_l2=False) in its benchmark utility -- repeatedly reusing the same weight tile across 100 iterations lets it stay L2-resident, overstating throughput relative to a real multi-tenant server; the spec mandates L2 flush before every timed rep across all three kernel variants."
+  - "No paper in this track publishes speedups across the full batch range with a stated crossover point; FP6-LLM's own numbers (1.06x at batch=8 down to 0.94x at batch=32 vs. one baseline) show speedup is batch-dependent and can invert. qgemm-w4a16-batched-kernel makes the crossover batch a required reported statistic, not an optional curve."
+  - "Only FP6-LLM and MixQ report model-level accuracy as a first-class artifact; the other 8 papers with retrievable protocol report only speed. qgemm-model-accuracy is mandatory in this spec specifically to close that gap, per the task's explicit accuracy-alongside-speed requirement."
+  - "Bit-serial arbitrary-precision kernels (APNN-TC, QGTC) use synthetic square/small-N shapes with no connection to any real LLM and quantize via INT1-primitive bit-decomposition, a fundamentally different implementation strategy from every group-scaled dequantization kernel above -- folding them into the LLM-shaped variants would force an apples-to-oranges shape suite onto them, so they are excluded from the mandatory variants (see open_questions for how to score them anyway)."
+  - "Magicube (quantized SpMM/SDDMM on a sparse operand) and QIGen (CPU/AVX2, no GPU) are both real artifacts in this track but exercise a different operand shape (sparse) or hardware (CPU) than the dense-GPU GEMM variants above; they are out of scope for qgemm-* but should get their own track-crossing entries (sparse-quantized-gemm, cpu-quantized-gemm) if this benchmark suite grows."
+
+open_questions:
+  - "No surveyed paper states a field-consensus perplexity-delta threshold for 'still acceptable' quantization; 0.5 PPL points on WikiText2 is this spec's own judgment call (informally common in the GPTQ/AWQ literature) and should be revisited against a wider literature read before being enforced as a hard gate rather than a flag."
+  - "Quantix's (PPoPP'26) artifact repo has essentially no README content and its paper is paywalled (no arXiv preprint found); its exact GEMM shapes, timing protocol, and correctness tolerance could not be recovered. It is folded into the W3/W4 weight_formats set on the assumption its 3-bit non-uniform scheme fits the qgemm-w4a16-* variants' shape suite, but this has not been verified against the actual paper."
+  - "How to fairly score the bit-serial APNN-TC/QGTC family (arbitrary 1-8 bit BOTH operands via INT1 decomposition) against the group-scaled-dequant family (MARLIN/Tilus/FP6-LLM/MXBLAS) is unresolved -- they solve a related but not identical problem (uniform low-bit x low-bit vs. low-bit-weight x fp16-activation) and a shared shape suite may not be meaningful. Left as a candidate 5th variant for a future spec revision rather than forced in now."
+  - "ZipServ's lossless (bit-exact) compression sits structurally between qgemm-w4a16 (fused decompress+GEMM pattern) and a pure systems paper (no accuracy loss, so qgemm-model-accuracy is trivially a delta of exactly 0) -- included in qgemm-w4a16-decode-kernel's protocol shape but its correctness gate should really be exact bit-reconstruction, not the 1e-3 relative-L1 tolerance; this spec does not yet special-case it."
+  - "MXBLAS-scale (M,N,K up to 8192 square, Hopper-only WGMMA/TMA) shapes were only partially folded into qgemm-w8a8-mx's recommended_subset (as 3 square stress shapes) rather than the full 7-model-family list in MXBLAS's shapes_def.py, to keep the suite union tractable; a full merge is a reasonable extension."
+
+evidence:
+  conf/asplos/DingHZL0Y0P26: "Tilus: matmuls from Gemma-2-9B/Qwen2.5-32B/Llama-3.3-70B, CUDA events, 50 reps median, L2 cleared each rep, vs cuBLAS/Triton/Ladder/QuantLLM/Marlin."
+  conf/asplos/FanYPLLW0026: "ZipServ: lossless TCA-TBE + fused decompress-GEMM (ZipGEMM); cudaEvent WARM_UP_ITERATION+BENCHMARK_ITERATION loop (mean), host-computed reference for correctness; kernel vs vLLM e2e kept separate."
+  conf/cgo/PegolottiAP26: "QIGen: CPU/AVX2 nonuniform 2/3/4-bit LLaMA/OPT kernels via GPTQ; no standalone bench script or stated tolerance in the artifact README."
+  conf/ppopp/ChenZY26: "Quantix: non-uniform 3-bit W, hardware bit-shuffling + fused dequant-matmul; artifact repo has no usable README; 4.82x avg kernel speedup over FP16 cuBLAS per abstract/press only."
+  conf/usenix/ZhangZSZ25: "QFactory: Qtile-graph compiler; AE README shows kernel/e2e figures split by GPU (V100/A100/H100) plus explicit matrix-size-scaling (Fig9) and bit-width-scaling (Fig10) ablations; integrates Marlin/BitBLAS as baselines."
+  conf/ppopp/FrantarCCHA25: "MARLIN: exact per-layer LLaMA/Falcon-180B shapes in bench.py; warmup=1/iter=10, host time.time() synced once (not per-iter), 1s cooldown sleep; test.py gate mean|Δ|/mean|ref|<1e-3 vs round-trip dequant reference."
+  conf/sc/WangXY0C25: "MXBLAS: GEMM shapes from GPT-Neo/GPT-J/GPT-NeoX/PaLM/T5 family; GPU_bench warmup=30/iters=100 mean, flush_l2=False by default; FP8-E4M3 MX block scale=max/448; relative_error + cosine calc_diff correctness helpers."
+  conf/usenix/XiaZWCYYBWZZRHS24: "Quant-LLM/FP6-LLM/TC-FPx: LLaMA/OPT linear layers, batch {8,16,32}; kernel-level A100-40GB vs e2e A100-80GB DGX; Table1/2 reports PPL/zero-shot accuracy separately from speed; baselines cuBLAS/TensorRT-LLM/bitsandbytes/DeepSpeed."
+  conf/sc/00030DZZLZ24: "MixQ: benchflops.py drives full HF generate() loop (10-step unsynced warmup, then synced per-token timing), np.median tokens/s -- end-to-end decode, not isolated kernel; separate evalppl.py/mmlu.sh for accuracy; W8A8O16 vs AWQ/bitsandbytes/QUIK."
+  conf/sc/LiOH22: "Magicube: quantized int4/int8 SpMM/SDDMM on DLMC sparse suite; A100-40GB; 1.44x avg (2.37x max) vs vendor sparse lib; sparse operand, structurally distinct from the dense qgemm-* variants."
+  conf/ppopp/WangFD22: "QGTC: bit-serial int1-8 GEMM via INT1-primitive bit-decomposition; synthetic M=K in {1024,2048,4096} x N in {16,32,64}; TFLOPs per (bitwidth,shape); vs cublasGemmEX INT8 and DGL for GNN models."
+  journals/tpds/WangRLS22: "NITI: 8-bit-throughout INTEGER TRAINING (fwd+bwd+update) on MNIST/CIFAR10/ImageNet CNNs, per-layer block-scaling; out of scope for this inference-GEMM track's variants (training, non-LLM shapes)."
+  conf/sc/FengWGLD21: "APNN-TC: fixed M=64,N=K in {128..1024} GEMM + 3x3 CONV, bit combos w{1,2}a{2,3,4} via INT1-primitive emulation; literal artifact numbers e.g. w1a2 N=K=1024: 18.66 TOPS vs CUTLASS-INT4 9.18 TOPS; vs CUTLASS INT4/INT1/FP32/FP16/INT8."

@@ -1,0 +1,127 @@
+{
+ "kernel": "bfs",
+ "papers": [
+  {
+   "key": "conf/ics/ElbekK26",
+   "title": "BLEST: Blazingly Efficient BFS using Tensor Cores",
+   "venue": "ICS",
+   "year": 2026,
+   "doi": "10.1145/3797905.3800531",
+   "arxiv": "2512.21967",
+   "oa_url": "https://doi.org/10.1145/3797905.3800531",
+   "artifact_url": "https://github.com/delbek/blest",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "Breadth-First Search (BFS) is a fundamental graph kernel that underpins a wide range of applications. While modern GPUs provide specialised Matrix-Multiply-Accumulate (MMA) units, e.g., Tensor Cores (TC), with extremely high throughput, they target dense operations, making them non-trivial to use for irregular, unstructured graph computations. In particular, fully utilising TCs for BFS requires an efficient mapping of the edge operations onto TCs while avoiding redundancy, load imbalance, and synchronisation. We present Blest, a TC-accelerated framework that reformulates the pull-based BFS pipeline around a bitmap-oriented structure and a carefully engineered execution layout. Blest introduces Binarised Virtual Slice Sets (BVSS) to enforce warp-level load balancing and to eliminate frontier-oblivious work assignment. To improve both memory efficiency and update locality across diverse gr",
+   "one_liner": "Tensor-Core accelerated pull-based BFS via bitmap SpMSpV, 3.6-4.9x over Gunrock/GSWITCH"
+  },
+  {
+   "key": "conf/ics/NeffZMHTKB24",
+   "title": "FuseIM: Fusing Probabilistic Traversals for Influence Maximization on Exascale Systems",
+   "venue": "ICS",
+   "year": 2024,
+   "doi": "10.1145/3650200.3656621",
+   "arxiv": "",
+   "oa_url": "https://dl.acm.org/doi/pdf/10.1145/3650200.3656621",
+   "artifact_url": "https://github.com/pnnl/ripples",
+   "artifact_status": "likely",
+   "platform": [
+    "amd-gpu",
+    "distributed"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Probabilistic breadth-first traversals (BPTs) are used in many network science and graph machine learning applications. In this paper, we are motivated by the application of BPTs in stochastic diffusion-based graph problems such as influence maximization. These applications heavily rely on BPTs to implement a Monte-Carlo sampling step for their approximations. Given the large sampling complexity, stochasticity of the diffusion process, and the inherent irregularity in real-world graph topologies, efficiently parallelizing these BPTs remains significantly challenging. In this paper, we present a new algorithm to fuse a massive number of concurrently executing BPTs with random starts on the input graph. Our algorithm is designed to fuse BPTs by combining separate probabilistic traversals into a unified frontier. To show the general applicability of the fused BPT technique, we have incorpor",
+   "one_liner": "Fused probabilistic BFS traversals for influence maximization, up to 360x on Frontier"
+  },
+  {
+   "key": "conf/sc/AraiNITUYSF24",
+   "title": "Doubling Graph Traversal Efficiency to 198 TeraTEPS on the Supercomputer Fugaku",
+   "venue": "SC",
+   "year": 2024,
+   "doi": "10.1109/SC41406.2024.00107",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/RIKEN-RCCS/Graph500-BFS",
+   "artifact_status": "verified",
+   "platform": [
+    "distributed",
+    "arm-cpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Breadth-first search (BFS) is a fundamental building block of various high-performance computing applications beyond graph analysis and also known as a benchmark problem in the Graph 500 list. The increasing volume of global data demands efficient distributed BFS, which, however, is hindered by the high communication costs of exchanging vertex data between compute nodes. To address this challenge, this paper introduces four techniques: (i) forest pruning, which reduces the number of vertices by eliminating those unnecessary for the search; (ii) group reordering and (iii) multilevel bitmap compression, which decrease the memory footprint of graph data, thereby enabling fewer nodes to manage larger graphs; and (iv) adaptive parameter tuning, which quickly optimizes the hyperparameters of the BFS algorithm. In the evaluation using 152,064 nodes of the supercomputer Fugaku, our implementatio",
+   "one_liner": "Pruning/reordering/bitmap-compression BFS techniques hit 198 TeraTEPS on Fugaku"
+  },
+  {
+   "key": "conf/ipps/GeraK23",
+   "title": "Traversing Large Compressed Graphs on GPUs",
+   "venue": "IPDPS",
+   "year": 2023,
+   "doi": "10.1109/IPDPS54959.2023.00013",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/pgera/efg",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "GPUs can be used effectively for accelerating graph analytics, provided the datasets fit in GPU memory. This is often not the case for large real-world datasets such as social, web, or biological graphs. We propose a graph compression format for static unweighted graphs based on Elias-Fano encoding that is amenable to run-time decompression on massively parallel architectures such as GPUs. We show that we can compress a variety of large graphs by a factor of 1.55x over the commonly used compressed sparse row (CSR) representation. The scheme is particularly beneficial for cases where conventional CSR based approaches do not work at all due to memory capacity constraints, or incur a significant penalty for out-of-core processing. We implement GPU accelerated breadth first search for this graph representation and show that the runtime performance for in-memory compressed graphs is 3.8x-6.5x",
+   "one_liner": "Elias-Fano compressed graph format with GPU decompression enables BFS/SSSP/PageRank on larger graphs"
+  },
+  {
+   "key": "conf/ipps/ChenSSTBL22",
+   "title": "Bit-GraphBLAS: Bit-Level Optimizations of Matrix-Centric Graph Processing on GPU",
+   "venue": "IPDPS",
+   "year": 2022,
+   "doi": "10.1109/IPDPS53621.2022.00056",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/hsung2/Bit-GraphBLAS",
+   "artifact_status": "likely",
+   "platform": [
+    "nvidia-gpu"
+   ],
+   "approach": "manual",
+   "abstract": "In a general graph data structure like an adjacency matrix, when edges are homogeneous, the connectivity of two nodes can be sufficiently represented using a single bit. This insight has, however, not yet been adequately exploited by the existing matrix-centric graph processing frameworks. This work fills the void by systematically exploring the bit-level representation of graphs and the corresponding optimizations to the graph operations. It proposes a two-level representation named Bit-Block Compressed Sparse Row (B2SR) and presents a series of optimizations to the graph operations on B2SR by leveraging the intrinsics of modern GPUs. Evaluations on NVIDIA Pascal and Volta GPUs show that the optimizations bring up to 40× and 6555× for essential GraphBLAS kernels SpMV and SpGEMM, respectively, making GraphBLAS-based BFS accelerate up to 433×, SSSP, PR, and CC up to 35×, and TC up to 52×.",
+   "one_liner": "Bit-Block CSR (B2SR) format; bit-level GraphBLAS SpMV/SpGEMM sped up to 6555x on GPU"
+  },
+  {
+   "key": "journals/tpds/ChenC22",
+   "title": "Workload Balancing via Graph Reordering on Multicore Systems",
+   "venue": "TPDS",
+   "year": 2022,
+   "doi": "10.1109/TPDS.2021.3105323",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/yuang-chen/Corder-TPDS-21",
+   "artifact_status": "verified",
+   "platform": [
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "In a shared-memory multicore system, the intrinsic irregular data structure of graphs leads to poor cache utilization, and therefore deteriorates the performance of graph analytics. To address the problem, prior works have proposed a variety of lightweight reordering methods with focus on the optimization of cache locality. However, there is a compromise between cache locality and workload balance. Little insight has been devoted into the issue of workload imbalance for the underlying multicore system, which degrades the effectiveness of parallel graph processing. In this work, a measurement approach is proposed to quantify the imbalance incurred by the concentration of vertices. Inspired by it, we present <i>Cache-aware Reorder (Corder)</i> , a lightweight reordering method exploiting the cache hierarchy of multicore systems. At the shared-memory level, Corder promotes even distribution",
+   "one_liner": "Corder: cache-aware graph reordering balancing multicore workload, up to 2.59x speedup."
+  },
+  {
+   "key": "conf/ipps/MlakarWPS21",
+   "title": "Speculative Parallel Reverse Cuthill-McKee Reordering on Multi- and Many-core Architectures",
+   "venue": "IPDPS",
+   "year": 2021,
+   "doi": "10.1109/IPDPS49936.2021.00080",
+   "arxiv": "",
+   "oa_url": "",
+   "artifact_url": "https://github.com/GPUPeople/ParallelBatchRCM",
+   "artifact_status": "verified",
+   "platform": [
+    "nvidia-gpu",
+    "cpu"
+   ],
+   "approach": "algorithmic",
+   "abstract": "Bandwidth reduction of sparse matrices is used to reduce fill-in of linear solvers and to increase performance of other sparse matrix operations, e.g., sparse matrix vector multiplication in iterative solvers. To compute a bandwidth reducing permutation, Reverse Cuthill-McKee (RCM) reordering is often applied, which is challenging to parallelize, as its core is inherently serial. As many-core architectures, like the GPU, offer subpar single-threading performance and are typically only connected to high-performance CPU cores via a slow memory bus, neither computing RCM on the GPU nor moving the data to the CPU are viable options. Nevertheless, reordering matrices, potentially multiple times in-between operations, might be essential for high throughput. Still, to the best of our knowledge, we are the first to propose an RCM implementation that can execute on multicore CPUs and many-core GP",
+   "one_liner": "First GPU-capable speculative parallel RCM bandwidth-reducing reordering, orders of magnitude faster than cuSolver."
+  }
+ ]
+}

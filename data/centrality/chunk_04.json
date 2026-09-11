@@ -1,0 +1,659 @@
+[
+  {
+    "key": "conf/ipps/RenUDKLYCG26",
+    "group": "lossy-compression",
+    "centrality": "component",
+    "regime_match": "partial",
+    "regime": "GPU FFT-based spectral error-correction layered atop off-the-shelf base compressors (SZ3/ZFP/SPERR); cosmology/X-ray/combustion/EEG grids",
+    "gpu_single_card": true,
+    "rationale": "Headline is a post-hoc spectral-domain error-correction algorithm applied on top of an existing compressor's output, not a standalone Compress(D,eb) implementation; domains (cosmology, combustion) partially overlap SDRBench but the correction-only operation isn't directly comparable to fixed-EB throughput/ratio."
+  },
+  {
+    "key": "conf/ipps/JiangYLHDJ26",
+    "group": "lossy-compression",
+    "centrality": "component",
+    "regime_match": "mismatch",
+    "regime": "LLM KV-cache tensors (attention K/V), lossy compression co-designed with system architecture, evaluated via memory-reduction rate and throughput vs cuBLAS GEMV kernels",
+    "gpu_single_card": true,
+    "rationale": "PackKV's compression is co-designed with a KV-cache management system and its headline numbers (memory-reduction %, throughput vs cuBLAS GEMV) are end-to-end system metrics on LLM KV-cache data, a different regime from SDRBench-style scientific floating-point fields."
+  },
+  {
+    "key": "conf/hpdc/YangDZLL00C025",
+    "group": "lossy-compression",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "interpolation-based SZ-family error-bounded compression, real-world scientific datasets, progressive/bitplane retrieval, CPU",
+    "gpu_single_card": false,
+    "rationale": "IPComp's headline is an interpolation-based error-bounded lossy compressor (same SZ-family predictor class), evaluated by compression ratio/speed against SOTA progressive compressors on real scientific datasets; CPU only."
+  },
+  {
+    "key": "conf/ipps/KimN25",
+    "group": "lossy-compression",
+    "centrality": "core",
+    "regime_match": "mismatch",
+    "regime": "JPEG image decoding on UPMEM PIM hardware; fixed-quantization image codec, not error-bounded scientific floating-point compression",
+    "gpu_single_card": false,
+    "rationale": "NPD's headline is a full JPEG decoder (a lossy-compression kernel family member) evaluated at kernel level against a prior PIM decoder, but the codec (DCT+quantization, integer images) and platform (UPMEM PIM, no GPU) are entirely different from the spec's error-bounded fp32/fp64 SDRBench regime."
+  },
+  {
+    "key": "conf/ipps/FallinADCB25",
+    "group": "lossy-compression",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "SDRBench inputs, fp32/fp64, CPU+GPU-portable error-bounded compression",
+    "gpu_single_card": true,
+    "rationale": "PFPL is a headline error-bounded lossy compressor evaluated directly on SDRBench inputs with compression ratio/throughput against 7 competing compressors on both CPU and GPU; explicitly named in the spec as an SZ-family denominator paper."
+  },
+  {
+    "key": "conf/sc/HuangDLC25",
+    "group": "lossy-compression",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "SDRBench-class scientific data, GPU single-kernel fused compression, versatile modes",
+    "gpu_single_card": true,
+    "rationale": "VGC/cuSZp's headline is the GPU error-bounded lossy compression kernel itself, matching the spec's GPU dual-scope variant directly."
+  },
+  {
+    "key": "conf/sc/HuangDUMCLSC25",
+    "group": "lossy-compression",
+    "centrality": "core",
+    "regime_match": "mismatch",
+    "regime": "light-source/X-ray detector integer data (uint16/uint32), quantization-bin + selective-pooling lossy knobs, no abs/rel error bound",
+    "gpu_single_card": true,
+    "rationale": "lsCOMP's headline is a single-kernel GPU compressor, but survey.md flags its integer (not fp32/fp64) light-source data and non-error-bound lossy knobs as a genuine divergence explicitly scoped out of the track's core error-bound variants."
+  },
+  {
+    "key": "journals/tpds/WangPGJTZAT24",
+    "group": "lossy-compression",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "3D AMR simulation data, SZ-based per-refinement-level compression, CPU, fp32/fp64",
+    "gpu_single_card": false,
+    "rationale": "TAC+ is explicitly named in the spec's own kernel-cpu-ebound variant as one of the SZ-family denominator papers this track is built around."
+  },
+  {
+    "key": "conf/hpdc/ZhangTD0F0TC23",
+    "group": "lossy-compression",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "SDRBench (6 datasets), GPU fused quantization+bitshuffle+encoding",
+    "gpu_single_card": true,
+    "rationale": "FZ-GPU is explicitly named/used to help define the spec's SDRBench dataset selection and GPU dual-scope variant."
+  },
+  {
+    "key": "conf/ics/LiuDZ0CC23",
+    "group": "lossy-compression",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "real-world scientific applications, SZ-family adaptive/auto-tuned framework, CPU",
+    "gpu_single_card": false,
+    "rationale": "FAZ is explicitly named as one of the SZ-family denominator papers anchoring the spec's CPU error-bound variant."
+  },
+  {
+    "key": "conf/ipps/LiLC23",
+    "group": "lossy-compression",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "SDRBench-class structured scientific data, wavelet/SPECK rate-distortion + point-wise error mode, CPU",
+    "gpu_single_card": false,
+    "rationale": "SPERR is explicitly the rate-target anchor named in the spec's rate-distortion variant."
+  },
+  {
+    "key": "conf/ipps/LuLWLL23",
+    "group": "lossy-compression",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "real-world scientific simulation datasets, ZFP embedded-coding backend, CPU",
+    "gpu_single_card": false,
+    "rationale": "ZFP-X's headline is a new embedded-coding backend directly measured as compression/decompression throughput against baseline ZFP on scientific datasets."
+  },
+  {
+    "key": "conf/sc/HuangD0LC23",
+    "group": "lossy-compression",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "SDRBench scientific data (6 datasets), GPU single-fused-kernel compression",
+    "gpu_single_card": true,
+    "rationale": "cuSZp is explicitly the anchor paper for the spec's fused-single-kernel 'end-to-end' sense in the GPU dual-scope variant."
+  },
+  {
+    "key": "conf/hpdc/WangPGJTAT22",
+    "group": "lossy-compression",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "3D AMR simulation data, high-dimensional SZ compression per refinement level, CPU",
+    "gpu_single_card": false,
+    "rationale": "TAC (predecessor of TAC+) is explicitly named as an SZ-family denominator paper the CPU error-bound variant is built around."
+  },
+  {
+    "key": "conf/ics/0006JGTLT22",
+    "group": "lossy-compression",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "real-world scientific datasets, SZ-family adaptive lossy compression on FPGA",
+    "gpu_single_card": false,
+    "rationale": "CEAZ's headline is a full FPGA-based error-bounded compressor evaluated with compression ratio/throughput against a prior FPGA compressor; FPGA-only, not GPU."
+  },
+  {
+    "key": "conf/ipps/RiveraDTYTC22",
+    "group": "lossy-compression",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "cuSZ's standard scientific datasets, GPU Huffman-decoding sub-stage of the compression pipeline",
+    "gpu_single_card": true,
+    "rationale": "The paper optimizes only cuSZ's internal Huffman-decoding sub-stage of the lossless-encoding step, not the full compress/decompress operation the spec measures."
+  },
+  {
+    "key": "conf/sc/LiuDZLCC22",
+    "group": "lossy-compression",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "real-world scientific application datasets, SZ-based interpolation predictor, dynamic quality-metric tuning, CPU",
+    "gpu_single_card": false,
+    "rationale": "QoZ is explicitly named as an SZ-family denominator paper anchoring the CPU error-bound variant."
+  },
+  {
+    "key": "conf/ipps/ChenW0W0PTCWMFK21",
+    "group": "lossy-compression",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "large-scale scientific simulation/visualization data, GPU multigrid data-refactoring throughput (not compress-at-EB throughput/ratio)",
+    "gpu_single_card": true,
+    "rationale": "The paper optimizes MGARD's multigrid data-decomposition/refactoring kernel, a preprocessing stage feeding MGARD's lossy compression, not the compress(D,eb)->C operation itself."
+  },
+  {
+    "key": "conf/sc/0001GCWW0PAPK21",
+    "group": "lossy-compression",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "large-scale scientific simulation data, multilevel progressive decomposition/retrieval built on MGARD, CPU+distributed",
+    "gpu_single_card": false,
+    "rationale": "Headline is a progressive retrieval/decomposition framework built atop MGARD's multilevel decomposition, evaluated by data-retrieved-volume and I/O time, not standalone compress/decompress-at-EB throughput; CPU-only, no GPU."
+  },
+  {
+    "key": "conf/hpdc/ZhaoDLLTCC20",
+    "group": "lossy-compression",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "large-scale HPC simulation datasets, SZ 2nd-order prediction + parameter optimization, CPU/distributed",
+    "gpu_single_card": false,
+    "rationale": "Headline is an SZ-family compression-ratio improvement (2nd-order prediction), evaluated directly by compression ratio and parallel I/O throughput on real HPC datasets; CPU only."
+  },
+  {
+    "key": "conf/cgo/LopezKB26",
+    "group": "autotuner-multi-kernel",
+    "centrality": "core",
+    "regime_match": "partial",
+    "regime": "symbolic-size BLAS/LAPACK matrix-chain sequencing, CPU, no reported search-budget",
+    "gpu_single_card": false,
+    "rationale": "GMC is a compiler system selecting BLAS/LAPACK kernel-call sequences, matching the group's own definition, but it optimizes matrix CHAINS rather than the fixed suite's single dense/sparse kernels and reports no search-cost number (explicitly flagged in survey.md as a track gap)."
+  },
+  {
+    "key": "conf/asplos/IkarashiQDRBR25",
+    "group": "autotuner-multi-kernel",
+    "centrality": "core",
+    "regime_match": "partial",
+    "regime": "80+ hand-scheduled BLAS/GEMM kernels via a user-extensible scheduling language, CPU/ARM, no confirmed search-cost or correctness protocol",
+    "gpu_single_card": false,
+    "rationale": "Exo 2 is a scheduling-language autotuning system generating high-performance kernels including GEMM/BLAS, but survey.md notes this is the lowest-confidence entry (abstract-only) and its evaluation is expert-schedule-driven rather than the suite's fixed kernel set with a reported search/tuning cost."
+  },
+  {
+    "key": "conf/asplos/Qiao0HFZZZCATLY25",
+    "group": "autotuner-multi-kernel",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "LLM/DNN operator kernels (matmul, conv, attention) fp32/fp16 on NVIDIA GPUs, jointly-reported search-cost-vs-performance curve",
+    "gpu_single_card": true,
+    "rationale": "Explicitly named in the spec as the clearest example of jointly reporting search cost and achieved kernel performance; its LLM-kernel workloads match the suite's gemm_llm_ffn/batched_attention entries."
+  },
+  {
+    "key": "conf/cgo/HeY25",
+    "group": "autotuner-multi-kernel",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "fused LLM kernels (feed-forward, matmul, batched matmul, flash-attention) fp16 on a single A100, search cost reported separately as one-time RL training cost",
+    "gpu_single_card": true,
+    "rationale": "Explicitly named in the spec text; its LLM-kernel targets match the suite's gemm_llm_ffn/batched_attention framing and it reports tuning cost (RL training time) separately from throughput as the spec requires."
+  },
+  {
+    "key": "conf/ipps/LiuDYC0025",
+    "group": "autotuner-multi-kernel",
+    "centrality": "core",
+    "regime_match": "partial",
+    "regime": "DNN operator kernels (Conv2d/GEMM/GEMV/AvgPool) on cloud/edge NVIDIA GPUs, compile time and FLOPS reported in separate figures, not jointly",
+    "gpu_single_card": true,
+    "rationale": "Gensor's GEMM/Conv2d configs overlap the suite but GEMV/AvgPool do not, and per survey.md it reports search/compile time and steady-state performance in separate figures rather than a joint Pareto curve."
+  },
+  {
+    "key": "conf/cgo/IvanovZDEM24",
+    "group": "autotuner-multi-kernel",
+    "centrality": "core",
+    "regime_match": "mismatch",
+    "regime": "Rodinia benchmark-suite mini-apps (BFS, hotspot, LUD, etc.), cross-vendor NVIDIA/AMD GPU granularity autotuning",
+    "gpu_single_card": true,
+    "rationale": "The autotuning/retargeting compiler is squarely the group's kind of system, but its evaluated suite (Rodinia mini-apps) is a completely different benchmark set from the spec's dense/sparse tensor-kernel or PolyBench suites."
+  },
+  {
+    "key": "conf/ipps/GeorganasKVKNPB24",
+    "group": "autotuner-multi-kernel",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "GEMM/MLP/ResNet-50-conv/block-sparse-matmul kernels on CPU, explicit wall-time tuning-cost comparison vs TVM-Ansor",
+    "gpu_single_card": false,
+    "rationale": "Explicitly named in the spec as reporting search cost in wall time; its GEMM/conv kernels match the suite's gemm_square/conv2d_resnet50 entries."
+  },
+  {
+    "key": "conf/ppopp/XuSZLH024",
+    "group": "autotuner-multi-kernel",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "PolyBench/C affine kernels (nussinov, fdtd-2d, heat-3d, seidel-2d, etc.), precision-vs-speed frontier, CPU+GPU",
+    "gpu_single_card": true,
+    "rationale": "The spec's polybench-affine-mixed-precision variant is built directly and explicitly around PrecTuner's own confirmed test set."
+  },
+  {
+    "key": "conf/asplos/YeLSCC23",
+    "group": "autotuner-multi-kernel",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "SpMM/SDDMM/sparse attention/sparse conv on GNN graphs (Cora/CiteSeer/PubMed/OGB/Reddit) on NVIDIA GPUs, rigorous 10-100-warmup/100-rep protocol",
+    "gpu_single_card": true,
+    "rationale": "SparseTIR's SpMM/SDDMM workloads directly match the suite's spmm/sddmm entries (same GNN-graph convention as benchspecs/spmm); its own search-cost amortization is only argued qualitatively, not quantified."
+  },
+  {
+    "key": "conf/asplos/WonMEA23",
+    "group": "autotuner-multi-kernel",
+    "centrality": "core",
+    "regime_match": "partial",
+    "regime": "SpMV/SpMM/SDDMM/MTTKRP over 726 generated sparsity patterns on CPU, search/tuning cost unreported despite being the paper's core contribution",
+    "gpu_single_card": false,
+    "rationale": "WACO's kernel types (SpMM/SDDMM/MTTKRP) overlap the suite but its 726-pattern corpus differs from the suite's fixed matrices, and survey.md flags that WACO's core ANN-search cost is never quantified despite being explicitly named in the spec as a track gap."
+  },
+  {
+    "key": "conf/asplos/Zheng0WCS20",
+    "group": "autotuner-multi-kernel",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "GEMM/conv/tensor-contraction kernels across GPU/FPGA/CPU vendor-library comparisons",
+    "gpu_single_card": true,
+    "rationale": "FlexTensor's GEMM/conv targets match the suite's gemm_square/conv2d_resnet50 entries; explicitly named in the spec as one of the papers reporting post-tuning numbers with no bounded search budget."
+  },
+  {
+    "key": "conf/ipps/RenUDKLYCG26",
+    "group": "fft",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "FFT embedded in a GPU spectral error-correction pass atop lossy compressors, cosmology/X-ray/combustion grids",
+    "gpu_single_card": true,
+    "rationale": "FFT is a computational sub-step of FFCz's compression-correction pipeline, not the headline; explicitly named in the spec's fft-ndgrid-e2e variant with FFCz's own README grid size (512^3)."
+  },
+  {
+    "key": "conf/ipps/ChengSWB26",
+    "group": "fft",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "ring-FFT-plus-Legendre-transform embedded in a differentiable spherical-harmonic-transform library on HEALPix grids",
+    "gpu_single_card": true,
+    "rationale": "FFT is one computational stage of cuHPX's SHT pipeline, not the paper's headline; explicitly named in the spec (cuHPX's 3*nside-1 length) for the batched-kernel variant selection."
+  },
+  {
+    "key": "journals/tpds/LiWSYDZ26",
+    "group": "fft",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "memory-efficient FFT used for polynomial multiplication inside a GPU post-quantum signature scheme, N in {512,1024}",
+    "gpu_single_card": true,
+    "rationale": "FFT is an internal building block of the Falcon signing pipeline, not the headline contribution; explicitly named in the spec's fft-1d-batched-kernel variant selection (Falcon_N in {512,1024})."
+  },
+  {
+    "key": "conf/ppopp/HanLCBZYCZCY25",
+    "group": "fft",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "FFT-based technique bridging to dense stencil computation on Tensor Core Units, lengths 56/64/128",
+    "gpu_single_card": true,
+    "rationale": "The headline result is stencil-computation speedup achieved via an FFT-based reformulation on tensor cores, not FFT throughput itself; explicitly named in the spec's fft-1d-batched-kernel selection."
+  },
+  {
+    "key": "conf/ppopp/WuZ0HJDDCC25",
+    "group": "fft",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "power-of-two 1D C2C FFT, fp32/fp64, NVIDIA GPU, directly vs cuFFT/VkFFT",
+    "gpu_single_card": true,
+    "rationale": "TurboFFT's headline IS a GPU FFT kernel evaluated at kernel level against cuFFT/VkFFT; the spec's fft-1d-batched-kernel variant is built directly around its own N=2^9..2^25 sweep."
+  },
+  {
+    "key": "conf/sc/WuZDZHC25",
+    "group": "fft",
+    "centrality": "core",
+    "regime_match": "partial",
+    "regime": "fused FFT-GEMM-iFFT for Fourier Neural Operators, N in {64,128}, NVIDIA GPU; FFT built from scratch and compared to cuFFT",
+    "gpu_single_card": true,
+    "rationale": "TurboFNO builds and benchmarks its own FFT kernel against cuFFT (grouped with TurboFFT as a track denominator), but its N range ({64,128}) is far narrower than TurboFFT's full sweep and the FFT is fused with GEMM rather than measured standalone."
+  },
+  {
+    "key": "journals/tpds/BaltyCG23",
+    "group": "fft",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "distributed 3D FFT, weak scaling to 49,152 CPU cores via MPI all-to-all",
+    "gpu_single_card": false,
+    "rationale": "FLUPS's headline IS a distributed FFT library; explicitly one of only two track papers the spec's fft-distributed-alltoall variant is built around. CPU+MPI only, no GPU."
+  },
+  {
+    "key": "conf/sc/BrunnHBMM20",
+    "group": "fft",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "FFT as one of several kernels (interpolation, finite-difference, FFT) in a multi-GPU image-registration Gauss-Newton-Krylov solver, single-V100 and 256-GPU scale points",
+    "gpu_single_card": true,
+    "rationale": "FFT is one of several named computational kernels inside CLAIRE's larger registration-solver pipeline, not the headline; explicitly named in the spec's fft-distributed-alltoall and fft-ndgrid-e2e variants with its own 256^3/49,152-core/256-GPU scale points."
+  },
+  {
+    "key": "journals/tpds/ZhangLW20",
+    "group": "fft",
+    "centrality": "tangential",
+    "regime_match": "mismatch",
+    "regime": "batched small-tensor tubal-sampling completion on synthetic data; FFT used only as an algorithmic convolution-theorem trick, never separately benchmarked",
+    "gpu_single_card": true,
+    "rationale": "FFT is merely invoked as a mathematical device to decouple the completion problem into per-frequency subproblems; no FFT-specific kernel optimization or standalone throughput number is reported."
+  },
+  {
+    "key": "journals/tpds/ZhangLWW20",
+    "group": "fft",
+    "centrality": "component",
+    "regime_match": "mismatch",
+    "regime": "t-FFT as one of 7 tensor primitives (t-product/t-SVD/t-QR/t-inverse are the headline speedup numbers) for small tubal-rank tensors, based/streamed/batched execution modes",
+    "gpu_single_card": true,
+    "rationale": "t-FFT is one of seven named GPU primitives in a broader tensor-operations library; survey.md flags this as only lightly surveyed with no t-FFT-specific timing/precision/baseline recoverable, and the batched small-tensor regime doesn't match either the 1D-sweep or grid-E2E variants."
+  },
+  {
+    "key": "conf/ics/ElbekK26",
+    "group": "bfs",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "real-world graphs, GPU tensor-core-accelerated pull-based BFS, vs Gunrock/GSWITCH/BerryBees",
+    "gpu_single_card": true,
+    "rationale": "BLEST's headline IS a BFS algorithm/implementation evaluated directly against BFS baselines on real-world graphs."
+  },
+  {
+    "key": "conf/ics/NeffZMHTKB24",
+    "group": "bfs",
+    "centrality": "component",
+    "regime_match": "mismatch",
+    "regime": "probabilistic (stochastic edge-weighted) breadth-first traversals for influence-maximization Monte-Carlo sampling, AMD GPU + distributed (Frontier)",
+    "gpu_single_card": false,
+    "rationale": "Per survey.md, this is 'not a plain-BFS paper' -- probabilistic traversal is a materially different kernel from deterministic reachability BFS, embedded as the sampling step of an influence-maximization application; platform is AMD GPU/distributed, not a single NVIDIA GPU."
+  },
+  {
+    "key": "conf/sc/AraiNITUYSF24",
+    "group": "bfs",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "Graph500 R-MAT/Kronecker graphs, distributed BFS at Fugaku-class SCALE, ARM CPU",
+    "gpu_single_card": false,
+    "rationale": "Headline IS Graph500-benchmark BFS performance; the spec explicitly notes SCALE>=38 Fugaku-class as reportable. No GPU (ARM CPU, distributed)."
+  },
+  {
+    "key": "conf/ipps/GeraK23",
+    "group": "bfs",
+    "centrality": "component",
+    "regime_match": "partial",
+    "regime": "Elias-Fano compressed real-world graphs on GPU; BFS is one of three downstream applications (BFS/SSSP/PageRank) of a novel compression format",
+    "gpu_single_card": true,
+    "rationale": "Headline contribution is the graph-compression format; BFS is one of three applications used to demonstrate its benefit rather than the paper's own optimized kernel."
+  },
+  {
+    "key": "conf/ipps/ChenSSTBL22",
+    "group": "bfs",
+    "centrality": "component",
+    "regime_match": "partial",
+    "regime": "bit-level B2SR SpMV/SpGEMM GraphBLAS primitives; BFS is a composed downstream application, not directly measured in the reachable artifact (only the BMV microbenchmark is)",
+    "gpu_single_card": true,
+    "rationale": "Per survey.md, the public artifact ships only the underlying Boolean matrix-vector-multiply microbenchmark; BFS-specific numbers are an abstract-level composed claim ('GraphBLAS-based BFS accelerate up to 433x'), not a directly benchmarked kernel."
+  },
+  {
+    "key": "journals/tpds/ChenC22",
+    "group": "bfs",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "cache-aware graph reordering evaluated via downstream BFS/PageRank/etc. on 7 large real graphs, CPU",
+    "gpu_single_card": false,
+    "rationale": "Corder is explicitly named in the spec's bfs-reordering-cost variant ('gives reordering-focused papers (Corder, RCM) a variant that measures what they actually contribute')."
+  },
+  {
+    "key": "conf/ipps/MlakarWPS21",
+    "group": "bfs",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "GPU/CPU speculative parallel bandwidth-reducing reordering, downstream BFS/SpMV benefit",
+    "gpu_single_card": true,
+    "rationale": "Explicitly named alongside Corder in the spec's bfs-reordering-cost variant as a reordering-focused anchor paper."
+  },
+  {
+    "key": "conf/sc/01790S0L23",
+    "group": "sptrsv",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "distributed 3D communication-avoiding SpTRSV, real LU-factorization fill-in matrices (nlpkkt80, Ga19As19H42, ldoor), up to 256 GPUs",
+    "gpu_single_card": false,
+    "rationale": "Explicitly the sole track anchor for the spec's sptrsv-distributed-scaling variant (SC'23 Table-1 matrices used verbatim); headline scope is inherently multi-node/multi-GPU, not a single-GPU path."
+  },
+  {
+    "key": "conf/ipps/ZarebavaniCLSD22",
+    "group": "sptrsv",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "SuiteSparse matrices, CPU triangular-solve/incomplete-Cholesky/incomplete-LU scheduling",
+    "gpu_single_card": false,
+    "rationale": "Explicitly named as one of two papers (with partially-strided-codelet) whose analysis/scheduling algorithm IS the contribution, anchoring the spec's sptrsv-analysis-phase variant. CPU only."
+  },
+  {
+    "key": "conf/sc/CheshmiCD22",
+    "group": "sptrsv",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "SuiteSparse matrices, CPU vectorized SpMV/SpMM/SpTRSV via codelet mining, vs MKL/Sympiler",
+    "gpu_single_card": false,
+    "rationale": "SpTRSV is one of the paper's three directly kernel-level-benchmarked targets (vs MKL and vs Sympiler specifically for SpTRSV); explicitly named alongside HDagg as an analysis-phase anchor paper."
+  },
+  {
+    "key": "journals/tpds/AhmadYU21",
+    "group": "sptrsv",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "327 SuiteSparse matrices, CPU/GPU split-execution SpTRSV",
+    "gpu_single_card": true,
+    "rationale": "Split_SpTRSV's headline IS an SpTRSV algorithm evaluated on the SuiteSparse Matrix Collection at the scale the spec's sptrsv-solve-kernel variant targets, explicitly referenced in the spec."
+  },
+  {
+    "key": "journals/tpds/ZhangSLHWDW21",
+    "group": "sptrsv",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "245 SuiteSparse matrices, GPU sync-free thread+warp-fused SpTRSV vs cuSPARSE",
+    "gpu_single_card": true,
+    "rationale": "Explicitly named in the spec's sptrsv-solve-kernel variant as the anchor for the ~245-matrix scale; headline IS a GPU SpTRSV kernel evaluated against cuSPARSE."
+  },
+  {
+    "key": "conf/asplos/BreuerBEGHKR25",
+    "group": "tensor-contraction",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "TCCG binary-contraction cases + named tensor-network application trees, fp32, CPU/ARM",
+    "gpu_single_card": false,
+    "rationale": "Explicitly named in the spec's tccg-tree-kernel-fp32 variant as the source of the 'adjusted' TCCG configuration used."
+  },
+  {
+    "key": "conf/ipps/HuLJ24",
+    "group": "tensor-contraction",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "knowledge-graph-embedding score functions (TransE/TransH/TransR/etc.) on real KGs, fused CUDA code",
+    "gpu_single_card": true,
+    "rationale": "cuKE's headline IS a code generator for exactly the batched fused KGE score-function contractions the spec's kge-batched-fused-kernel-fp32 variant targets."
+  },
+  {
+    "key": "conf/ppopp/JangdaY24",
+    "group": "tensor-contraction",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "Kronecker matrix-matrix multiplication, microbenchmark grid + 28 real-world sizes, NVIDIA GPU",
+    "gpu_single_card": true,
+    "rationale": "Explicitly the sole anchor for the spec's kron-matmul-kernel-fp32-fp64 variant, which reuses FastKron's own Table 4 sizes verbatim."
+  },
+  {
+    "key": "conf/sc/LiuLLFYSZWPCGHW21",
+    "group": "tensor-contraction",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "extreme-scale random-quantum-circuit tensor-network contraction (Google Sycamore 53-qubit), Sunway supercomputer",
+    "gpu_single_card": false,
+    "rationale": "Explicitly the anchor for the spec's quantum-circuit-contraction-kernel variant (Sycamore circuit reproduction target); Sunway architecture, not NVIDIA GPU."
+  },
+  {
+    "key": "conf/ipps/ChoDKLLL23",
+    "group": "qr",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "distributed ScaLAPACK PDGEQRF, tile size + process grid tuning, CPU",
+    "gpu_single_card": false,
+    "rationale": "Survey.md states explicitly: 'this paper is not itself a QR-factorization paper; it is a crowd-sourced transfer-learning autotuner' whose QR result is one tuning case study, though its evaluation directly inherits ScaLAPACK's own PDGEQRF testing-driver conventions matching the spec's distributed variant. No GPU."
+  },
+  {
+    "key": "conf/ipps/SidLakhdarCBALGTJWDDA23",
+    "group": "qr",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "synthetic dense matrices, controlled rank-deficiency, pivoting-strategy sweep, CPU/GPU",
+    "gpu_single_card": true,
+    "rationale": "The spec explicitly calls this 'this track's central paper,' built directly around PAQR's own pivoting/shape/rank-deficiency axes."
+  },
+  {
+    "key": "conf/sc/LinYWT021",
+    "group": "qr",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "SuiteSparse sparse matrices, multifrontal QR with symbolic-reordering-strategy sweep, CPU/ARM",
+    "gpu_single_card": false,
+    "rationale": "Explicitly the anchor for the spec's qr-sparse-multifrontal-kernel variant, matching its own two-part (symbolic + numerical) evaluation structure exactly. No GPU."
+  },
+  {
+    "key": "journals/tpds/ZhangLWW20",
+    "group": "qr",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "t-QR as one of 7 tubal-rank tensor primitives, based/batched/streamed execution modes, small square frontal slices",
+    "gpu_single_card": true,
+    "rationale": "t-QR is one of seven library primitives (t-product/t-SVD get the headline speedup numbers), but the spec's qr-batched-tensor-kernel variant is explicitly built to match this paper's own t-QR primitive and batching-strategy axis."
+  },
+  {
+    "key": "conf/usenix/ShovonGMK23",
+    "group": "hash-table",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "18 named real-world SNAP/DIMACS/road-network relations, GPU open-addressing build/probe join table, load_factor=0.4 fixed",
+    "gpu_single_card": true,
+    "rationale": "Survey.md states the paper's contribution is an iterative-Datalog transitive-closure engine using 'a standard equi-join build/probe table' as a supporting kernel, evaluated end-to-end via transitive closure rather than isolated hash-table throughput; its real relations are the explicit anchor for the spec's hash-table-build-probe-kernel variant."
+  },
+  {
+    "key": "conf/ipps/NisaPEOBY21",
+    "group": "hash-table",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "6 named real genomic k-mer datasets at k=17, GPU counting/upsert hash table embedded in a distributed communication-optimized pipeline",
+    "gpu_single_card": true,
+    "rationale": "DEDUKT's paper-level speedups conflate hash-table counting with distributed communication/partitioning (which the spec's variant explicitly isolates out); it is the exact anchor for the spec's dataset list."
+  },
+  {
+    "key": "conf/usenix/ChenHDZ20",
+    "group": "hash-table",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "YCSB workloads, Zipfian(0.99)/uniform, 15-byte keys/values, lock-free concurrent hash table on Optane persistent memory",
+    "gpu_single_card": false,
+    "rationale": "Headline IS the concurrent hash-table design; explicitly the sole track anchor for the spec's CRUD-mixed-ops variant. CPU/PM only, no GPU."
+  },
+  {
+    "key": "conf/ics/ElbekK26",
+    "group": "spmspv",
+    "centrality": "component",
+    "regime_match": "matches",
+    "regime": "real-world graph BFS-frontier density trajectory, tensor-core bitwise-tile batched SpMSpV",
+    "gpu_single_card": true,
+    "rationale": "SpMSpV is a compute-level technique inside BLEST's larger tensor-core BFS pipeline, not the paper's headline; explicitly the anchor for the spec's spmspv-bfs-frontier-trace variant."
+  },
+  {
+    "key": "journals/tpds/LiAY21",
+    "group": "spmspv",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "SuiteSparse matrices, swept input-vector density, GPU kernel-selection framework",
+    "gpu_single_card": true,
+    "rationale": "Explicitly the central anchor for the spec's spmspv-density-sweep-kernel variant ('the controlled-sensitivity-curve variant LiAY21 runs directly'); SpMSpV is one of the two co-headline kernels."
+  },
+  {
+    "key": "journals/tpds/AbdulahCPBDGKLS22",
+    "group": "trsm",
+    "centrality": "component",
+    "regime_match": "mismatch",
+    "regime": "TRSM fused into a distributed multi-precision tile-Cholesky MLE solver, band-percentage mixed precision, never isolated",
+    "gpu_single_card": false,
+    "rationale": "Survey.md states plainly 'TRSM is not an independently benchmarked kernel in this paper'; the spec's own summary explicitly calls this paper 'out of scope' for the single-kernel TRSM benchmark. Headline scope is distributed multi-GPU."
+  },
+  {
+    "key": "conf/sc/MatteisLH20",
+    "group": "trsm",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "standalone dense triangular solve with multiple RHS, N=8192/32768, FPGA vs MKL batched CPU",
+    "gpu_single_card": false,
+    "rationale": "The spec's summary calls fBLAS 'this track's only TRSM microbenchmark,' directly matching both trsm-single-kernel and trsm-batched-kernel variants. FPGA only, no GPU."
+  },
+  {
+    "key": "conf/ics/0001SLFY024",
+    "group": "batched-gemm",
+    "centrality": "core",
+    "regime_match": "partial",
+    "regime": "variable-shape/segmented GEMM on 8 real heterogeneous-graph relation-type distributions, NVIDIA GPU",
+    "gpu_single_card": true,
+    "rationale": "FASTEN's headline IS the segmented-GEMM kernel, matching the spec's batched-gemm-variable-kernel variant exactly, but the spec notes its own uniform-shape variant is 'not directly evidenced by FASTEN's own artifact.'"
+  },
+  {
+    "key": "conf/ics/GengYLWZ26",
+    "group": "hausdorff-distance",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "medical/geospatial/3D-graphics point sets, RT-core+CUDA Hausdorff distance vs ITK/brute-force",
+    "gpu_single_card": true,
+    "rationale": "The entire track spec is built directly around X-HD's own CLI, algorithm variants, and dataset domains."
+  },
+  {
+    "key": "conf/ipps/AkathoottB25",
+    "group": "bipartite-matching",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "21-instance SuiteSparse suite (from the paper's own README), GPU bidirectional augmenting-path matching",
+    "gpu_single_card": true,
+    "rationale": "The entire spec's 21-graph suite is adopted verbatim from ECL-MM's own README."
+  },
+  {
+    "key": "conf/sc/Uezato21",
+    "group": "erasure-coding",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "CPU XOR-based Reed-Solomon, (k,m) configurations, three-tier optimization ablation",
+    "gpu_single_card": false,
+    "rationale": "The spec's ec-xor-encode-decode-kernel variant is built directly around this paper's own (k,m) configurations and Nooptim/Fusion/FusionSchedule ablation. CPU single-thread, no GPU."
+  },
+  {
+    "key": "journals/tpds/QuZFZ20",
+    "group": "spiking-neural-network",
+    "centrality": "core",
+    "regime_match": "matches",
+    "regime": "synthetic CUBA-IF LIF network topology sweep, GPGPU simulation vs GeNN",
+    "gpu_single_card": true,
+    "rationale": "The spec's snn-lif-sim-throughput variant explicitly matches BSim's own test harness and GeNN comparison points."
+  }
+]

@@ -1,0 +1,19 @@
+diff --git a/setup.py b/setup.py
+index f107b80..b0edb11 100644
+--- a/setup.py
++++ b/setup.py
+@@ -48,7 +48,13 @@ setup(
+                     "--expt-relaxed-constexpr",
+                     "--expt-extended-lambda",
+                     "--use_fast_math",
+-                    "-lineinfo",
++                    # "-lineinfo" removed: this machine's shared login node
++                    # kills cicc (signal 9) compiling PAT's heavily-templated
++                    # CUTLASS kernels even fully serialized (MAX_JOBS=1) --
++                    # -lineinfo materially increases cicc's front-end memory
++                    # footprint for deep template instantiations and is a
++                    # debug/profiling aid only (no effect on generated kernel
++                    # math). See build.sh / STATUS.md for the full story.
+                 ],
+             },
+         ),

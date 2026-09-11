@@ -1,0 +1,517 @@
+kernel: cholesky
+summary: >
+  Dense/tile Cholesky factorization of a symmetric positive-definite (SPD)
+  matrix (or covariance operator), spanning four claims this track's own
+  literature treats as genuinely different: plain dense fp64 tile Cholesky
+  (single-node and distributed/communication-optimal), tile low-rank (TLR)
+  Cholesky for formally-dense but data-sparse operators, and mixed/adaptive-
+  precision (FP64/FP32/FP16/FP8, plus INT8 for a non-Cholesky sub-kernel)
+  tile Cholesky on CPU and GPU tensor cores.
+operation: >
+  A[N,N] (SPD) = L[N,N] * L[N,N]^T, tile-blocked (block size NB, tile count
+  N/NB per dimension); TLR variants additionally compress off-diagonal tiles
+  to rank <= r under an accuracy threshold before/while factoring; mixed-
+  precision variants cast individual tiles or diagonal bands to a lower
+  precision before the same tile-blocked factorization.
+
+variants:
+  - id: cholesky-dense-single-node-fp64-kernel
+    claim: >
+      steady-state single-node (shared-memory) dense tile Cholesky
+      factorization time, fp64, with tile size (NB) as a required,
+      per-run-disclosed parameter rather than a silently fixed constant —
+      the single clearest lesson from KwasniewskiKBZS21 (paper 1 in the survey),
+      where 3 of 4 baselines only beat COnfLUX/COnfCHOX after the paper's
+      authors hand-tuned NB. Matrix generation is preprocessing, excluded
+      from the timed region but reported once. This is the entry point most
+      reproducible without a multi-node allocation; it is smaller in scope
+      than the distributed variant below because most of this track's own
+      papers (paper 1-paper 5, paper 8) only report distributed-scale numbers even though
+      the underlying binaries (hicma-x's testing_potrf_tlr, exageostat's
+      dmle drivers) run on 1 node.
+    inputs:
+      suite: synthetic random dense SPD matrices (matches KwasniewskiKBZS21's
+        generation method; a covariance-generator alternative from STARS-H is
+        used by the TLR/mixed-precision variants below, kept separate here
+        since this variant targets the plain-dense baseline)
+      selection: >
+        square SPD, single-node-feasible sizes (fit in one node's RAM at
+        fp64: N^2*8 bytes < ~80% of node memory); union of KwasniewskiKBZS21's
+        lower sweep range and SalvanaAHLSGK21's largest shared-memory
+        (univariate-equivalent) point.
+      recommended_subset: "N in {2048, 4096, 8192, 16384, 22464}"
+      dense_operand: "SPD matrix built as A = R^T*R + N*I from a random R
+        (U(-1,1) entries), fp64"
+    protocol:
+      tile_size: >
+        required, disclosed per run; sweep NB in {256, 512, 1024} plus one
+        deliberately off-heuristic value (NB=128) to demonstrate sensitivity,
+        following KwasniewskiKBZS21's own artifact practice of sweeping four
+        block sizes per (N,P) config and paper 2/paper 5's b=O(sqrt(N)) heuristic
+        (report the heuristic-predicted NB alongside the swept values, do not
+        silently pick only the heuristic point).
+      preprocessing: >
+        one-shot: matrix generation/allocation, and any library-internal
+        tile-layout setup, happen once before the timed region and are
+        reported separately, never amortized into per-call time.
+      warmup: 1 full factorization (JIT/first-touch-page-fault effects,
+        matches the general spec convention; no surveyed paper states a
+        warmup count for this variant since paper 1's artifact does 5 runs with no
+        separately-flagged warmup)
+      reps: 5 (matches KwasniewskiKBZS21's artifact-documented "five runs
+        gathered for statistics" — the only concrete rep count found in this
+        track for a single-node-adjacent sweep)
+      statistic: median (report min and max alongside)
+      timer: host wall-clock (std::chrono or equivalent monotonic clock),
+        matching KwasniewskiKBZS21's own timer choice
+      timing_scope: kernel only; factorization time excludes matrix
+        generation and any pre-factorization symmetrization/copy
+      preprocessing_reported: separately, once, before the steady-state loop
+    metric:
+      primary: "GFLOP/s (N^3/3 flops, standard dense-Cholesky FLOP count)"
+      secondary: "ms (median, min, max)"
+    correctness: >
+      normalized residual test ||A - L*L^T||_F / (||A||_F * N * eps_fp64) <
+      30 (the standard LAPACK/ScaLAPACK-testsuite normalized-residual
+      threshold; none of the 8 surveyed papers state a numeric residual
+      tolerance for the plain-dense case, so this spec adopts the field-
+      standard test rather than inventing one). A run that fails this gate
+      does not count toward reported throughput.
+
+  - id: cholesky-dense-distributed-fp64
+    claim: >
+      distributed (multi-node) dense tile Cholesky at scale, reporting both
+      time-to-solution and aggregate communication volume, with block size
+      AND process grid (P x Q) as required disclosed parameters — this is
+      the variant KwasniewskiKBZS21 (paper 1) is purpose-built for, and the one
+      where the whole track's tile-size-tuning divergence (see
+      notes_on_fairness) is most consequential, since 3 of 4 of paper 1's own
+      baselines are only competitive after manual tuning.
+    inputs:
+      suite: same random-SPD generator as cholesky-dense-single-node-fp64-kernel
+      selection: >
+        square SPD, weak-scaling sizes spanning single-node-infeasible up to
+        a multi-node-but-not-full-machine range (deliberately capped well
+        below KwasniewskiKBZS21's own N=524,288/P=512-node ceiling and paper 4's
+        48,384-Fugaku-node ceiling, since this project's Phase 2 explicitly
+        does not require full-machine Gordon-Bell-class allocations).
+      recommended_subset: >
+        N in {16384, 65536, 131072, 262144}; process counts P in
+        {2, 4, 8, 16, 32, 64} nodes, 2 MPI ranks/node (matches paper 1's
+        dual-socket-node convention); a "large-scale" tier at N=524288,
+        P up to 512 is included as an optional stretch point matching paper 1's
+        own headline sweep, for sites with access to a larger allocation.
+      dense_operand: same as cholesky-dense-single-node-fp64-kernel, fp64
+    protocol:
+      tile_size: required, disclosed per (N,P) combination; sweep 4 block
+        sizes per combination (verbatim from paper 1's artifact README protocol)
+        and report which one is used for the headline number.
+      process_grid: "P x Q, P <= Q, as square as possible (2DBCDD convention,
+        matches CaoPABLKD21/paper 5's process-grid choice); disclosed per run"
+      preprocessing: one-shot process-grid setup and matrix generation;
+        excluded from the timed region, reported separately once
+      warmup: 1 full factorization per (N, P, block-size) combination
+      reps: 5 per combination (matches paper 1's artifact protocol)
+      statistic: >
+        median (report min and max alongside) — deviates from this track's
+        modal practice (paper 1's artifact doesn't state a statistic over its
+        five runs; paper 2/paper 5 report minimum-of->=3; paper 7 reports mean-of-3); median
+        is adopted per this spec's general fairness principle that best-of-N
+        (minimum) is optimistic.
+      timer: "max wall-clock time across all MPI ranks (matches paper 1's own
+        reporting convention)"
+      timing_scope: >
+        kernel-only factorization time; separately, aggregate communication
+        volume (elements moved per processor) is measured via a profiler
+        (Score-P or equivalent) and reported alongside a theoretical I/O-cost
+        lower bound, following paper 1's own methodology (validated to within ±3%
+        of measured for MKL/SLATE/COnfLUX/COnfCHOX in paper 1's own results).
+      preprocessing_reported: separately, once
+    metric:
+      primary: "aggregate GFLOP/s (N^3/3 / time, summed across the run)"
+      secondary: "ms; communication volume (elements/processor); theoretical
+        I/O-cost-model comparison (% deviation from the N^3/(P*sqrt(M)) bound)"
+    correctness: >
+      same normalized-residual test as cholesky-dense-single-node-fp64-kernel
+      (||A - L*L^T||_F / (||A||_F * N * eps_fp64) < 30), computed on a
+      gathered or distributed-checked residual. This is a spec addition:
+      paper 1's own paper validates only the I/O-cost *model*, not the numerical
+      factorization result, so this gate is new relative to the track's own
+      practice for this specific paper but consistent with paper 2/paper 5's residual-
+      checking practice elsewhere in the track.
+    artifact_note: >
+      target eth-cscs/conflux (the paper's maintained, BSD-3-Clause
+      successor), not anonymousSC21/SC21 (an unmaintained, unlicensed
+      anonymized-submission snapshot) — see survey.md's discussion of paper 1's
+      artifact repos.
+
+  - id: cholesky-tlr-lowrank-kernel
+    claim: >
+      tile low-rank (TLR) Cholesky factorization of a formally-dense,
+      data-sparse SPD operator (covariance matrix or 3D RBF-interpolation
+      operator), with TLR accuracy threshold AND tile size both required,
+      swept, disclosed parameters. Compression (dense->TLR) time is measured
+      and reported separately from factorization, following paper 2's own
+      practice of showing compression can dominate once factorization itself
+      is fast.
+    inputs:
+      suite: >
+        STARS-H-generated synthetic covariance matrices (2D/3D
+        exponential/Matérn kernels), matching the CPU-side generator shared
+        by CaoAPBLKD22 (paper 2), CaoPABLKD21 (paper 5), MondalAL0GK22 (paper 8), and
+        SalvanaAHLSGK21 (paper 7); plus the real Middle-East wind-speed dataset
+        (n=116,100, WRF-derived) shared by AbdulahCPBDGKLS22 (paper 3) and
+        SalvanaAHLSGK21 (paper 7) as a real-data cross-check.
+      selection: >
+        two size tiers reflecting this track's own single-node-vs-
+        distributed split: a small/medium tier (single-node feasible,
+        matches paper 8's own shared-memory sweep) and a large tier (distributed,
+        matches paper 2/paper 5's weak-scaling sweep). Accuracy threshold swept over
+        the union of values this track's papers actually use: {1e-3, 1e-4,
+        1e-5, 1e-7, 1e-8, 1e-9}.
+      recommended_subset: >
+        small/medium tier (single-node): N in {8100, 32400, 116100 (real
+        Middle-East wind dataset)}. Large tier (distributed): N in
+        {1080000, 2160000} (matches paper 2/paper 5's primary sweep points), with an
+        optional stretch point at N=11880000 (paper 5's weak-scaling ceiling).
+      dense_operand: fp64, RBF shape parameter or Matérn correlation length
+        set to the generator's default mid-range value, disclosed per run
+    protocol:
+      tile_size: >
+        required, disclosed per matrix size; use the b=O(sqrt(N)) heuristic
+        from paper 2/paper 5 (report the concrete NB value derived, e.g. N=1.49M ->
+        NB~4880 per paper 2's own worked example) plus one off-heuristic
+        comparison point, matching cholesky-dense-single-node-fp64-kernel's
+        tile-size-sensitivity requirement.
+      accuracy_threshold: >
+        required, swept over {1e-3, 1e-5, 1e-7, 1e-9} at minimum (matches paper 5
+        and paper 8, the two papers in this track that sweep it most rigorously),
+        with 1e-8 as the headline/default point (matches paper 2's --check
+        examples, paper 4's headline, paper 5's default).
+      preprocessing: >
+        one-shot dense-matrix generation is preprocessing (excluded,
+        reported separately). Dense->TLR compression is NOT folded into this
+        preprocessing bucket — it is measured and reported as its own
+        separate breakdown, following paper 2's Fig. 11 practice, since paper 2 shows
+        it can dominate wall time once factorization is TLR-accelerated.
+      warmup: none beyond the single measured run per config (matches paper 2/paper 5's
+        own "at least three times, minimum reported" practice structurally —
+        this spec keeps 3 runs but changes the statistic, see below)
+      reps: 3 (matches paper 2's and paper 5's stated minimum rep count)
+      statistic: >
+        median (report min and max) — deviates from paper 2/paper 5's own stated
+        practice of reporting the minimum of 3 runs, per this spec's general
+        fairness principle against best-of-N reporting.
+      timer: host wall-clock (matches paper 2/paper 5's std::chrono-based timers)
+      timing_scope: >
+        pure factorization time-to-solution, excluding both matrix
+        generation and dense->TLR compression (both reported separately, see
+        preprocessing above)
+      preprocessing_reported: >
+        two separate one-shot numbers: matrix generation, and dense->TLR
+        compression (the latter is the track-specific breakout paper 2
+        introduces and this spec preserves as mandatory, not optional)
+    metric:
+      primary: "GFLOP/s (effective, based on realized flop count after
+        compression, not the formal dense N^3/3 count — matches paper 2's own
+        roofline/critical-path-efficiency framing)"
+      secondary: "ms; memory footprint (GB, vs. dense fp64 baseline);
+        speedup vs. an Exact/dense-fp64 same-code-path reference"
+    correctness: >
+      PRIMARY (required) gate: numerical backward error against the
+      accuracy_threshold — paper 5 gives the concrete relationship found in this
+      track (1e-8 threshold -> ~1e-9 absolute solution error); a run whose
+      backward error exceeds its declared accuracy_threshold does not count.
+      SECONDARY (reported, not gating): downstream statistical quality vs. a
+      pure-dense-fp64 (Exact) reference — parameter-recovery boxplots and
+      MSPE, following paper 3/paper 7/paper 8's practice — reported because for this
+      track's geostatistics papers the inference result, not the factor's
+      per-element error, is what ultimately matters (see survey.md's
+      Divergences section; dropping this secondary check would hide a real
+      methodological signal the track's own papers care about).
+
+  - id: cholesky-mixed-precision-kernel
+    claim: >
+      mixed/adaptive-precision tile Cholesky (FP64/FP32/FP16/FP8, CPU or GPU
+      tensor-core), with the precision-ASSIGNMENT STRATEGY itself (not just
+      the resulting FP64/FP32/FP16/FP8 fractions) as a required, disclosed
+      parameter, since paper 3/paper 4's band-percentage scheme and paper 6's tile-centric
+      adaptive-decision scheme are structurally different rules that happen
+      to produce comparable-looking fraction numbers — reporting only the
+      fractions without the assignment rule would make cross-paper
+      comparison meaningless (the same lesson as paper 1's tile-size finding,
+      generalized to precision assignment).
+    inputs:
+      suite: >
+        same STARS-H synthetic covariance generator as
+        cholesky-tlr-lowrank-kernel; real datasets: Middle-East wind speed
+        (n=116,100, paper 3/paper 7) and, for the GPU/tensor-core sub-case, the UK
+        BioBank GWAS kernel-ridge-regression matrix from LtaiefACRSKDBAK24
+        (paper 6), N=305,880 (real) with a synthetic scaling series beyond it.
+      selection: >
+        union of paper 3's real/synthetic sweep, paper 4's weak-scaling sizes up to
+        the largest matrix that fits in pure FP64 given per-node HBM2, and
+        paper 6's GWAS/KRR sizes; capped at a tier tractable without a full-
+        machine Gordon-Bell allocation, with a stretch tier for sites with
+        larger access.
+      recommended_subset: >
+        CPU/distributed tier: N in {116100 (real wind dataset), 1000000,
+        4000000}. GPU tensor-core tier: N in {305880 (real UK BioBank GWAS),
+        1000000}, with an optional stretch point at N=13000000 (paper 6's
+        synthetic scaling ceiling).
+      dense_operand: >
+        precision configs, both required as named, disclosed strategies (do
+        not report a bare fraction without naming which of these two
+        produced it): (a) band-percentage vector "aD:bS:cH" (percent of
+        matrix bands in Double/Single/Half), swept at {100D (fp64
+        reference), 10D:90S, 1D:99H} (paper 3/paper 4's own named points); (b)
+        tile-centric adaptive decision (per-tile precision chosen at runtime
+        by thresholding local numerical content against machine epsilon,
+        paper 6's scheme), reported as "adaptive" with the resulting realized
+        FP64/FP32/FP16/FP8 fractions logged per run, not fixed in advance.
+        For the GPU/KRR sub-case only, INT8 tensor cores are used for the
+        Euclidean-distance matrix-GENERATION step (paper 6) — kept segregated
+        from the floating-point Cholesky/GEMM operands, not pooled into the
+        same GFLOP/s number.
+    protocol:
+      tile_size: required, disclosed per run, same b=O(sqrt(N)) heuristic
+        convention as the TLR variant; paper 4's headline used a fixed NB=800 at
+        N~=? without re-deriving the heuristic — this spec requires stating
+        which of the two (heuristic-derived vs. fixed) was used.
+      band_size: >
+        for the band-percentage strategy, BAND_SIZE per precision level is
+        itself a disclosed, per-precision-tuned parameter (matches paper 3's own
+        "tried several band sizes ... kept only the ones showing some
+        difference"); report the swept range and the value used.
+      preprocessing: >
+        one-shot matrix generation and any precision-assignment decision
+        pass (the adaptive strategy's tile-classification step) are
+        preprocessing, excluded from the timed factorization, reported
+        separately once.
+      warmup: 1 full factorization (no surveyed paper in this cluster states
+        a warmup count — this is a spec addition, flagged as an open
+        question below for the actual protocol used at Gordon-Bell scale)
+      reps: 3 (this spec's own choice, since paper 3/paper 4/paper 6 do not state a rep
+        count for their at-scale headline numbers — flagged as an open
+        question; smaller, single-node-feasible points in this variant's
+        recommended_subset SHOULD use 5 reps like the dense variants)
+      statistic: median (report min and max); no surveyed paper in this
+        cluster states a statistic for the at-scale numbers, so this is a
+        spec default, not a track convention.
+      timer: >
+        host wall-clock for CPU/distributed runs; device-side kernel timers
+        (synchronized) for the GPU tensor-core sub-case
+      timing_scope: >
+        kernel-only factorization (and, for the GPU/KRR sub-case, the
+        separately-reported matrix-generation "build" phase using INT8,
+        following paper 6's own build-vs-factorize split)
+      preprocessing_reported: >
+        matrix generation and the precision-assignment/classification pass,
+        each separately, once
+    metric:
+      primary: "GFLOP/s (N^3/3 flops, uniform unit across this whole track
+        despite papers reporting Tflop/s, PFlop/s, or ExaOp/s at their
+        respective scales — a scale artifact, not a methodological
+        disagreement, per survey.md's Divergences section)"
+      secondary: "ms; speedup vs. a same-code-path pure-FP64 (100D) baseline
+        run at the same N/tile size; memory footprint reduction vs. that
+        baseline"
+    correctness: >
+      PRIMARY (required) gate: numerical residual/backward error vs. a
+      pure-FP64 same-code-path reference, computed at FP64 accumulation;
+      tolerance scaled to the coarsest precision present in the run's
+      assignment (1e-2 if any FP8/INT8 tile is present, 1e-3 if the coarsest
+      is FP16, 1e-6 if FP32-only, 1e-12 if 100D). None of paper 3/paper 4/paper 6 state a
+      raw per-element residual tolerance (see below) — these thresholds are
+      this spec's own addition, needed to keep this variant's gate
+      comparable to the residual-based gate used by every other variant in
+      this track's spec, and should be revisited once real reproduction runs
+      exist. SECONDARY (reported, not gating): downstream statistical
+      quality vs. the 100D/Exact reference — parameter-recovery, MSPE,
+      log-likelihood (paper 3/paper 4), or MSPE + Pearson correlation of KRR-predicted
+      phenotypes vs. ground truth (paper 6) — the track's own primary validation
+      practice for this precision family (see survey.md's Divergences
+      section), kept as mandatory secondary reporting since it is the
+      quantity these papers' own claims are actually built on.
+
+notes_on_fairness:
+  - >
+    Tile/block size is treated as a required, disclosed, swept parameter in
+    every variant, never a silently fixed constant. This directly follows
+    paper 1's finding that 3 of 4 baseline libraries (MKL, SLATE, CANDMC/CAPITAL)
+    only become competitive after hand-tuning block size, while only
+    COnfLUX/COnfCHOX ship good out-of-the-box defaults — an undisclosed tile
+    size would make any cross-implementation comparison in this track
+    meaningless.
+  - >
+    Timing statistic is fixed to median (with min/max also reported) across
+    every variant. This diverges from the track's own modal practice:
+    minimum-of->=3-runs is most common (paper 2, paper 5, and implicitly paper 1's I/O-cost
+    validation), paper 7 uses mean-of-3, and paper 1's own artifact documents five
+    runs with no stated statistic. Minimum is optimistic (reports the
+    luckiest run); this spec's fairness principle prefers median.
+  - >
+    TLR/HODLR accuracy threshold is a required, swept axis (not a single
+    fixed value) in the TLR variant, mirroring paper 5 and paper 8's own practice —
+    the two papers in this track that treat it most rigorously — rather
+    than the single-fixed-value practice of paper 2's default (1e-4) or paper 4's
+    headline (1e-8) taken in isolation.
+  - >
+    Precision-ASSIGNMENT STRATEGY (band-percentage vs. tile-centric
+    adaptive), not just the resulting FP64/FP32/FP16/FP8 fractions, must be
+    disclosed per run in the mixed-precision variant, since paper 3/paper 4's scheme
+    and paper 6's scheme are structurally different rules and reporting only a
+    fraction number without the rule would make results look comparable
+    when they are not.
+  - >
+    Correctness is split into a required PRIMARY numerical residual/
+    backward-error gate (present in every variant, closer to paper 1/paper 2/paper 5's own
+    practice and to this project's general fairness principles) plus, for
+    the TLR and mixed-precision variants only, a SECONDARY downstream
+    statistical-quality report (parameter recovery, MSPE, MLOE/MMOM,
+    prediction correlation) matching what paper 3/paper 4/paper 6/paper 7/paper 8 actually validate
+    against in their own papers. Neither is dropped: a residual-only report
+    would hide the signal these application papers actually care about, and
+    a statistical-quality-only report (the track's own majority practice for
+    this family) would hide raw numerical error entirely.
+  - >
+    Metric unit is normalized to GFLOP/s (via the standard N^3/3
+    dense-Cholesky FLOP count) across every variant, even though the
+    surveyed papers report Gflop/s (paper 1, implicitly), Tflop/s/PFlop/s (paper 3,
+    paper 4), and ExaOp/s (paper 6) at their respective problem scales. This is a
+    scale artifact of the problem sizes involved, not a real methodological
+    disagreement (see survey.md's Divergences section), so unifying the unit
+    does not misrepresent any paper's finding.
+  - >
+    hicma-x's `--check` correctness-validation flag is used in every example
+    CLI invocation shown in its own TESTS.md alongside performance-relevant
+    flags, suggesting it may run inside the same timed invocation in
+    practice. This spec's protocol requires it be excluded from the timed
+    region (validated separately, before the reported time), which is a
+    disclosed DEVIATION from how the artifact's own example scripts appear
+    to invoke it, not a confirmed match to the track's practice (see
+    open_questions).
+
+open_questions:
+  - >
+    Exact statistic (mean/median/min) computed over paper 1's artifact-documented
+    "five runs" is not stated in the paper text or the artifact README —
+    resolving this needs `eth-cscs/conflux`'s actual benchmark-driver source
+    (not fetched during the survey pass).
+  - >
+    Warmup/repetition/statistic protocol for the at-scale Tflop/PFlop/ExaOp
+    headline numbers in paper 3, paper 4, paper 6 was not recoverable from the extracted
+    text — these are Gordon-Bell-class full-machine-allocation runs where a
+    repeated-timing-loop protocol may not be practical/affordable at all;
+    this spec's reps=3/median default for cholesky-mixed-precision-kernel is
+    therefore this spec's own choice, not evidence from the papers, and
+    should be revisited once a harness exists to test whether repeated runs
+    at that scale are even feasible on the measurement machine.
+  - >
+    Whether hicma-x's `--check` flag (backward-error validation) is timed
+    inside or excluded from the reported time-to-solution in the papers'
+    OWN numbers was not confirmed from the source excerpts read; the
+    testing_potrf_tlr.c driver source itself would need to be read to
+    confirm before the harness can safely assume the papers' own reported
+    numbers exclude it (see notes_on_fairness).
+  - >
+    paper 6's exact pure-FP64-only ExaOp/s baseline figure (needed to compute the
+    same "speedup vs. 100D" number paper 3/paper 4 report) was not captured during the
+    extraction pass — the abstract states "1.8 mixed-precision ExaOp/s" but
+    not the matching pure-FP64 number; needed before this variant's
+    "secondary: speedup vs. baseline" metric can be cross-checked against
+    paper 6's own headline claim.
+  - >
+    `ecrc/hicma-x`'s license is a custom "Other"/NOASSERTION license (not a
+    standard OSI license), unlike `ecrc/exageostat` (BSD-3-Clause, though
+    archived in favor of `ecrc/ExaGeoStatCPP`, not fetched in this survey) —
+    worth resolving before this spec's TLR and part of the mixed-precision
+    variant (both hicma-x-dependent) are used as the basis for a redistribute
+    -able Phase 2 harness.
+  - >
+    No surveyed paper states a numeric per-element residual tolerance for
+    the mixed-precision case; the tiered thresholds in
+    cholesky-mixed-precision-kernel's correctness section (1e-2/1e-3/1e-6/
+    1e-12 by coarsest precision present) are this spec's own choice, not
+    derived from any paper, and should be revisited against real
+    reproduction runs once the harness exists.
+
+evidence:
+  conf/sc/KwasniewskiKBZS21: >
+    Random dense SPD, N=2048-524288, P=2-512 nodes; max-time-across-ranks
+    std::chrono; 4 block sizes x 5 runs per (N,P), statistic unstated; time +
+    communication-volume metrics vs. MKL/SLATE/CANDMC/CAPITAL, all of which
+    need hand-tuned block size to be competitive; no numerical residual
+    check (I/O-cost model validated instead). arXiv 2108.09337 fulltext +
+    anonymousSC21/SC21 artifact README (target eth-cscs/conflux).
+  conf/ipps/CaoAPBLKD22: >
+    3D RBF operator from SARS-CoV-2 geometry, N=1.49M-52.57M; tile size
+    b=O(sqrt(N)) empirical heuristic; TLR accuracy 1e-4 default, swept
+    1e-5/1e-7/1e-9; minimum-of->=3-runs; compression time reported
+    separately from factorization; --check CLI flag for backward-error
+    validation. netlib.org PDF fulltext + ecrc/hicma-x TESTS.md.
+  journals/tpds/AbdulahCPBDGKLS22: >
+    Synthetic Monte-Carlo + real US-Soil-Moisture/Middle-East-Wind datasets;
+    band-percentage precision vector (aD:bS:cH) swept as an independent
+    axis, BAND_SIZE tuned per precision; correctness via downstream
+    statistical quality (parameter recovery, MSPE, log-likelihood) vs. 100D;
+    Tflop/PFlop/s, 1.56-2.64x speedup vs. 100D. netlib.org PDF fulltext +
+    ecrc/exageostat.
+  conf/sc/CaoAAPNBDGKLS22: >
+    Same MLE pipeline pushed to N~9M / 48,384 Fugaku nodes; combines dense
+    mixed-precision AND TLR compression via a tile-centric adaptive decision
+    rule; tile size 800 for headline comparison, TLR threshold 1e-8; INT8
+    not used here (GWAS/KRR-specific, see paper 6); up to 12x vs. dense-FP64,
+    79% memory reduction. marcgenton.github.io PDF fulltext + ecrc/exageostat.
+  conf/ipps/CaoPABLKD21: >
+    STARS-H synthetic 2D/3D covariance, N=1.08M-11.88M weak-scaling; tile
+    size AND BAND_SIZE both explicitly ablated (introduces BAND_SIZE
+    auto-tuning); accuracy threshold default 1e-8, swept 1e-3/1e-5/1e-7/1e-9;
+    minimum-of->=3-runs; explicit backward-error statement (1e-8 threshold
+    -> ~1e-9 absolute solution error) — the most concrete residual number in
+    the track. netlib.org PDF fulltext + ecrc/hicma-x.
+  conf/sc/LtaiefACRSKDBAK24: >
+    Real UK BioBank GWAS N=305,880 + synthetic scaling to 13M; tile-centric
+    adaptive precision (FP64/FP32/FP16/FP8) for Cholesky/GEMM, separate INT8
+    tensor-core path for KRR matrix-generation (Euclidean distance); GPU
+    tensor-core, 4 GPU vendors/generations; 1.805 ExaOp/s peak; correctness
+    via downstream MSPE/Pearson-correlation vs. plain Ridge Regression; no
+    explicit warmup/rep protocol recovered. arXiv 2409.01712v1 fulltext +
+    ecrc/hicma-x (testing_KRR target).
+  journals/tpds/SalvanaAHLSGK21: >
+    Bivariate/trivariate synthetic Matérn + real Middle-East wind
+    (n=116,100); nb=720 headline tile size; explicit mean-of-3-runs
+    statistic (the one paper in the track stating both rep count and
+    statistic together); Exact vs. TLR(5/7/9) vs. DST(40/60,70/30)
+    approximation-level comparison; 4-66.7x speedup vs. exact dense.
+    ar5iv.arxiv.org/html/2008.07437 fulltext + ecrc/exageostat.
+  conf/ipps/MondalAL0GK22: >
+    Synthetic Tukey g-and-h fields N=8100/32400, real n=358,303, distributed
+    weak-scaling to N=800K/512 nodes; three-way Exact/TLR/HODLR
+    approximation-method comparison (TLR beats HODLR 6.46-6.82x); no
+    explicit timing protocol recovered; correctness via boxplots of 6
+    estimated parameters vs. exact MLE. marcgenton.github.io PDF fulltext +
+    ecrc/exageostat.
+
+artifact_repos:
+  ecrc/hicma-x: >
+    C, PaRSEC-based; testing_potrf_tlr exposes --N, --NB (tile size),
+    --fixedacc (TLR threshold), --maxrank, --check (correctness gate),
+    --nruns, --band_dense/--auto_band, --gpus, --adaptive_decision/
+    --adaptive_memory (the mixed-precision runtime rule) directly as CLI
+    flags — this is the harness's primary knob surface for
+    cholesky-tlr-lowrank-kernel and the CPU/PaRSEC half of
+    cholesky-mixed-precision-kernel. Custom/"Other" license, not a standard
+    OSI license (flagged above).
+  ecrc/exageostat: >
+    C, BSD-3-Clause, archived (active development moved to
+    ecrc/ExaGeoStatCPP, not surveyed here). Precision is baked into the test
+    binary name (synthetic_dmle_test.c vs. synthetic_smle_test.c) rather
+    than a runtime flag, unlike hicma-x. Primary source for
+    cholesky-tlr-lowrank-kernel and cholesky-mixed-precision-kernel's
+    CPU/distributed real-dataset inputs.
+  eth-cscs/conflux: >
+    C++, BSD-3-Clause, the maintained successor to the anonymized
+    anonymousSC21/SC21 artifact KwasniewskiKBZS21 cites — target this repo,
+    not the anonymized snapshot, for cholesky-dense-single-node-fp64-kernel
+    and cholesky-dense-distributed-fp64.

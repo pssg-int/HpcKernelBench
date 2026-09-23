@@ -347,9 +347,10 @@ IPDPS 2026, `conf/ipps/YaoZLX26`, no arXiv/OA — repo README + abstract
    the most rigorous (5 repeats + 1 discarded warmup, reports the mean).
    K-Athena reports an 80th percentile over several runs. Every GPU
    Tensor-Core-stencil paper surveyed (ConvStencil, LoRAStencil,
-   FlashFFTStencil-by-inheritance, SPIDER) and both CPU papers (PERKS,
-   AOStencil) publish a **single, unrepeated trial with no discarded warmup** in
-   their public benchmark harness. This is the single biggest fairness gap in
+   FlashFFTStencil-by-inheritance, SPIDER), the GPU paper PERKS, and the CPU
+   paper AOStencil publish a **single, unrepeated trial with no discarded
+   warmup** in their public benchmark harness (PERKS's paper text states ten
+   runs per evaluation; only its repo driver is single-trial). This is the single biggest fairness gap in
    the track's own literature; the spec mandates a discarded warmup + median
    over ≥3 repeats for every variant, explicitly overriding the papers' own
    practice.
@@ -422,3 +423,196 @@ IPDPS 2026, `conf/ipps/YaoZLX26`, no arXiv/OA — repo README + abstract
    AOStencil use point-count names (`Box2D9P`, `2d9pt_box`, ...) that name the
    same underlying shapes. This is a genuine, evidence-backed "standard suite"
    for this track, not an invented one.
+
+---
+
+## Metrics addendum (2026-09-21) — every paper's own measures
+
+Every one of the 21 papers in `data/track_inputs/stencil.json` now has its own
+measures recorded. Only the 5 papers with a working adapter (AN5D, ConvStencil, LoRAStencil,
+FlashFFTStencil, SPIDER) are in `spec.yaml` `metrics.per_paper_native`; the
+other 16 (4 skipped in integration, 1 never integrated, 11 with no path to
+this harness) are listed at the end of this addendum as reference material
+only. Depth differs and is recorded per entry as `source_quality`:
+
+- **Fulltext read (12)**: AN5D (ar5iv), K-Athena (ar5iv), Bisbas/Devito (ar5iv),
+  StencilsOnFPGA (ar5iv), CLAIRE (ar5iv 2008.12820) — via fetched text;
+  PERKS (arXiv 2204.02064), SARIS (arXiv 2404.05303), StencilFlow (arXiv
+  2010.15218), YaskSite (FAU CGO'21 preprint), Futhark memory optimizations
+  (futhark-lang.org/publications/sc22-mem.pdf), HLS Transformations (arXiv
+  1805.08288) — PDFs downloaded and text-extracted with pypdf; SPIDER was
+  already fulltext above.
+- **Repo only (6)**: AOStencil, WindStencil, ozHOPE, ConvStencil, LoRAStencil,
+  FlashFFTStencil (no fulltext obtained; unchanged from the sections above).
+- **Abstract only (3)**: Dendro-GR (SC'22), Rise/Harris (CGO'21), PrecTuner
+  (PPoPP'24). Their evaluation text was NOT read; the ACM/IEEE versions were not
+  reachable and the repo docs list scripts, not results. Extend before relying
+  on them.
+
+New facts worth knowing that change earlier statements:
+
+1. **PERKS ran each evaluation ten times** (paper, Sec. 6.1), in fp64 on V100
+   and A100. Its repo driver is a single trial (`RUNS = 1`). Both are true; the
+   spec records both. PERKS is also a GPU paper, not a CPU one.
+2. **SARIS independently reuses AN5D's named kernels** (`j2d5pt`, `j2d9pt`,
+   `j2d9pt_gol`, `j3d27pt`) and AN5D's 16384^2 / 512^3 grids for its scale-out
+   estimate, which supports treating them as a shared suite.
+3. **Metrics that are not throughput at all**: YaskSite's ranking "performance
+   loss" ((best - selected) / selected x 100), K-Athena's performance-portability
+   score (harmonic mean of architectural efficiencies), StencilFlow's percent of
+   roofline, and CLAIRE's time-to-solution. These have no counterpart in the
+   common GCell-updates/s number and are why the spec reports paper-native
+   metrics alongside it instead of collapsing them.
+4. **Modeled vs measured is often mixed inside one paper** (AN5D's model
+   performance, YaskSite's ECM prediction, SARIS's 256-core scale-out
+   estimate, StencilsOnFPGA's cycle model, PERKS's projected peak). The spec
+   tags each metric `model` so it is never merged with a measured value.
+5. **Not every stencil-track paper is a stencil-kernel paper.** Futhark memory
+   optimizations, HLS Transformations, CLAIRE, Dendro-GR, Rise/Harris and
+   PrecTuner measure something adjacent (compiler passes, whole solvers,
+   affine programs); the spec marks them `peripheral`.
+
+### Reference-only metric lists (not in the spec)
+
+### K-Athena (TPDS 2021) — skipped in integration
+- **Source quality**: fulltext (ar5iv 1905.04341)
+- **Native primary**: [timing] cell-updates/s (e.g. >1e8 on one V100; 1.94e12 aggregate on 24,576 Summit GPUs), taken as the 80th percentile of per-cycle performance across several runs
+- **Also reports**:
+  - [hw] parallel efficiency (%) versus ideal scaling (76% on Summit at 24,576 GPUs)
+  - [model] architectural efficiency e(a,p,i) = achieved / min(T_peak, B x I): fraction of the bandwidth-limited roofline peak
+  - [profiler] arithmetic intensity in FLOP/byte (nvprof, Intel Advisor, or by hand)
+  - [hw] DRAM and L1 bandwidth in GB/s (Empirical Roofline Tool, GPUMembench, Intel Advisor)
+  - [model] performance-portability metric P = |H| / sum(1/e_i), harmonic mean of architectural efficiencies (paper reports 62.8%)
+  - [timing] GPU-vs-CPU speedup (30x on 24,576 GPUs against 172,032 CPU cores)
+
+### Bisbas / Devito (IPDPS 2021) — never integrated; named by variant 3
+- **Source quality**: fulltext (ar5iv 2010.10248)
+- **Native primary**: [timing] throughput in GPoints/s; speedup over Devito's own highly optimized spatially-blocked-only code
+- **Also reports**:
+  - [profiler] cumulative (L1+L2+LLC+DRAM) traffic-based arithmetic intensity (Intel Advisor)
+  - [profiler] cache-aware roofline placement of each operator (Intel Advisor), used to show the L3-bound ceiling being broken
+  - [timing] speedup per operator and space order (paper: acoustic 1.6x at order 4 and 1.13x at order 8; TTI 1.44x at order 4; elastic 1.3x on Broadwell and 1.22x on Skylake at order 4)
+  - NOT reported by the paper (do not invent): compile time, cache-miss counters, bandwidth measurements, tile-parameter sensitivity
+
+### PERKS (ICS 2023) — skipped in integration
+- **Source quality**: fulltext (arXiv 2204.02064) plus repo driver source
+- **Native primary**: [timing] GCells/s (giga-cells updated per second); geometric-mean speedup of PERKS over each baseline (PPCG, Bricks, SSAM, STENCILGEN, SHM): 2.12x for 2D and 1.24x for 3D stencils
+- **Also reports**:
+  - [timing] the repo driver prints, in one run: computation time (ms), GCells/s, GFLOP/s (stencil-specific FLOP-per-cell constant, e.g. 17 for the 9-point case), and bandwidth (GB/s)
+  - [model] projected peak performance P from a roofline-inspired model, and the concurrency analysis (thread blocks per SM, occupancy) used to choose how many resources to free for caching
+  - [timing] conjugate-gradient companion results: sustained memory bandwidth (TB/s) and per-time-step speedup versus Ginkgo (geomean 4.86x on smaller SpMV inputs)
+  - [accuracy] TOLERANCE = 1e-5 against a CPU reference (repo)
+  - PROTOCOL NOTE: the paper states each evaluation was run ten times, in fp64, on V100 and A100; the repo driver's own final measurement is a single trial (RUNS = 1)
+
+### WindStencil (ICS 2026) — skipped in integration
+- **Source quality**: repo (README; paper text not read)
+- **Native primary**: [timing] end-to-end speedup over 1000 whole-application iterations, reported separately as kernel-focused gain (isolated-kernel time ratio) and full-application gain (whole-program time ratio) for every grid
+- **Also reports**:
+  - [model] FP64 percent of peak (37.2% on MI60, ~30.8% on MI200) and attainable-roofline utilization (~51% on MI200)
+  - [hw] weak- and strong-scaling efficiency curves (up to 1024 GPUs, 600M-cell strong-scaling case)
+  - [accuracy] conserved quantities (total energy and total temperature) compared between optimized and unoptimized runs at every step of a 10,000-step run: max relative difference 1.12e-5 (energy), 4.16e-5 (temperature)
+
+### ozHOPE (IPDPS 2026) — skipped in integration
+- **Source quality**: repo (README) plus abstract; evaluation text not read
+- **Native primary**: [timing] end-to-end speedup: 1.82x average, up to 4.34x, while preserving the numerical method's convergence order
+- **Also reports**:
+  - [accuracy] diagnostic variables compared against FP64 reference results for each Williamson case (steady geostrophic flow, Rossby-Haurwitz wave, perturbed jet); accuracy and convergence-order preservation are first-class reported results, not just a pass/fail gate
+
+### StencilsOnFPGA (IPDPS 2021)
+- **Source quality**: fulltext (ar5iv 2101.01177)
+- **Native primary**: [hw] runtime and effective bandwidth in GB/s = total bytes transferred by the stencil loop / total time (Poisson 867-922, Jacobi 202-438, RTM 77-293 GB/s)
+- **Also reports**:
+  - [model] predicted clock cycles per mesh point per iteration and total cycles; paper states the model is accurate to within +/-15% of achieved runtime
+  - [hw] energy in kJ (measured with xbutil) and average power in W (FPGA 70-90 W, GPU 40-240 W); energy ratio versus V100 (>2x savings for the largest RTM case)
+  - [hw] DSP-block and BRAM/URAM utilization (target 80-90% internal memory), unroll factor p, vectorization factor V
+  - [hw] achieved clock frequency in MHz (250 Poisson, 246 Jacobi, 261 RTM); model-predicted vs synthesized DSP usage; valid-ratio of tiles (98.4-98.5%)
+  - [timing] runtime comparison against an NVIDIA V100 on the same problems
+
+### AOStencil (ICS 2025)
+- **Source quality**: repo (README + benchmark scripts; paper text not read)
+- **Native primary**: [timing] CPU wall time via omp_get_wtime over a fixed times = 100 sweeps; the throughput unit and the paper's headline speedup figures were NOT confirmed from the sources read
+- **Also reports**:
+  - [accuracy] maximum relative error against a scalar CPU reference over the same times = 100 iterations, 1e-5 threshold (check_main_2d / check_main_3d)
+  - [hw] genetic-algorithm autotuning cost (search phase uses test_time_per_iter = 50; not a warmup for the reported number)
+
+### SARIS (DAC 2024)
+- **Source quality**: fulltext (arXiv 2404.05303)
+- **Native primary**: [hw] speedup over an RV32G baseline (geomean 2.72x; range 2.36x jacobi_2d to 3.87x j3d27pt), from runtimes extracted from cycle-accurate RTL simulation traces of an eight-core Snitch cluster
+- **Also reports**:
+  - [hw] FPU utilization (geomean 35% -> 81%) and per-core IPC (0.89 -> 1.11)
+  - [hw] cluster power in W from post-layout gate-level simulation at 1 GHz, 25 C, 0.8 V (PrimeTime): geomean 227 mW base, 390 mW SARIS; energy-efficiency gain 1.27x-2.17x, geomean 1.58x
+  - [model] 256-core Manticore-256s scale-out ESTIMATE (not measured): FPU utilization 35% -> 64%, geomean speedup 2.14x, peak 406 GFLOP/s, compute-to-memory time ratio (CMTR) for memory-bound codes
+  - [model] fraction of peak compute, compared against other published systems (paper's Table 2: SARIS 79% vs AN5D 69% on V100 SXM2)
+  - workload note: the paper uses AN5D's named kernels (j2d5pt, j2d9pt, j2d9pt_gol, j3d27pt) plus box2d1r, star2d3r, star3d2r, jacobi_2d, ac_iso_cd, and AN5D's 16384^2 / 512^3 grids for the scale-out estimate
+
+### StencilFlow (CGO 2021)
+- **Source quality**: fulltext (arXiv 2010.15218)
+- **Native primary**: [hw] GOp/s / TOp/s of floating-point operations (square root counted as one op): 1.31 TOp/s single-device and 4.18 TOp/s multi-device Stratix 10; fp32
+- **Also reports**:
+  - [model] expected runtime from C = L + I * N cycles (pipeline latency L, initiation interval I = 1, N iterations over vector width), converted to time as C / f; measured runtime is reported against it
+  - [hw] runtime in microseconds and achieved bandwidth versus peak (36.4 GB/s = 47% and 58.3 GB/s = 76% of the 76.8 GB/s peak in the paper's examples)
+  - [model] percent of roofline (%Roof.) at the program's arithmetic intensity, and the bandwidth needed to saturate compute (paper: 254.0 GB/s)
+  - [hw] ALM, FF, M20K and DSP utilization; achieved clock 292-317 MHz; multi-device scaling from 1 to 8 FPGAs (scalar 264 GOp/s -> 1.5 TOp/s; 4-way vectorized 568.2 GOp/s -> 4.2 TOp/s)
+  - [timing] runtime and GOp/s against Tesla P100, V100 and a 12-core Xeon on the horizontal-diffusion program (128x128x80)
+
+### YaskSite (CGO 2021)
+- **Source quality**: fulltext (CGO'21 preprint)
+- **Native primary**: [timing] GLUP/s and MLUP/s (giga/mega lattice updates per second), fp64, measured and set beside the ECM-model prediction
+- **Also reports**:
+  - [model] ECM-predicted vs measured performance across problem sizes, and its scaling with core count up to memory saturation within one socket
+  - [profiler] memory data volume measured with LIKWID versus the model's predicted volume
+  - [timing] tuning time in seconds: YaskSite's analytical tuner versus YASK's gradient-descent tuning
+  - [model] mean and maximum prediction deviation (%) per problem, and ranking quality as performance loss (%) = (best - selected) / selected x 100, where best is the measured-best variant and selected is the one the model chose (paper Table III: mean 1.0-1.2% on Cascade Lake, 2.2-4.4% on Rome)
+  - [timing] speedup from vector folding (2.5x on Rome); run-to-run variation stated as under 5%
+
+### Memory Optimizations in an Array Language / Futhark (SC 2022)
+- **Source quality**: fulltext (futhark-lang.org/publications/sc22-mem.pdf)
+- **Scope**: peripheral — a compiler memory optimization; only Rodinia Hotspot (repeated stencil) and Parboil LBM are stencil-like
+- **Native primary**: [timing] wall time (ms) of the hand-written reference, with Futhark's unoptimized and optimized versions given as speedup ratios against it, plus the optimization impact (optimized / unoptimized); each benchmark's first run discarded and the mean of the rest reported
+- **Also reports**:
+  - [timing] run counts stated per table (Hotspot 10 runs, LBM 100 runs), on NVIDIA A100 and AMD MI100
+  - [timing] Hotspot at 8192 / 16384 / 32768 and LBM at short / long datasets; optimization impact up to ~2.05x on Hotspot (A100) and ~1.6x on LBM (MI100)
+
+### Transformations of HLS Codes for HPC (TPDS 2021)
+- **Source quality**: fulltext (arXiv 1805.08288), evaluation figures read as extracted text and NOT re-checked against the rendered figures
+- **Scope**: peripheral — a catalog of HLS source transformations; the 4-point 2D stencil (8192x8192, fp32) is one of its three worked examples
+- **Native primary**: [hw] GOp/s at each optimization stage (naive, pipelined, vectorized, systolic), with per-step and cumulative speedup over the naive version
+- **Also reports**:
+  - [hw] LUT, DSP and BRAM utilization as a fraction of the device (maxima taken as 1728K LUTs, 12,288 DSPs, 2688 BRAM)
+  - [model] throughput of about one cell per cycle once pipelined; pipeline-model quantities initiation interval I and latency L
+
+### CLAIRE multi-GPU image registration (SC 2020)
+- **Source quality**: fulltext (ar5iv 2008.12820)
+- **Scope**: peripheral — image registration; its finite-difference, interpolation and FFT kernels are stencil-like, but the reported numbers are for the whole solver
+- **Native primary**: [timing] time to solution in seconds (about 5 s for a 256^3 registration on one V100; 3.7 s with gradient storage), and speedup over prior implementations (34x over the CPU version)
+- **Also reports**:
+  - [timing] per-kernel runtime and the share spent in communication for the finite-difference and interpolation kernels (256^3 to 1024^3), and FFT runtime in ms
+  - [hw] sustained bidirectional CUDA-aware MPI bandwidth in GB/s (all-to-all vs peer-to-peer) for the FFT
+  - [hw] strong and weak scaling from 1 to 64 GPUs, and per-GPU memory in GB (model: mu_total = (74 + N_t) N mu_0 / p + mu_IP + mu_API)
+  - [accuracy] Gauss-Newton and PCG iteration counts, relative mismatch, relative gradient norm; single precision on V100
+
+### Dendro-GR GPU AMR solver (SC 2022)
+- **Source quality**: abstract-only (abstract plus the repo's public docs; evaluation text not read)
+- **Scope**: peripheral — numerical relativity; the BSSN right-hand side is a high-order stencil inside an AMR solver
+- **Native primary**: [hw] GFlops/s (800 GFlops/s on one A100)
+- **Also reports**:
+  - [timing] speedup of 2.5x over an equivalent two-socket 128-core AMD EPYC 7763 CPU node, and 6x over existing state-of-the-art numerical-relativity codes (the paper itself notes such comparisons are difficult)
+  - [hw] strong scaling to 8 A100s and weak scaling to 229,376 x86 cores on Frontera (from the repo docs)
+  - [accuracy] gravitational-waveform accuracy assessments (abstract; the mass-ratio range was not read); padding-zone (octant-to-patch and patch-to-octant) timings on CPU and GPU (repo scripts)
+
+### Rise / Harris on mobile CPUs (CGO 2021)
+- **Source quality**: abstract-only (abstract plus artifact README; evaluation text not read)
+- **Scope**: peripheral — Harris corner detector image pipeline on ARM mobile CPUs
+- **Native primary**: [timing] runtime speedup over OpenCV (up to 16x) and over Halide (close to, and up to 1.4x better than); run count and statistic are NOT stated in the README
+- **Also reports**:
+  - [accuracy] output correctness is checked for both test images (small rgb.png and large venice_wikimedia.jpg)
+  - platform: Cortex A7, A15, A53 and A73 on Odroid XU4 and N2 boards
+
+### PrecTuner / lnlamp (PPoPP 2024)
+- **Source quality**: abstract-only (abstract plus artifact README; evaluation text not read)
+- **Scope**: peripheral — mixed-precision code generation for PolyBench-style affine programs, not a stencil-specific paper
+- **Native primary**: [timing] speedup over LuIs (3.28x), over Pluto (1.81x single-core, 1.52-1.73x multi-core), and over PPCG on GPU (1.71x)
+- **Also reports**:
+  - [accuracy] output-quality degradation against a user-set error budget/threshold; the README does not define the error metric
+  - [hw] tuning cost of the search (the paper's central claim is predicting the best parameter without evaluating every variant)
+

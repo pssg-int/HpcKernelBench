@@ -72,6 +72,7 @@ from __future__ import annotations
 
 import itertools
 import re
+import warnings
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -145,20 +146,34 @@ def _support_offsets(kind: str, dims: int, radius: int) -> list[tuple[int, ...]]
 def _build_weights(offsets: list[tuple[int, ...]], dims: int) -> dict[tuple[int, ...], float]:
     """
     Synthetic coefficient set, generic over shape/dims/radius. Chosen to satisfy
-    two properties simultaneously:
+    three properties simultaneously:
 
-      1. sum(|w_d|) == 1 exactly, so the sweep is non-expansive in the max-norm
-         (||U_new||_inf <= ||U||_inf) regardless of sign pattern -- bounded for
-         any T, no NaN/Inf risk from a synthetic weight set that was never meant
-         to model a specific physical PDE.
-      2. genuine sign variation (center weight positive, neighbor weights split
-         with alternating sign by axis direction, forward/backward), so the
-         correctness gate actually exercises cancellation rather than summing
-         all-positive terms -- this is what makes the cancellation-robust
-         `scale` (see reference_stencil) a meaningful check and not a no-op.
+      1. sum(w_d) == 1 and every w_d > 0 (a convex combination), so the sweep
+         is non-expansive in the max-norm (||U_new||_inf <= ||U||_inf) AND
+         preserves a constant field exactly. The solution therefore stays
+         O(mean(U_0)) ~ 0.5 for any T -- it can neither blow up nor decay
+         toward zero. This matters for the correctness gate: an earlier
+         version used signed weights summing to 0.5, so the true answer
+         shrank like 0.5^T (~1e-153 at T=1000, exactly 0.0 at T=10240) while
+         the gate's scale stayed O(1), and an all-zeros output passed the
+         1e-5 tolerance from about T=20 on. Do not reintroduce a weight sum
+         below 1 (or a signed set whose sum is not 1).
+      2. asymmetry: neighbors in the "forward" direction (first nonzero
+         coordinate > 0) carry 3x the weight of "backward" ones, so a
+         flipped/reflected kernel or a mis-signed offset in an implementation
+         changes the answer and is caught. (Two levels only: it does NOT
+         distinguish permutations among equally-weighted offsets, e.g. an
+         axis swap on a star -- as before.)
+      3. half the total weight sits on the center point; the rest is split
+         across the non-center support points in the 3:1 forward:backward
+         ratio above.
 
-    Half the weight mass sits on the center point; the other half is split
-    evenly across the non-center support points.
+    Trade-off: with all weights positive the sweep is a smoother, so on a
+    SMALL grid at very large T the field mixes toward a constant and
+    misplaced-data bugs (e.g. a one-cell shift) stop changing the answer
+    (see the flat-field warning in reference_stencil). Gate on a grid/T where
+    the field is still varying; zeros and wrong-scale outputs are caught at
+    every T.
     """
     center = tuple([0] * dims)
     non_center = [o for o in offsets if o != center]
@@ -166,14 +181,10 @@ def _build_weights(offsets: list[tuple[int, ...]], dims: int) -> dict[tuple[int,
     if not non_center:
         weights[center] = 1.0
         return weights
-    per_neighbor = 0.5 / len(non_center)
+    raw = {o: (1.5 if next(c for c in o if c != 0) > 0 else 0.5) for o in non_center}
+    total = sum(raw.values())
     for o in non_center:
-        # sign follows the direction of the first nonzero coordinate, so
-        # "forward" neighbors and "backward" neighbors partially cancel --
-        # a discrete-derivative-like pattern, not a plain positive average.
-        first_nonzero = next(c for c in o if c != 0)
-        sign = 1.0 if first_nonzero > 0 else -1.0
-        weights[o] = sign * per_neighbor
+        weights[o] = 0.5 * raw[o] / total
     return weights
 
 
@@ -535,6 +546,20 @@ def reference_stencil(workload_: StencilWorkload, params: dict):
             f"stencil: unknown boundary convention {boundary!r} for "
             f"{workload_.name!r} (expected 'periodic', 'fixed', or "
             "'zero-halo', spec.yaml inputs.boundary)")
+    # Flat-field guard: with smoothing (all-positive) weights a small grid at
+    # large T mixes toward a constant, and then a misplaced-data bug (one-cell
+    # shift, wrong offset) no longer changes the answer. Measured on this
+    # domain's weights: shift bugs were caught whenever ptp(u)/max(scale) >=
+    # ~3e-4 and missed below ~5e-7, so warn well above that.
+    spread = float(np.ptp(u)) / max(float(np.max(s)), 1e-300)
+    if spread < 1e-3:
+        warnings.warn(
+            f"stencil gate for {workload_.name!r} (grid {workload_.grid_shape}, "
+            f"T={timesteps}, boundary={boundary}): the reference field has gone "
+            f"nearly flat (ptp/scale={spread:.1e}). The gate still catches "
+            "zero/wrong-scale outputs but CANNOT catch misplaced-data bugs "
+            "(shifted or wrong-offset neighbors). Gate on a larger grid or a "
+            "smaller T.", stacklevel=2)
     return u, s
 
 

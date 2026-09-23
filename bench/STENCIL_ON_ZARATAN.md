@@ -14,7 +14,8 @@ and `bench/audit/scripts/check10_stencil_gate_not_vacuous.py`.
 ---
 
 ```text
-You are working in a clone of HPC-KernelBench, on zaratan, in bench/.
+You are working in a clone of HPC-KernelBench, on zaratan. Run every
+command below from the REPOSITORY ROOT unless it says otherwise.
 
 GOAL. Build and run the 5 paper adapters in the stencil track
 (bench/artifacts/stencil/{an5d,convstencil,lorastencil,flashfftstencil,spider}),
@@ -79,7 +80,17 @@ GROUND RULES (same as bench/REPRODUCE.md)
 - No machine-specific paths in scripts: use the KB_* variables from
   bench/env.sh.
 - All GPU work goes through bench/gpu_run.sh; nothing GPU-related runs on
-  the login node.
+  the login node (it has no GPU). This includes smoke gates, builds that
+  need nvcc/a GPU, and any one-off Python that touches a kernel. Each call
+  is one blocking `srun` job on the gpu partition; it sources env.sh and
+  runs the quoted command with cwd = bench/, so paths INSIDE the quotes are
+  relative to bench/ (artifacts/..., not bench/artifacts/...). Keep the
+  quotes single so $PY expands on the compute node.
+- Before any gpu_run.sh call, set the SLURM account (env.sh does not):
+    export KB_SLURM_EXTRA="-A <your zaratan account>"
+  If you do not know the account, run `sacctmgr -nP show assoc user=$USER
+  format=account` and use the one with GPU access; if none is obvious,
+  STOP and ask.
 - Bound every filesystem search to this repository (see bench/CLAUDE.md's
   NERSC-derived filesystem-safety note; the same discipline applies here:
   no unbounded find/grep -r/du/tree over a shared root).
@@ -89,13 +100,13 @@ GROUND RULES (same as bench/REPRODUCE.md)
 STEP 1: ENVIRONMENT (should already be set up on zaratan)
   source bench/env.sh
   $PY bench/check_env.py       # expect 0 MISSING
-  cd bench && ./smoke_all.sh   # CPU only; confirm stencil's lines are green
+  (cd bench && ./smoke_all.sh) # CPU only; confirm stencil's lines are green
 If check_env.py reports MISSING items or smoke_all.sh fails on stencil,
 STOP and report that first -- do not proceed to GPU builds on a broken base.
 
 STEP 2: BUILD the 5 adapters
 For each of an5d, convstencil, lorastencil, flashfftstencil, spider:
-  bench/gpu_run.sh -g h100 -- 'bash bench/artifacts/stencil/<name>/build.sh'
+  bench/gpu_run.sh -g h100 -t 30 -- 'bash artifacts/stencil/<name>/build.sh'
 Record exit code and the last few lines of output per adapter. A build
 failure is a result (record BUILD-FAILED with the first real error line in
 that adapter's STATUS.md, per the Reproduction-section format used
@@ -103,15 +114,18 @@ elsewhere in this repo) -- do not attempt to patch the paper's own kernel
 source to fix it.
 
 STEP 3: FUNCTIONAL GATE, then a REAL (non-smoke) run, per adapter
-  $PY -m kernelbench.runner --kernel stencil --list
-    (confirm all 5 show as built, not "not built: ... missing")
+  (cd bench && $PY -m kernelbench.runner --kernel stencil --list)
+    (CPU-only listing; confirm all 5 show as built, not "not built: ... missing")
 For each adapter, on the ONE shape it supports (see IMPORTANT CONTEXT above):
-  a. Smoke gate first, to catch a broken build cheaply:
-     $PY -m kernelbench.runner --kernel stencil --variant <its variant> \
-         --impl <IMPL_NAME> --smoke
+  a. Smoke gate first, to catch a broken build cheaply (on a GPU node --
+     the smoke run executes the kernel):
+     bench/gpu_run.sh -g h100 -- \
+       '$PY -m kernelbench.runner --kernel stencil --variant <its variant> \
+            --impl <IMPL_NAME> --smoke'
   b. Then a real, conforming run (no --smoke, no --warmup/--reps override),
-     under an exclusive GPU allocation, at the shape it supports:
-     bench/gpu_run.sh -g h100 -t 30 -- \
+     under an EXCLUSIVE node allocation (gpu_run.sh does not add this by
+     itself), at the shape it supports:
+     KB_SLURM_EXTRA="$KB_SLURM_EXTRA --exclusive" bench/gpu_run.sh -g h100 -t 30 -- \
        '$PY -m kernelbench.runner --kernel stencil --variant <variant> \
             --impl <IMPL_NAME> --matrices <shape>'
      an5d and convstencil: --variant stencil-cpu-gpu-kernel-fp64
@@ -125,8 +139,12 @@ For each adapter, on the ONE shape it supports (see IMPORTANT CONTEXT above):
      will need to call load_workload with an explicit, 6-divisible
      grid_shape (see its STATUS.md for the grid it was last successfully
      gated at) -- this is not reachable via --matrices alone; write a short
-     one-off Python invocation if needed, and say so in your report.
-  Check the runner's own `conforming: true/false` line and the
+     one-off Python invocation if needed (run it through the same
+     exclusive bench/gpu_run.sh command as above, e.g. as a script under
+     bench/ invoked as '$PY <script>.py'), and say so in your report.
+  Record the `[gpu_run] host=... gpu=... job=...` line of every run (it is
+  the evidence of which GPU was used). Check the runner's own
+  `conforming: true/false` line and the
   `N/M runs valid (k unsupported)` line for each. If `conforming: false`,
   read `nonconformance_reasons` and report it verbatim.
 
@@ -140,8 +158,8 @@ Never delete or rewrite earlier STATUS.md text -- put the new ruling first
 and keep the old one after "Earlier outcome, kept for the record:".
 
 STEP 5: REPORT
-- $PY -m kernelbench.report bench/results/stencil_*.json \
-      --html bench/results/stencil_report.html
+- (cd bench && $PY -m kernelbench.report results/stencil_*.json \
+      --html results/stencil_report.html)
 - Write a short summary (5 papers, one row each): shape tested, GCUP/s,
   correctness error, conforming true/false, and for anything that did not
   produce a real number, the exact blocking reason (build failure, runtime

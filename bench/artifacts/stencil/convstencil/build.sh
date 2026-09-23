@@ -35,14 +35,14 @@ echo "nvcc: $("$NVCC" --version | tail -1)"
 HOST_COMPILER="${HOST_COMPILER:-${KB_GXX12:-/usr/bin/g++-12}}"
 echo "host compiler: $("$HOST_COMPILER" --version | head -1)"
 
-# gpu_box_2d1r/gpu_box_2d3r use double-precision wmma (mma.h), which requires
-# sm_80+ (A100). -rdc is not needed (single translation unit: bridge.cu
-# includes 2d_utils.h only; gpu.cu is compiled directly alongside it, not
-# via separable compilation, matching how the artifact's own CMakeLists.txt
-# builds convstencil_2d: src/2d/main.cu + src/2d/gpu.cu as one executable).
+# kernel2d uses double-precision wmma (mma.h), which requires sm_80+ (A100).
+# Single translation unit: bridge.cu #includes the artifact's gpu.cu verbatim
+# (found via -I "$SRC") so it can launch `kernel2d` and set the
+# `param_matrix_d` __constant__ directly -- so gpu.cu must NOT also be passed
+# as a separate source (duplicate symbols). -rdc is not needed.
 "$NVCC" -ccbin "$HOST_COMPILER" -O3 -w -arch=sm_80 -Xcompiler -fPIC -shared \
     -I "$SRC" \
-    "$HERE/bridge.cu" "$SRC/gpu.cu" \
+    "$HERE/bridge.cu" \
     -o "$HERE/bridge.so"
 
 echo "Built: $HERE/bridge.so"

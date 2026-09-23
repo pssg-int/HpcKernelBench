@@ -2,6 +2,33 @@
 
 **Outcome: BUILT+GATED (2D only) — gate PASSES on the one shape wired up; 3D/1D not integrated (time budget)**
 
+## Bridge rewrite: GPU-resident T-step run (2026-09-23) -- NOT YET BUILT OR GATED
+
+`bridge.cu` was rewritten so a T-step run stays on the GPU. Before, `run()`
+re-padded the periodic halo on the host and called the artifact's host
+function once per step, which allocated, copied H2D, launched and copied
+D2H every step; the timed region mostly measured PCIe traffic (ConvStencil:
+6-11 ms for a 256^2, T=5 smoke run), not the kernel the paper times.
+
+Now the bridge #includes the artifact's `gpu.cu` verbatim, copies its
+parameter-matrix setup and lookup tables verbatim, launches the artifact's own
+`kernel2d` with the same launch configuration, and refreshes the periodic
+halo on the device after each step (`../periodic_halo.cuh`, O(perimeter)).
+prepare() uploads once; run() is a D2D reset + T x (kernel + halo refresh);
+to_host() copies the interior back. No kernel code is modified.
+
+Verified so far (macOS, no GPU): the halo-refresh index math, ported line
+for line to numpy and run as a whole T-step loop in this bridge's buffer
+layout, matches `reference_stencil` exactly (star2d1r, box2d1r, box2d3r; up to T=7). NOT yet verified: that
+it compiles and gates on a GPU. Before using any number from this adapter:
+
+    bench/gpu_run.sh -g h100 -t 30 -- 'bash artifacts/stencil/convstencil/build.sh'
+    bench/gpu_run.sh -g h100 -- '$PY -m kernelbench.runner --kernel stencil \
+        --variant stencil-cpu-gpu-kernel-fp64 --impl convstencil-tcu --smoke'
+
+and record the outcome here. Timings recorded before 2026-09-23 include the
+per-step host round trip and are not comparable to the paper.
+
 Paper: "ConvStencil: Transform Stencil Computation to Matrix Multiplication
 on Tensor Cores", PPoPP 2024. PAPER_KEY = `conf/ppopp/ChenLWBWMYZCY24`.
 Repo: `https://github.com/microsoft/ConvStencil` (commit

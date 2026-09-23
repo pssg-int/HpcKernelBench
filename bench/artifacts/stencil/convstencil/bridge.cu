@@ -1,89 +1,176 @@
-// Thin ctypes-callable bridge around ConvStencil's 2D box-stencil-via-Tensor-
-// Core kernel (source/src/2d/gpu.cu, function gpu_box_2d1r).
+// Thin ctypes-callable bridge around ConvStencil's 2D Tensor-Core stencil
+// kernel (source/src/2d/gpu.cu: `kernel2d`, set up as in `gpu_box_2d1r`).
 //
-// NOT part of the artifact. It exists because the artifact's own entry point
-// is main.cu's CLI driver (source/src/2d/main.cu), which:
-//   (a) hardcodes a shape catalog (box2d1r/star2d1r/star2d3r/box2d3r) and
-//       picks a `param` (49-double, 7x7 row-major) array per shape via a
-//       switch statement -- but for the star_2d1r / star_2d3r cases that
-//       switch selects `param_star_2d1r`, a buffer declared
-//       `double param_star_2d1r[49] = {0.0}` and NEVER POPULATED anywhere
-//       in main.cu (only param_box_2d1r is filled, via a box^3-collapse
-//       polynomial expansion driven by --custom input). This is a bug/dead
-//       feature in the artifact itself (verified by reading main.cu in
-//       full): the CLI's star2d1r path silently computes with an all-zero
-//       weight array. We bypass main.cu entirely and call gpu_box_2d1r()
-//       directly with our OWN 49-double param array built from the
-//       harness's StencilWorkload.weights, sidestepping that bug -- no
-//       kernel code touched, we just supply correct weights where main.cu's
-//       own CLI plumbing fails to.
-//   (b) bundles host buffer allocation, H2D copy, an internal ping-pong
-//       loop over `times` (invoked via kernel2d<<<...>>> repeatedly on
-//       device-resident buffers, no halo refresh between iterations -- see
-//       below), and D2H copy, all inside gpu_box_2d1r() itself. There is no
-//       separate "prepare vs run" split available in the artifact; the
-//       whole thing is one C function taking host pointers in and out.
+// NOT part of the artifact. gpu.cu is #included VERBATIM (unmodified) so
+// this translation unit can see its `kernel2d` __global__ and the
+// `param_matrix_d` __constant__ it reads.
 //
-// T-sweep semantics (checked directly in gpu.cu): gpu_box_2d1r's internal
-// `times` loop ping-pongs the SAME device buffer pair without ever
-// refreshing the halo band between iterations -- iteration 0 reads the
-// halo as initialized by the H2D copy of the caller's padded host buffer;
-// iterations 1..times-1 reuse that SAME (now-stale) halo, never
-// re-wrapped from the evolving interior. This does not match our domain's
-// periodic-wrap T-sweep recursion (kernelbench/domains/stencil.py
-// reference_stencil: every sweep re-wraps from the CURRENT field). So we
-// do NOT use gpu_box_2d1r's internal `times` parameter for multi-step runs;
-// instead this bridge exposes a SINGLE-SWEEP entry point
-// (convstencil2d_sweep, times=1 always) and the Python adapter's run()
-// calls it `workload.timesteps` times, re-building the periodic-wrap padded
-// host buffer between each call (host-side np.pad(mode="wrap"), matching
-// kernelbench/domains/stencil.py's np.roll-based periodic reference). This
-// is materially slower per-call than the artifact's own batched internal
-// loop (H2D/D2H every sweep instead of once) but is the only way to get a
-// CORRECT multi-timestep periodic result out of this kernel without
-// touching gpu.cu; documented as a known performance caveat (not a
-// correctness one) in STATUS.md -- login-node gate work only needs
-// correctness here, per the integration contract's rule 5.
+// Why a bridge instead of the artifact's entry points:
+//   (a) main.cu's CLI never populates weights for star2d1r/star2d3r
+//       (`param_star_2d1r` is declared zero and never written), so we supply
+//       our own 7x7 weight array, built from StencilWorkload.weights.
+//   (b) gpu_box_2d1r() bundles allocation, H2D copy, a `times` loop and D2H
+//       copy in one call taking host pointers, and its `times` loop
+//       ping-pongs the device buffers WITHOUT refreshing the halo between
+//       steps, so for T>1 it does not compute a periodic-wrap T-step sweep.
 //
-// Padded-buffer layout (rows = m + 2*HALO, cols = n + 2*HALO + 2, HALO=3,
-// exactly as gpu_box_2d1r allocates internally and as main.cu's own host
-// buffer is sized): the offset at which OUTPUT is actually written was
-// determined by reading gpu.cu's kernel2d store index
-// (`out + begin + IDX(HALO + col/7, HALO, ldm)` with
-// `begin = IDX(blockIdx.x*BLOCK_SIZE_ROW, blockIdx.y*BLOCK_SIZE_COL+1, ldm)`)
-// which places row 0 of valid output at buffer row HALO(=3) and column 0 of
-// valid output at buffer column HALO+1(=4). Since cols_total - n = 2*HALO+2
-// = 8 = 4+4, this is consistent with a SYMMETRIC 4-wide column margin (the
-// extra +1/+2 beyond the plain 2*HALO in main.cu's own size arithmetic is
-// tensor-core/alignment padding, not an asymmetric boundary). Row margin is
-// the plain HALO=3 on both sides (rows_total - m = 2*HALO exactly, no
-// extra). This bridge pads with row margin 3/3 and column margin 4/4,
-// periodic-wrap (matching kernelbench/domains/stencil.py's boundary), and
-// extracts the result from the same offsets. Verified empirically (see
-// STATUS.md) against a hand-computed reference before wiring into the
-// harness adapter.
+// History: the first version of this bridge (2026-09) worked around (b) by
+// calling gpu_box_2d1r(times=1) once per step from Python and re-padding on
+// the host, so every timed step paid a host re-pad plus cudaMalloc + H2D +
+// D2H -- the timed region mostly measured PCIe traffic, not the kernel
+// (6-11 ms for a 256^2, T=5 smoke run). This version (2026-09-23) keeps the
+// grid on the device for the whole run:
 //
-// params49: 7x7 row-major, param[i*7+j] weights in[row+(i-3)][col+(j-3)]
-// (matches main.cu's own naive_box2d1r reference loop exactly, and
-// StencilWorkload.dense_kernel(flip=False)'s convention with radius fixed
-// at 3 -- ConvStencil's kernel always operates on a 7x7 (radius-3) support
-// regardless of shape name; smaller-radius shapes (radius 1) are expressed
-// by zero-padding the unused outer ring of the 7x7, which the adapter does).
+//   prepare  once, untimed: weights -> param_matrix_d (gpu_box_2d1r's own
+//            packing loops, copied verbatim), lookup tables (same), device
+//            buffers, pristine padded initial field (H2D once, halo filled
+//            on the device).
+//   run(T)   timed: reset buf[0] from the pristine copy (D2D, O(grid) once
+//            per call, same reset discipline as NumpyStencil.run()), then T x
+//            { kernel2d (the artifact's kernel, same launch config as
+//            gpu_box_2d1r); periodic halo refresh (periodic_halo.cuh,
+//            O(perimeter)) }. No host transfer, no sync inside the loop.
+//   copy_out untimed: D2H of the interior of the current buffer.
+//
+// The halo refresh is the one thing the artifact's own loop lacks and a
+// correct periodic T-step sweep needs; its cost is O(m + n) per step against
+// the kernel's O(m * n).
+//
+// Padded-buffer layout (unchanged from the first bridge, derived from
+// kernel2d's load/store index arithmetic and verified empirically, see
+// STATUS.md): rows = m + 2*HALO, cols (= ldm) = n + 2*HALO + 2, HALO = 3.
+// kernel2d reads rows [0, m+6) and columns [1, n+7); it writes the interior
+// at rows [3, 3+m), columns [4, 4+n). Columns 0 and n+7 are alignment padding
+// and never read. So the halo to refresh is 3 rows above/below and 3 columns
+// left/right of an interior anchored at (3, 4).
+//
+// Alignment: gpu_box_2d1r launches ceil(m/32) x ceil(n/64) blocks with no
+// tail guard, so m must be a multiple of 32 and n of 64 (the adapter checks).
+//
+// params49: 7x7 row-major, params49[i*7+j] weights in[row+(i-3)][col+(j-3)]
+// (main.cu's naive_box2d1r convention; radius-1 shapes are zero-padded into
+// the 7x7 by the adapter).
+//
+// param_matrix_d is a module-level __constant__, so only one prepared handle
+// is valid at a time (the harness prepares, runs and frees one at a time).
 
-#include "2d_utils.h"
+#include "gpu.cu"
+#include "../periodic_halo.cuh"
+
+#define CS_ROW0 HALO          // interior row origin
+#define CS_COL0 (HALO + 1)    // interior column origin
+
+struct CsHandle {
+    double *buf[2];
+    double *init;
+    int *lt1, *lt2;
+    int m, n, rows, cols, cur;
+};
 
 extern "C" {
 
-// One stencil sweep: out = box7x7(in), no internal iteration (times=1
-// always -- see docstring above for why the artifact's own multi-`times`
-// path is not used). `padded_in`/`padded_out` are host pointers of size
-// (m+6) x (n+8) doubles (row-major), already periodic-wrap padded by the
-// caller. `params49` is a 49-double row-major 7x7 array. This is
-// gpu_box_2d1r verbatim (source/src/2d/gpu.cu), unmodified, called with
-// times=1.
-void convstencil2d_sweep(const double *padded_in, double *padded_out,
-                          const double *params49, int m, int n) {
-    gpu_box_2d1r(padded_in, padded_out, params49, /*times=*/1, m, n);
+void *convstencil2d_prepare(const double *field, const double *params, int m, int n) {
+    // --- gpu_box_2d1r's parameter-matrix packing, verbatim (gpu.cu) --------
+    double param_matrix_h[2][52 * 8] = {0.0};
+    for (int col = 0; col < TENSOR_CORE_M; col++) {
+        for(int i = 0; i < UNIT_LENGTH; i++) {
+            for(int j = 0; j < UNIT_LENGTH; j++) {
+                if (j >= col) {
+                    param_matrix_h[0][(i * UNIT_LENGTH + j) * 8 + col] = params[i * UNIT_LENGTH + j - col];
+                }
+            }
+        }
+    }
+    for (int col = 0; col < TENSOR_CORE_M; col++) {
+        for(int i = 0; i < UNIT_LENGTH; i++) {
+            for(int j = 0; j < UNIT_LENGTH; j++) {
+                if (j < col) {
+                    param_matrix_h[1][(i * UNIT_LENGTH + j) * 8 + col] = params[i * UNIT_LENGTH + j - col + 7];
+                }
+            }
+        }
+    }
+    CUDA_CHECK(cudaMemcpyToSymbol(param_matrix_d, param_matrix_h, 2 * 8 * 52 * sizeof(double)));
+
+    CsHandle *h = new CsHandle();
+    h->m = m; h->n = n; h->cur = 0;
+    h->rows = m + 2 * HALO;
+    h->cols = n + 2 * HALO + 2;
+    const size_t bytes = (size_t)h->rows * h->cols * sizeof(double);
+    CUDA_CHECK(cudaMalloc(&h->buf[0], bytes));
+    CUDA_CHECK(cudaMalloc(&h->buf[1], bytes));
+    CUDA_CHECK(cudaMalloc(&h->init, bytes));
+    CUDA_CHECK(cudaMemset(h->buf[0], 0, bytes));
+    CUDA_CHECK(cudaMemset(h->buf[1], 0, bytes));
+    CUDA_CHECK(cudaMemset(h->init, 0, bytes));
+
+    // pristine initial field: interior H2D, halo filled on the device
+    CUDA_CHECK(cudaMemcpy2D(h->init + (size_t)CS_ROW0 * h->cols + CS_COL0,
+                            h->cols * sizeof(double), field, n * sizeof(double),
+                            n * sizeof(double), m, cudaMemcpyHostToDevice));
+    kb_periodic_halo(h->init, h->cols, m, n, CS_ROW0, CS_COL0, HALO, HALO);
+
+    // --- gpu_box_2d1r's lookup tables, verbatim (gpu.cu) --------------------
+    int lookup_table1_h[D_BLOCK_SIZE_ROW][D_BLOCK_SIZE_COL];
+    int lookup_table2_h[D_BLOCK_SIZE_ROW][D_BLOCK_SIZE_COL];
+    for (int i = 0; i < D_BLOCK_SIZE_ROW; i++) {
+        for (int j = 0; j < D_BLOCK_SIZE_COL; j++) {
+            if ((j + 1) % 8 != 0 && j < D_BLOCK_SIZE_COL - 2 * HALO - 1) {
+                lookup_table1_h[i][j] = IDX(j / (UNIT_LENGTH + 1), UNIT_LENGTH * i + j % (UNIT_LENGTH + 1), SM_SIZE_COL);
+            } else {
+                lookup_table1_h[i][j] = SM_SIZE_ROW * SM_SIZE_COL - 1;
+            }
+            if ((j + 2) % 8 != 0 && j > 2 * HALO) {
+                lookup_table2_h[i][j] = IDX((j - UNIT_LENGTH) / (UNIT_LENGTH + 1), UNIT_LENGTH * i + (j - UNIT_LENGTH) % (UNIT_LENGTH + 1), SM_SIZE_COL);
+            } else {
+                lookup_table2_h[i][j] = SM_SIZE_ROW * SM_SIZE_COL - 1;
+            }
+        }
+    }
+    const size_t lt_bytes = D_BLOCK_SIZE_ROW * D_BLOCK_SIZE_COL * sizeof(int);
+    CUDA_CHECK(cudaMalloc(&h->lt1, lt_bytes));
+    CUDA_CHECK(cudaMalloc(&h->lt2, lt_bytes));
+    CUDA_CHECK(cudaMemcpy(h->lt1, lookup_table1_h, lt_bytes, cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaMemcpy(h->lt2, lookup_table2_h, lt_bytes, cudaMemcpyHostToDevice));
+    CUDA_CHECK(cudaDeviceSynchronize());
+    return h;
+}
+
+// T periodic-wrap steps, all on the device. Asynchronous: the caller's CUDA
+// event timer brackets it and synchronizes on its stop event.
+void convstencil2d_run(void *handle, int timesteps) {
+    CsHandle *h = (CsHandle *)handle;
+    const size_t bytes = (size_t)h->rows * h->cols * sizeof(double);
+    CUDA_CHECK(cudaMemcpyAsync(h->buf[0], h->init, bytes, cudaMemcpyDeviceToDevice, 0));
+    // gpu_box_2d1r's launch configuration
+    dim3 grid_config((h->m + BLOCK_SIZE_ROW - 1) / BLOCK_SIZE_ROW,
+                     (h->n + BLOCK_SIZE_COL - 1) / BLOCK_SIZE_COL);
+    dim3 block_config(32 * WARP_PER_BLOCK);
+    int cur = 0;
+    for (int t = 0; t < timesteps; t++) {
+        kernel2d<<<grid_config, block_config>>>(h->buf[cur], h->buf[1 - cur], h->cols,
+                                                h->lt1, h->lt2);
+        kb_periodic_halo(h->buf[1 - cur], h->cols, h->m, h->n, CS_ROW0, CS_COL0, HALO, HALO);
+        cur = 1 - cur;
+    }
+    CUDA_CHECK(cudaGetLastError());
+    h->cur = cur;
+}
+
+// Interior of the current buffer -> out (m x n, row-major, host).
+void convstencil2d_copy_out(void *handle, double *out) {
+    CsHandle *h = (CsHandle *)handle;
+    CUDA_CHECK(cudaMemcpy2D(out, h->n * sizeof(double),
+                            h->buf[h->cur] + (size_t)CS_ROW0 * h->cols + CS_COL0,
+                            h->cols * sizeof(double), h->n * sizeof(double), h->m,
+                            cudaMemcpyDeviceToHost));
+}
+
+void convstencil2d_free(void *handle) {
+    CsHandle *h = (CsHandle *)handle;
+    cudaFree(h->buf[0]); cudaFree(h->buf[1]); cudaFree(h->init);
+    cudaFree(h->lt1); cudaFree(h->lt2);
+    delete h;
 }
 
 }  // extern "C"

@@ -616,3 +616,44 @@ New facts worth knowing that change earlier statements:
   - [accuracy] output-quality degradation against a user-set error budget/threshold; the README does not define the error metric
   - [hw] tuning cost of the search (the paper's central claim is predicting the best parameter without evaluating every variant)
 
+
+---
+
+## Paper-native metrics addendum (2026-09-23): fulltext for all 5 integrated papers
+
+The three papers listed as "repo only" above were read in full from
+author-hosted PDFs, since the ACM links refuse non-browser clients:
+ConvStencil (microsoft.com `ppopp24_ConvStencil.pdf`), LoRAStencil
+(likun.tech `sc24_lorastencil.pdf`) and FlashFFTStencil (likun.tech
+`ppopp25_FlashFFTStencil.pdf`). AN5D (arXiv 2001.01473) and SPIDER (arXiv
+2506.22035) were re-read for their metric definitions. Each artifact's print
+statement was checked at the commit pinned in `source.provenance`.
+
+| paper | its own performance metric | precision / platform in the paper |
+|---|---|---|
+| AN5D (CGO'20) | **GFLOP/s** from Table 3's FLOP/Cell (star2d 8x+1, box2d 2(2x+1)^2-1, star3d 12x+1, box3d 2(2x+1)^3-1, named kernels 10-54); GCell/s on the second axis; mean of 5 after 1 warm-up | fp32 + fp64, P100/V100 |
+| ConvStencil (PPoPP'24) | **GStencils/s**, Eq. 16 = T·ΠN / (t·1e9) | fp64, A100 |
+| LoRAStencil (SC'24) | **GStencil/s**, Eq. 18 = T·ΠN / (t·1e9) | fp64, A100 |
+| FlashFFTStencil (PPoPP'25) | **total execution time t and GStencil/s** together; headline = speedup and time (Fig. 6) | fp64, A100 + H100 |
+| SPIDER (PPoPP'26) | **GStencils/s** (points updated per second); its figures divide the fp16 result by 4 and scale the radius-7 run by 7/r | fp16 (baselines fp64, normalized /4), A100/H100 |
+
+This corrects two statements made earlier in this file:
+
+1. **Divergence 4's "unexplained per-shape factor" is temporal fusion.** In
+   ConvStencil and LoRAStencil, `times` counts kernel launches. For radius-1
+   shapes each launch is a 3-step fused kernel (halo 3; `main.cu` builds the
+   7x7 weights as the 3-fold self-convolution of the 3x3), so `times*3` is
+   the real number of steps. The paper's README example reproduces this:
+   box2d1r at 10240^2 with 10240 launches, 17109 ms, prints 188.27, and
+   Eq. 16 with T = 30720 real steps gives 188.28. GStencil/s and
+   GCell-updates/s are therefore the same quantity for four of the five
+   papers. Only AN5D's primary metric (GFLOP/s) is a different unit.
+2. **The Tensor-Core lineage's cross-precision comparisons use the papers'
+   own normalizations**: FP16 throughput divided by 4, and FlashFFTStencil
+   doubles LoRAStencil's time. The harness shows these as `derived` values
+   next to the measured ones and never uses them to rank.
+
+Harness: `kernelbench/domains/stencil.py::_native_stencil` recomputes each
+paper's metric from the timed region into `metrics.paper_native`. The metrics
+it cannot collect (ncu counters, models, baseline speedups) are listed as
+`not_collected` with a reason.

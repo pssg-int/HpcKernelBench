@@ -52,5 +52,28 @@ def unit(kernel: str) -> str:
     return _UNITS.get(kernel, "GFLOP/s")
 
 
+# kernel -> fn(impl_name, workload, params, stats_ms, statistic) -> dict | None
+_NATIVE_RULES: dict[str, Callable] = {}
+
+
+def register_native_metrics(kernel: str, rule: Callable) -> None:
+    """
+    Optional per-kernel hook for each paper's OWN performance metric(s),
+    reported ALONGSIDE the registered primary unit, never replacing it.
+
+    rule(impl_name, workload, params, stats_ms, statistic) -> dict | None
+    (None when the implementation has no paper attached, e.g. numpy baselines).
+    `workload` is the object after impl.prepare() ran, so any documented
+    in-place mutation an adapter made (timesteps, shape) is already visible.
+    """
+    _NATIVE_RULES[kernel] = rule
+
+
+def native_metrics(kernel: str, impl_name: str, workload, params: dict,
+                   stats_ms: dict, statistic: str) -> dict | None:
+    rule = _NATIVE_RULES.get(kernel)
+    return rule(impl_name, workload, params, stats_ms, statistic) if rule else None
+
+
 def registered() -> list[str]:
     return sorted(_COST_RULES)

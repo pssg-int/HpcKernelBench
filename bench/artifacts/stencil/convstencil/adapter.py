@@ -15,11 +15,14 @@ file's docstring for the full reasoning. Short version:
     sidestepping that bug without touching kernel code.
   - gpu_box_2d1r's internal multi-`times` loop ping-pongs device buffers
     WITHOUT refreshing the halo band between sweeps, so it cannot reproduce
-    our domain's periodic-wrap T-sweep recursion for T>1. This adapter's
-    run() performs its own T-sweep loop instead, calling the kernel once per
-    timestep (times=1 each) and re-padding the periodic-wrap halo from the
-    CURRENT field between calls (host-side, matches
-    kernelbench/domains/stencil.py's np.roll-based reference exactly).
+    our domain's periodic-wrap T-sweep recursion for T>1. The bridge
+    therefore launches the artifact's own `kernel2d` itself and refreshes the
+    periodic halo ON THE DEVICE after each step (../periodic_halo.cuh), so
+    the whole T-step run stays GPU-resident: prepare() uploads once, run()
+    is T x (kernel + halo refresh) with no host transfer, to_host() copies
+    the interior back. (Until 2026-09-23 run() re-padded on the host and
+    round-tripped H2D/D2H every step, so its timings mostly measured PCIe,
+    not the kernel -- see bridge.cu "History".)
 
 Coverage: 2D ONLY. ConvStencil's kernel always operates on a fixed 7x7
 (radius-3) support internally (HALO=3 hardcoded in gpu.cu regardless of
@@ -57,8 +60,6 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _SO_PATH = os.path.join(_HERE, "bridge.so")
 
 _KERNEL_RADIUS = 3
-_ROW_HALO = 3
-_COL_HALO = 4
 
 
 def available() -> tuple[bool, str]:
@@ -70,11 +71,22 @@ def available() -> tuple[bool, str]:
         return False, f"{type(e).__name__}: {e}"
 
 
+_ROW_MULT = 32   # BLOCK_SIZE_ROW: kernel2d's grid has no tail guard
+_COL_MULT = 64   # BLOCK_SIZE_COL
+
+
 def _load_lib():
     lib = ctypes.CDLL(_SO_PATH)
     dp = ctypes.POINTER(ctypes.c_double)
-    lib.convstencil2d_sweep.argtypes = [dp, dp, dp, ctypes.c_int, ctypes.c_int]
-    lib.convstencil2d_sweep.restype = None
+    vp = ctypes.c_void_p
+    lib.convstencil2d_prepare.argtypes = [dp, dp, ctypes.c_int, ctypes.c_int]
+    lib.convstencil2d_prepare.restype = vp
+    lib.convstencil2d_run.argtypes = [vp, ctypes.c_int]
+    lib.convstencil2d_run.restype = None
+    lib.convstencil2d_copy_out.argtypes = [vp, dp]
+    lib.convstencil2d_copy_out.restype = None
+    lib.convstencil2d_free.argtypes = [vp]
+    lib.convstencil2d_free.restype = None
     return lib
 
 
@@ -102,6 +114,10 @@ class ConvStencilTCU:
         self.lib = _load_lib()
 
     def prepare(self, workload_, params: dict):
+        if not getattr(workload_, "linear", True):
+            raise NotImplementedError(
+                f"convstencil-tcu: {workload_.name!r} is a nonlinear kernel; "
+                "ConvStencil computes weighted sums only")
         if workload_.dims != 2:
             raise NotImplementedError(
                 "convstencil-tcu: only the 2D kernel is wired up in this "
@@ -112,41 +128,39 @@ class ConvStencilTCU:
                 "convstencil-tcu adapter only implements periodic-wrap "
                 "boundary; workload requested " + str(workload_.boundary))
         m, n = workload_.grid_shape
-        u0 = workload_.initial_field(dtype=np.float64)
+        if m % _ROW_MULT or n % _COL_MULT:
+            raise NotImplementedError(
+                f"convstencil-tcu: kernel2d launches ceil(m/32) x ceil(n/64) "
+                f"blocks with no tail guard; grid_shape must be a multiple of "
+                f"({_ROW_MULT},{_COL_MULT}), got ({m},{n})")
+        field = np.ascontiguousarray(workload_.initial_field(dtype=np.float64))
         params49 = _build_params(workload_.weights)
-        timesteps = int(params.get("timesteps", workload_.timesteps))
-        h = {}
-        h["field"] = np.ascontiguousarray(u0)
-        h["params49"] = params49
-        h["m"] = m
-        h["n"] = n
-        h["timesteps"] = timesteps
-        return h
+        dp = ctypes.POINTER(ctypes.c_double)
+        handle = self.lib.convstencil2d_prepare(
+            field.ctypes.data_as(dp), params49.ctypes.data_as(dp), m, n)
+        if not handle:
+            raise RuntimeError("convstencil2d_prepare returned a null handle")
+        return {"handle": handle, "m": m, "n": n,
+                "timesteps": int(params.get("timesteps", workload_.timesteps))}
 
     def run(self, h):
-        field = h["field"]
-        m = h["m"]
-        n = h["n"]
-        params49 = h["params49"]
-        dp = ctypes.POINTER(ctypes.c_double)
-        for _ in range(h["timesteps"]):
-            padded_in = np.pad(field, ((_ROW_HALO, _ROW_HALO), (_COL_HALO, _COL_HALO)), mode="wrap")
-            padded_in = np.ascontiguousarray(padded_in, dtype=np.float64)
-            padded_out = np.zeros_like(padded_in)
-            self.lib.convstencil2d_sweep(padded_in.ctypes.data_as(dp), padded_out.ctypes.data_as(dp), params49.ctypes.data_as(dp), m, n)
-            field = padded_out[_ROW_HALO:_ROW_HALO + m, _COL_HALO:_COL_HALO + n]
-            field = np.ascontiguousarray(field)
-        h["field"] = field
-        return field
+        # all T steps on the device; the CUDA event timer syncs on its stop event
+        self.lib.convstencil2d_run(h["handle"], h["timesteps"])
+        return h
 
     def to_host(self, out):
-        return np.asarray(out, dtype=np.float64)
+        result = np.empty((out["m"], out["n"]), dtype=np.float64)
+        self.lib.convstencil2d_copy_out(
+            out["handle"], result.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
+        return result
 
     def timer(self):
         from kernelbench.impls.gpu_cuda import CudaEventTimer
         return CudaEventTimer()
 
     def free(self, h):
+        if h.get("handle"):
+            self.lib.convstencil2d_free(h["handle"])
         h.clear()
 
 

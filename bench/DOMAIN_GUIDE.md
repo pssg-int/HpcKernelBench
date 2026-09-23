@@ -28,6 +28,18 @@ def cuda_impls() -> dict: ...        # imported lazily; may raise if no CUDA
 
 Plus, at import time, one `workload.register_cost(kernel, rule, unit)` per kernel.
 
+## Workload-loading hooks (optional)
+
+`runner.py` looks for two more optional pieces, both additive:
+
+- `load_workload(name, *, variant=...)`: if the domain's `load_workload`
+  accepts a `variant` keyword, the runner passes the variant id, so one
+  workload name can be sized per variant (stencil: variant 1 16384^2 x
+  T=1000, variant 2 10240^2 x T=10240).
+- `expand_workloads(names) -> names`: rewrites the `--matrices` list before
+  loading, e.g. stencil expands `sweep:spider-2d-scaling` into the 60
+  workloads of SPIDER's Figure 11.
+
 ## variant_transform (optional hook)
 
 ```python

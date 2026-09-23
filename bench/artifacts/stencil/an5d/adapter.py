@@ -186,6 +186,13 @@ class An5dStencil:
         self.precision = precision
 
     def prepare(self, workload_, params: dict):
+        if getattr(workload_, "named", None):
+            # The artifact ships compiled kernels for the named kernels too,
+            # but only the 6 synthetic shapes below are bridged; without this
+            # guard j2d5pt (a radius-1 star) would silently run star2d1r.c.
+            raise NotImplementedError(
+                f"an5d-stencil: AN5D's named kernel {workload_.named!r} is not "
+                "bridged yet (only the 6 synthetic shapes are)")
         key = (workload_.kind, workload_.dims, workload_.radius)
         if key not in _SHAPES:
             raise NotImplementedError(

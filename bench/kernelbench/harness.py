@@ -193,7 +193,8 @@ def run_variant(impl: Implementation, matrix, variant: Variant, params: dict,
                 reference_name: str = "scipy fp64",
                 warmup_override: int | None = None,
                 reps_override: int | None = None,
-                tolerance_override: float | None = None) -> RunResult:
+                tolerance_override: float | None = None,
+                gate_matrix=None) -> RunResult:
     """
     Execute one (implementation, matrix, variant, params) point.
 
@@ -206,6 +207,14 @@ def run_variant(impl: Implementation, matrix, variant: Variant, params: dict,
     The domain module then supplies the real, workload-derived bound here;
     when omitted, behavior is unchanged (`variant.tolerance` is used, as
     before).
+
+    `gate_matrix`, when given, is a cheaper stand-in for `matrix` that the
+    correctness gate runs on instead (the domain's `gate_workload` hook; for
+    stencil: the same grid for fewer time steps, because the CPU reference of
+    a full paper-sized run takes hours). It gets its own prepare/run/free and
+    a copy of `params`; `matrix` is then prepared (and its preprocessing
+    timed) and timed only if that gate passed. Which workload was gated is
+    recorded in `protocol_used["correctness_gate"]`. Omitted: unchanged.
     """
     proto = variant.protocol
     warnings: list[str] = []
@@ -223,6 +232,53 @@ def run_variant(impl: Implementation, matrix, variant: Variant, params: dict,
             f"protocol overridden for this run (warmup={warmup}, reps={reps}); "
             "result is NOT spec-conforming and must not be published as such")
 
+    tol = (variant.tolerance_for(params.get("precision")) if hasattr(variant, "tolerance_for")
+           else variant.tolerance) if tolerance_override is None else tolerance_override
+    gate_info = {"workload": "same as timed"}
+
+    def _gate(m, p, handle):
+        got = impl.to_host(impl.run(handle))
+        ref_out = reference(m, p)
+        ref, scale = ref_out if isinstance(ref_out, tuple) else (ref_out, None)
+        return check_correctness(got, ref, tol, reference_name,
+                                 correctness_mode, scale=scale)
+
+    def _invalid(corr, preprocessing_ms):
+        return RunResult(
+            valid=False, kernel=variant.kernel, variant=variant.id,
+            implementation=impl.name, platform=impl.platform,
+            precision=impl.precision, matrix=matrix.describe(), params=params,
+            protocol_used={"warmup": warmup, "reps": reps,
+                           "statistic": proto.statistic,
+                           "timer": proto.timer,
+                           "timing_scope": proto.timing_scope,
+                           "correctness_gate": gate_info},
+            preprocessing_ms=preprocessing_ms, correctness=corr,
+            warnings=warnings + ["correctness gate failed; no timing reported"],
+        )
+
+    # ---- 2a. separate correctness gate on a cheaper stand-in, if given ------
+    corr = None
+    if gate_matrix is not None:
+        gparams = dict(params)
+        ghandle = impl.prepare(gate_matrix, gparams)
+        try:
+            corr = _gate(gate_matrix, gparams, ghandle)
+        finally:
+            impl.free(ghandle)
+        gd = gate_matrix.describe()
+        gate_info = {"workload": gd.get("name"),
+                     **({"timesteps": gd["timesteps_per_call"]}
+                        if "timesteps_per_call" in gd else {}),
+                     "reason": "full-size CPU reference too slow; see the "
+                               "domain's gate_workload()"}
+        corr.note = (corr.note + "; " if corr.note else "") + \
+            f"gated on {gd.get('name')} " + \
+            (f"(T={gd['timesteps_per_call']}) " if "timesteps_per_call" in gd else "") + \
+            "instead of the timed workload"
+        if not corr.passed:
+            return _invalid(corr, 0.0)
+
     # ---- 1. preprocessing, timed once, excluded from per-call time -----------
     t0 = time.perf_counter()
     handle = impl.prepare(matrix, params)
@@ -230,26 +286,10 @@ def run_variant(impl: Implementation, matrix, variant: Variant, params: dict,
 
     try:
         # ---- 2. correctness gate BEFORE timing ------------------------------
-        out = impl.run(handle)
-        got = impl.to_host(out)
-        ref_out = reference(matrix, params)
-        ref, scale = ref_out if isinstance(ref_out, tuple) else (ref_out, None)
-        tol = (variant.tolerance_for(params.get("precision")) if hasattr(variant, "tolerance_for")
-               else variant.tolerance) if tolerance_override is None else tolerance_override
-        corr = check_correctness(got, ref, tol, reference_name,
-                                 correctness_mode, scale=scale)
-        if not corr.passed:
-            return RunResult(
-                valid=False, kernel=variant.kernel, variant=variant.id,
-                implementation=impl.name, platform=impl.platform,
-                precision=impl.precision, matrix=matrix.describe(), params=params,
-                protocol_used={"warmup": warmup, "reps": reps,
-                               "statistic": proto.statistic,
-                               "timer": proto.timer,
-                               "timing_scope": proto.timing_scope},
-                preprocessing_ms=preprocessing_ms, correctness=corr,
-                warnings=warnings + ["correctness gate failed; no timing reported"],
-            )
+        if corr is None:
+            corr = _gate(matrix, params, handle)
+            if not corr.passed:
+                return _invalid(corr, preprocessing_ms)
 
         # ---- 3. warmup, discarded -------------------------------------------
         for _ in range(warmup):
@@ -287,6 +327,11 @@ def run_variant(impl: Implementation, matrix, variant: Variant, params: dict,
     }
     # kept under its historical name so existing readers/reports keep working
     met["gflops"] = met["throughput"]
+    # the implementation's own paper's metric(s), when the domain defines them
+    native = workload.native_metrics(variant.kernel, impl.name, matrix,
+                                     params_for_cost, stats, stat_used)
+    if native:
+        met["paper_native"] = native
     # Amortized figure whenever preprocessing is real; makes the tradeoff
     # visible. NOTE: the divisor is this run's rep count, NOT any spec-defined
     # amortization k — the field names say so to prevent misquoting.
@@ -306,7 +351,8 @@ def run_variant(impl: Implementation, matrix, variant: Variant, params: dict,
         matrix=matrix.describe(), params=params,
         protocol_used={"warmup": warmup, "reps": reps, "statistic": proto.statistic,
                        "timer": proto.timer, "timing_scope": proto.timing_scope,
-                       "constants_provenance": proto.provenance},
+                       "constants_provenance": proto.provenance,
+                       "correctness_gate": gate_info},
         preprocessing_ms=preprocessing_ms, correctness=corr,
         times_ms=times_ms, stats_ms=stats, metrics=met, warnings=warnings,
     )

@@ -182,9 +182,19 @@ def main() -> int:
     else:
         names = args.matrices.split(",") if args.matrices else \
             variant.recommended_subset()[:3]
+        # Optional domain hooks, both additive: expand_workloads() turns a
+        # named sweep (e.g. stencil's "sweep:spider-2d-scaling") into its
+        # workload list, and a load_workload() that accepts `variant` sizes
+        # each workload per the variant being run (stencil variant 2 is
+        # 10240^2 x T=10240, not variant 1's 16384^2 x T=1000).
+        expand = getattr(domain, "expand_workloads", None)
+        if expand:
+            names = expand(names)
+        load_kwargs = ({"variant": variant.id} if "variant" in
+                       inspect.signature(domain.load_workload).parameters else {})
         for n in names:
             print(f"  loading {n} ...", flush=True)
-            mats.append(domain.load_workload(n))
+            mats.append(domain.load_workload(n, **load_kwargs))
 
     # Optional domain hook: a variant may need to transform every workload
     # before anything (reference or impl) sees it -- e.g. spmm-binary-
@@ -238,6 +248,10 @@ def main() -> int:
                         reference_name=getattr(domain, "REFERENCE_NAME", {})
                             .get(args.kernel, "scipy fp64 CSR"),
                         warmup_override=warmup, reps_override=reps,
+                        # optional domain hook: a cheaper stand-in for the
+                        # correctness gate (stencil: same grid, fewer steps)
+                        gate_matrix=(domain.gate_workload(args.kernel, m)
+                                     if hasattr(domain, "gate_workload") else None),
                         # workload-derived correctness bound (e.g. a lossy
                         # compressor's per-run error bound); None for every
                         # domain that doesn't set this, so behavior is unchanged
@@ -264,6 +278,10 @@ def main() -> int:
                           f"{r.metrics['gflops']:.2f} {unit}  "
                           f"(err {r.correctness.value:.2e} <= {r.correctness.tolerance})"
                           f"  [{dt:.1f}s]")
+                    native = r.metrics.get("paper_native")
+                    if native:
+                        p = native["primary"]
+                        print(f"      paper metric: {p['value']:.4g} {p['name']}")
                 else:
                     print(f" INVALID: {r.correctness.metric}="
                           f"{r.correctness.value:.3e} vs tol {r.correctness.tolerance}")

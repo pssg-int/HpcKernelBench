@@ -3,6 +3,33 @@
 **Outcome: BUILT+GATED (star2d3r only) — gate PASSES; box2d1r/box2d3r/star2d1r
 genuinely unwrappable, evidenced below (not a coverage shortcut)**
 
+## Bridge rewrite: GPU-resident T-step run (2026-09-23) -- NOT YET BUILT OR GATED
+
+`bridge.cu` was rewritten so a T-step run stays on the GPU. Before, `run()`
+re-padded the periodic halo on the host and called the artifact's host
+function once per step, which allocated, copied H2D, launched and copied
+D2H every step; the timed region mostly measured PCIe traffic (ConvStencil:
+6-11 ms for a 256^2, T=5 smoke run), not the kernel the paper times.
+
+Now the bridge #includes the artifact's `gpu.cu` verbatim, copies its
+parameter-matrix setup verbatim, launches the artifact's own
+`kernel2d_star2d3r` with the same launch configuration, and refreshes the periodic
+halo on the device after each step (`../periodic_halo.cuh`, O(perimeter)).
+prepare() uploads once; run() is a D2D reset + T x (kernel + halo refresh);
+to_host() copies the interior back. No kernel code is modified.
+
+Verified so far (macOS, no GPU): the halo-refresh index math, ported line
+for line to numpy and run as a whole T-step loop in this bridge's buffer
+layout, matches `reference_stencil` exactly (star2d3r, 64x128 and 32x64, up to T=9). NOT yet verified: that
+it compiles and gates on a GPU. Before using any number from this adapter:
+
+    bench/gpu_run.sh -g h100 -t 30 -- 'bash artifacts/stencil/lorastencil/build.sh'
+    bench/gpu_run.sh -g h100 -- '$PY -m kernelbench.runner --kernel stencil \
+        --variant stencil-cpu-gpu-kernel-fp64 --impl lorastencil-star2d3r --smoke'
+
+and record the outcome here. Timings recorded before 2026-09-23 include the
+per-step host round trip and are not comparable to the paper.
+
 Paper: "LoRAStencil: Low-Rank Adaptation of Stencil Computation on Tensor
 Cores", SC'24. `PAPER_KEY = conf/sc/ZhangLYCZCY24`.
 Repo: `https://github.com/HPHEX/LoRAStencil` (commit

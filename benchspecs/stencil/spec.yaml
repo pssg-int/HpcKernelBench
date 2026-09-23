@@ -61,10 +61,26 @@ variants:
         j2d9pt is a radius-2 STAR (9 points); j2d9pt-gol is a radius-1 BOX
         (9 points) — equal point counts do NOT establish equivalence between
         the two, and they must never share an implementation.
-        NOT YET VERIFIED against AN5D's own benchmark sources (the AN5D
-        artifact checkout is not present in this repo); confirm each named
-        kernel's equation, radius, and any division operations there before
-        implementing them.
+        VERIFIED 2026-09-23 against AN5D's paper, Table 3 (c = per-point
+        coefficient, f = field, c0 = a scalar constant):
+          j2d5pt     = (c f(x,y) + sum_{i=+-1} [c f(x+i,y) + c f(x,y+i)]) / c0   radius-1 star, 10 FLOP/cell
+          j2d9pt     = same form over i in +-1, +-2                               radius-2 star, 18 FLOP/cell
+          j2d9pt-gol = (sum_{i,j in -1..1} c f(x+i,y+j)) / c0                    radius-1 box,  18 FLOP/cell
+          gradient2d = c f(x,y) + 1.0 / sqrt(c0 + sum_{i=+-1} [(f(x,y)-f(x+i,y))^2
+                         + (f(x,y)-f(x,y+i))^2])                                 radius-1 star, 19 FLOP/cell
+          j3d27pt    = (sum_{i,j,k in -1..1} c f(x+i,y+j,z+k)) / c0              radius-1 box,  54 FLOP/cell
+        Four of the five end in a division by c0, and gradient2d is not a
+        weighted sum at all (square, sqrt, reciprocal), so it falls outside
+        this spec's `operation` definition and needs its own reference.
+        Implemented 2026-09-23 in kernelbench/domains/stencil.py (NAMED):
+        coefficients transcribed from the artifact's .c files (float-rounded,
+        as the `f` literals are), reference sums then divides. The AN5D
+        adapter does not bridge them yet and reports them unsupported.
+        GATE CAVEAT: these coefficients sum below the divisor (per step
+        j2d5pt 0.42, j2d9pt/-gol 0.70, j3d27pt 0.15), so at AN5D's T=1000
+        j2d5pt and j3d27pt underflow to exactly 0 and the correctness gate
+        is vacuous; the reference warns, and correctness should be gated at
+        a small T (e.g. `j2d5pt:T=50`).
       resource_classes: >
         256^3 is a separate, OPTIONAL resource class for 3D shapes only, for
         resource-constrained targets — not a substitute for the 512^3
@@ -76,7 +92,8 @@ variants:
         box2d1r, star2d3r, box2d3r, star3d1r, box3d1r — so variant 1 and
         variant 2 stay directly comparable on them. The DEFAULT RUN SET is the
         full radius 1-4 sweep listed in recommended_subset below (16 synthetic
-        shapes plus j3d27pt); the overlap is a subset of it, not a
+        shapes plus AN5D's five named kernels, all of which AN5D's own
+        Figure 6 and Table 5 report); the overlap is a subset of it, not a
         replacement for it.
       recommended_subset:
         - star2d1r        # 5-point 2D star (Jacobi-5pt equivalent)
@@ -95,7 +112,11 @@ variants:
         - box3d2r         # 125-point 3D box, radius 2
         - box3d3r         # 343-point 3D box, radius 3
         - box3d4r         # 729-point 3D box, radius 4
-        - j3d27pt          # AN5D's named 27-point 3D kernel (division-free variant of box3d1r)
+        - j2d5pt           # AN5D named kernel, radius-1 star with /c0
+        - j2d9pt           # AN5D named kernel, radius-2 star with /c0
+        - j2d9pt-gol       # AN5D named kernel, radius-1 box with /c0
+        - gradient2d       # AN5D named kernel, nonlinear (sqrt); weight-based adapters refuse it
+        - j3d27pt          # AN5D named kernel, 27-point box with /c0
         - rtm3d25p8th      # StencilsOnFPGA's 25-point 8th-order 3D RTM stencil, as a high-order stress test — NOT implemented in this domain module yet (see kernelbench/domains/stencil.py PLANNED); documented as a target, not a currently-runnable id
       dense_operand: >
         single scalar field per grid point, fp64 primary / fp32 secondary at
@@ -170,6 +191,13 @@ variants:
       threshold). fp32 secondary pass: same 1e-5 relative-error gate against an
       fp32 reference (not fp64 — comparing an fp32 kernel to an fp64 reference
       conflates precision loss with implementation bugs).
+      GATE STEP COUNT: when a reference run of the full T would take too long
+      on the CPU, the gate runs on the SAME grid, shape, coefficients and
+      boundary for fewer steps (budget-limited, same parity as T, and at
+      least one temporal block of every bridged AN5D kernel), and only then is
+      the full-T run timed. The result records the gated step count under
+      protocol_used.correctness_gate (kernelbench/domains/stencil.py
+      gate_workload; budget KB_STENCIL_GATE_POINT_OPS).
 
   - id: stencil-tcu-matmul-kernel-fp16
     claim: >
@@ -197,26 +225,21 @@ variants:
         - {id: Box-2D9P,    geometry: "box, radius 1", points: 9,  shape_id: box2d1r,  grid: "10240 x 10240", time_steps: 10240}
         - {id: Box-2D25P,   geometry: "box, radius 2", points: 25, shape_id: box2d2r,  grid: "10240 x 10240", time_steps: 10240}
         - {id: Box-2D49P,   geometry: "box, radius 3", points: 49, shape_id: box2d3r,  grid: "10240 x 10240", time_steps: 10240}
-        - {id: Heat-3D,     geometry: "star, radius 1", points: 7,  shape_id: star3d1r, grid: "1024^3 (CANDIDATE, unverified)", time_steps: "PENDING adapter verification", status: pending}
-        - {id: Box-3D27P,   geometry: "box, radius 1", points: 27, shape_id: box3d1r,  grid: "1024^3 (CANDIDATE, unverified)", time_steps: "PENDING adapter verification", status: pending}
-      pending_3d: >
-        Heat-3D and Box-3D27P are NOT part of the default run set (excluded
-        from recommended_subset below). Their 1024^3 grid is a candidate
-        only; do not run or report them until implementation support, memory
-        requirements, and step counts are verified against an actual
-        adapter — do not silently fall back to variant 1's 512^3/T=1000
-        convention for these two, which was this spec's previous placeholder
-        (see open_questions). Note that 1024^3 is this spec's own candidate,
-        not a paper-reported size: FlashFFTStencil's own reported 3D size is
-        768^3 (see extended_experiments.flashfftstencil_native_large_cases).
-        Which of the two becomes the default 3D grid for this variant is an
-        OPEN DECISION, not settled here.
+        - {id: Heat-3D,     geometry: "star, radius 1", points: 7,  shape_id: star3d1r, grid: "1024^3", time_steps: 1024}
+        - {id: Box-3D27P,   geometry: "box, radius 1", points: 27, shape_id: box3d1r,  grid: "1024^3", time_steps: 1024}
+      grid_3d: >
+        1024^3 is paper-reported, not a candidate: ConvStencil (Table 4) and
+        LoRAStencil (Table II) both evaluate Heat-3D and Box-3D27P at
+        1024 x 1024 x 1024. LoRAStencil states T=1024; ConvStencil's Table 4
+        gives no time-step count for 3D, so T=1024 is taken from LoRAStencil.
+        FlashFFTStencil's own 3D size is 768^3 at T=1000 and stays in
+        extended_experiments.flashfftstencil_native_large_cases; SPIDER has
+        no 3D kernel. No variant-2 adapter in this harness runs 3D yet, so
+        these two rows are recorded as unsupported until one does.
       selection: >
         Every shape all 4 baseline-cluster papers implement in common, plus
-        the radius-2/radius-3 extensions above; 3D shapes stay out of the
-        default subset per pending_3d until a paper-confirmed grid/T exists
-        (no surveyed paper's own reported numbers, as opposed to CLI support,
-        could be confirmed for 3D — see open_questions).
+        the radius-2/radius-3 extensions above, plus the two 3D kernels at
+        the ConvStencil/LoRAStencil size (see grid_3d).
       recommended_subset:
         - 1d1r        # Heat-1D
         - 1d2r        # 1D5P
@@ -227,13 +250,15 @@ variants:
         - box2d1r     # Box-2D9P
         - box2d2r     # Box-2D25P — extends the shared suite
         - box2d3r     # Box-2D49P
+        - star3d1r    # Heat-3D, 1024^3, T=1024
+        - box3d1r     # Box-3D27P, 1024^3, T=1024
       dense_operand: fp16 grid values (TF32/mixed-precision accumulation as the kernel dictates), random-initialized.
       grid_sizes: >
         1D: 1 x 10,240,000 (SPIDER's Figure10_run.sh / ConvStencil-lineage
         convention). 2D: 10240 x 10240 (SPIDER/ConvStencil/LoRAStencil's
         shared primary evaluation point; also swept 512..10240 per side in
-        SPIDER's Figure11). 3D: see named_kernels/pending_3d above — no
-        longer copied from variant 1's grid; PENDING confirmation instead.
+        SPIDER's Figure11). 3D: 1024^3 (ConvStencil Table 4, LoRAStencil
+        Table II), see grid_3d.
       paper_configurations:
         convstencil_block_sizes: >
           Published entries: 1024 (1D), 32x64 (2D), 8x64 (3D). Record these
@@ -242,6 +267,15 @@ variants:
           thread-block (blockDim) dimensions without verifying their meaning
           against the artifact source first — the paper's own terminology
           for these numbers was not confirmed during the track survey.
+        lorastencil_1d_timesteps: >
+          LoRAStencil (SC'24) Table II: Heat-1D and 1D5P at 10,240,000
+          points x T=10,000. ConvStencil (Table 4) and SPIDER's Figure10
+          script use T=100,000 for the same grid. Record the T used on every
+          1D result; results at the two T values are separate cases.
+        convstencil_3d_timesteps: >
+          ConvStencil's Table 4 lists Heat-3D/Box-3D27P as "1024 x 1024 x
+          1024" with no time-step count (its 1D/2D rows append T). Treat
+          its 3D T as unstated, not as 1024.
       precision_cohorts: >
         This variant's fp16 protocol is a REPRODUCTION configuration, not
         each paper's own published evaluation: ConvStencil, LoRAStencil, and
@@ -256,8 +290,11 @@ variants:
         values SPIDER's own reproduction script (Figure10_run.sh) uses to
         drive the ConvStencil/LoRAStencil/SPIDER binaries, so this is not an
         invented number but the value this paper family already runs its own
-        baselines at. 3D: PENDING (see inputs.pending_3d) — no assumed T
-        until an adapter confirms one.
+        baselines at, and ConvStencil's Table 4 value for 1D. EXCEPTION:
+        LoRAStencil's own Table II runs 1D at T=10,000, not 100,000 — to
+        reproduce LoRAStencil's published 1D numbers use T=10,000 (see
+        inputs.paper_configurations.lorastencil_1d_timesteps). 3D: T=1024
+        (LoRAStencil Table II; ConvStencil does not state its 3D T).
       warmup: >
         1 full T-iteration trial, discarded. THIS IS A DELIBERATE FIX: none of
         ConvStencil, LoRAStencil, FlashFFTStencil, or SPIDER's public
@@ -301,11 +338,11 @@ variants:
         section below for the full definition and each paper's own
         supplementary counters).
       secondary:
-        - "effective TFLOP/s on tensor cores (informational; FLOP convention must be stated — ConvStencil's own printed formula uses an unresolved per-shape multiplier, see survey.md Divergence 4 and open_questions)"
+        - "effective TFLOP/s on tensor cores (informational; FLOP convention must be stated — ConvStencil's printed x3 is temporal fusion, resolved in metrics.per_paper_native.convstencil)"
         - "speedup vs. cuDNN im2col-convolution baseline on the same GPU (the one baseline shared by ConvStencil, LoRAStencil, and SPIDER)"
     correctness: >
       max relative error vs. an fp64 CPU or GPU reference sweep of the same
-      stencil/grid/T. No surveyed repo's public artifact states an explicit
+      stencil/grid/T (or fewer steps, see variant 1's GATE STEP COUNT). No surveyed repo's public artifact states an explicit
       fp16 tolerance (ConvStencil's own 1e-7 check exists in source but is
       compiled out by default, and it is a fp64-path check, not fp16 — see
       survey.md's ConvStencil subsection). This spec recommends <= 1e-2
@@ -406,21 +443,25 @@ extended_experiments:
   convstencil_fusion_across_sizes:
     claim: "ConvStencil: fusion behavior across problem size"
     cases: >
-      2D side lengths 256-5120 in steps of 256; 3D side lengths 64-1024 in
-      steps of 32; restricted to shapes/sizes ConvStencil's own artifact
-      supports.
+      Figure 8, ConvStencil vs. DRStencil with 3-step fusion: Heat-2D and
+      Box-2D9P at side lengths 256-5120 in steps of 256; Heat-3D and
+      Box-3D27P at side lengths 64-1024 in steps of 32. The paper does not
+      state T for this sweep.
   convstencil_optimization_ablation:
     claim: "ConvStencil: per-optimization contribution"
     cases: >
-      Explicit-stencil-to-row vs. implicit; CUDA-core vs. Tensor-Core path;
-      padding vs. "dirty" padding — each reported as an on/off ablation pair.
+      Figure 6, on Heat-1D, Box-2D9P and Box-3D27P at the Table 4 sizes:
+      explicit vs. implicit stencil2row; CUDA-core vs. Tensor-Core path;
+      padding; dirty-bits padding — five cumulative stages (I-V).
   lorastencil_coefficient_rank:
-    claim: "LoRAStencil: sensitivity to coefficient-matrix rank"
+    claim: "LoRAStencil: best case with a rank-1 weight matrix ('LoRAStencil-Best', Figure 8)"
     cases: >
-      Box-2D9P and Box-2D49P, each with a rank-1 and a higher-rank symmetric
-      coefficient matrix; record the actual coefficient matrix used and its
-      rank alongside the result (rank is a property of the specific
-      coefficients chosen, not a free parameter set independently of them).
+      All 8 Table II kernels (Heat-1D, 1D5P, Heat-2D, Box-2D9P, Star-2D13P,
+      Box-2D49P, Heat-3D, Box-3D27P) at the Table II sizes, run twice: with
+      the default symmetric weights and with a rank-1 weight matrix. Record
+      the actual weights and their rank with each result (rank is a property
+      of the coefficients chosen, not a free parameter). Note LoRAStencil
+      assumes radially symmetric weights throughout.
   lorastencil_optimization_ablation:
     claim: "LoRAStencil: per-stage optimization contribution"
     cases: >
@@ -429,43 +470,72 @@ extended_experiments:
   flashfftstencil_native_large_cases:
     claim: "FlashFFTStencil: its own largest reported problem sizes"
     cases: >
-      1D3P/5P/7P at 536,870,912 points; Heat-2D and Box-2D9P at 16384^2;
-      Heat-3D and Box-3D27P at 768^3; all at T=1000. (768^3 is the paper's
-      own reported 3D size; variant 2's default 3D grid is still open, with
-      1024^3 only a candidate — see stencil-tcu-matmul-kernel-fp16
-      inputs.pending_3d.)
+      Table 3 / Figure 6 (H100): Heat-1D, 1D5P, 1D7P at 512M = 536,870,912
+      points; Heat-2D and Box-2D9P at 16K^2 = 16384^2; Heat-3D and
+      Box-3D27P at 768^3; all at T=1000. Variant 2's default 3D grid is
+      ConvStencil/LoRAStencil's 1024^3 (see inputs.grid_3d).
+  flashfftstencil_optimization_ablation:
+    claim: "FlashFFTStencil: per-stage optimization contribution (Figure 7)"
+    cases: >
+      Heat-1D on A100 with six-step temporal fusion, at 128K, 256K, 384K,
+      512K, 768K, 1M, 2M, 4M, 8M, 16M, 24M, 32M, 64M, 128M, 256M, 512M, 768M
+      and 1024M points; five cumulative stages: standard cuFFT stencil,
+      kernel tailoring on CUDA cores, kernel tailoring on Tensor Cores,
+      + architecture aligning, full FlashFFTStencil.
   flashfftstencil_temporal_fusion:
     claim: "FlashFFTStencil: temporal-fusion depth sensitivity"
     cases: >
-      Sweep fusion depth 1-13 inclusive, explicitly including depth 6 (the
-      paper's own headline fusion depth). See timestep_and_alignment_handling
+      Figure 9: 1D temporal fusion depth 1-13 inclusive, on A100 and H100,
+      against fft- and rfft-based stencils; explicitly including depth 6 (the
+      paper's own headline fusion depth). The paper does not state the 1D
+      problem size for this figure. See timestep_and_alignment_handling
       below — depth 6 is a reported operating point, not evidence of a
       6-divisibility alignment requirement.
   flashfftstencil_memory_scaling:
     claim: "FlashFFTStencil: memory-footprint scaling / OOM boundary"
     cases: >
-      1D sizes 128/256/512/768/1024 Mi points; 2D side lengths 8192/12288/
-      16384/24576/32768. Record OOM outcomes explicitly as a result value,
+      Figure 8: Heat-1D at 128M/256M/512M/768M/1024M points; Box-2D9P at
+      side lengths 8K/12K/16K/24K/32K. Record OOM outcomes explicitly as a result value,
       not as a discarded run failure.
   spider_1d_scaling:
     claim: "SPIDER: 1D throughput vs. problem size"
-    cases: "Sizes 262144, 1048576, 8388608, 10240000, 16777216, 25165824, 33554432, 41943040."
+    cases: >
+      Figure 11 (scripts/Figure11_run.sh): 1D1R and 1D2R at 1024 x N points
+      for N = 1024, 2048, 4096, 6144, ..., 40960 (1024 and then steps of
+      2048; 21 sizes, 1,048,576 to 41,943,040 points), T=10,000. The paper
+      text says the range starts at 1024 x 256; the script starts at
+      1024 x 1024.
   spider_2d_scaling:
     claim: "SPIDER: 2D throughput vs. problem size and radius"
-    cases: "Box radii 1-3 at side lengths 512, 1024, 1280, 2048, 2560, 4096, 5120, 6144, 8192, 10240."
+    cases: >
+      Figure 11 (scripts/Figure11_run.sh): Box-2D1R, Box-2D2R and Box-2D3R
+      at side lengths 512 to 10240 in steps of 512 (20 sizes), T=10,240.
+      SPIDER's own bars come from its one radius-7 kernel, rescaled per
+      radius (see metrics.per_paper_native.spider.plotted_normalization).
   spider_optimization_ablation:
     claim: "SPIDER: per-stage optimization contribution"
     cases: >
-      Box-2D25P at side lengths 1280, 2560, 5120, 10240; compare baseline,
-      dense-Tensor-Core, sparse-Tensor-Core, and compute-optimized stages.
+      Figure 12: Box-2D2R (25 points) at side lengths 1280, 2560, 5120,
+      10240, T=10,000; compare TCStencil (baseline), SPIDER with dense
+      Tensor Cores, with sparse Tensor Cores, and with sparse Tensor Cores +
+      computing optimizations.
   spider_general_coefficients_and_row_swap:
     claim: "SPIDER: general (asymmetric) coefficients and row-swapping"
     cases: >
       Asymmetric (non-symmetric) coefficient sets, plus the radius-7 2D box
-      (225 points) as an auxiliary row-swap experiment; its paper-native
-      grid size must be confirmed before reporting this as a faithful
-      reproduction rather than an out-of-convention extrapolation (see
-      open_questions).
+      (225 points) as the row-swap experiment (Table 3: memory throughput
+      and instruction count with vs. without runtime row swapping). The
+      paper does not state the grid size for Table 3; report any run of it
+      as out-of-convention (see open_questions).
+  how_to_run: >
+    Any case above is runnable from the CLI: `--matrices
+    <shape>@<grid>:T=<n>` (e.g. box2d2r@5120x5120:T=10000), or
+    `--matrices sweep:<id>` for the fully specified ones -- an5d-native,
+    convstencil-native, lorastencil-native, flashfftstencil-native,
+    spider-native, spider-1d-scaling, spider-2d-scaling, spider-ablation
+    (kernelbench/domains/stencil.py SWEEPS). Experiments whose paper does
+    not state T have no sweep id on purpose; pass ":T=" explicitly and
+    record the value used.
   timestep_and_alignment_handling: >
     FlashFFTStencil's "6" is its own fused-temporal-block depth, not an
     established requirement that global grid dimensions be divisible by 6 —
@@ -526,6 +596,7 @@ metrics:
   metric_class_legend:
     timing: "derivable from the harness's own timed region (elapsed time, cell updates, effective bytes, or a FLOP count under a STATED per-point convention)"
     profiler: "needs a hardware-counter or profiling tool (ncu/nvprof, Intel Advisor, LIKWID, Nsight); not collected by ./smoke_all.sh or a bare --variant run"
+    derived: "a paper's own normalization applied to a measured value (e.g. SPIDER's fp16->fp64 /4 and radius 7/r rescaling); shown for comparison with the paper's figures, never ranked against a measurement"
     model: "produced by the paper's own analytical or roofline model, not measured; must be labeled MODELED and never merged with a measured value"
     hw: "specific to the paper's platform (FPGA synthesis reports and power tools, RTL simulation traces, multi-node scaling runs); only collectable on that platform"
     accuracy: "a numerical-quality or physical-validity measure rather than a speed measure"
@@ -550,7 +621,7 @@ metrics:
     an5d:
       variant: stencil-cpu-gpu-kernel-fp64
       source_quality: fulltext (ar5iv 2001.01473)
-      native_primary: "[timing] GFLOP/s = total floating-point operations / kernel execution time, with FLOPs per cell stated per stencil (paper's range: 1-54 FLOP/cell)"
+      native_primary: "[timing] GFLOP/s = FLOP/Cell x cell updates / kernel time, Table 3 FLOP/Cell: star2d{x}r 8x+1, box2d{x}r 2(2x+1)^2-1, star3d{x}r 12x+1, box3d{x}r 2(2x+1)^3-1, j2d5pt 10, j2d9pt 18, j2d9pt-gol 18, gradient2d 19, j3d27pt 54. Figures 5-6 plot TFLOP/s with GCell/s on the second axis. Mean of 5 runs after 1 warm-up, PCIe excluded, >= 400 ms per instance; 16384^2 / 512^3, 1000 iterations"
       also_reports:
         - "[model] model performance (GFLOP/s): expected run time = total_comp / (peak_comp x eff_ALU), and model accuracy = tuned / model (paper reports 16-89% across devices)"
         - "[timing] percent of peak compute (paper examples: 41%, 51%)"
@@ -560,29 +631,61 @@ metrics:
         - "[timing] performance versus temporal-blocking degree bT"
     convstencil:
       variant: stencil-tcu-matmul-kernel-fp16
-      source_quality: repo (src/2d/gpu.cu); paper text not read
-      native_primary: "[timing] GStencil/s = input_m * input_n * times * K / secs / 1e9, where K is a per-shape multiplier whose meaning is unresolved (see open_questions); report the printed value AND the plain cells * T / s value side by side"
+      source_quality: fulltext (microsoft.com ppopp24_ConvStencil.pdf, §5.1) plus repo (src/2d/gpu.cu)
+      native_primary: "[timing] GStencils/s (a.k.a. GCells/s), paper Eq. 16: GStencils/s = T * prod_x N_x / (t * 1e9), T = iteration rounds, N_x = problem size per dimension, t = execution time. Paper runs FP64 on A100; Table 4: Heat-1D/1D5P 10240000 x 100000, 2D kernels 10240^2 x 10240, 3D kernels 1024^3"
+      multiplier_resolved: >
+        The x3 in the artifact's printed formula (input_m*input_n*times*3) is
+        temporal fusion, not an extra count: for radius-1 shapes each launch is
+        a 3-step fused kernel (halo=3; main.cu builds the 7x7 weights as the
+        3-fold self-convolution of the 3x3), and `times` counts launches, so
+        times*3 = real time steps. The x2 in gpu_2r.cu is the same for 2-step
+        fusion. Eq. 16 with T = real steps is therefore identical to
+        GCell-updates/s. Checked against the paper's own README example:
+        box2d1r 10240^2, 10240 launches, 17109 ms -> 188.27 printed; Eq. 16
+        with T = 30720 real steps gives 188.28.
       also_reports:
-        - "counters: see per_paper_additional.convstencil"
+        - "[timing] speedup vs cuDNN (FWD_IMPLICIT_PRECOMP_GEMM), AMOS, Brick, DRStencil, and TCStencil / 4 (FP16->FP64 normalization)"
+        - "counters: see per_paper_additional.convstencil (Table 5: UGA %, BC/R)"
     lorastencil:
       variant: stencil-tcu-matmul-kernel-fp16
-      source_quality: repo (README shows CLI only); paper text not read
-      native_primary: "not confirmed from the sources read; the shared CLI convention (shape, input_size, time_size) implies a GStencil/s-style rate, but this must be checked against the paper before it is reported as native"
+      source_quality: fulltext (likun.tech sc24_lorastencil.pdf, §V-A) plus repo (src/2d/gpu.cu)
+      native_primary: "[timing] GStencil/s, paper Eq. 18: GStencil/s = T * prod_i N_i / (t * 1e9), T = iterations, t = total execution time in seconds. Paper runs FP64 on A100; Table II: Heat-1D/1D5P 10240000 x 10000, 2D kernels 10240^2 x 10240, 3D kernels 1024^3 x 1024"
       also_reports:
-        - "counters: see per_paper_additional.lorastencil"
+        - "[timing] speedup vs cuDNN, AMOS, Brick, DRStencil, TCStencil / 4, ConvStencil (paper: 1.12x-2.16x, 1.37x average over ConvStencil)"
+        - "PROTOCOL NOTE: uses the same 3-step temporal fusion as ConvStencil for small kernels (§V-A), printed as times*3 in gpu.cu; the wrapped gpu_star_2d3r prints T*m*n/t with no multiplier"
+        - "counters: see per_paper_additional.lorastencil (Fig. 10 shared-memory requests; Table: CT %, AI FLOP/byte)"
     flashfftstencil:
       variant: stencil-tcu-matmul-kernel-fp16
-      source_quality: repo (README); paper text not read
-      native_primary: "[timing] speedup over prior state of the art (2.57x average) and over a cuFFT-based 1D stencil implementation (103.0x); underlying rate unit not confirmed from the sources read"
+      source_quality: fulltext (likun.tech ppopp25_FlashFFTStencil.pdf, §5.1) plus repo (src/2D/2d_main.cu)
+      native_primary: "[timing] total execution time t AND GStencil/s together (§5.1 'Metrics'); headline Figure 6 plots execution time and speedup on H100. The 2D driver prints INPUT_WIDTH^2 * time / elapsed_ms / 1e6 (= cells * T / s / 1e9). Paper runs FP64 on A100 and H100; Table 3: 1D 512M points, 2D 16K x 16K, 3D 768^3, all 1000 time steps"
       also_reports:
-        - "counters: see per_paper_additional.flashfftstencil"
+        - "[timing] speedup over cuFFT/cuDNN (1.9x-103.0x), Brick (~5.8x), DRStencil (~2.9x), TCStencil (2.56x), ConvStencil (2.57x), LoRAStencil (2.44x, with LoRAStencil time x2 for its symmetry saving)"
+        - "[hw] memory footprint vs standard FFT stencil (7-9x reduction), OOM points"
+        - "counters: see per_paper_additional.flashfftstencil (Table 4: UGA, BC/R, PU; Fig. 10: AI and fragment sparsity)"
     spider:
       variant: stencil-tcu-matmul-kernel-fp16
-      source_quality: fulltext (arxiv.org/html 2506.22035) plus repo scripts
-      native_primary: "[timing] GStencil/s (repo output header: method, shape, dim_3, dim_2, dim_1, iters, time, GStencil/s); speedup 6.20x over cuDNN and 2.00x on average over the best prior Tensor-Core stencil system"
+      source_quality: fulltext (arxiv.org 2506.22035, §4.1) plus repo scripts
+      native_primary: "[timing] GStencils/s = points updated per second / 1e9 (§4.1 'Metrics'); the binary prints m*n*times / t / 1e9 for its radius-7 FP16 SpTC sweep. Problem sizes: 1D (1, 10240000), 2D (10240, 10240)"
+      plotted_normalization: >
+        Figures 10/11 do not plot the raw number. scripts/Figure10_draw.py and
+        Figure11_draw.py (unify_gstencil_sptc) divide it by 4 (FP16->FP64,
+        §4.1 'we scale the results by a factor of 4') and multiply by 7/r,
+        treating one radius-7 sweep as 7/r fused radius-r steps, to produce
+        each Box-2D{1,2,3}R / 1D{1,2}R bar. The harness reports these as
+        `derived` values next to the measured one; they are not separate
+        radius-r measurements.
       also_reports:
+        - "[timing] speedup 6.20x over cuDNN and 3.13x / 1.88x / 1.63x / 1.35x over TCStencil / ConvStencil / LoRAStencil / FlashFFTStencil (average)"
         - "counters: see per_paper_additional.spider"
         - "PROTOCOL NOTE: precision differs across the compared systems (cuDNN and ConvStencil run fp64, TCStencil fp16, SPIDER fp16) and the paper normalizes for it; keep each system's own precision as metadata"
+  harness_implementation: >
+    bench/kernelbench/domains/stencil.py `_native_stencil` recomputes each
+    paper's native primary (and the secondary values above that come from
+    the timed region) and writes them to the result record as
+    metrics.paper_native: {paper, primary, metrics[], not_collected[],
+    notes[]}. GCell-updates/s stays the cross-paper ranking metric; the
+    report prints the paper metric under each row. AN5D additionally gets
+    its paper statistic (mean of the timed reps) next to the median.
   convention_note: >
     Each paper's own FLOP-count convention and metric definition must be
     preserved and labeled, not normalized to a common definition. GFLOP/s
@@ -593,17 +696,18 @@ metrics:
     paper's convention.
 
 notes_on_fairness:
+  - "The Tensor-Core lineage compares FP16 and FP64 systems by dividing FP16 throughput by 4 (ConvStencil, LoRAStencil, FlashFFTStencil for TCStencil; SPIDER for itself), and FlashFFTStencil doubles LoRAStencil's time to undo its symmetry saving. These are the papers' own normalizations, recorded as `derived` values only; the harness never applies them to rank implementations."
   - "AN5D repeats 5x with 1 discarded warmup and reports the mean; every GPU Tensor-Core-stencil paper (ConvStencil, LoRAStencil, FlashFFTStencil, SPIDER), the GPU paper PERKS, and the CPU paper AOStencil publish a single, unrepeated, un-warmed-up trial in their public harness (PERKS's paper text separately states each evaluation was run ten times; only its repo driver is single-trial, RUNS = 1). Both kernel-only variants above mandate a discarded warmup + median-of->=5 (variant 1/2) regardless of what the underlying repo's default run does."
   - "ConvStencil's own correctness check (`tolerance=1e-7`) exists in source but is compiled out (`#define CHECK_ERROR` commented) in the public artifact — the published benchmark path runs with NO correctness check by default. This spec's correctness gate is mandatory, not opt-in."
-  - "GFLOP/s is not comparable paper-to-paper in this track without a stated FLOP-per-point-update convention: PERKS hard-codes 17 FLOP/cell for one specific 9-point kernel; ConvStencil's own printed throughput formula applies an unexplained per-shape multiplier. GCell-updates/s is made primary specifically because it depends only on grid size x iteration count, not on an assumed FLOP-counting convention (survey.md Divergence 4)."
+  - "GFLOP/s is not comparable paper-to-paper in this track without a stated FLOP-per-point-update convention: PERKS hard-codes 17 FLOP/cell for one specific 9-point kernel; ConvStencil's printed GStencil/s multiplies launches by its temporal-fusion depth (x3), which only equals real steps when the run actually fuses. GCell-updates/s is made primary specifically because it depends only on grid size x iteration count, not on an assumed FLOP-counting convention (survey.md Divergence 4)."
   - "SPIDER's paper text states preprocessing/offline-transform cost is excluded from its reported throughput and is not otherwise quantified as a number for any of the 4 Tensor-Core-lineage papers surveyed. Variant 2 requires this be measured and reported once, not merely excluded and left unquantified."
   - "SPIDER's own 2D kernel synchronizes the device after every one of the T timed launches (not once at the end), which inflates the measured time with T-1 extra barrier stalls relative to ConvStencil/LoRAStencil's single-sync-at-the-end convention. Variant 2 standardizes on the single-sync form for both families so neither is penalized by a synchronization-granularity artifact rather than a real performance difference."
   - "StencilsOnFPGA and WindStencil/ozHOPE's application-level correctness checks (conserved quantities, roofline %) are not pointwise numerical tolerance gates the way PERKS/AOStencil's are; variant 3 keeps this weaker guarantee explicit rather than silently promoting it to the same rigor as variant 1/2."
 
 open_questions:
-  - "The Tensor-Core-matmul lineage's own 3D grid-size/T convention could not be confirmed from public sources: SPIDER's own kernel sources are 1D/2D only (no 3D implementation despite the paper comparing against 3D-capable ConvStencil/LoRAStencil baselines), and ConvStencil/LoRAStencil have no arXiv fulltext to check their own paper-reported 3D numbers against (SC/PPoPP DOI only). UPDATED: variant 2's 3D row no longer copies variant 1's 512^3/T=1000 values silently — Heat-3D/Box-3D27P are now marked explicitly PENDING with only a 1024^3 candidate grid, until implementation support, memory requirements, and step counts are verified against an actual adapter. The underlying confirmation gap against any paper's own reported 3D numbers remains open."
+  - "RESOLVED (2026-09-23): the Tensor-Core lineage's 3D size is paper-reported — ConvStencil Table 4 and LoRAStencil Table II both use 1024^3, LoRAStencil at T=1024 (ConvStencil states no 3D T). Variant 2's Heat-3D/Box-3D27P now use 1024^3, T=1024 (inputs.grid_3d). FlashFFTStencil's 768^3 remains an extended experiment."
   - "fp16 correctness tolerance for variant 2 is not stated in any of the 4 surveyed repos' public artifacts. The 1e-2 relative-error default in variant 2's correctness field is this spec's own recommendation, not sourced from any paper — flagged explicitly rather than presented as if it were."
-  - "ConvStencil's own GStencil/s formula in `src/2d/gpu.cu` multiplies by a per-shape factor (1x for some shapes, 3x seen for others in the box2d3r-adjacent kernel) whose exact geometric meaning (halo replication? multi-output-per-launch?) could not be fully resolved by reading source alone. A harness implementer should cross-check against the paper's own reported numbers/table rather than trusting the printed GStencil/s literally."
+  - "RESOLVED (2026-09-23): ConvStencil's printed x3 (and LoRAStencil's x3, ConvStencil's 1D x2) is temporal fusion -- `times` counts launches and each radius-1 launch performs 3 fused steps; see metrics.per_paper_native.convstencil.multiplier_resolved. Eq. 16 with real steps equals GCell-updates/s."
   - "ConvStencil's published block-size entries (1024 for 1D, 32x64 for 2D, 8x64 for 3D) have not been confirmed to mean literal CUDA thread-block (blockDim) dimensions — recorded as paper configuration metadata in variant 2's inputs.paper_configurations pending verification against the artifact source."
   - "SPIDER's general-coefficient/row-swap auxiliary experiment (radius-7 2D box, 225 points) has no confirmed paper-native grid size — do not report a run of this case as a faithful reproduction of a specific paper number until that grid is confirmed from the paper text or artifact."
   - "AOStencil's 3D grid sizes were not confirmed — the one run.sh read only shows a single call each to 3d7pt_star.py/3d27pt_box.py (unlike the 2D scripts' explicit 8192/16384/24576 loop), and those individual files were not fetched. The 3D recommended_subset entries for variant 1 (star3d1r/box3d1r at 512^3) are AN5D/Devito-sourced, not AOStencil-sourced."

@@ -8,8 +8,8 @@
 
 Paste the block below into a coding agent (Claude Code or similar) started in
 a fresh clone of this repository on zaratan, after `git pull` has brought in
-the latest `benchspecs/stencil/spec.yaml`, `bench/kernelbench/domains/stencil.py`,
-and `bench/audit/scripts/check10_stencil_gate_not_vacuous.py`.
+the 2026-09-23 changes (stencil spec, runner/report/harness, and the rewritten
+convstencil/lorastencil bridges).
 
 ---
 
@@ -19,10 +19,13 @@ command below from the REPOSITORY ROOT unless it says otherwise.
 
 GOAL. Build and run the 5 paper adapters in the stencil track
 (bench/artifacts/stencil/{an5d,convstencil,lorastencil,flashfftstencil,spider}),
-get a real (non-smoke) performance number for each on the one shape it
-actually supports, and report what you get, including any failure, honestly.
+get a real (non-smoke) performance number for each at its paper's own size
+on a shape it supports, and report what you get, including any failure, honestly.
 Do not "fix" the benchmark (spec, harness, or a paper's own kernel source) to
-make a result pass. NOTE: on zaratan a normal user cannot lock GPU clocks
+make a result pass. The one exception: the convstencil and lorastencil
+bridge.cu files and artifacts/stencil/periodic_halo.cuh are OUR code, new on
+2026-09-23 and never compiled on a GPU yet; fixing a compile error there is
+allowed, but report exactly what you changed. NOTE: on zaratan a normal user cannot lock GPU clocks
 (`nvidia-smi -lgc` needs root), so the runner will stamp every result
 `conforming: false` with reason "GPU clocks not locked" even inside an
 exclusive allocation -- per bench/REPRODUCTION_zaratan.md section 4, this is
@@ -35,44 +38,67 @@ are binding); benchspecs/stencil/spec.yaml; benchspecs/stencil/survey.md;
 bench/artifacts/stencil/README.md and each adapter's own STATUS.md.
 
 IMPORTANT CONTEXT (do not rediscover these the slow way):
-- Coverage is narrow and per-adapter, not uniform: an5d supports 6 shapes
-  (star2d1r, box2d1r, star2d3r, box2d3r, star3d1r, box3d1r); convstencil
-  supports star2d1r only (2D only); lorastencil supports star2d3r only (its
-  other 3 kernels divide by zero or ignore caller-supplied weights); spider
-  ignores whatever shape name you pass and substitutes its own fixed
-  radius-7 2D box, forcing timesteps=1 (fp16 overflow risk beyond one
-  sweep); flashfftstencil supports box2d1r only AND requires the grid width
-  to be a multiple of 6 -- the domain's own default 16384 grid does NOT
-  satisfy this, so it needs an explicit smaller grid_shape (see its
-  adapter.py docstring "SHAPE CONSTRAINT" and its STATUS.md for the grid
-  actually used in its last successful gate).
-- IMPL_NAMEs: an5d-stencil, convstencil-tcu, lorastencil-star2d3r,
-  flashfftstencil-box2d1r, spider-box2d7r-sptc.
-- kernelbench/domains/stencil.py's synthetic weights changed recently
-  (2026-09-21): they now sum to 1 with all-positive coefficients, replacing
-  an earlier set that summed to 0.5 and made the correctness gate vacuous at
-  T>=100 (see the module's _build_weights docstring and
-  bench/audit/scripts/check10_stencil_gate_not_vacuous.py). This means every
-  gate number recorded in each adapter's STATUS.md before that date was
-  computed against the OLD weights and is stale for an5d/convstencil/
-  lorastencil/flashfftstencil (which build their reference from the
-  workload's own weights). an5d and spider use the PAPER's own hardcoded
-  coefficients, not the domain's synthetic ones, so their gate numbers are
-  unaffected by this change -- confirm this yourself by reading each
-  adapter's prepare() rather than assuming it.
+- Coverage is narrow and per-adapter (as of 2026-09-23):
+    an5d-stencil            6 shapes: star2d1r, box2d1r, star2d3r, box2d3r,
+                            star3d1r, box3d1r. Uses AN5D's own coefficients
+                            and a fixed boundary. DECLINES AN5D's named
+                            kernels (j2d5pt, j2d9pt, j2d9pt-gol, gradient2d,
+                            j3d27pt): implemented in the domain, not bridged.
+    convstencil-tcu         any 2D stencil up to radius 3; grid must be a
+                            multiple of 32 x 64. Only star2d1r has ever been
+                            gated; other 2D shapes are untested.
+    lorastencil-star2d3r    star2d3r only (its other kernels divide by zero or
+                            ignore the weights); grid a multiple of 32 x 64.
+    flashfftstencil-box2d1r box2d1r only; square grid, width a multiple of 6;
+                            one step per call (the adapter forces T=1).
+    spider-box2d7r-sptc     always runs its own radius-7 box for one step, in
+                            fp16, whatever shape you pass; 2D only; grid a
+                            multiple of 64 x 128.
+  An adapter that cannot run a workload raises NotImplementedError; the
+  runner records it as "unsupported" with the reason. That is a coverage
+  fact, not a failure.
+- NEW BRIDGES (2026-09-23): convstencil and lorastencil now keep the grid on
+  the GPU for the whole T-step run (bridge.cu launches the artifact's own
+  kernel and refreshes the periodic halo on the device between steps). They
+  have NEVER been built or gated on a GPU. Their earlier timings included a
+  host round trip every step and are NOT comparable to the papers; do not
+  quote them. Each adapter's STATUS.md has a "Bridge rewrite" section.
+- PRECISION GROUPS: convstencil, lorastencil and flashfftstencil compute in
+  fp64, so run them under --variant stencil-cpu-gpu-kernel-fp64 (tolerance
+  1e-5) and pass each paper's own size explicitly (table below). Only
+  spider (fp16) runs under --variant stencil-tcu-matmul-kernel-fp16
+  (tolerance 1e-2). The report never ranks fp16 and fp64 results together.
+- WORKLOAD NAMES: `<shape>[@<grid>][:T=<steps>]`, e.g.
+  `star2d3r@10240x10240:T=10240`. Without @/:T the variant's defaults apply
+  (fp64 variant: 16384^2 / 512^3 at T=1000; fp16 variant: 10240^2 at
+  T=10240). `--matrices sweep:<id>` expands to a paper's whole table or
+  figure (ids in kernelbench/domains/stencil.py SWEEPS); do not start sweeps
+  in this pass.
+- CORRECTNESS GATE AT FULL SIZE: the gate compares against a CPU numpy
+  reference, which would take hours at paper sizes. So for large workloads
+  the runner gates on the SAME grid for fewer steps (e.g. 22 instead of
+  1000), then times the full run. The result records this under
+  protocol_used.correctness_gate and in correctness.note. Budget roughly
+  5-10 minutes of CPU per workload for the gate -- use `-t 60` per job.
+- REPORT: `kernelbench.report` now prints each paper's own metric under its
+  row (AN5D: GFLOP/s; the others: GStencil/s + execution time), lists
+  unsupported workloads with reasons, ranks only within one GPU and
+  precision, and shows a speedup column against torch-conv-stencil when that
+  baseline ran on the same GPU, workload and precision.
+- RUN SPIDER IN ITS OWN JOB. The runner shares one workload object across all
+  --impl entries, and spider's prepare() rewrites that workload's shape to
+  its radius-7 box, which would leak into any adapter listed after it.
+- kernelbench/domains/stencil.py's synthetic weights changed on 2026-09-21
+  (now sum to 1; see check10_stencil_gate_not_vacuous.py), so gate numbers in
+  STATUS.md from before that date are stale for convstencil/lorastencil/
+  flashfftstencil. an5d and spider use their papers' own coefficients.
 - Last recorded H100 status (bench/H100_baselines.md, h100_status.json,
-  before the weights fix): an5d PASS (4.76 GCUP/s), spider PASS, convstencil
-  REGRESSION (CUDA error 700: illegal memory access), flashfftstencil and
-  lorastencil UNSUPPORTED by the standard --smoke invocation (each needs a
-  workload its own STATUS.md documents, not the domain's default). Expect
-  to hit the same convstencil/flashfftstencil/lorastencil issues again;
-  investigate and report them, do not paper over them.
-- The runner does not thread which spec variant you pass into
-  load_workload(), so every workload you get is sized per variant 1's
-  defaults (16384^2 2D, 512^3 3D) regardless of --variant. A true variant-2
-  run (10240^2, T=10240) is not reachable through the CLI as of this
-  writing -- note this limitation in your report rather than silently
-  reporting a variant-1-sized run as if it were variant 2.
+  BEFORE the 2026-09-21/23 changes): an5d PASS (4.76 GCUP/s), spider PASS,
+  convstencil REGRESSION (CUDA error 700: illegal memory access; possibly a
+  grid not aligned to 32 x 64, which the adapter now refuses -- check),
+  flashfftstencil and lorastencil UNSUPPORTED by --smoke (--smoke now has a
+  96x96 box2d1r and a 64x128 star2d3r for them). Investigate and report
+  anything that recurs; do not paper over it.
 
 GROUND RULES (same as bench/REPRODUCE.md)
 - Never loosen a correctness gate, tolerance, or protocol
@@ -124,54 +150,65 @@ source to fix it.
 STEP 3: FUNCTIONAL GATE, then a REAL (non-smoke) run, per adapter
   (cd bench && $PY -m kernelbench.runner --kernel stencil --list)
     (CPU-only listing; confirm all 5 show as built, not "not built: ... missing")
-For each adapter, on the ONE shape it supports (see IMPORTANT CONTEXT above):
-  a. Smoke gate first, to catch a broken build cheaply (on a GPU node --
-     the smoke run executes the kernel):
+  a. Smoke gate each adapter first, to catch a broken build cheaply:
      bench/gpu_run.sh -g h100 -- \
-       '$PY -m kernelbench.runner --kernel stencil --variant <its variant> \
-            --impl <IMPL_NAME> --smoke'
-  b. Then a real (no --smoke, no --warmup/--reps override) run, at the shape
-     it supports:
-     bench/gpu_run.sh -g h100 -t 30 -- \
        '$PY -m kernelbench.runner --kernel stencil --variant <variant> \
-            --impl <IMPL_NAME> --matrices <shape>'
-     an5d and convstencil: --variant stencil-cpu-gpu-kernel-fp64
-     lorastencil, flashfftstencil, spider: --variant stencil-tcu-matmul-kernel-fp16
-       (flashfftstencil and lorastencil actually compute in fp64 despite this
-       variant's fp16 label -- their own STATUS.md explains why they are
-       gated against this variant anyway; do not "fix" this mismatch, report
-       it if you think it is wrong)
-     flashfftstencil specifically: its adapter's SHAPE CONSTRAINT means the
-     domain's default 16384x16384 grid will raise NotImplementedError; you
-     will need to call load_workload with an explicit, 6-divisible
-     grid_shape (see its STATUS.md for the grid it was last successfully
-     gated at) -- this is not reachable via --matrices alone; write a short
-     one-off Python invocation if needed (run it through the same
-     bench/gpu_run.sh command as above, e.g. as a script under bench/
-     invoked as '$PY <script>.py'), and say so in your report.
+            --impl <IMPL_NAME> --smoke'
+     Expect "unsupported" for the smoke shapes an adapter cannot run.
+  b. Then one real run per adapter (no --smoke, no --warmup/--reps), each in
+     its own job, at the paper's own size:
+
+     IMPL_NAME                variant  --matrices                        source
+     an5d-stencil             fp64     star2d1r (repeat for each of its  AN5D Sec. 6.1
+                                       6 shapes; defaults 16384^2 /
+                                       512^3, T=1000)
+     convstencil-tcu          fp64     star2d1r@10240x10240:T=10240      ConvStencil Table 4
+     lorastencil-star2d3r     fp64     star2d3r@10240x10240:T=10240      LoRAStencil Table II
+     flashfftstencil-box2d1r  fp64     box2d1r@16380x16380:T=1           Table 3 is 16384^2;
+                                                                         16380 is the nearest
+                                                                         width divisible by 6
+     spider-box2d7r-sptc      fp16     box2d1r (default 10240^2; runs    SPIDER Fig. 10
+                                       its radius-7 box, T=1)
+
+     (fp64 = stencil-cpu-gpu-kernel-fp64, fp16 = stencil-tcu-matmul-kernel-fp16)
+
+     bench/gpu_run.sh -g h100 -t 60 -- \
+       '$PY -m kernelbench.runner --kernel stencil --variant <variant> \
+            --impl <IMPL_NAME>,torch-conv-stencil --matrices <workload>'
+
+     Adding torch-conv-stencil (the library baseline) fills the report's
+     speedup column; drop it for spider (fp16, and it must run alone).
+     flashfftstencil also rewrites the shared workload (it forces T=1),
+     which is why its row passes :T=1 explicitly -- that way the baseline
+     runs the same single step.
   Record the `[gpu_run] host=... gpu=... job=...` line of every run (it is
   the evidence of which GPU was used). Check the runner's own
   `conforming: true/false` line and the
   `N/M runs valid (k unsupported)` line for each. Report `nonconformance_reasons`
   verbatim; "GPU clocks not locked" alone is expected here (see GOAL note) --
-  flag it only if something ELSE appears alongside it.
+  flag it only if something ELSE appears alongside it. Also record the gated
+  step count (protocol_used.correctness_gate) for each run.
 
 STEP 4: RECORD
 Append to each artifact's STATUS.md a section
-  ## Reproduction on zaratan, post-weights-fix (<YYYY-MM-DD>)
+  ## Reproduction on zaratan, post-2026-09-23 changes (<YYYY-MM-DD>)
 with: GPU used; build outcome; smoke-gate outcome; real-run outcome
-(GCUP/s, correctness error vs tolerance, conforming true/false); anything
-that deviates from the last recorded ruling and your evidence for why.
+(GCUP/s, the paper's own metric from the report, correctness error vs
+tolerance and the gated step count, conforming true/false); anything that
+deviates from the last recorded ruling and your evidence for why. For
+convstencil/lorastencil, also say whether the new GPU-resident bridge built
+and gated, and how its smoke time compares with the old 6-11 ms.
 Never delete or rewrite earlier STATUS.md text -- put the new ruling first
 and keep the old one after "Earlier outcome, kept for the record:".
 
 STEP 5: REPORT
 - (cd bench && $PY -m kernelbench.report results/stencil_*.json \
       --html results/stencil_report.html)
-- Write a short summary (5 papers, one row each): shape tested, GCUP/s,
-  correctness error, conforming true/false, and for anything that did not
-  produce a real number, the exact blocking reason (build failure, runtime
-  crash, shape/grid constraint not satisfiable via the CLI, etc.).
+- Write a short summary (5 papers, one row each): workload run, GCUP/s, the
+  paper's own metric, speedup vs torch-conv-stencil where shown, correctness
+  error and gated step count, conforming true/false, and for anything that
+  did not produce a real number, the exact blocking reason (build failure,
+  runtime crash, unsupported shape/grid, gate failure, job time limit).
 - Commit in small commits, one per artifact directory touched, never
   checkouts/build products/results JSON over 1 MB. Commit messages: what
   changed and why, one paragraph.

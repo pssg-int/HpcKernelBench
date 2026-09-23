@@ -11,6 +11,10 @@ Follows the shape of sparse.py (the reference domain module):
   COST        — GCell-updates/s, NOT a flop rate (spec.yaml refuses GFLOP/s as
                 primary: FLOP-per-point-update conventions differ per paper and
                 are not comparable; see benchspecs/stencil/spec.yaml notes_on_fairness)
+  PAPER-NATIVE— each integrated paper's own metric (AN5D GFLOP/s, the Tensor-
+                Core lineage's GStencil/s + execution time, SPIDER's plotted
+                normalization), attached as metrics["paper_native"] alongside
+                GCUP/s -- see _native_stencil
   REFERENCE   — an fp64 reference performing the identical T-sweep recursion,
                 returning (result, scale) where `scale` runs the SAME recursion
                 with |weights| on the abs-field -- the T-fold generalization of
@@ -70,7 +74,9 @@ away.
 
 from __future__ import annotations
 
+import dataclasses
 import itertools
+import os
 import re
 import warnings
 from dataclasses import dataclass, field
@@ -87,10 +93,6 @@ PLANNED = ["lattice-boltzmann", "fdtd-seismic"]
 
 ITEMSIZE = {"fp64": 8, "fp32": 4, "fp16": 2, "tf32": 4}
 
-# AN5D's own named 27-point 3D kernel is a division-free variant of box3d1r --
-# same support/shape, per spec.yaml's variant-1 `suite` field.
-ALIASES = {"j3d27pt": "box3d1r"}
-
 # spec.yaml variant-1 grid_sizes (verbatim): 2D 16384x16384; 3D 512^3, with a
 # "small-class" 256^3 alternative for resource-constrained targets. 1D size is
 # carried from variant 2 (the only place a 1D grid size is given).
@@ -101,11 +103,75 @@ _GRID_3D_SMALL = (256, 256, 256)
 
 # T=1000 back-to-back sweeps is AN5D's primary-benchmark convention, which
 # spec.yaml's variant 1 (stencil-cpu-gpu-kernel-fp64) adopts as its default.
-# Variant 2 (Tensor-Core matmul reformulations) uses different T per its own
-# CLI convention (10240 for 2D, 100000 for 1D, 1000 for 3D) -- callers wanting
-# that protocol must pass `timesteps=` explicitly; a bare shape name alone
-# does not carry which variant asked for it.
 DEFAULT_TIMESTEPS = 1000
+
+# Per-variant defaults by dimensionality: (grid_shape, timesteps). Variant 2
+# (Tensor-Core lineage) uses its papers' shared sizes -- spec.yaml
+# stencil-tcu-matmul-kernel-fp16 inputs.named_kernels / protocol.iteration_count:
+# 1D 10,240,000 x T=100,000; 2D 10240^2 x T=10,240; 3D 1024^3 x T=1,024.
+VARIANT_DEFAULTS = {
+    "stencil-cpu-gpu-kernel-fp64": {
+        1: (_GRID_1D, DEFAULT_TIMESTEPS),
+        2: (_GRID_2D, DEFAULT_TIMESTEPS),
+        3: (_GRID_3D, DEFAULT_TIMESTEPS),
+    },
+    "stencil-tcu-matmul-kernel-fp16": {
+        1: ((10_240_000,), 100_000),
+        2: ((10240, 10240), 10_240),
+        3: ((1024, 1024, 1024), 1_024),
+    },
+}
+
+# AN5D's five named kernels (CGO'20 Table 3), transcribed from the artifact's
+# own benchmark sources at the commit in artifacts/stencil/an5d/
+# source.provenance (j2d5pt.c, j2d9pt.c, j2d9pt-gol.c, gradient2d.c,
+# j3d27pt.c, `#pragma scop` region). Offsets are (i, j[, k]) in array-axis
+# order. The sources write every coefficient as a float literal (`5.1f`), so
+# even AN5D's double build multiplies by the float-rounded value; _f32 keeps
+# that. The four linear kernels divide the weighted sum by an integer AFTER
+# summing, and the reference does the same.
+#
+# NOTE: these coefficients sum to less than the divisor (j2d5pt 0.42,
+# j2d9pt/-gol 0.70, j3d27pt 0.15 per step), so the field decays toward zero;
+# at AN5D's own T=1000, j2d5pt and j3d27pt underflow to exactly 0 in fp64.
+# reference_stencil warns when that makes the gate vacuous -- the coefficients
+# are the paper's and are kept as-is.
+def _f32(x: float) -> float:
+    return float(np.float32(x))
+
+
+NAMED = {
+    "j2d5pt": dict(dims=2, radius=1, kind="star", divisor=118, coeffs={
+        (-1, 0): 5.1, (0, -1): 12.1, (0, 0): 15.0, (0, 1): 12.2, (1, 0): 5.2}),
+    "j2d9pt": dict(dims=2, radius=2, kind="star", divisor=118, coeffs={
+        (-2, 0): 7.1, (-1, 0): 5.1, (0, -2): 9.2, (0, -1): 12.1, (0, 0): 15.0,
+        (0, 1): 12.2, (0, 2): 9.1, (1, 0): 5.2, (2, 0): 7.2}),
+    "j2d9pt-gol": dict(dims=2, radius=1, kind="box", divisor=118, coeffs={
+        (-1, -1): 7.1, (-1, 0): 5.1, (-1, 1): 9.2, (0, -1): 12.1, (0, 0): 15.0,
+        (0, 1): 12.2, (1, -1): 9.1, (1, 0): 5.2, (1, 1): 7.2}),
+    "j3d27pt": dict(dims=3, radius=1, kind="box", divisor=159, coeffs={
+        (-1, 0, 0): 1.500, (-1, -1, -1): 0.500, (-1, -1, 0): 0.700,
+        (-1, -1, 1): 0.900, (-1, 0, -1): 1.200, (-1, 0, 1): 1.201,
+        (-1, 1, -1): 0.901, (-1, 1, 0): 0.701, (-1, 1, 1): 0.501,
+        (0, 0, 0): 1.510, (0, -1, -1): 0.510, (0, -1, 0): 0.710,
+        (0, -1, 1): 0.910, (0, 0, -1): 1.210, (0, 0, 1): 1.211,
+        (0, 1, -1): 0.911, (0, 1, 0): 0.711, (0, 1, 1): 0.511,
+        (1, 0, 0): 1.520, (1, -1, -1): 0.520, (1, -1, 0): 0.720,
+        (1, -1, 1): 0.920, (1, 0, -1): 1.220, (1, 0, 1): 1.221,
+        (1, 1, -1): 0.921, (1, 1, 0): 0.721, (1, 1, 1): 0.521}),
+    # u + 1 / sqrt(eps + sum over the 4 axis neighbors of (u - u_nb)^2):
+    # nonlinear, so it has no weights and weight-taking adapters must refuse it.
+    "gradient2d": dict(dims=2, radius=1, kind="gradient", eps=0.0001),
+}
+for _spec in NAMED.values():
+    if "coeffs" in _spec:
+        _spec["coeffs"] = {o: _f32(c) for o, c in _spec["coeffs"].items()}
+    if "eps" in _spec:
+        _spec["eps"] = _f32(_spec["eps"])
+
+# Workload-name syntax (see load_workload): <shape>[-256][@AxB[xC]][:T=<n>]
+_NAME_RE = re.compile(r"^(?P<base>[A-Za-z0-9-]+?)(?P<small>-256)?"
+                      r"(?:@(?P<grid>\d+(?:x\d+)*))?(?::T=(?P<T>\d+))?$")
 
 _SHAPE_RE = re.compile(r"^(star|box)?(\d+)d(\d+)r$")
 
@@ -213,7 +279,7 @@ class StencilWorkload:
     """
 
     name: str
-    kind: str                       # "star" | "box"
+    kind: str                       # "star" | "box" | "gradient" (AN5D gradient2d)
     dims: int
     radius: int
     grid_shape: tuple[int, ...]
@@ -222,6 +288,7 @@ class StencilWorkload:
     boundary: str = "periodic"      # spec allows periodic wrap or fixed halo of width r
     seed: int = 20260806
     source: str = "synthetic"       # every workload here is synthetic random-fill
+    named: str | None = None        # AN5D named kernel id (key of NAMED), else None
 
     offsets: list[tuple[int, ...]] = field(init=False, repr=False)
     weights: dict[tuple[int, ...], float] = field(init=False, repr=False)
@@ -232,8 +299,25 @@ class StencilWorkload:
             raise ValueError(
                 f"stencil {self.name!r}: grid_shape {self.grid_shape} has "
                 f"{len(self.grid_shape)} dims, shape id implies {self.dims}")
-        self.offsets = _support_offsets(self.kind, self.dims, self.radius)
-        self.weights = _build_weights(self.offsets, self.dims)
+        if self.named is None:
+            self.offsets = _support_offsets(self.kind, self.dims, self.radius)
+            self.weights = _build_weights(self.offsets, self.dims)
+            return
+        spec = NAMED[self.named]
+        if "coeffs" in spec:
+            # Effective linear weights c/divisor, for implementations that take
+            # a weight map. The reference itself sums with the raw coefficients
+            # and divides afterwards, as AN5D's source does.
+            self.offsets = list(spec["coeffs"])
+            self.weights = {o: c / spec["divisor"] for o, c in spec["coeffs"].items()}
+        else:
+            self.offsets = _support_offsets("star", self.dims, self.radius)
+            self.weights = {}
+
+    @property
+    def linear(self) -> bool:
+        """False for nonlinear named kernels (gradient2d): no weight map exists."""
+        return self.named is None or "coeffs" in NAMED[self.named]
 
     @property
     def cells(self) -> int:
@@ -269,6 +353,10 @@ class StencilWorkload:
         update (verified against the offset-loop sweep; only the array layout
         handed to each library differs).
         """
+        if not self.linear:
+            raise NotImplementedError(
+                f"stencil {self.name!r}: {self.named} is nonlinear (sqrt of "
+                "squared differences), not a weighted sum -- no dense kernel exists")
         size = 2 * self.radius + 1
         k = np.zeros((size,) * self.dims, dtype=dtype)
         for o, w in self.weights.items():
@@ -280,7 +368,13 @@ class StencilWorkload:
         return {
             "name": self.name,
             "source": self.source,
-            "shape": f"{self.kind}{self.dims}d{self.radius}r",
+            "shape": self.named or f"{self.kind}{self.dims}d{self.radius}r",
+            **({"named_kernel": {
+                "paper": "AN5D (CGO'20) Table 3; coefficients from the artifact's "
+                         f"{self.named}.c",
+                "linear": self.linear,
+                "divisor": NAMED[self.named].get("divisor"),
+            }} if self.named else {}),
             "kind": self.kind,
             "dims": self.dims,
             "radius": self.radius,
@@ -323,6 +417,14 @@ SMOKE = [
     ("smoke-star2d1r", dict(kind="star", dims=2, radius=1, grid_shape=(256, 256), timesteps=5)),
     ("smoke-star3d1r", dict(kind="star", dims=3, radius=1, grid_shape=(32, 32, 32), timesteps=5)),
     ("smoke-box3d1r", dict(kind="box", dims=3, radius=1, grid_shape=(24, 24, 24), timesteps=5)),
+    # sized for the narrow paper adapters: LoRAStencil runs only star2d3r and
+    # needs rows % 32 == 0 and cols % 64 == 0; FlashFFTStencil runs only
+    # box2d1r on a square grid whose width is a multiple of 6.
+    ("smoke-star2d3r", dict(kind="star", dims=2, radius=3, grid_shape=(64, 128), timesteps=5)),
+    ("smoke-box2d1r", dict(kind="box", dims=2, radius=1, grid_shape=(96, 96), timesteps=5)),
+    # AN5D named kernel with its paper-native division, small enough to gate
+    ("smoke-j2d5pt", dict(kind="star", dims=2, radius=1, grid_shape=(128, 128), timesteps=5,
+                          named="j2d5pt")),
 ]
 
 
@@ -331,30 +433,109 @@ def smoke_workloads():
 
 
 def load_workload(name: str, *, timesteps: int | None = None,
-                   grid_shape: tuple[int, ...] | None = None) -> StencilWorkload:
+                   grid_shape: tuple[int, ...] | None = None,
+                   variant: str | None = None) -> StencilWorkload:
     """
-    Build a spec-sized workload from an AN5D-convention shape id (the naming
-    variant 1 and variant 2 of spec.yaml both use, so this one loader covers
-    the union): star2d1r, box2d1r, star2d3r, box2d3r, star3d1r, box3d1r, 1d1r,
-    1d2r, plus the box3d1r-equivalent alias j3d27pt. Append "-256" to a 3D name
-    (e.g. "star3d1r-256") for the spec's small-class 256^3 grid instead of the
-    default 512^3.
+    Build a workload from a name of the form
 
-    Grid sizes come verbatim from spec.yaml's variant-1 `grid_sizes` field.
-    `timesteps` defaults to T=1000 (variant 1's AN5D-derived default); pass an
-    explicit value to reproduce a different variant's protocol -- see
-    DEFAULT_TIMESTEPS's docstring note on why this is not inferred from the
-    bare shape name.
+        <shape>[-256][@<grid>][:T=<steps>]
+
+    <shape> is an AN5D-convention id (star2d1r, box3d2r, 1d3r, ...: any star
+    or box, any dims, any radius) or one of AN5D's named kernels (NAMED:
+    j2d5pt, j2d9pt, j2d9pt-gol, gradient2d, j3d27pt). "-256" selects the
+    spec's optional small-class 256^3 grid for 3D. "@AxB[xC]" sets the grid
+    and ":T=n" the time steps, e.g. "box2d2r@5120x5120:T=10000", so any size
+    a paper swept can be run from the CLI (`--matrices`).
+
+    Defaults when the name does not say: the variant's own sizes
+    (VARIANT_DEFAULTS; the runner passes `variant`), else variant 1's
+    16384^2 / 512^3 and T=1000. Explicit keyword arguments override the name.
     """
-    base = ALIASES.get(name, name)
-    small = base.endswith("-256")
-    if small:
-        base = base[: -len("-256")]
-    kind, dims, radius = _parse_shape_name(base)
-    shape = grid_shape or _default_grid_shape(dims, small=small)
-    T = timesteps if timesteps is not None else DEFAULT_TIMESTEPS
+    m = _NAME_RE.match(name)
+    if not m:
+        raise ValueError(f"stencil: cannot parse workload name {name!r}; "
+                         "expected <shape>[-256][@AxB[xC]][:T=n]")
+    base, small = m.group("base"), bool(m.group("small"))
+    named = base if base in NAMED else None
+    if named:
+        spec = NAMED[named]
+        kind, dims, radius = spec["kind"], spec["dims"], spec["radius"]
+    else:
+        kind, dims, radius = _parse_shape_name(base)
+
+    v_grid, v_T = VARIANT_DEFAULTS.get(variant, {}).get(dims, (None, None))
+    if grid_shape is None and m.group("grid"):
+        grid_shape = tuple(int(g) for g in m.group("grid").split("x"))
+    if grid_shape is None:
+        grid_shape = (_GRID_3D_SMALL if small and dims == 3 else
+                      v_grid or _default_grid_shape(dims, small=small))
+    if timesteps is None and m.group("T"):
+        timesteps = int(m.group("T"))
+    if timesteps is None:
+        timesteps = v_T or DEFAULT_TIMESTEPS
     return StencilWorkload(name=name, kind=kind, dims=dims, radius=radius,
-                            grid_shape=tuple(shape), timesteps=T)
+                            grid_shape=tuple(grid_shape), timesteps=timesteps,
+                            named=named)
+
+
+# Paper experiments whose shapes, sizes AND step counts are all stated
+# (spec.yaml variant 2 + extended_experiments). `--matrices sweep:<id>`
+# expands to the list. Sweeps whose paper leaves T unstated (ConvStencil
+# Figure 8, LoRAStencil Figure 9, FlashFFTStencil Figures 7-9) are left out on
+# purpose: run them with an explicit ":T=" instead of an invented value.
+def _sizes(shapes, grids, T):
+    return [f"{sh}@{'x'.join(map(str, g))}:T={T}" for sh in shapes for g in grids]
+
+
+SWEEPS = {
+    # AN5D (CGO'20) §6.1: 16 synthetic shapes + 5 named kernels, 16384^2 / 512^3, T=1000
+    "an5d-native": (
+        _sizes([f"{k}2d{r}r" for k in ("star", "box") for r in (1, 2, 3, 4)]
+               + ["j2d5pt", "j2d9pt", "j2d9pt-gol", "gradient2d"], [(16384, 16384)], 1000)
+        + _sizes([f"{k}3d{r}r" for k in ("star", "box") for r in (1, 2, 3, 4)]
+                 + ["j3d27pt"], [(512, 512, 512)], 1000)),
+    # ConvStencil (PPoPP'24) Table 4; its 3D T is unstated, so 3D is omitted
+    "convstencil-native": (
+        _sizes(["1d1r", "1d2r"], [(10_240_000,)], 100_000)
+        + _sizes(["star2d1r", "box2d1r", "star2d3r", "box2d3r"], [(10240, 10240)], 10_240)),
+    # LoRAStencil (SC'24) Table II
+    "lorastencil-native": (
+        _sizes(["1d1r", "1d2r"], [(10_240_000,)], 10_000)
+        + _sizes(["star2d1r", "box2d1r", "star2d3r", "box2d3r"], [(10240, 10240)], 10_240)
+        + _sizes(["star3d1r", "box3d1r"], [(1024, 1024, 1024)], 1_024)),
+    # FlashFFTStencil (PPoPP'25) Table 3
+    "flashfftstencil-native": (
+        _sizes(["1d1r", "1d2r", "1d3r"], [(536_870_912,)], 1000)
+        + _sizes(["star2d1r", "box2d1r"], [(16384, 16384)], 1000)
+        + _sizes(["star3d1r", "box3d1r"], [(768, 768, 768)], 1000)),
+    # SPIDER (PPoPP'26) Figure 10 (scripts/Figure10_run.sh)
+    "spider-native": (
+        _sizes(["1d1r", "1d2r"], [(10_240_000,)], 100_000)
+        + _sizes([f"{k}2d{r}r" for k in ("box", "star") for r in (1, 2, 3)],
+                 [(10240, 10240)], 10_240)),
+    # SPIDER Figure 11 (scripts/Figure11_run.sh)
+    "spider-1d-scaling": _sizes(["1d1r", "1d2r"],
+                                [(1024 * n,) for n in [1024] + [2048 * i for i in range(1, 21)]],
+                                10_000),
+    "spider-2d-scaling": _sizes(["box2d1r", "box2d2r", "box2d3r"],
+                                [(512 * i, 512 * i) for i in range(1, 21)], 10_240),
+    # SPIDER Figure 12 (scripts/Figure12_run.sh)
+    "spider-ablation": _sizes(["box2d2r"], [(n, n) for n in (1280, 2560, 5120, 10240)], 10_000),
+}
+
+
+def expand_workloads(names: list[str]) -> list[str]:
+    """Runner hook: replace every `sweep:<id>` with that sweep's workload names."""
+    out = []
+    for n in names:
+        if n.startswith("sweep:"):
+            key = n[len("sweep:"):]
+            if key not in SWEEPS:
+                raise ValueError(f"stencil: unknown sweep {key!r}; have {sorted(SWEEPS)}")
+            out.extend(SWEEPS[key])
+        else:
+            out.append(n)
+    return out
 
 
 # ----------------------------------------------------------------- cost rule
@@ -388,6 +569,228 @@ def _cost_stencil(w: StencilWorkload, params: dict) -> tuple[int, int]:
 
 
 workload.register_cost("stencil", _cost_stencil, unit="GCUP/s")
+
+
+# ------------------------------------------------------ paper-native metrics
+# Each integrated paper's OWN performance metric, recomputed from this
+# harness's timed region and attached to the result record as
+# metrics["paper_native"] -- ALONGSIDE the cross-paper GCUP/s, never in place
+# of it (spec.yaml metrics.reporting_rule). Definitions are taken from each
+# paper's evaluation section (fulltext) and cross-checked against the
+# artifact's own print statement at the commit pinned in source.provenance;
+# see spec.yaml metrics.per_paper_native for the citations.
+#
+# Anything a paper reports that this harness cannot measure (profiler
+# counters, models, baseline speedups) is listed under "not_collected" with
+# the reason, never dropped or zero-filled.
+
+# AN5D Table 3 "FLOP/Cell". The synthetic shapes are one multiply per support
+# point plus the adds between them: star2d 8x+1, star3d 12x+1, box
+# 2*(2x+1)^d - 1, i.e. 2*points - 1. The named kernels carry their own counts
+# (division / sqrt included), so they are looked up, not derived.
+_AN5D_NAMED_FLOP_PER_CELL = {
+    "j2d5pt": 10, "j2d9pt": 18, "j2d9pt-gol": 18, "gradient2d": 19, "j3d27pt": 54,
+}
+
+# SPIDER's plotting scripts (scripts/Figure10_draw.py, Figure11_draw.py,
+# `unify_gstencil_sptc`) turn the one radius-7 fp16 SpTC run into the
+# per-radius bars of Figures 10/11: divide by half2double_precision_ratio = 4
+# (fp16 -> fp64 normalization, paper §4.1 "we scale the results by a factor of
+# 4") and multiply by 7/r (one radius-7 sweep == 7/r fused radius-r steps).
+_SPIDER_HALF2DOUBLE = 4
+_SPIDER_PLOTTED_RADII = (1, 2, 3)
+
+
+def _an5d_flop_per_cell(w: StencilWorkload) -> int:
+    if w.named in _AN5D_NAMED_FLOP_PER_CELL:
+        return _AN5D_NAMED_FLOP_PER_CELL[w.named]
+    points = (2 * w.dims * w.radius + 1 if w.kind == "star"
+              else (2 * w.radius + 1) ** w.dims)
+    return 2 * points - 1
+
+
+def _metric(name, value, unit, cls, definition, source) -> dict:
+    return {"name": name, "value": value, "unit": unit, "class": cls,
+            "definition": definition, "source": source}
+
+
+def _not_collected(name, cls, reason) -> dict:
+    return {"name": name, "class": cls, "status": "not collected", "reason": reason}
+
+
+# timed-region note shared by the two adapters whose bridge adds a halo refresh
+_HALO_REFRESH_NOTE = (
+    "Since 2026-09-23 the whole T-step run stays on the GPU (the bridge "
+    "launches the artifact's kernel directly). The timed region adds, beyond "
+    "the paper's kernel launches, one device-to-device reset of the initial "
+    "field per call and an O(perimeter) periodic halo refresh per step -- the "
+    "refresh the artifact's own loop omits, needed for a correct periodic "
+    "T-step sweep. Results timed before that date included host re-padding "
+    "and H2D/D2H every step and are not comparable to the paper.")
+
+
+def _native_stencil(impl_name: str, w: StencilWorkload, params: dict,
+                    stats_ms: dict, statistic: str) -> dict | None:
+    T = int(params.get("timesteps", w.timesteps))
+    sec = stats_ms[statistic] / 1e3
+    if sec <= 0:
+        return None
+    updates = w.cells * T
+    gstencil = updates / sec / 1e9
+    exec_ms = stats_ms[statistic]
+    gst_def = ("T * prod(N_i) / (t * 1e9): grid points updated per second, "
+               "T = real time steps performed, t = execution time")
+    def exec_time(src):
+        return _metric("execution time", exec_ms, "ms", "timing",
+                       f"elapsed time of one call performing all T={T} steps", src)
+
+    if impl_name == "an5d-stencil":
+        fpc = _an5d_flop_per_cell(w)
+        src = "AN5D, CGO'20, §6.1 Table 3 + Figures 5-6 (fulltext, arXiv 2001.01473)"
+        out = {
+            "paper": "AN5D (CGO'20, conf/cgo/MatsumuraZWEM20)",
+            "primary": _metric(
+                "GFLOP/s", fpc * updates / sec / 1e9, "GFLOP/s", "timing",
+                f"FLOP/Cell (Table 3) x cell updates / kernel time; FLOP/Cell = {fpc} "
+                "for this shape", src),
+            "metrics": [
+                _metric("GCell/s", gstencil, "GCell/s", "timing",
+                        "cell updates / kernel time (right-hand axis of Figures 5-6)", src),
+                _metric("FLOP/Cell", fpc, "FLOP", "timing",
+                        "Table 3 per-point FLOP count used for GFLOP/s", src),
+            ],
+            "not_collected": [
+                _not_collected("percent of peak", "hw",
+                               "needs the device's FP64 peak; the harness does not "
+                               "carry a peak table"),
+                _not_collected("registers/thread, spills, shared memory bytes", "profiler",
+                               "needs ptxas -v / ncu"),
+                _not_collected("model-predicted GFLOP/s and model accuracy", "model",
+                               "AN5D's own performance model is not run"),
+            ],
+            "notes": ["Paper statistic is the MEAN of 5 runs after 1 warm-up; the "
+                      "paper-statistic value below uses the same timed reps."],
+        }
+        if statistic != "mean" and stats_ms.get("mean"):
+            out["metrics"].append(_metric(
+                "GFLOP/s (paper statistic: mean)",
+                fpc * updates / (stats_ms["mean"] / 1e3) / 1e9, "GFLOP/s", "timing",
+                "same formula, mean of the timed reps instead of the median", src))
+        return out
+
+    if impl_name == "convstencil-tcu":
+        src = "ConvStencil, PPoPP'24, §5.1 Eq. 16 (fulltext) + src/2d/gpu.cu"
+        return {
+            "paper": "ConvStencil (PPoPP'24, conf/ppopp/ChenLWBWMYZCY24)",
+            "primary": _metric("GStencils/s", gstencil, "GStencils/s", "timing",
+                               gst_def, src),
+            "metrics": [exec_time(src)],
+            "not_collected": [
+                _not_collected("uncoalesced global accesses (%)", "profiler", "needs ncu"),
+                _not_collected("shared-memory bank conflicts per request", "profiler",
+                               "needs ncu"),
+                _not_collected("speedup vs cuDNN / Brick / DRStencil / TCStencil", "timing",
+                               "those baselines are not integrated in this harness"),
+            ],
+            "notes": [
+                "The artifact prints input_m*input_n*times*3 for radius-1 shapes because "
+                "each launch there is a 3-step fused kernel (7x7 = 3-fold self-convolution "
+                "of the 3x3, main.cu param_box_2d1r); `times` counts launches. This adapter "
+                "runs ONE unfused step per launch, so T already counts real steps and no "
+                "multiplier applies -- same Eq. 16 quantity.",
+                _HALO_REFRESH_NOTE,
+            ],
+        }
+
+    if impl_name == "lorastencil-star2d3r":
+        src = "LoRAStencil, SC'24, §V-A Eq. 18 (fulltext) + src/2d/gpu.cu:478"
+        return {
+            "paper": "LoRAStencil (SC'24, conf/sc/ZhangLYCZCY24)",
+            "primary": _metric("GStencil/s", gstencil, "GStencil/s", "timing",
+                               gst_def, src),
+            "metrics": [exec_time(src)],
+            "not_collected": [
+                _not_collected("shared-memory load/store/total requests", "profiler",
+                               "needs ncu"),
+                _not_collected("Compute (SM) throughput (%)", "profiler", "needs ncu"),
+                _not_collected("arithmetic intensity (FLOP/byte)", "profiler", "needs ncu"),
+                _not_collected("speedup vs cuDNN / AMOS / Brick / DRStencil / TCStencil / "
+                               "ConvStencil", "timing",
+                               "those baselines are not integrated in this harness"),
+            ],
+            "notes": [
+                "gpu_star_2d3r (the wrapped kernel) prints T*m*n/t with no fusion "
+                "multiplier; the x3 in other LoRAStencil kernels is the same 3-step fusion "
+                "ConvStencil uses for small kernels.",
+                _HALO_REFRESH_NOTE,
+            ],
+        }
+
+    if impl_name == "flashfftstencil-box2d1r":
+        src = "FlashFFTStencil, PPoPP'25, §5.1 Metrics + Figure 6 (fulltext) + src/2D/2d_main.cu:185"
+        return {
+            "paper": "FlashFFTStencil (PPoPP'25, conf/ppopp/HanLCBZYCZCY25)",
+            "primary": _metric("GStencil/s", gstencil, "GStencil/s", "timing",
+                               gst_def, src),
+            "metrics": [exec_time(src)],
+            "not_collected": [
+                _not_collected("speedup over state of the art", "timing",
+                               "the compared systems are not all integrated; compute "
+                               "from paired runs on the same GPU"),
+                _not_collected("memory footprint (GB) / OOM boundary", "hw",
+                               "device memory high-water mark is not sampled"),
+                _not_collected("uncoalesced global accesses (%), shared-store bank "
+                               "conflicts per request, TCU pipeline utilization (%)",
+                               "profiler", "needs ncu"),
+                _not_collected("arithmetic intensity, zero fraction in TC fragments",
+                               "profiler", "needs ncu"),
+            ],
+            "notes": [
+                "Paper uses execution time and GStencil/s together as its key metrics; its "
+                f"Table 3 runs 1000 steps, while this adapter performs T={T} step(s) per "
+                "call (the artifact's 2D T-loop re-applies the same sweep, not a "
+                "recursion), so execution time here is not the paper's 1000-step time.",
+            ],
+        }
+
+    if impl_name == "spider-box2d7r-sptc":
+        src = "SPIDER, PPoPP'26, §4.1 Metrics (fulltext, arXiv 2506.22035) + src/*/gpu_*_7r_half.cu"
+        plot_src = "SPIDER scripts/Figure10_draw.py, Figure11_draw.py (unify_gstencil_sptc)"
+        derived = [
+            _metric(f"GStencils/s, Box-2D{r}R-equivalent, fp64-normalized",
+                    gstencil / _SPIDER_HALF2DOUBLE * (w.radius / r),
+                    "GStencils/s", "derived",
+                    f"measured radius-{w.radius} GStencils/s / {_SPIDER_HALF2DOUBLE} "
+                    f"(fp16->fp64) x {w.radius}/{r} (one radius-{w.radius} sweep == "
+                    f"{w.radius}/{r} radius-{r} steps); what the paper PLOTS, not a "
+                    f"separate radius-{r} run", plot_src)
+            for r in _SPIDER_PLOTTED_RADII
+        ]
+        return {
+            "paper": "SPIDER (PPoPP'26, conf/ppopp/GuW0Y26)",
+            "primary": _metric(f"GStencils/s (radius-{w.radius} SpTC sweep, fp16)",
+                               gstencil, "GStencils/s", "timing",
+                               "points updated per second, as the artifact prints it: "
+                               "m*n*times / t / 1e9", src),
+            "metrics": [exec_time(src), *derived],
+            "not_collected": [
+                _not_collected("row-swap bandwidth (GB/s), row-swap instruction count and "
+                               "duration", "profiler", "needs ncu"),
+                _not_collected("modeled operations / input + parameter accesses per "
+                               "update (Table 1)", "model", "analytical model, not measured"),
+                _not_collected("speedup vs cuDNN / TCStencil / ConvStencil / LoRAStencil / "
+                               "FlashFFTStencil", "timing",
+                               "compute from paired runs on the same GPU"),
+            ],
+            "notes": ["Derived rows reproduce the paper's own normalization so the number "
+                      "can be read against Figures 10/11; they are not independent "
+                      "measurements and must not be ranked against measured radius-r runs."],
+        }
+
+    return None
+
+
+workload.register_native_metrics("stencil", _native_stencil)
 
 
 # ----------------------------------------------------------------- sweep core
@@ -498,6 +901,70 @@ def _sweep_zero_halo(u: np.ndarray, offsets: list[tuple[int, ...]],
     return out
 
 
+def _named_windows(u: np.ndarray, radius: int, boundary: str):
+    """Pad `u` by `radius` per the boundary convention; return (padded, slicer)."""
+    padded = np.pad(u, radius, mode="wrap" if boundary == "periodic" else "constant")
+
+    def at(o):
+        return padded[tuple(slice(radius + c, radius + c + n) for c, n in zip(o, u.shape))]
+    return padded, at
+
+
+def _restore_band(out: np.ndarray, u: np.ndarray, radius: int) -> np.ndarray:
+    """"fixed" convention: the width-radius band keeps its values from `u`."""
+    keep = np.copy(u)
+    inner = tuple(slice(radius, n - radius) for n in u.shape)
+    if all(n > 2 * radius for n in u.shape):
+        keep[inner] = out[inner]
+    return keep
+
+
+def _sweep_named_linear(u, coeffs, divisor, radius, boundary):
+    """AN5D linear named kernel, verbatim: (sum_o c_o * u[p+o]) / divisor."""
+    _, at = _named_windows(u, radius, boundary)
+    acc = np.zeros_like(u)
+    for o, c in coeffs.items():
+        acc += c * at(o)
+    out = acc / divisor
+    return _restore_band(out, u, radius) if boundary == "fixed" else out
+
+
+def _gradient2d_term(u, eps, boundary):
+    """AN5D gradient2d's added term 1/sqrt(eps + sum_nb (u - u_nb)^2)."""
+    _, at = _named_windows(u, 1, boundary)
+    sq = np.full_like(u, eps)
+    for o in ((-1, 0), (1, 0), (0, 1), (0, -1)):
+        d = u - at(o)
+        sq += d * d
+    return 1.0 / np.sqrt(sq)
+
+
+def _reference_named(w: StencilWorkload, timesteps: int, boundary: str):
+    """
+    Reference for AN5D's named kernels, following each kernel's source
+    arithmetic (sum, then divide; or gradient2d's sqrt). `scale` carries the
+    same recursion with |c| (linear) or accumulates the always-positive added
+    term (gradient2d: |u_next| <= |u| + term), so it bounds the result the
+    way the synthetic path's |weights| recursion does.
+    """
+    spec = NAMED[w.named]
+    u = w.initial_field(dtype=np.float64)
+    s = np.abs(u)
+    if "coeffs" in spec:
+        absc = {o: abs(c) for o, c in spec["coeffs"].items()}
+        for _ in range(timesteps):
+            u = _sweep_named_linear(u, spec["coeffs"], spec["divisor"], w.radius, boundary)
+            s = _sweep_named_linear(s, absc, spec["divisor"], w.radius, boundary)
+    else:
+        for _ in range(timesteps):
+            term = _gradient2d_term(u, spec["eps"], boundary)
+            u_next, s_next = u + term, s + term
+            if boundary == "fixed":
+                u_next, s_next = _restore_band(u_next, u, 1), _restore_band(s_next, s, 1)
+            u, s = u_next, s_next
+    return u, s
+
+
 # ----------------------------------------------------------------- reference
 def reference_stencil(workload_: StencilWorkload, params: dict):
     """
@@ -526,6 +993,15 @@ def reference_stencil(workload_: StencilWorkload, params: dict):
     timesteps = int(params.get("timesteps", workload_.timesteps))
     boundary = params.get("boundary", workload_.boundary)
     offsets, dims, radius = workload_.offsets, workload_.dims, workload_.radius
+    if boundary not in ("periodic", "fixed", "zero-halo"):
+        raise ValueError(
+            f"stencil: unknown boundary convention {boundary!r} for "
+            f"{workload_.name!r} (expected 'periodic', 'fixed', or "
+            "'zero-halo', spec.yaml inputs.boundary)")
+    if workload_.named:
+        u, s = _reference_named(workload_, timesteps, boundary)
+        _warn_if_gate_weak(workload_, timesteps, boundary, u, s)
+        return u, s
     u = workload_.initial_field(dtype=np.float64)
     s = np.abs(u)
     absw = {o: abs(w) for o, w in workload_.weights.items()}
@@ -546,12 +1022,28 @@ def reference_stencil(workload_: StencilWorkload, params: dict):
             f"stencil: unknown boundary convention {boundary!r} for "
             f"{workload_.name!r} (expected 'periodic', 'fixed', or "
             "'zero-halo', spec.yaml inputs.boundary)")
+    _warn_if_gate_weak(workload_, timesteps, boundary, u, s)
+    return u, s
+
+
+def _warn_if_gate_weak(workload_, timesteps, boundary, u, s):
+    # Underflow guard: a kernel whose coefficients sum below 1 (AN5D's named
+    # kernels do) decays the field geometrically; once it underflows, the
+    # reference is all zeros and an all-zeros output passes the gate.
+    peak = float(np.max(s)) if s.size else 0.0
+    if peak < 1e-250:
+        warnings.warn(
+            f"stencil gate for {workload_.name!r} (T={timesteps}): the reference "
+            f"field has decayed to ~0 (max scale {peak:.1e}); an all-zeros output "
+            "would pass. The gate is VACUOUS at this T -- gate at a smaller T "
+            "(e.g. ':T=50') to check correctness.", stacklevel=3)
+        return
     # Flat-field guard: with smoothing (all-positive) weights a small grid at
     # large T mixes toward a constant, and then a misplaced-data bug (one-cell
     # shift, wrong offset) no longer changes the answer. Measured on this
     # domain's weights: shift bugs were caught whenever ptp(u)/max(scale) >=
     # ~3e-4 and missed below ~5e-7, so warn well above that.
-    spread = float(np.ptp(u)) / max(float(np.max(s)), 1e-300)
+    spread = float(np.ptp(u)) / max(peak, 1e-300)
     if spread < 1e-3:
         warnings.warn(
             f"stencil gate for {workload_.name!r} (grid {workload_.grid_shape}, "
@@ -559,11 +1051,49 @@ def reference_stencil(workload_: StencilWorkload, params: dict):
             f"nearly flat (ptp/scale={spread:.1e}). The gate still catches "
             "zero/wrong-scale outputs but CANNOT catch misplaced-data bugs "
             "(shifted or wrong-offset neighbors). Gate on a larger grid or a "
-            "smaller T.", stacklevel=2)
-    return u, s
+            "smaller T.", stacklevel=3)
 
 
 REFERENCES = {"stencil": reference_stencil}
+
+
+# Correctness-gate budget, in point-updates (cells x support points x steps)
+# per reference recursion. The fp64 numpy reference runs ~1e8-2e8 point-
+# updates/s, and it runs twice (result + scale), so 3e10 keeps the gate at
+# roughly 5-10 minutes -- while a full paper-sized run (10240^2 x T=10240, or
+# 16384^2 x T=1000 for a radius-3 box) would take hours to days on the CPU.
+# Override with KB_STENCIL_GATE_POINT_OPS.
+GATE_POINT_OPS = float(os.environ.get("KB_STENCIL_GATE_POINT_OPS", 3e10))
+
+
+def gate_workload(kernel: str, w: StencilWorkload) -> StencilWorkload | None:
+    """
+    Runner hook: the workload the correctness gate runs on instead of `w`,
+    or None to gate on `w` itself.
+
+    Same grid, same shape, same coefficients, same boundary -- only fewer
+    time steps, as many as the budget allows. Keeping the full grid means
+    the gate still exercises the implementation's full-size indexing, tiling
+    and alignment; only the step count shrinks. The count keeps T's parity
+    (an adapter's final-buffer selection depends on it) and is at least 2 when
+    T allows, so ping-pong across steps is exercised. At the paper sizes it
+    stays >= one AN5D temporal block for every bridged shape (AN5D's
+    compiled blocking is 10/8/4/2/4/3 steps for star2d1r/box2d1r/star2d3r/
+    box2d3r/star3d1r/box3d1r).
+    """
+    T = w.timesteps
+    per_step = w.cells * max(w.support_size, 1)
+    t = int(GATE_POINT_OPS // per_step)
+    if t >= T:
+        return None
+    t = max(t, min(T, 2))
+    if (T - t) % 2:
+        t = t - 1 if t > 2 else t + 1
+    return dataclasses.replace(w, timesteps=t)
+# Common yardstick for the report's speedup column, in order of preference:
+# the library GPU sweep runs every shape any paper adapter can, so each paper
+# gets a speedup on its own shape even where no other paper overlaps it.
+BASELINE_IMPLS = {"stencil": ["torch-conv-stencil", "numpy-stencil"]}
 CORRECTNESS_MODE = {"stencil": "max_scaled_err"}
 DEFAULT_PRECISION = {"stencil": "fp64"}
 
@@ -641,6 +1171,34 @@ def _numpy_impl_sweep_zero_halo(u: np.ndarray, dense_kernel: np.ndarray, radius:
     return out
 
 
+def _numpy_impl_named_step(u: np.ndarray, h: dict) -> np.ndarray:
+    """
+    NumpyStencil's OWN sweep for AN5D's named kernels -- independent of
+    `_reference_named` (which slices a padded array per offset): this one
+    gathers every neighborhood in one `sliding_window_view` over the padded
+    array and contracts it with np.tensordot (linear kernels, then divides),
+    or indexes the window's axis-neighbor positions (gradient2d).
+    """
+    r, boundary = h["radius"], h["boundary"]
+    padded = np.pad(u, r, mode="wrap" if boundary == "periodic" else "constant")
+    win = sliding_window_view(padded, (2 * r + 1,) * u.ndim)
+    if h["raw_kernel"] is not None:
+        axes = tuple(range(u.ndim, 2 * u.ndim))
+        out = np.tensordot(win, h["raw_kernel"], axes=(axes, tuple(range(u.ndim))))
+        out = out / h["divisor"]
+    else:  # gradient2d: window centre is (1,1); axis neighbors at (0,1),(2,1),(1,0),(1,2)
+        c = win[..., 1, 1]
+        sq = h["eps"] + sum((c - win[..., a, b]) ** 2
+                            for a, b in ((0, 1), (2, 1), (1, 2), (1, 0)))
+        out = c + 1.0 / np.sqrt(sq)
+    if boundary == "fixed":
+        res = u.copy()
+        inner = tuple(slice(r, n - r) for n in u.shape)
+        res[inner] = out[inner]
+        return res
+    return out
+
+
 # --------------------------------------------------------------------- impls
 class NumpyStencil:
     """
@@ -681,6 +1239,19 @@ class NumpyStencil:
                 f"stencil: unknown boundary convention {boundary!r} for "
                 f"{workload_.name!r} (expected 'periodic', 'fixed', or "
                 "'zero-halo', spec.yaml inputs.boundary)")
+        if workload_.named:
+            spec = NAMED[workload_.named]
+            raw = None
+            if "coeffs" in spec:
+                raw = np.zeros((2 * workload_.radius + 1,) * workload_.dims, dtype=self.dtype)
+                for o, c in spec["coeffs"].items():
+                    raw[tuple(workload_.radius + x for x in o)] = c
+            return {
+                "u0": u0, "bufs": bufs, "named": True, "boundary": boundary,
+                "radius": workload_.radius, "raw_kernel": raw,
+                "divisor": spec.get("divisor"), "eps": spec.get("eps"),
+                "timesteps": int(params.get("timesteps", workload_.timesteps)),
+            }
         # both "fixed" and "zero-halo" impl sweeps contract a sliding-window
         # view against this same dense kernel array -- only what they window
         # (unpadded array vs. zero-padded array) differs.
@@ -696,6 +1267,12 @@ class NumpyStencil:
     def run(self, h):
         bufs = h["bufs"]
         np.copyto(bufs[0], h["u0"])
+        if h.get("named"):
+            cur = 0
+            for _ in range(h["timesteps"]):
+                np.copyto(bufs[1 - cur], _numpy_impl_named_step(bufs[cur], h))
+                cur = 1 - cur
+            return bufs[cur]
         offsets, weights, dims = h["offsets"], h["weights"], h["dims"]
         cur, nxt = 0, 1
         if h["boundary"] == "periodic":

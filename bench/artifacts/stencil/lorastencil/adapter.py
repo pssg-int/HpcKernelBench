@@ -67,19 +67,13 @@ LoRAStencil's own `#define HALO 4` applies uniformly).
 TIMESTEPS: `gpu_star_2d3r`'s own internal `times`-argument loop ping-pongs
 device buffers WITHOUT refreshing the periodic-wrap halo between sweeps
 (same class of finding as convstencil's `gpu_box_2d1r` and
-flashfftstencil's `rfft_2d_8_nwarp`). `bridge.cu` always calls with
-times=1; this adapter's `run()` performs its OWN T-sweep loop, re-padding
-the periodic-wrap halo from the CURRENT field before each single-sweep
-call -- identical discipline to convstencil's adapter.
-
-DEVICE-MEMORY LEAK (real artifact bug, not introduced by this
-integration): `gpu_star_2d3r`/`gpu_box_2d3r`/`gpu_star_2d1r` never
-`cudaFree()` their internal `array_d[0]`/`array_d[1]` device buffers --
-confirmed by grep (zero `cudaFree` calls anywhere in gpu.cu). Each `run()`
-timestep therefore leaks two small device buffers; acceptable for this
-integration's bounded, small-grid login-node gate (a handful of calls) but
-would need patching (out of scope: this is the artifact's own driver code,
-not a build-system fix) before any large-scale/long-running use.
+flashfftstencil's `rfft_2d_8_nwarp`). Since 2026-09-23 `bridge.cu`
+launches the artifact's own `kernel2d_star2d3r` directly and refreshes the
+periodic halo on the device after each step, so prepare() uploads once,
+run() is T x (kernel + halo refresh) with no host transfer, and to_host()
+copies the interior back. (Before, run() re-padded on the host and called
+gpu_star_2d3r(times=1) per step, paying H2D/D2H every step and leaking the
+two device buffers gpu_star_2d3r never frees; neither happens now.)
 
 SHAPE ALIGNMENT CONSTRAINT (inherited from the artifact, not introduced):
 the kernel grid is `ceil(m/32) x ceil(n/64)` blocks with no tail/boundary
@@ -104,7 +98,6 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _SO_PATH = os.path.join(_HERE, "bridge.so")
 
 _KERNEL_RADIUS = 3
-_HALO = 4
 _ROW_MULT = 32
 _COL_MULT = 64
 
@@ -121,8 +114,15 @@ def available() -> tuple[bool, str]:
 def _load_lib():
     lib = ctypes.CDLL(_SO_PATH)
     dp = ctypes.POINTER(ctypes.c_double)
-    lib.lorastencil2d_star2d3r_sweep.argtypes = [dp, dp, dp, ctypes.c_int, ctypes.c_int]
-    lib.lorastencil2d_star2d3r_sweep.restype = None
+    vp = ctypes.c_void_p
+    lib.lorastencil2d_star2d3r_prepare.argtypes = [dp, dp, ctypes.c_int, ctypes.c_int]
+    lib.lorastencil2d_star2d3r_prepare.restype = vp
+    lib.lorastencil2d_star2d3r_run.argtypes = [vp, ctypes.c_int]
+    lib.lorastencil2d_star2d3r_run.restype = None
+    lib.lorastencil2d_star2d3r_copy_out.argtypes = [vp, dp]
+    lib.lorastencil2d_star2d3r_copy_out.restype = None
+    lib.lorastencil2d_star2d3r_free.argtypes = [vp]
+    lib.lorastencil2d_star2d3r_free.restype = None
     return lib
 
 
@@ -170,38 +170,35 @@ class LoRAStencilStar2D3R:
 
         u0 = workload_.initial_field(dtype=np.float64)
         params49 = _build_params(workload_.weights)
-        timesteps = int(params.get("timesteps", workload_.timesteps))
-        return {
-            "field": np.ascontiguousarray(u0),
-            "params49": params49,
-            "m": m, "n": n,
-            "timesteps": timesteps,
-        }
+        field = np.ascontiguousarray(u0, dtype=np.float64)
+        dp = ctypes.POINTER(ctypes.c_double)
+        # uploads once; the whole T-step run then stays on the device
+        # (bridge.cu "TIMESTEPS / GPU RESIDENCY")
+        handle = self.lib.lorastencil2d_star2d3r_prepare(
+            field.ctypes.data_as(dp), params49.ctypes.data_as(dp), m, n)
+        if not handle:
+            raise RuntimeError("lorastencil2d_star2d3r_prepare returned a null handle")
+        return {"handle": handle, "m": m, "n": n,
+                "timesteps": int(params.get("timesteps", workload_.timesteps))}
 
     def run(self, h):
-        field = h["field"]
-        m, n = h["m"], h["n"]
-        params49 = h["params49"]
-        dp = ctypes.POINTER(ctypes.c_double)
-        for _ in range(h["timesteps"]):
-            padded = np.pad(field, ((_HALO, _HALO), (_HALO, _HALO)), mode="wrap")
-            padded = np.ascontiguousarray(padded, dtype=np.float64)
-            out = np.zeros((m, n), dtype=np.float64)
-            self.lib.lorastencil2d_star2d3r_sweep(
-                padded.ctypes.data_as(dp), out.ctypes.data_as(dp),
-                params49.ctypes.data_as(dp), m, n)
-            field = out
-        h["field"] = field
-        return field
+        # all T steps on the device; the CUDA event timer syncs on its stop event
+        self.lib.lorastencil2d_star2d3r_run(h["handle"], h["timesteps"])
+        return h
 
     def to_host(self, out):
-        return np.asarray(out, dtype=np.float64)
+        result = np.empty((out["m"], out["n"]), dtype=np.float64)
+        self.lib.lorastencil2d_star2d3r_copy_out(
+            out["handle"], result.ctypes.data_as(ctypes.POINTER(ctypes.c_double)))
+        return result
 
     def timer(self):
         from kernelbench.impls.gpu_cuda import CudaEventTimer
         return CudaEventTimer()
 
     def free(self, h):
+        if h.get("handle"):
+            self.lib.lorastencil2d_star2d3r_free(h["handle"])
         h.clear()
 
 

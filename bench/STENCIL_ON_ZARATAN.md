@@ -37,6 +37,21 @@ READ FIRST: CLAUDE.md; bench/CLAUDE.md; bench/ARTIFACT_GUIDE.md (rules 1-10
 are binding); benchspecs/stencil/spec.yaml; benchspecs/stencil/survey.md;
 bench/artifacts/stencil/README.md and each adapter's own STATUS.md.
 
+GPU CHOICE: A100 FOR EVERYTHING (decided 2026-09-24). Every stencil
+adapter is built for sm_80 (-arch=sm_80 in all 5 build.sh); ConvStencil and
+LoRAStencil were designed and evaluated on A100, FlashFFTStencil and SPIDER
+were evaluated on A100 and H100, and AN5D needs no special hardware. None
+needs H100. Earlier H100 runs were A100 code JIT-compiled from PTX, and on
+H100 the torch-conv-stencil baseline was ~20-40x slower than on A100 (being
+diagnosed separately, bench/DIAG_H100_TORCH_CONV.md), which inflated every
+H100 speedup. So:
+  - builds and --smoke gates: the default MIG slice (no -g flag; a100_1g.5gb,
+    sm_80, allocates in seconds);
+  - every REAL timed run: a full card, `-g a100`, so all adapters and the
+    baseline are measured on the same GPU model.
+Do not use -g h100 in this pass. Earlier H100 result JSONs may exist under
+bench/results/; they are not the headline -- report the A100 numbers.
+
 IMPORTANT CONTEXT (do not rediscover these the slow way):
 - Coverage is narrow and per-adapter (as of 2026-09-23):
     an5d-stencil            6 shapes: star2d1r, box2d1r, star2d3r, box2d3r,
@@ -140,7 +155,10 @@ STOP and report that first -- do not proceed to GPU builds on a broken base.
 
 STEP 2: BUILD the 5 adapters
 For each of an5d, convstencil, lorastencil, flashfftstencil, spider:
-  bench/gpu_run.sh -g h100 -t 30 -- 'bash artifacts/stencil/<name>/build.sh'
+  bench/gpu_run.sh -t 30 -- 'bash artifacts/stencil/<name>/build.sh'
+(Default MIG slice is an A100, sm_80 -- the same arch the timed runs use.
+convstencil/lorastencil STATUS.md show older `-g h100` build commands; those
+are history, rebuild here on A100.)
 Record exit code and the last few lines of output per adapter. A build
 failure is a result (record BUILD-FAILED with the first real error line in
 that adapter's STATUS.md, per the Reproduction-section format used
@@ -151,7 +169,7 @@ STEP 3: FUNCTIONAL GATE, then a REAL (non-smoke) run, per adapter
   (cd bench && $PY -m kernelbench.runner --kernel stencil --list)
     (CPU-only listing; confirm all 5 show as built, not "not built: ... missing")
   a. Smoke gate each adapter first, to catch a broken build cheaply:
-     bench/gpu_run.sh -g h100 -- \
+     bench/gpu_run.sh -- \
        '$PY -m kernelbench.runner --kernel stencil --variant <variant> \
             --impl <IMPL_NAME> --smoke'
      Expect "unsupported" for the smoke shapes an adapter cannot run.
@@ -172,10 +190,16 @@ STEP 3: FUNCTIONAL GATE, then a REAL (non-smoke) run, per adapter
 
      (fp64 = stencil-cpu-gpu-kernel-fp64, fp16 = stencil-tcu-matmul-kernel-fp16)
 
-     bench/gpu_run.sh -g h100 -t 60 -- \
+     bench/gpu_run.sh -g a100 -t 60 -- \
        '$PY -m kernelbench.runner --kernel stencil --variant <variant> \
             --impl <IMPL_NAME>,torch-conv-stencil --matrices <workload>'
 
+     A full A100 can queue for hours: submit each job and wait, do not
+     fall back to h100 or to the MIG slice for timed runs (a 1g.5gb slice
+     has ~5 GB and 1/7 of the SMs, and cannot hold 16384^2 fp64 buffers plus
+     the baseline anyway). The earlier A100 baseline was healthy (star2d1r
+     @10240^2:T=10240: 37.28 GCUP/s); if torch-conv-stencil now lands far
+     below that on A100, stop and report it.
      Adding torch-conv-stencil (the library baseline) fills the report's
      speedup column; drop it for spider (fp16, and it must run alone).
      flashfftstencil also rewrites the shared workload (it forces T=1),
@@ -192,7 +216,7 @@ STEP 3: FUNCTIONAL GATE, then a REAL (non-smoke) run, per adapter
 STEP 4: RECORD
 Append to each artifact's STATUS.md a section
   ## Reproduction on zaratan, post-2026-09-23 changes (<YYYY-MM-DD>)
-with: GPU used; build outcome; smoke-gate outcome; real-run outcome
+with: GPU used (must be A100 for timed runs); build outcome; smoke-gate outcome; real-run outcome
 (GCUP/s, the paper's own metric from the report, correctness error vs
 tolerance and the gated step count, conforming true/false); anything that
 deviates from the last recorded ruling and your evidence for why. For
@@ -204,6 +228,8 @@ and keep the old one after "Earlier outcome, kept for the record:".
 STEP 5: REPORT
 - (cd bench && $PY -m kernelbench.report results/stencil_*.json \
       --html results/stencil_report.html)
+- The report ranks per GPU; quote the A100 group. If older H100 JSONs are
+  in results/, say they exist but do not mix them into the summary.
 - Write a short summary (5 papers, one row each): workload run, GCUP/s, the
   paper's own metric, speedup vs torch-conv-stencil where shown, correctness
   error and gated step count, conforming true/false, and for anything that

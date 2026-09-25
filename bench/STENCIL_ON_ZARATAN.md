@@ -217,7 +217,8 @@ the paper's own claim by more than 2x (ConvStencil and SPIDER both report
 "x over cuDNN"; see spec.yaml metrics.per_paper_native), without
 speculating beyond the evidence. Keep the SPIDER derived comparison
 labeled as the paper's normalization, not a measurement.
-Commit in small commits, one per artifact directory touched, never
-checkouts/build products/results JSON over 1 MB. Commit messages: what
-changed and why, one paragraph.
+Do NOT commit or push anything (no git add, git commit or git push). Leave
+every change (STATUS.md notes, any bridge fix) uncommitted in the working
+tree. The deliverable is the HTML report above plus your summary; end by
+giving the report's path and listing every file you changed.
 ```

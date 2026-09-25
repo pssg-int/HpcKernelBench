@@ -39,6 +39,26 @@ Plus, at import time, one `workload.register_cost(kernel, rule, unit)` per kerne
 - `expand_workloads(names) -> names`: rewrites the `--matrices` list before
   loading, e.g. stencil expands `sweep:spider-2d-scaling` into the 60
   workloads of SPIDER's Figure 11.
+- `FRESH_WORKLOAD_PER_IMPL = {kernel: True}`: every implementation gets its
+  own `copy.deepcopy` of each workload. Needed when adapters rewrite the
+  workload in `prepare()` (stencil: SPIDER's shape, FlashFFTStencil's T,
+  AN5D's coefficients), which otherwise leaks into every implementation
+  listed after them in the same `--impl`. Only for small descriptor
+  workloads, never for ones that hold a large matrix.
+
+## Report tables (optional)
+
+- `BASELINE_IMPLS = {kernel: [impl, ...]}`: the leaderboard's "speedup vs
+  baseline" column uses the first of these that ran in a group.
+- `PAPER_BASELINES = {kernel: {impl: {"paper", "baselines": [(name, impl or
+  None, reason), ...]}}}`: the report compares each paper against the
+  baselines its own evaluation used, on the same device, precision and
+  workload, and lists the ones not integrated with the reason (stencil is
+  the example, including a `derived_vs` cross-precision comparison).
+
+The runner's `--keep-going` records a crash (e.g. CUDA out of memory) under
+the result's `errors` and continues with the next implementation instead of
+aborting the whole invocation; the report prints them.
 
 ## variant_transform (optional hook)
 

@@ -13,6 +13,7 @@ Results are written as one JSON document per invocation under bench/results/.
 from __future__ import annotations
 
 import argparse
+import copy
 import inspect
 import json
 import os
@@ -31,6 +32,17 @@ SMOKE_MATRICES = [
     ("smoke-banded", dict(rows=4000, cols=4000, nnz_per_row=24, pattern="banded")),
     ("smoke-powerlaw", dict(rows=4000, cols=4000, nnz_per_row=12, pattern="powerlaw")),
 ]
+
+
+def _release_device_memory() -> None:
+    """After a crashed run (--keep-going), return cached device memory so the
+    next implementation does not inherit a full allocator."""
+    torch = sys.modules.get("torch")
+    if torch is not None:
+        try:
+            torch.cuda.empty_cache()
+        except Exception:  # noqa: BLE001
+            pass
 
 
 def describe_variant(sp: spec.Spec, vid: str) -> None:
@@ -72,6 +84,10 @@ def main() -> int:
     ap.add_argument("--warmup", type=int, help="override protocol warmup")
     ap.add_argument("--reps", type=int, help="override protocol reps")
     ap.add_argument("--out", help="result json path")
+    ap.add_argument("--keep-going", action="store_true",
+                    help="record an implementation's crash on a workload (e.g. CUDA "
+                         "out of memory) under the result's `errors` and continue, "
+                         "instead of aborting the whole invocation")
     args = ap.parse_args()
 
     # Pin CUDA_HOME/PATH to the toolkit matching torch's CUDA major BEFORE any
@@ -216,8 +232,18 @@ def main() -> int:
     warmup = args.warmup if args.warmup is not None else (5 if args.smoke else None)
     reps = args.reps if args.reps is not None else (20 if args.smoke else None)
 
+    # Optional domain opt-in: give every implementation its own deep copy of
+    # each workload. Some stencil adapters rewrite the workload they are
+    # handed in prepare() (SPIDER swaps in its radius-7 box, FlashFFTStencil
+    # forces T=1, AN5D its own coefficients); with one shared object that
+    # rewrite leaked into every implementation listed after it. Only for
+    # domains whose workloads are small descriptors -- a deep copy of a
+    # SuiteSparse matrix per implementation would not be.
+    fresh_copies = getattr(domain, "FRESH_WORKLOAD_PER_IMPL", {}).get(args.kernel, False)
+
     records = []
     unsupported = []   # (impl, workload) pairs an impl declined, with its reason
+    errors = []        # --keep-going: (impl, workload) pairs that crashed
     for impl_name in impl_names:
         try:
             impl = all_impls[impl_name](precision)
@@ -230,8 +256,9 @@ def main() -> int:
             unsupported.append({"impl": impl_name, "workload": "*", "precision": precision,
                                 "reason": str(e)})
             continue
-        for m in mats:
+        for m_shared in mats:
             for d in dims:
+                m = copy.deepcopy(m_shared) if fresh_copies else m_shared
                 params = {"seed": 42, "precision": precision}
                 dim_key = getattr(domain, "DIM_KEY", {}).get(args.kernel)
                 if dim_key:
@@ -271,6 +298,18 @@ def main() -> int:
                                         **({dim_key: d} if dim_key else {}),
                                         "reason": str(e)})
                     continue
+                except Exception as e:  # noqa: BLE001
+                    if not args.keep_going:
+                        raise
+                    import traceback
+                    traceback.print_exc()
+                    reason = f"{type(e).__name__}: {e}".strip().splitlines()[0]
+                    print(f" ERROR (--keep-going): {reason[:160]}")
+                    errors.append({"impl": impl_name, "workload": m.name,
+                                   **({dim_key: d} if dim_key else {}),
+                                   "error": f"{type(e).__name__}: {e}"})
+                    _release_device_memory()
+                    continue
                 dt = time.perf_counter() - t0
                 if r.valid:
                     unit = r.metrics.get("throughput_unit", "GFLOP/s")
@@ -309,6 +348,8 @@ def main() -> int:
         # workloads an impl declined (NotImplementedError from prepare()); not
         # failures, not successes -- coverage facts, kept out of `runs`
         "unsupported": unsupported,
+        # --keep-going only: crashes (e.g. device out of memory), with the error
+        "errors": errors,
     }
     os.makedirs(RESULTS, exist_ok=True)
     out = args.out or os.path.join(
@@ -317,6 +358,8 @@ def main() -> int:
         json.dump(doc, f, indent=1)
     n_valid = sum(1 for r in records if r["valid"])
     extra = f" ({len(unsupported)} unsupported)" if unsupported else ""
+    if errors:
+        extra += f" ({len(errors)} crashed, see `errors`)"
     print(f"\n{n_valid}/{len(records)} runs valid{extra} -> {out}")
     print(f"conforming: {doc['conforming']}"
           + ("" if doc["conforming"] else f"  ({'; '.join(doc['nonconformance_reasons'])})"))

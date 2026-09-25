@@ -1,0 +1,12 @@
+# No clone: bridge.cu is OUR code, a port of the cuDNN baseline programs the
+# Tensor-Core stencil papers run. Ported from (read-only, not vendored):
+remote=https://github.com/microsoft/ConvStencil.git
+commit=89688a1b51ec41b4a81028b0661363ba3afd6050      # same commit as ../convstencil/source
+files=src/cudnn/conv_1d3p.cu src/cudnn/conv_1d5p.cu src/cudnn/conv_box2d9p.cu src/cudnn/conv_box2d49p.cu src/cudnn/conv_box3d27p.cu
+# SPIDER runs the same programs (plus conv_box2d25p.cu) from its submodule
+# https://github.com/KevinWu2017/ConvStencil @ 31ef23ef9e278cac6c276e9f7e75daaefae29e03
+# (SPIDER scripts/Figure10_run.sh, Figure11_run.sh).
+# algo_mode 1 (../cudnn_fastest) follows FlashFFTStencil's
+# https://github.com/KevinWu2017/FlashFFTStencil @ 4579ea11ccb490aaa5d6d6246e1345c0e9b48c1f
+# benchmarks/cudnn/cudnn-test.cpp (time every forward algorithm, keep the fastest).
+patch=none

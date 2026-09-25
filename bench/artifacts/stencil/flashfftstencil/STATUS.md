@@ -252,3 +252,14 @@ above)`
 - Deviation from the recorded ruling: none — identical correctness number.
 - Verdict here: BUILT+GATED (err 4.40e-15, tol 1e-5, workload box2d1r 96x96
   T=1) — equals the recorded ruling.
+
+## Note from the baselines re-read (2026-09-25)
+
+The pinned commit 4579ea1 DOES contain `source/src/1D/` (`1d_main.cu`) and
+`source/src/3D/` (`3d_main.cu`); the adapter docstring's "no source/src/3D
+directory exists in this clone" is wrong for this commit (the checkout used
+at integration time may have been incomplete). Coverage is unchanged: only
+the 2D box kernel is bridged. FlashFFTStencil's own baselines are now
+integrated as `torch-cufft-stencil` (its cufft-by-pytorch scripts) and
+`cudnn-stencil-fastest` (its cudnn-test.cpp); see
+`benchspecs/stencil/survey.md` "Baselines each paper ran".

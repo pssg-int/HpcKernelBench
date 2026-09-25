@@ -657,3 +657,51 @@ Harness: `kernelbench/domains/stencil.py::_native_stencil` recomputes each
 paper's metric from the timed region into `metrics.paper_native`. The metrics
 it cannot collect (ncu counters, models, baseline speedups) are listed as
 `not_collected` with a reason.
+
+---
+
+## Baselines each paper ran (re-read 2026-09-25)
+
+Each integrated paper's evaluation and artifact scripts were re-read to find
+which baselines it compared against and HOW it ran them, so the harness can
+run each paper against its own baselines (spec.yaml `paper_baselines`,
+`kernelbench/domains/stencil.py` `PAPER_BASELINES`). Repos were read at the
+commits pinned in each `source.provenance`, plus the baseline repos they
+point to.
+
+| paper | baselines it names | how the artifact runs them | integrated here |
+|---|---|---|---|
+| AN5D (CGO'20) | Loop tiling (PPCG), Hybrid tiling (PPCG, brute-force tuned over 10/5K configs), STENCILGEN (fixed parameters); Sconf vs Tuned is its own ablation | README points to khaki3/StencilBench@const (`make_ppcg.sh`, `build_hybrid.sh`: PPCG generates the CUDA at build time, none checked in) and khaki3/IEEE2017 (STENCILGEN CUDA for j2d5pt, j2d9pt, j2d9pt-gol, j3d27pt, grad-2d, j3d7pt, ...) | none: PPCG needs the same clang <= 3.8 as AN5D's generator; STENCILGEN covers only the named kernels, which the an5d adapter does not bridge |
+| ConvStencil (PPoPP'24) | cuDNN, AMOS, Brick, DRStencil, TCStencil | `src/cudnn/conv_{1d3p,1d5p,box2d9p,box2d49p,box3d27p}.cu`: one `cudnnConvolutionForward` per step, ping-pong buffers, IMPLICIT_PRECOMP_GEMM hard-coded, zero padding, fp64, `std::chrono` around the whole loop | cuDNN (`cudnn-stencil`) |
+| LoRAStencil (SC'24) | cuDNN, AMOS, Brick, DRStencil, TCStencil, ConvStencil | no baseline code in its repo; SPIDER's scripts run it next to ConvStencil's cuDNN programs | cuDNN, ConvStencil |
+| FlashFFTStencil (PPoPP'25) | cuFFT, cuDNN, Brick, DRStencil, TCStencil, ConvStencil, LoRAStencil (time x2) | `benchmarks/cufft-by-pytorch/rfft{1,2,3}D.py`: `irfft2(rfft2(x) * rfft2(w, s=x.size()))`; `benchmarks/cudnn/cudnn-test.cpp`: times EVERY forward algorithm (valid padding, 2 warm-up + 100 runs, CUDA events) and reports each | cuFFT (`torch-cufft-stencil`), cuDNN fastest-algorithm (`cudnn-stencil-fastest`), ConvStencil |
+| SPIDER (PPoPP'26) | cuDNN, DRStencil, TCStencil, ConvStencil, LoRAStencil, FlashFFTStencil | `scripts/Figure10_run.sh`/`Figure11_run.sh` build and run ConvStencil's cuDNN programs (`cudnn_box2d9p/25p/49p`, fp64) and ConvStencil/LoRAStencil from its own forks (submodules KevinWu2017/ConvStencil @31ef23e, KevinWu2017/LoRAStencil @dfff2c5) at 10240^2 x T=10240; TCStencil is NOT run: `outputs/TCStencil_best_A100.csv` holds pre-recorded A100 numbers | cuDNN, ConvStencil, FlashFFTStencil (via the derived comparison) |
+
+Findings that change earlier statements or matter for fairness:
+
+1. **Two different cuDNN baselines.** ConvStencil's programs (and so
+   LoRAStencil's and SPIDER's cuDNN numbers) fix IMPLICIT_PRECOMP_GEMM;
+   FlashFFTStencil takes the fastest of all algorithms. They can differ, so
+   both are integrated (`cudnn-stencil`, `cudnn-stencil-fastest`).
+2. **torch-conv-stencil was never any paper's baseline.** It pads circularly
+   into a new tensor every step and lets torch pick the algorithm; it stays
+   as a fallback yardstick only.
+3. **SPIDER's TCStencil comparison is not a measurement on the reader's
+   machine**: its script reads a CSV of A100 results recorded elsewhere.
+4. **SPIDER's LoRAStencil fork adds `gpu_box_2d1r`, but with the same
+   factorization** (divides by the corner weight `params[0]`), so LoRAStencil
+   box kernels still only work for LoRAStencil's own ring-pattern weights;
+   SPIDER's LoRAStencil box numbers were measured with those weights.
+5. **FlashFFTStencil's repo does have `src/1D` and `src/3D`** at the pinned
+   commit 4579ea1 (`1d_main.cu`, `3d_main.cu`); the flashfftstencil adapter's
+   docstring says no 3D directory exists. The adapter still wires 2D only.
+6. **FlashFFTStencil's 2D driver re-applies one sweep T times**
+   (`src/2D/2d_main.cu:150`, input never becomes the next input), so its
+   Table 3 "1000 time steps" is 1000 repetitions of one step, not a 1000-step
+   recursion. The harness runs it at T=1.
+
+"Same configuration" runs (spec.yaml `shared_configurations`): each paper's
+own evaluation point is run by every implementation that supports it, so the
+papers are compared with each other and with their baselines on identical
+inputs; where an implementation cannot run a point (grid alignment, shape,
+dimensionality), it is recorded as unsupported with the reason.

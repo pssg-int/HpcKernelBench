@@ -521,7 +521,143 @@ SWEEPS = {
                                 [(512 * i, 512 * i) for i in range(1, 21)], 10_240),
     # SPIDER Figure 12 (scripts/Figure12_run.sh)
     "spider-ablation": _sizes(["box2d2r"], [(n, n) for n in (1280, 2560, 5120, 10240)], 10_000),
+
+    # ---- shared configurations (CROSS_PLAN below): one paper's evaluation
+    # point, run by every implementation that supports it, so each paper is
+    # measured on the same inputs as its own baselines and as the others.
+    # AN5D (CGO'20) §6.1, the six shapes every adapter family names
+    "cross-an5d": (
+        _sizes(["star2d1r", "box2d1r", "star2d3r", "box2d3r"], [(16384, 16384)], 1000)
+        + _sizes(["star3d1r", "box3d1r"], [(512, 512, 512)], 1000)),
+    # ConvStencil Table 4 / LoRAStencil Table II 2D rows, plus box2d2r from
+    # SPIDER Figure 10 (its cuDNN box2d25p baseline); SPIDER runs its fp64
+    # baselines at exactly this grid and T
+    "cross-tcu-2d": _sizes(["star2d1r", "box2d1r", "box2d2r", "star2d3r", "box2d3r"],
+                           [(10240, 10240)], 10_240),
+    # LoRAStencil Table II 3D rows (ConvStencil's Table 4 gives no 3D T)
+    "cross-tcu-3d": _sizes(["star3d1r", "box3d1r"], [(1024, 1024, 1024)], 1_024),
+    # FlashFFTStencil Table 3 2D point (16384^2). 16320 is the nearest side
+    # that satisfies FlashFFTStencil's tiling (multiple of 6) AND ConvStencil's
+    # (multiple of 32 x 64). T=1: FlashFFTStencil's 2D driver re-applies one
+    # sweep T times (no recursion), so one step is what it can be gated on.
+    "cross-flashfft": _sizes(["box2d1r"], [(16320, 16320)], 1),
+    # SPIDER's own measured run (fp16 variant): its radius-7 box, one step,
+    # at its Figure 10 grid; cuDNN fp16 is the same-precision comparator
+    "cross-spider-fp16": _sizes(["box2d7r"], [(10240, 10240)], 1),
 }
+
+# Which implementation runs which shared configuration. One GPU job per
+# workload of the sweep (artifacts/stencil/cross_jobs.py; `minutes`/`mem` are
+# the job's time and host-memory requests -- the CPU reference of a 1024^3
+# grid alone needs ~60 GB). `impls` are ordered so that the ones
+# gated under the same boundary convention run back to back and share the
+# cached CPU reference (reference_stencil's cache keeps one entry by default).
+# An implementation that cannot run a workload records it as unsupported.
+_FP64 = "stencil-cpu-gpu-kernel-fp64"
+_FP16 = "stencil-tcu-matmul-kernel-fp16"
+_PAPER_IMPLS = ["an5d-stencil", "convstencil-tcu", "lorastencil-star2d3r",
+                "flashfftstencil-box2d1r"]
+_BASE_IMPLS = ["cudnn-stencil", "cudnn-stencil-fastest", "torch-conv-stencil",
+               "torch-cufft-stencil"]
+_ORDER = ["an5d-stencil",                       # fixed halo
+          "cudnn-stencil", "cudnn-stencil-fastest", "spider-box2d7r-sptc",  # zero halo
+          "convstencil-tcu", "lorastencil-star2d3r", "flashfftstencil-box2d1r",
+          "torch-conv-stencil", "torch-cufft-stencil"]  # periodic
+CROSS_PLAN = [
+    {"sweep": "cross-an5d", "variant": _FP64, "precision": "fp64",
+     "impls": _PAPER_IMPLS + _BASE_IMPLS, "minutes": 120, "mem": "64G",
+     "source": "AN5D (CGO'20) §6.1: 16384^2 / 512^3, T=1000"},
+    {"sweep": "cross-tcu-2d", "variant": _FP64, "precision": "fp64",
+     "impls": _PAPER_IMPLS + _BASE_IMPLS, "minutes": 180, "mem": "64G",
+     "source": "ConvStencil Table 4, LoRAStencil Table II, SPIDER Figure 10 baselines: "
+               "10240^2, T=10240"},
+    {"sweep": "cross-tcu-3d", "variant": _FP64, "precision": "fp64",
+     "impls": ["an5d-stencil"] + _BASE_IMPLS, "minutes": 240, "mem": "160G",
+     "source": "LoRAStencil Table II: 1024^3, T=1024 (no Tensor-Core adapter runs 3D)"},
+    {"sweep": "cross-flashfft", "variant": _FP64, "precision": "fp64",
+     "impls": _PAPER_IMPLS + _BASE_IMPLS, "minutes": 60, "mem": "64G",
+     "source": "FlashFFTStencil Table 3 2D point, 16320^2 (nearest common tiling), T=1"},
+    {"sweep": "cross-spider-fp16", "variant": _FP16, "precision": "fp16",
+     "impls": ["spider-box2d7r-sptc", "cudnn-stencil", "cudnn-stencil-fastest"],
+     "minutes": 30, "mem": "32G",
+     "source": "SPIDER's radius-7 fp16 SpTC run at its Figure 10 grid, one step"},
+]
+for _job in CROSS_PLAN:
+    _job["impls"] = sorted(_job["impls"], key=_ORDER.index)
+
+# Each integrated paper's OWN baselines, as named in its evaluation, and the
+# implementation that stands in for each here (None = not integrated, with
+# the reason). The report prints every paper's speedup over each integrated
+# baseline measured on the same GPU, precision and workload.
+_NOT_INTEGRATED = "public artifact exists ({}) but is not integrated in this harness"
+PAPER_BASELINES = {"stencil": {
+    "an5d-stencil": {
+        "paper": "AN5D (CGO'20)",
+        "baselines": [
+            ("Loop tiling (PPCG)", None,
+             "khaki3/StencilBench@const generates it with PPCG at build time and ships "
+             "no CUDA; PPCG's pet frontend needs clang <= 3.8, the same blocker as "
+             "AN5D's own generator (an5d/STATUS.md)"),
+            ("Hybrid tiling (PPCG, tuned)", None,
+             "same repo and same PPCG blocker (build_hybrid.sh)"),
+            ("STENCILGEN", None,
+             "khaki3/IEEE2017 ships STENCILGEN CUDA only for AN5D's named kernels "
+             "(j2d5pt, j2d9pt, j2d9pt-gol, j3d27pt, ...), which the an5d adapter does "
+             "not bridge yet"),
+        ]},
+    "convstencil-tcu": {
+        "paper": "ConvStencil (PPoPP'24)",
+        "baselines": [
+            ("cuDNN (IMPLICIT_PRECOMP_GEMM)", "cudnn-stencil", ""),
+            ("AMOS", None, _NOT_INTEGRATED.format("github.com/pku-liang/AMOS")),
+            ("Brick", None, _NOT_INTEGRATED.format("github.com/CtopCsUtahEdu/bricklib")),
+            ("DRStencil", None, "no public artifact located"),
+            ("TCStencil", None, _NOT_INTEGRATED.format("github.com/buaa-hipo/TCStencil")),
+        ]},
+    "lorastencil-star2d3r": {
+        "paper": "LoRAStencil (SC'24)",
+        "baselines": [
+            ("cuDNN", "cudnn-stencil", ""),
+            ("ConvStencil", "convstencil-tcu", ""),
+            ("AMOS", None, _NOT_INTEGRATED.format("github.com/pku-liang/AMOS")),
+            ("Brick", None, _NOT_INTEGRATED.format("github.com/CtopCsUtahEdu/bricklib")),
+            ("DRStencil", None, "no public artifact located"),
+            ("TCStencil", None, _NOT_INTEGRATED.format("github.com/buaa-hipo/TCStencil")),
+        ]},
+    "flashfftstencil-box2d1r": {
+        "paper": "FlashFFTStencil (PPoPP'25)",
+        "baselines": [
+            ("cuFFT (torch.fft)", "torch-cufft-stencil", ""),
+            ("cuDNN (fastest algorithm, cudnn-test.cpp)", "cudnn-stencil-fastest", ""),
+            ("ConvStencil", "convstencil-tcu", ""),
+            ("LoRAStencil", None,
+             "the lorastencil adapter runs star2d3r only and flashfftstencil box2d1r "
+             "only, so they share no workload"),
+            ("Brick", None, _NOT_INTEGRATED.format("github.com/CtopCsUtahEdu/bricklib")),
+            ("DRStencil", None, "no public artifact located"),
+            ("TCStencil", None, _NOT_INTEGRATED.format("github.com/buaa-hipo/TCStencil")),
+        ]},
+    "spider-box2d7r-sptc": {
+        "paper": "SPIDER (PPoPP'26)",
+        "baselines": [
+            ("cuDNN", "cudnn-stencil", ""),
+            ("ConvStencil", "convstencil-tcu", ""),
+            ("FlashFFTStencil", "flashfftstencil-box2d1r", ""),
+            ("LoRAStencil", None,
+             "SPIDER compares box shapes; the lorastencil adapter runs star2d3r only"),
+            ("TCStencil", None,
+             "SPIDER's own repo uses pre-recorded A100 numbers "
+             "(outputs/TCStencil_best_A100.csv), not a run"),
+            ("DRStencil", None, "no public artifact located"),
+        ],
+        # SPIDER's Figure 10 compares its radius-7 fp16 run, rescaled by the
+        # paper's own normalization (/4 for fp16->fp64, x 7/r), against fp64
+        # baselines on box2d{r}r at 10240^2, T=10240; the report does the same
+        # with the derived values _native_stencil attaches, labeled derived.
+        "derived_vs": {"grid": [10240, 10240], "timesteps": 10_240,
+                       "shape": "box2d{r}r", "precision": "fp64"},
+    },
+}}
 
 
 def expand_workloads(names: list[str]) -> list[str]:
@@ -667,6 +803,9 @@ def _native_stencil(impl_name: str, w: StencilWorkload, params: dict,
                                "needs ptxas -v / ncu"),
                 _not_collected("model-predicted GFLOP/s and model accuracy", "model",
                                "AN5D's own performance model is not run"),
+                _not_collected("speedup vs loop tiling / hybrid tiling / STENCILGEN", "timing",
+                               "not integrated (PAPER_BASELINES: PPCG toolchain blocker; "
+                               "STENCILGEN covers only the unbridged named kernels)"),
             ],
             "notes": ["Paper statistic is the MEAN of 5 runs after 1 warm-up; the "
                       "paper-statistic value below uses the same timed reps."],
@@ -689,8 +828,9 @@ def _native_stencil(impl_name: str, w: StencilWorkload, params: dict,
                 _not_collected("uncoalesced global accesses (%)", "profiler", "needs ncu"),
                 _not_collected("shared-memory bank conflicts per request", "profiler",
                                "needs ncu"),
-                _not_collected("speedup vs cuDNN / Brick / DRStencil / TCStencil", "timing",
-                               "those baselines are not integrated in this harness"),
+                _not_collected("speedup vs AMOS / Brick / DRStencil / TCStencil", "timing",
+                               "not integrated (PAPER_BASELINES); the speedup vs cuDNN "
+                               "is printed by the report from a paired cudnn-stencil run"),
             ],
             "notes": [
                 "The artifact prints input_m*input_n*times*3 for radius-1 shapes because "
@@ -714,9 +854,9 @@ def _native_stencil(impl_name: str, w: StencilWorkload, params: dict,
                                "needs ncu"),
                 _not_collected("Compute (SM) throughput (%)", "profiler", "needs ncu"),
                 _not_collected("arithmetic intensity (FLOP/byte)", "profiler", "needs ncu"),
-                _not_collected("speedup vs cuDNN / AMOS / Brick / DRStencil / TCStencil / "
-                               "ConvStencil", "timing",
-                               "those baselines are not integrated in this harness"),
+                _not_collected("speedup vs AMOS / Brick / DRStencil / TCStencil", "timing",
+                               "not integrated (PAPER_BASELINES); the speedups vs cuDNN "
+                               "and ConvStencil are printed by the report from paired runs"),
             ],
             "notes": [
                 "gpu_star_2d3r (the wrapped kernel) prints T*m*n/t with no fusion "
@@ -734,9 +874,10 @@ def _native_stencil(impl_name: str, w: StencilWorkload, params: dict,
                                gst_def, src),
             "metrics": [exec_time(src)],
             "not_collected": [
-                _not_collected("speedup over state of the art", "timing",
-                               "the compared systems are not all integrated; compute "
-                               "from paired runs on the same GPU"),
+                _not_collected("speedup vs Brick / DRStencil / TCStencil / LoRAStencil",
+                               "timing", "not integrated or no shared shape "
+                               "(PAPER_BASELINES); the speedups vs cuFFT, cuDNN and "
+                               "ConvStencil are printed by the report from paired runs"),
                 _not_collected("memory footprint (GB) / OOM boundary", "hw",
                                "device memory high-water mark is not sampled"),
                 _not_collected("uncoalesced global accesses (%), shared-store bank "
@@ -778,9 +919,10 @@ def _native_stencil(impl_name: str, w: StencilWorkload, params: dict,
                                "duration", "profiler", "needs ncu"),
                 _not_collected("modeled operations / input + parameter accesses per "
                                "update (Table 1)", "model", "analytical model, not measured"),
-                _not_collected("speedup vs cuDNN / TCStencil / ConvStencil / LoRAStencil / "
-                               "FlashFFTStencil", "timing",
-                               "compute from paired runs on the same GPU"),
+                _not_collected("speedup vs TCStencil / DRStencil / LoRAStencil", "timing",
+                               "not integrated or no shared shape (PAPER_BASELINES); the "
+                               "paper-normalized comparison vs cuDNN / ConvStencil / "
+                               "FlashFFTStencil fp64 runs is printed by the report"),
             ],
             "notes": ["Derived rows reproduce the paper's own normalization so the number "
                       "can be read against Figures 10/11; they are not independent "
@@ -992,12 +1134,38 @@ def reference_stencil(workload_: StencilWorkload, params: dict):
     """
     timesteps = int(params.get("timesteps", workload_.timesteps))
     boundary = params.get("boundary", workload_.boundary)
-    offsets, dims, radius = workload_.offsets, workload_.dims, workload_.radius
     if boundary not in ("periodic", "fixed", "zero-halo"):
         raise ValueError(
             f"stencil: unknown boundary convention {boundary!r} for "
             f"{workload_.name!r} (expected 'periodic', 'fixed', or "
             "'zero-halo', spec.yaml inputs.boundary)")
+    key =_ref_cache_key(workload_, timesteps, boundary)
+    if key in _REF_CACHE:
+        return _REF_CACHE[key]
+    out = _reference_uncached(workload_, timesteps, boundary)
+    if _REF_CACHE_SIZE > 0:
+        while len(_REF_CACHE) >= _REF_CACHE_SIZE:
+            _REF_CACHE.pop(next(iter(_REF_CACHE)))
+        _REF_CACHE[key] = out
+    return out
+
+
+# Several implementations gated on the same workload, step count, boundary and
+# coefficients need the identical reference; at paper sizes it costs minutes
+# of CPU each time. Keep the most recent KB_STENCIL_REF_CACHE results (default
+# 1, 0 disables) -- one entry holds two full-grid fp64 arrays (4 GB at 16384^2,
+# 17 GB at 1024^3). Callers only read the returned arrays.
+_REF_CACHE_SIZE = int(os.environ.get("KB_STENCIL_REF_CACHE", 1))
+_REF_CACHE: dict = {}
+
+
+def _ref_cache_key(w: StencilWorkload, timesteps: int, boundary: str) -> tuple:
+    return (w.named, w.kind, w.dims, w.radius, tuple(w.grid_shape), timesteps,
+            boundary, w.seed, tuple(sorted(w.weights.items())))
+
+
+def _reference_uncached(workload_: StencilWorkload, timesteps: int, boundary: str):
+    offsets, dims, radius = workload_.offsets, workload_.dims, workload_.radius
     if workload_.named:
         u, s = _reference_named(workload_, timesteps, boundary)
         _warn_if_gate_weak(workload_, timesteps, boundary, u, s)
@@ -1090,10 +1258,16 @@ def gate_workload(kernel: str, w: StencilWorkload) -> StencilWorkload | None:
     if (T - t) % 2:
         t = t - 1 if t > 2 else t + 1
     return dataclasses.replace(w, timesteps=t)
-# Common yardstick for the report's speedup column, in order of preference:
-# the library GPU sweep runs every shape any paper adapter can, so each paper
-# gets a speedup on its own shape even where no other paper overlaps it.
-BASELINE_IMPLS = {"stencil": ["torch-conv-stencil", "numpy-stencil"]}
+# Common yardstick for the report's speedup column, in order of preference.
+# cudnn-stencil is the library baseline the Tensor-Core papers themselves
+# report against (ConvStencil's src/cudnn programs); torch-conv-stencil
+# (circular F.pad + conv every step) is kept as the fallback. Both run every
+# shape any paper adapter can, so each paper gets a speedup on its own shape.
+# Per-paper baselines (each paper's own list) are in PAPER_BASELINES.
+BASELINE_IMPLS = {"stencil": ["cudnn-stencil", "torch-conv-stencil", "numpy-stencil"]}
+# runner hook: adapters rewrite the workload in prepare() (SPIDER's shape,
+# FlashFFTStencil's T, AN5D's coefficients), so each impl gets its own copy
+FRESH_WORKLOAD_PER_IMPL = {"stencil": True}
 CORRECTNESS_MODE = {"stencil": "max_scaled_err"}
 DEFAULT_PRECISION = {"stencil": "fp64"}
 
@@ -1359,4 +1533,5 @@ CPU_IMPLS = {
 
 def cuda_impls():
     from ..impls import gpu_cuda as g
-    return {"stencil": {"torch-conv-stencil": g.TorchStencilConv}}
+    return {"stencil": {"torch-conv-stencil": g.TorchStencilConv,
+                        "torch-cufft-stencil": g.TorchFFTStencil}}

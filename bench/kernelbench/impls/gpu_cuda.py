@@ -482,6 +482,68 @@ class TorchStencilConv(_CudaBase):
         return bufs[cur]
 
 
+class TorchFFTStencil(_CudaBase):
+    """
+    FFT-based stencil sweep on cuFFT (torch.fft): each step is
+    U <- irfftn(rfftn(U) * K_hat), a circular convolution, so the boundary is
+    periodic -- the domain's default convention. This is the "cuFFT" baseline
+    FlashFFTStencil (PPoPP'25) reports its 1.9x-103.0x speedups against; the
+    paper's own script is benchmarks/cufft-by-pytorch/rfft{1,2,3}D.py
+    (`irfft2(rfft2(x) * rfft2(w, s=x.size()))`).
+
+    One deliberate difference from that script: K_hat, the kernel's spectrum,
+    is computed once in prepare() (untimed preprocessing, like FlashFFTStencil's
+    own FFT-plan construction) instead of on every step, so a step costs one
+    forward and one inverse transform. The script also anchors the kernel at
+    the array origin, which shifts the output by `radius`; here the kernel is
+    placed at the negated offsets (K[-o mod N] = w_o), which makes the circular
+    convolution equal the domain's cross-correlation stencil exactly.
+
+    fp64/fp32 only: cuFFT half precision needs power-of-two sizes.
+    """
+
+    name = "torch-cufft-stencil"
+
+    def prepare(self, workload, params):
+        import torch
+        if self.precision not in ("fp64", "fp32"):
+            raise NotImplementedError(
+                f"torch-cufft-stencil runs fp64/fp32; requested {self.precision}")
+        if not getattr(workload, "linear", True):
+            raise NotImplementedError(
+                f"torch-cufft-stencil: {workload.name!r} is nonlinear; an FFT "
+                "convolution computes weighted sums only")
+        if workload.dims > 3:
+            raise NotImplementedError(f"torch-cufft-stencil: dims={workload.dims} > 3")
+        dt = _torch_dtype(self.precision)
+        grid = tuple(workload.grid_shape)
+        axes = tuple(range(-workload.dims, 0))
+        kfull = np.zeros(grid, dtype=np.float64)
+        for o, w in workload.weights.items():
+            kfull[tuple((-c) % n for c, n in zip(o, grid))] += w
+        khat = torch.fft.rfftn(torch.as_tensor(kfull, dtype=dt, device="cuda"), dim=axes)
+        del kfull
+        u0 = torch.as_tensor(workload.initial_field(dtype=np.float64), dtype=dt, device="cuda")
+        return {
+            "u0": u0, "khat": khat, "spec": torch.empty_like(khat),
+            "bufs": [torch.empty_like(u0), torch.empty_like(u0)],
+            "grid": grid, "axes": axes,
+            "timesteps": int(params.get("timesteps", workload.timesteps)),
+        }
+
+    def run(self, h):
+        import torch
+        bufs, spec, khat, grid, axes = h["bufs"], h["spec"], h["khat"], h["grid"], h["axes"]
+        bufs[0].copy_(h["u0"])
+        cur, nxt = 0, 1
+        for _ in range(h["timesteps"]):
+            torch.fft.rfftn(bufs[cur], dim=axes, out=spec)
+            spec.mul_(khat)
+            torch.fft.irfftn(spec, s=grid, dim=axes, out=bufs[nxt])
+            cur, nxt = nxt, cur
+        return bufs[cur]
+
+
 # ------------------------------------------------------------------- FFT
 class TorchFFT(_CudaBase):
     """

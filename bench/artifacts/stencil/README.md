@@ -27,6 +27,19 @@ off-regime here rather than treated as the human-SOTA reference.
 | `an5d/` | **AN5D (CGO'20)** | `conf/cgo/MatsumuraZWEM20` | core / matches | **BUILT+GATED** — generator toolchain unbuildable (needs clang<=3.8); the paper's own pre-generated CUDA wrapped for all 6 shapes; full-array gate PASSES under `fixed` halo (1e-8) |
 | `kathena/` | **K-Athena (TPDS'21)** | `journals/tpds/GreteGO21` | core / matches | **SKIPPED** — no `module spider kokkos` on this machine and K-Athena vendors Kokkos only as an uninitialized git submodule with no system-install path, so nothing in this repo compiles without a from-source Kokkos build (out of budget); separately, the paper's own Kokkos-parallelized contribution (`hydro/calculate_fluxes.cpp` + `add_flux_divergence.cpp`) is a fused reconstruction+Riemann-solve+CT+flux-divergence MHD update with no standalone plain-array stencil boundary — same class of finding as `flashfftstencil`/`ozhope`. The one candidate that looked simpler (`hydro_diffusion`/`field_diffusion`) is confirmed (`grep -c "Kokkos\|par_for\|MDRangePolicy" == 0`) to be UNPORTED legacy Athena++ CPU code, not the paper's own contribution, and only a flux CONTRIBUTION (not a complete sweep) entangled with `MeshBlock`/`Coordinates` context. See `kathena/STATUS.md`. |
 
+Library baselines the papers themselves ran (2026-09-25; see
+`benchspecs/stencil/survey.md` "Baselines each paper ran" and
+`kernelbench/domains/stencil.py` `PAPER_BASELINES`):
+
+| dir | impl | whose baseline | status |
+|---|---|---|---|
+| `cudnn/` | `cudnn-stencil` | ConvStencil's `src/cudnn/conv_*.cu` (IMPLICIT_PRECOMP_GEMM), used by ConvStencil, LoRAStencil, SPIDER | WRITTEN, not yet built/gated on a GPU; layout verified by CPU emulation |
+| `cudnn_fastest/` | `cudnn-stencil-fastest` | FlashFFTStencil's `benchmarks/cudnn/cudnn-test.cpp` (fastest algorithm) | same bridge.so as `cudnn/` |
+| (built in) | `torch-cufft-stencil` | FlashFFTStencil's `benchmarks/cufft-by-pytorch` | `kernelbench/impls/gpu_cuda.py`; CPU-verified |
+
+`cross_jobs.py` runs the shared-configuration matrix (`CROSS_PLAN`): every
+implementation on each paper's evaluation point, one GPU job per workload.
+
 `spider`/`flashfftstencil`/`convstencil`/`windstencil` predate this
 integration pass (already GATED/SKIPPED per their own STATUS.md); this
 pass added `lorastencil/` and `ozhope/`; a later pass added `perks/`

@@ -9,6 +9,8 @@ under the same boundary convention share the cached CPU reference).
     $PY bench/artifacts/stencil/cross_jobs.py --run            # run them, in order
     $PY bench/artifacts/stencil/cross_jobs.py --run --sweep cross-tcu-2d
     $PY bench/artifacts/stencil/cross_jobs.py --run --gres a100 --only star2d3r
+    $PY bench/artifacts/stencil/cross_jobs.py --run --group plus   # one paper group
+    $PY bench/artifacts/stencil/cross_jobs.py --run --group all    # all three groups
 
 Run from anywhere on the LOGIN node: each job goes through bench/gpu_run.sh
 (one blocking srun). Results land in bench/results/stencil_<sweep>_
@@ -48,10 +50,19 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--run", action="store_true", help="submit the jobs (default: print)")
     ap.add_argument("--sweep", action="append", help="limit to this sweep id (repeatable)")
+    ap.add_argument("--group", action="append",
+                    help=f"run a paper group's sweeps ({', '.join(stencil.GROUPS)}, or all; "
+                         "repeatable)")
     ap.add_argument("--only", help="limit to workloads starting with this prefix")
     ap.add_argument("--gres", default="a100", help="gpu_run.sh -g value (default a100)")
     ap.add_argument("--force", action="store_true", help="re-run jobs whose result exists")
     args = ap.parse_args()
+    if args.group:
+        names = list(stencil.GROUPS) if "all" in args.group else args.group
+        unknown = [g for g in names if g not in stencil.GROUPS]
+        if unknown:
+            ap.error(f"unknown group(s) {unknown}; choose from {list(stencil.GROUPS)} or all")
+        args.sweep = (args.sweep or []) + [s for g in names for s in stencil.GROUPS[g]["sweeps"]]
 
     gpu_run = os.path.join(BENCH, "gpu_run.sh")
     todo = list(jobs(args.sweep, args.only))

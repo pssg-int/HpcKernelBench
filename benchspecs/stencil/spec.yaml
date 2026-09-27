@@ -747,6 +747,21 @@ shared_configurations:
   cross-flashfft: "FlashFFTStencil Table 3 2D point: box2d1r at 16320^2, T=1; fp64. 16320 is the side nearest 16384 that both FlashFFTStencil (multiple of 6) and ConvStencil (multiple of 32 x 64) accept; T=1 because FlashFFTStencil's 2D driver re-applies one sweep instead of iterating"
   cross-spider-fp16: "SPIDER's own measured run: box2d7r at 10240^2, T=1, fp16, against cuDNN fp16"
 
+paper_groups:
+  note: >
+    Three groups that together cover all five papers, each built from the
+    shapes its papers can all run, so the papers are compared on identical
+    inputs as much as the artifacts allow (kernelbench/domains/stencil.py
+    GROUPS; run with bench/artifacts/stencil/cross_jobs.py --group). All fp64
+    groups use 16320^2, the one side every 2D adapter accepts. Every group
+    also runs the library baselines (cuDNN, cuDNN-fastest; fp64 groups add
+    torch conv and cuFFT). No shape is shared by all five papers:
+    LoRAStencil runs only star2d3r, FlashFFTStencil only box2d1r (T=1), and
+    SPIDER only its fp16 box2d7r with fixed weights.
+  plus: "AN5D, ConvStencil, LoRAStencil. star2d3r (all three) and star2d1r (AN5D, ConvStencil) at 16320^2, T=1 and T=1000; fp64. Sweep group-plus"
+  square: "AN5D, ConvStencil, FlashFFTStencil. box2d1r (all three) and box2d3r (AN5D, ConvStencil) at 16320^2, T=1; plus both shapes at T=1000 without FlashFFTStencil, whose adapter can only run one step; fp64. Sweeps group-square, group-square-steps"
+  spider: "SPIDER alone vs cuDNN fp16: box2d7r at 10240^2, T=1, fp16. Not ranked against the fp64 groups. Sweep group-spider-fp16"
+
 notes_on_fairness:
   - "The paper-baseline comparisons (paper_baselines) are only as complete as the integrated baselines: 7 of the 12 distinct baseline systems the five papers name are not integrated (AMOS, Brick, DRStencil, TCStencil, PPCG loop/hybrid tiling, STENCILGEN), so a paper's speedup here covers its library baselines (cuDNN, cuFFT) and the other integrated papers, not its full comparison set."
   - "The Tensor-Core lineage compares FP16 and FP64 systems by dividing FP16 throughput by 4 (ConvStencil, LoRAStencil, FlashFFTStencil for TCStencil; SPIDER for itself), and FlashFFTStencil doubles LoRAStencil's time to undo its symmetry saving. These are the papers' own normalizations, recorded as `derived` values only; the harness never applies them to rank implementations."

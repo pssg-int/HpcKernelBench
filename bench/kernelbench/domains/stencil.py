@@ -544,6 +544,23 @@ SWEEPS = {
     # SPIDER's own measured run (fp16 variant): its radius-7 box, one step,
     # at its Figure 10 grid; cuDNN fp16 is the same-precision comparator
     "cross-spider-fp16": _sizes(["box2d7r"], [(10240, 10240)], 1),
+
+    # ---- paper groups (GROUPS below): the shapes that the most papers share,
+    # one grid for every fp64 group so results line up across groups. 16320^2
+    # is the side FlashFFTStencil (multiple of 6), ConvStencil and LoRAStencil
+    # (multiple of 32 x 64) and AN5D (square) all accept. T=1 is a single
+    # sweep (the only step count FlashFFTStencil can be gated on); T=1000 is
+    # AN5D's step count, where temporal blocking/fusion pays off.
+    # Plus-sign group: AN5D, ConvStencil, LoRAStencil
+    "group-plus": _sizes(["star2d1r", "star2d3r"], [(16320, 16320)], 1)
+                  + _sizes(["star2d1r", "star2d3r"], [(16320, 16320)], 1000),
+    # Square group, one step: AN5D, ConvStencil, FlashFFTStencil
+    "group-square": _sizes(["box2d1r", "box2d3r"], [(16320, 16320)], 1),
+    # Square group, many steps: FlashFFTStencil is left out because its
+    # adapter rewrites T to 1 (see its TIMESTEPS note)
+    "group-square-steps": _sizes(["box2d1r", "box2d3r"], [(16320, 16320)], 1000),
+    # SPIDER group: its only shape, fp16, one step, vs cuDNN fp16
+    "group-spider-fp16": _sizes(["box2d7r"], [(10240, 10240)], 1),
 }
 
 # Which implementation runs which shared configuration. One GPU job per
@@ -581,9 +598,45 @@ CROSS_PLAN = [
      "impls": ["spider-box2d7r-sptc", "cudnn-stencil", "cudnn-stencil-fastest"],
      "minutes": 30, "mem": "32G",
      "source": "SPIDER's radius-7 fp16 SpTC run at its Figure 10 grid, one step"},
+    {"sweep": "group-plus", "variant": _FP64, "precision": "fp64",
+     "impls": ["an5d-stencil", "convstencil-tcu", "lorastencil-star2d3r"] + _BASE_IMPLS,
+     "minutes": 150, "mem": "64G",
+     "source": "Plus-sign group (AN5D, ConvStencil, LoRAStencil): star2d1r, star2d3r "
+               "at 16320^2, T=1 and T=1000"},
+    {"sweep": "group-square", "variant": _FP64, "precision": "fp64",
+     "impls": ["an5d-stencil", "convstencil-tcu", "flashfftstencil-box2d1r"] + _BASE_IMPLS,
+     "minutes": 60, "mem": "64G",
+     "source": "Square group (AN5D, ConvStencil, FlashFFTStencil): box2d1r, box2d3r "
+               "at 16320^2, T=1"},
+    {"sweep": "group-square-steps", "variant": _FP64, "precision": "fp64",
+     "impls": ["an5d-stencil", "convstencil-tcu"] + _BASE_IMPLS,
+     "minutes": 150, "mem": "64G",
+     "source": "Square group, many steps (AN5D, ConvStencil): box2d1r, box2d3r "
+               "at 16320^2, T=1000"},
+    {"sweep": "group-spider-fp16", "variant": _FP16, "precision": "fp16",
+     "impls": ["spider-box2d7r-sptc", "cudnn-stencil", "cudnn-stencil-fastest"],
+     "minutes": 30, "mem": "32G",
+     "source": "SPIDER group: box2d7r at 10240^2, T=1, fp16, vs cuDNN fp16"},
 ]
 for _job in CROSS_PLAN:
     _job["impls"] = sorted(_job["impls"], key=_ORDER.index)
+
+# Three paper groups that together cover all five papers, each made of the
+# shapes its papers share (cross_jobs.py --group <id> runs a group's sweeps).
+GROUPS = {
+    "plus": {"papers": ["an5d-stencil", "convstencil-tcu", "lorastencil-star2d3r"],
+             "sweeps": ["group-plus"],
+             "note": "plus-sign shapes; star2d3r is run by all three, star2d1r by AN5D "
+                     "and ConvStencil"},
+    "square": {"papers": ["an5d-stencil", "convstencil-tcu", "flashfftstencil-box2d1r"],
+               "sweeps": ["group-square", "group-square-steps"],
+               "note": "square shapes; box2d1r at T=1 is run by all three, box2d3r and "
+                       "the T=1000 runs by AN5D and ConvStencil"},
+    "spider": {"papers": ["spider-box2d7r-sptc"],
+               "sweeps": ["group-spider-fp16"],
+               "note": "fp16 only, own fixed weights, one step; compared with cuDNN fp16 "
+                       "only, never ranked against the fp64 groups"},
+}
 
 # Each integrated paper's OWN baselines, as named in its evaluation, and the
 # implementation that stands in for each here (None = not integrated, with

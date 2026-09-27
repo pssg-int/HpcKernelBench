@@ -11,6 +11,29 @@ a fresh clone of this repository on zaratan, after `git pull` has brought in
 the 2026-09-25 changes (cuDNN/cuFFT baselines, per-paper baseline report,
 shared-configuration run plan).
 
+## Paper groups (added 2026-09-27)
+
+No shape is run by all five papers, so the papers are compared in three
+groups that together cover all of them (`GROUPS` in
+`kernelbench/domains/stencil.py`, `paper_groups` in `spec.yaml`). Every
+group also runs the cuDNN baselines; the fp64 groups add torch conv/cuFFT.
+
+| Group | Papers | Shapes (all fp64 groups at 16320×16320) |
+|---|---|---|
+| plus | AN5D, ConvStencil, LoRAStencil | star2d3r (2D plus sign, reach 3: all three), star2d1r (2D plus sign, reach 1: AN5D + ConvStencil); T=1 and T=1000 |
+| square | AN5D, ConvStencil, FlashFFTStencil | box2d1r (2D 3×3 square: all three), box2d3r (2D 7×7 square: AN5D + ConvStencil); T=1, plus T=1000 without FlashFFTStencil (it can only run one step) |
+| spider | SPIDER | box2d7r (2D 15×15 square) at 10240×10240, T=1, fp16, vs cuDNN fp16 only |
+
+Run on the zaratan login node (9 GPU jobs, resumable like the cross sweeps):
+
+    $PY bench/artifacts/stencil/cross_jobs.py --group all          # print
+    nohup $PY bench/artifacts/stencil/cross_jobs.py --run --group all > groups.log 2>&1 &
+    (cd bench && $PY -m kernelbench.report results/stencil_group-*.json \
+        --html results/stencil_report_groups_a100.html)
+
+"unsupported" rows inside a group (e.g. LoRAStencil on star2d1r,
+FlashFFTStencil on box2d3r) are expected coverage facts.
+
 ---
 
 ```text
@@ -191,6 +214,26 @@ number (star2d1r @10240^2, T=10240: 37.28 GCUP/s).
 Record for every job the `[gpu_run] host=... gpu=... job=...` line, the
 "N/M runs valid (k unsupported, c crashed)" line and the conforming line.
 
+STEP 4b: THE PAPER GROUPS (added 2026-09-27, full A100 per job)
+No shape is run by all five papers, so they are also compared in three
+groups that together cover all of them (kernelbench/domains/stencil.py
+GROUPS; spec.yaml paper_groups). 9 jobs, same driver, same resume/skip
+behaviour as step 4:
+  $PY bench/artifacts/stencil/cross_jobs.py --group all          # print
+  $PY bench/artifacts/stencil/cross_jobs.py --run --group all    # run
+    plus    AN5D, ConvStencil, LoRAStencil: star2d1r, star2d3r at
+            16320^2, T=1 and T=1000              (sweep group-plus)
+    square  AN5D, ConvStencil, FlashFFTStencil: box2d1r, box2d3r at
+            16320^2, T=1 (group-square); same shapes at T=1000 without
+            FlashFFTStencil (group-square-steps), because its adapter
+            rewrites T to 1
+    spider  SPIDER vs cuDNN fp16: box2d7r at 10240^2, T=1, fp16
+            (group-spider-fp16)
+Expected, not failures: LoRAStencil unsupported on star2d1r,
+FlashFFTStencil unsupported on box2d3r. LoRAStencil at T=1 has never been
+run: if it declines, record the reason; if it crashes or fails its gate,
+report that with evidence. Record the same per-job lines as step 4.
+
 STEP 5: RECORD
 Append to each artifact's STATUS.md (an5d, convstencil, lorastencil,
 flashfftstencil, spider, cudnn) a section
@@ -205,13 +248,18 @@ for the record:".
 STEP 6: REPORT
   (cd bench && $PY -m kernelbench.report results/stencil_cross-*.json \
       --html results/stencil_report_cross_a100.html)
-Then write a short summary for the user with two tables:
+  (cd bench && $PY -m kernelbench.report results/stencil_group-*.json \
+      --html results/stencil_report_groups_a100.html)
+Then write a short summary for the user with three tables:
   (a) each paper vs its own baselines, from the report's "each paper vs the
       baselines its own evaluation used" section: paper, workload, its
       GCUP/s, speedup over each integrated baseline, and the baselines not
       integrated (one line: see PAPER_BASELINES);
   (b) the same-configuration leaderboard per sweep: every implementation's
-      GCUP/s on each workload it ran, with unsupported/crashed marked.
+      GCUP/s on each workload it ran, with unsupported/crashed marked;
+  (c) per paper group (plus, square, spider): each paper's GCUP/s and
+      speedup over cuDNN on every group workload, with unsupported marked.
+      Never rank the spider group (fp16) against the fp64 groups.
 Point out where our measured speedup over a paper's baseline disagrees with
 the paper's own claim by more than 2x (ConvStencil and SPIDER both report
 "x over cuDNN"; see spec.yaml metrics.per_paper_native), without
@@ -219,6 +267,6 @@ speculating beyond the evidence. Keep the SPIDER derived comparison
 labeled as the paper's normalization, not a measurement.
 Do NOT commit or push anything (no git add, git commit or git push). Leave
 every change (STATUS.md notes, any bridge fix) uncommitted in the working
-tree. The deliverable is the HTML report above plus your summary; end by
-giving the report's path and listing every file you changed.
+tree. The deliverables are the two HTML reports above plus your summary; end by
+giving both reports' paths and listing every file you changed.
 ```

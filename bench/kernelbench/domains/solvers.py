@@ -375,6 +375,39 @@ def load_workload(name: str):
     return matrices.load_matrix(name)
 
 
+# Named input sets; `--matrices sweep:<id>` expands to the list (same hook as
+# stencil.py). "cg-common" is the cross-artifact set from
+# benchspecs/cg-krylov/common_inputs.md: every input is SPD with N % 16 == 0
+# (Mille-feuille drops rows past the last multiple of 16), so PERKS,
+# Mille-feuille, SPCG and BootCMatchGX all solve the identical system.
+SWEEPS = {
+    "cg-common": [
+        "poisson-3d-64",    # N=262,144   BootCMatchGX-style generated grid
+        "poisson-3d-128",   # N=2,097,152 ~BootCMatchGX's own 130^3, /16-safe
+        "jnlbrng1",         # N=40,000    2D 5-pt, SPCG list
+        "torsion1",         # N=40,000    2D 5-pt, SPCG list
+        "finan512",         # N=74,752    PERKS Table 4 + SPCG list
+        "shallow_water2",   # N=81,920    PERKS Table 4 + SPCG list
+        "apache1",          # N=80,800    hard case, SPCG list
+        "cfd1",             # N=70,656    hard case, SPCG list
+    ],
+}
+
+
+def expand_workloads(names: list[str]) -> list[str]:
+    """Runner hook: replace every `sweep:<id>` with that sweep's workload names."""
+    out = []
+    for n in names:
+        if n.startswith("sweep:"):
+            key = n[len("sweep:"):]
+            if key not in SWEEPS:
+                raise ValueError(f"solvers: unknown sweep {key!r}; have {sorted(SWEEPS)}")
+            out.extend(SWEEPS[key])
+        else:
+            out.append(n)
+    return out
+
+
 # ----------------------------------------------------------------- cost rules
 def _cost_cg(m, params: dict):
     """

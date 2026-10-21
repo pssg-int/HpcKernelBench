@@ -22,6 +22,30 @@ off-regime here rather than treated as the human-SOTA reference.
 | `perks/` | PERKS (ICS'23) | `conf/ics/ZhangWCMWEM23` | core / matches — this track's `cg-kernel-fixed-iter` variant quotes PERKS's own research question verbatim | BUILT+GATED |
 | `bootcmatchgx/` | **BootCMatchGX (TPDS'23)** | `journals/tpds/BernaschiCVD23` | **core** / matches | **BUILT+GATED** (`cg-e2e-ilu0-to-convergence`, fp64, AMG-preconditioned FCG; 3/3 smoke valid — see below) |
 
+### Mille-feuille's actual method: `millefeuille-mixed/` (added 2026-10-21, NOT YET BUILT)
+
+`millefeuille/` wraps `main-cg`, whose path for nnz >= 100K
+(`cg_solve_reduce`) is a plain multi-kernel fp64 CG, not the paper's
+method (its docstring says otherwise; that is wrong). `millefeuille-mixed/`
+(impl `millefeuille-cg-mixed`) wraps `main-cg-mixed` (`make cg-mix`): the
+single persistent kernel with tile-wise dynamic fp64/fp32/fp16/fp8. Shares
+`source/` with `millefeuille/` (symlink); `mixed.patch` is I/O only
+(external b, x dump, timer printout). Its kernel runs a hard-coded 100
+steps, so compare per-step times. See its adapter docstring.
+
+### Library baselines (added 2026-10-21, NOT YET BUILT)
+
+Each paper is paired with the library its own paper claims to beat. These
+are our code (`ROLE = "baseline"`), run in-process with CUDA-event timers.
+
+| dir | impl | baseline for | what it is |
+|---|---|---|---|
+| `cusparse-cg/` | `cusparse-cg` | PERKS, Mille-feuille (fixed-iter, fp64/fp32) | port of NVIDIA's CUDA sample `conjugateGradient` (cusparseSpMV + cuBLAS); exactly 50 steps |
+| `cusparse-ilu0-cg/` | `cusparse-ilu0-cg` | SPCG (to-convergence, fp32/fp64) | port of `conjugateGradientPrecond` (csrilu02 + 2x SpSV); fresh ILU(0) every run, relative 1e-6 stop, zero-pivot check; shares `cusparse-cg/bridge.so` |
+| `amgx/` | `amgx-pcg-amg` | BootCMatchGX (to-convergence, fp64/fp32) | NVIDIA AmgX v2.5.0, no MPI, its shipped `PCG_AGGREGATION_JACOBI.json` config (prints off, cap 2000) |
+
+Run commands and how to compare them: `bench/CG_ON_ZARATAN.md`.
+
 `spcg`/`millefeuille`/`perks` predate this integration pass. This pass
 added `bootcmatchgx/`, reusing the already-built, already-gated
 `../multigrid/bootcmatchgx/` integration's binary and clone rather than a

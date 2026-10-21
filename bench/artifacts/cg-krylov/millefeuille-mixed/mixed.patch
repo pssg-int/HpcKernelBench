@@ -1,0 +1,64 @@
+diff --git a/src/main-cg-mixed.cu b/src/main-cg-mixed.cu
+index 1e989a9..84cab05 100644
+--- a/src/main-cg-mixed.cu
++++ b/src/main-cg-mixed.cu
+@@ -1,6 +1,7 @@
+ #include <stdio.h>
+ #include <cuda_fp16.h>
+ #include <sys/time.h>
++#include <cstdlib>  // getenv -- HPC-KernelBench adapter's RHS-file/x-dump hooks below
+ #include "csr2block.h"
+ #include "blockspmv_cpu.h"
+ #include "utils.h"
+@@ -2595,7 +2596,12 @@ extern "C" void cg_solve_inc(int *RowPtr, int *ColIdx, MAT_VAL_TYPE *Val, MAT_VA
+         vector_total_32 = (vector_total_32 / WARP_PER_BLOCK + 1) * WARP_PER_BLOCK;
+     }
+     if (index > 6912 || index == 0 || tilem == 0)
++    {
++        // HPC-KernelBench Patch M1: the shipped code returns here silently
++        // (no solve, x left at 0). Say so, so the adapter can report it.
++        printf("MF_MIXED_SKIPPED index=%d tilem=%d\n", index, tilem);
+         return;
++    }
+     int *balance_tile_ptr_new = (int *)malloc(sizeof(int) * (index + 1));
+     memset(balance_tile_ptr_new, 0, sizeof(int) * (index + 1));
+     int *balance_tile_ptr_shared_end = (int *)malloc(sizeof(int) * (index + 1));
+@@ -2949,6 +2955,13 @@ extern "C" void cg_solve_inc(int *RowPtr, int *ColIdx, MAT_VAL_TYPE *Val, MAT_VA
+         sum_ori = sum_ori + (b[i] * b[i]);
+     }
+     double l2_norm = sqrt(sum) / sqrt(sum_ori);
++    // HPC-KernelBench Patch M2: print the artifact's own timers. time_cg is
++    // the gettimeofday bracket around the single solve kernel; the kernels
++    // run a hard-coded `for (iter = 1; iter <= 100; iter++)` (convergence
++    // check commented out upstream), hence the literal 100. time_format is
++    // the CSR -> tile-format conversion, timed separately upstream.
++    printf("MF_MIXED_RESULT time_cg=%f iterations=100 time_format=%f l2_norm=%e snew=%e\n",
++           time_cg, time_format, l2_norm, sqrt(snew));
+     char *s = (char *)malloc(sizeof(char) * 200);
+     sprintf(s, "%d,%.3f,%d,%e,%e\n", 100, time_cg, nnzR, l2_norm,sqrt(snew));
+     FILE *file1 = fopen("data/cg_performance.csv", "a");
+@@ -3038,5 +3051,24 @@ int main(int argc, char **argv)
+         {
+             Y_golden[i] += Val[j] * X[ColIdx[j]];
+         }
++    // HPC-KernelBench Patch M3 (opt-in): replace the manufactured b = A*ones
++    // with an externally supplied one (n doubles) when MF_RHS_FILE is set,
++    // same as main-cg.cu's Patch 3. No-op otherwise.
++    {
++        const char *rhs_path = getenv("MF_RHS_FILE");
++        if (rhs_path) {
++            FILE *f = fopen(rhs_path, "rb");
++            if (f) { size_t nread = fread(Y_golden, sizeof(double), n, f); fclose(f); (void)nread; }
++        }
++    }
+     cg_solve_inc(RowPtr, ColIdx, Val, Val_Low, X, Y_golden, n, &iter, 10, 1e-5, filename, nnzR, ori);
++    // HPC-KernelBench Patch M4 (opt-in): dump the solution X (n doubles) for
++    // the adapter's independent residual check when MF_X_OUT_FILE is set.
++    {
++        const char *x_out = getenv("MF_X_OUT_FILE");
++        if (x_out) {
++            FILE *f = fopen(x_out, "wb");
++            if (f) { fwrite(X, sizeof(double), n, f); fclose(f); }
++        }
++    }
+ }

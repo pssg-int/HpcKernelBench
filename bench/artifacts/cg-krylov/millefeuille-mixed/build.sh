@@ -26,6 +26,10 @@ nvcc --version | tail -1
 if git apply --reverse --check "$HERE/mixed.patch" 2>/dev/null; then
   echo "mixed.patch: already applied"
 else
+  # an older mixed.patch may be applied; main-cg-mixed.cu carries nothing but
+  # that patch (../millefeuille/source.patch touches only main-cg.cu), so
+  # restore the pristine file and apply the current one
+  git checkout -- src/main-cg-mixed.cu
   git apply "$HERE/mixed.patch"
   echo "mixed.patch: applied"
 fi

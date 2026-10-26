@@ -99,8 +99,8 @@ class AmgxPcgAmg:
         n = csr.shape[0]
         if csr.shape[0] != csr.shape[1]:
             raise NotImplementedError(f"{IMPL_NAME}: matrix is not square {csr.shape}")
-        rng = np.random.default_rng(params.get("seed", 42))
-        b64 = rng.uniform(-1.0, 1.0, size=n)   # same b as every cg-krylov impl
+        from kernelbench.domains.solvers import cg_rhs
+        b64 = cg_rhs(csr, params)   # same b as every cg-krylov impl (KB_CG_RHS)
         self._A64, self._b64, self._n = csr, b64, n
 
         params["mode"] = "to-convergence"

@@ -270,6 +270,7 @@ docstring for the two recognized synthetic-name prefixes.
 
 from __future__ import annotations
 
+import os
 import time
 
 import numpy as np
@@ -391,6 +392,36 @@ SWEEPS = {
         "apache1",          # N=80,800    hard case, SPCG list
         "cfd1",             # N=70,656    hard case, SPCG list
     ],
+    # Paper-faithful micro-benchmarks (bench/CG_PAPER_MICROBENCH.md): each
+    # paper's claim tested on its own kind of input. Run with that paper's
+    # KB_CG_* settings (see cg_rhs / cg_steps below).
+    # PERKS ICS'23 Table 4 (D1-D20), all 20 matrices.
+    "perks-paper": [
+        "Trefethen_2000", "msc01440", "fv1", "msc04515", "Muu", "crystm02",
+        "shallow_water2", "finan512", "cbuckle", "G2_circuit", "thermomech_dM",
+        "ecology2", "tmt_sym", "consph", "crankseg_1", "bmwcra_1", "hood",
+        "BenElechi1", "crankseg_2", "af_1_k101",
+    ],
+    # Mille-feuille SC'24 used all 230 SPD SuiteSparse matrices; this is a
+    # size-spread subset (small to ~10M nnz) shared with the PERKS/SPCG lists.
+    "millefeuille-paper": [
+        "Trefethen_2000", "msc01440", "fv1", "msc04515", "Muu", "crystm02",
+        "jnlbrng1", "torsion1", "shallow_water2", "finan512", "cbuckle",
+        "G2_circuit", "thermomech_dM", "ecology2", "consph", "af_1_k101",
+    ],
+    # SPCG SC'25: subset of its 114-matrix list
+    # (script_src/python_scripts/prep/matrix_download.py), small to large.
+    "spcg-paper": [
+        "Muu", "crystm02", "fv1", "msc04515", "msc10848", "bcsstk17", "Kuu",
+        "LFAT5000", "Dubcova2", "gyro", "jnlbrng1", "torsion1", "finan512",
+        "shallow_water2", "thermomech_TC", "G2_circuit", "parabolic_fem",
+        "thermal1", "apache1", "cfd1",
+    ],
+    # BootCMatchGX TPDS'23: generated 3D 7-point Poisson only; single-GPU
+    # size sweep standing in for its weak scaling (130^3 per GPU).
+    "bootcmatchgx-paper": [
+        "poisson-3d-64", "poisson-3d-96", "poisson-3d-128", "poisson-3d-160",
+    ],
 }
 
 
@@ -406,6 +437,34 @@ def expand_workloads(names: list[str]) -> list[str]:
         else:
             out.append(n)
     return out
+
+
+# Run-level knobs for the cg-krylov adapters (all optional; defaults = the
+# spec's protocol). The paper-faithful micro-benchmarks set them per paper
+# (bench/CG_PAPER_MICROBENCH.md); every adapter records what it used.
+#   KB_CG_RHS   uniform (default: U(-1,1), seed 42) | ones | Aones (b = A @ 1)
+#   KB_CG_STEPS fixed-iteration step count (default: the adapter's own, 50)
+def cg_rhs(A, params: dict) -> np.ndarray:
+    """The right-hand side every cg-krylov adapter builds b with (fp64)."""
+    mode = os.environ.get("KB_CG_RHS", "uniform").strip().lower()
+    n = A.shape[0]
+    if mode == "uniform":
+        b = np.random.default_rng(params.get("seed", 42)).uniform(-1.0, 1.0, size=n)
+    elif mode == "ones":
+        b = np.ones(n)
+    elif mode == "aones":
+        b = np.asarray(A @ np.ones(A.shape[1]), dtype=np.float64).reshape(-1)
+    else:
+        raise ValueError(f"KB_CG_RHS={mode!r}: expected uniform, ones or Aones")
+    params["rhs"] = mode
+    return b
+
+
+def cg_steps(params: dict, default: int = 50) -> int:
+    """Fixed-iteration step count: params['maxiter'] > KB_CG_STEPS > default."""
+    if "maxiter" in params:
+        return int(params["maxiter"])
+    return int(os.environ.get("KB_CG_STEPS", default))
 
 
 # ----------------------------------------------------------------- cost rules

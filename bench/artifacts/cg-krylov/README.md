@@ -33,6 +33,23 @@ single persistent kernel with tile-wise dynamic fp64/fp32/fp16/fp8. Shares
 (external b, x dump, timer printout). Its kernel runs a hard-coded 100
 steps, so compare per-step times. See its adapter docstring.
 
+### Paper-faithful micro-benchmarks (added 2026-10-23, NOT YET BUILT)
+
+`bench/CG_PAPER_MICROBENCH.md` tests each paper's own claim with its own
+setup; `paper_summary.py` (this directory) makes the per-paper tables.
+New for it:
+- `spcg-sp/` (`spcg-sp-ilu0-cg`): SPCG's SPARSIFIED driver `ilu0_gpu/sp`,
+  the paper's method. `spcg/` wraps `ilu0_gpu/nonsp`, which is SPCG's own
+  NON-sparsified baseline, not its method. Includes a Python port of the
+  artifact's MATLAB sparsification step; shares `spcg/source`.
+- `perks-baseline/` (`perks-cg-baseline`): PERKS's binary with `--baseline`
+  (its own non-persistent CG), to isolate what PERKS adds.
+- Run-level knobs read by all cg-krylov adapters (`kernelbench/domains/
+  solvers.py`): `KB_CG_RHS` (uniform | ones | Aones), `KB_CG_STEPS`;
+  plus `KB_SPCG_RATIO`, `KB_MF_TIMEOUT`.
+- Fixes: millefeuille-mixed prints its kernel-only timer; bootcmatchgx
+  records its own setup/solve times; perks no longer crashes on `-nan`.
+
 ### Library baselines (added 2026-10-21, NOT YET BUILT)
 
 Each paper is paired with the library its own paper claims to beat. These

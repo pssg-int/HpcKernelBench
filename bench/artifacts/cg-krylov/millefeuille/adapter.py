@@ -149,7 +149,8 @@ class MilleFeuilleCG:
         if n_trunc <= 0:
             n_trunc = n  # degenerate guard; not expected for this track's matrices
 
-        maxiter = int(params.get("maxiter", 50))
+        from kernelbench.domains.solvers import cg_rhs, cg_steps
+        maxiter = cg_steps(params, 50)   # KB_CG_STEPS
         # resolved knobs written back so they are explicit, auditable fields
         # in RunResult.params -- mirrors ScipyCG.prepare()'s own convention
         params["mode"] = "fixed-iter"  # the only mode this artifact implements
@@ -168,8 +169,7 @@ class MilleFeuilleCG:
             "cg_solve_reduce" if nnz_full >= 100000 else
             "cg_solve_sync" if nnz_full >= 10000 else "cg_solve_inc")
 
-        rng = np.random.default_rng(params.get("seed", 42))
-        b = rng.uniform(-1.0, 1.0, size=n_trunc).astype(np.float64)
+        b = cg_rhs(A[:n_trunc, :n_trunc].tocsr(), params)   # KB_CG_RHS
 
         # --- artifact's own input format: a Matrix Market file -----------
         # writing it out (once, here) IS the artifact's format-conversion

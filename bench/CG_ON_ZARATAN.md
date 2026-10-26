@@ -108,9 +108,12 @@ them next to the numbers they affect):
   timer in params (spcg_pcg_ms / spcg_precond_ms / spcg_overall_ms_internal;
   Mille-feuille's time_cg; see each STATUS.md "Timing-boundary caveat").
   Report BOTH numbers.
-- SPCG stops on an ABSOLUTE squared residual (tol=1e-12f, fp32), so it
-  normally runs its full 1000 iterations; its fp32 solution may miss the
-  1e-5 relres gate on harder inputs. That is a result.
+- spcg-ilu0-cg wraps SPCG's `ilu0_gpu/nonsp` driver, which is SPCG's own
+  NON-sparsified baseline, not the paper's method (found 2026-10-23; the
+  method is spcg-sp-ilu0-cg, tested in bench/CG_PAPER_MICROBENCH.md). Label
+  its rows "SPCG's non-sparsified driver". It stops on an ABSOLUTE residual
+  (||r|| < 1e-12, fp32, cap 1000); its fp32 solution may miss the 1e-5
+  relres gate on harder inputs. That is a result.
 - BootCMatchGX timed out (rc=124) in the earlier H100 run
   (bench/H100_baselines.md); it passed smoke on A100. If it hangs here,
   record which input and the last log lines.

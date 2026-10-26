@@ -1,0 +1,45 @@
+diff --git a/gpu_src/ilu0_gpu/sp/main.cpp b/gpu_src/ilu0_gpu/sp/main.cpp
+index d1fe8da..cc6728e 100644
+--- a/gpu_src/ilu0_gpu/sp/main.cpp
++++ b/gpu_src/ilu0_gpu/sp/main.cpp
+@@ -224,6 +224,23 @@ int main(int argc, char **argv) {
+         xB[i] = 0.0;
+     }
+ 
++    // --- kernelbench patch (HPC-KernelBench cg-krylov integration), same as
++    // the one on ../nonsp/main.cpp: optional RHS override. Reads N
++    // little-endian float32 values from SPCG_RHS_FILE into rhs[] and rhsB[]
++    // (the solve below runs on rhsB) if the env var is set; otherwise the
++    // artifact's own rhs = 1.0 is untouched. No solver code is changed.
++    {
++        const char* rhs_path = getenv("SPCG_RHS_FILE");
++        if (rhs_path) {
++            FILE* f = fopen(rhs_path, "rb");
++            if (f) {
++                size_t nread = fread(rhs, sizeof(float), N, f);
++                fclose(f);
++                for (size_t i = 0; i < nread; i++) rhsB[i] = rhs[i];
++            }
++        }
++    }
++
+     /* Create CUBLAS context */
+     cublasHandle_t cublasHandle = NULL;
+     checkCudaErrors(cublasCreate(&cublasHandle));
+@@ -595,6 +612,16 @@ int main(int argc, char **argv) {
+     checkCudaErrors(cudaMemcpy(
+         xB, d_xB, nB * sizeof(float), cudaMemcpyDeviceToHost));
+ 
++    // --- kernelbench patch: optional post-solve dump of the solution xB for
++    // the harness's independent residual check (never read by the solver).
++    {
++        const char* x_out = getenv("SPCG_X_OUT_FILE");
++        if (x_out) {
++            FILE* f = fopen(x_out, "wb");
++            if (f) { fwrite(xB, sizeof(float), nB, f); fclose(f); }
++        }
++    }
++
+     // check result
+     err = 0.0;
+ 

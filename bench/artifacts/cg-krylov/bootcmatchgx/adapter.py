@@ -87,6 +87,12 @@ def create(precision: str):
 _ITER_RE = re.compile(r"Total iterations\s*:\s*(\d+)")
 _INIT_RES_RE = re.compile(r"Initial residual\s*:\s*([0-9.eE+-]+)")
 _FINAL_RES_RE = re.compile(r"Final residual\s*:\s*([0-9.eE+-]+)")
+# BootCMatchGX's own profiler (utility/profiling.cu dumpProfilingInfo, same
+# --info file): "TOTAL SOLVE TIME FCG [s]: <s>" brackets solve() (FCG loop +
+# AMG applications, cudaDeviceSynchronize'd); the "|prec_setup ...|" table
+# row (MIN/MAX/AVG ns) brackets the AMG hierarchy build in driverSolve.
+_SOLVE_TIME_RE = re.compile(r"TOTAL SOLVE TIME\s*\S*\s*\[s\]:\s*([0-9.eE+-]+)")
+_SETUP_ROW_RE = re.compile(r"^\|(?:\S*::)?prec_setup\s*\|\s*(\d+)\|\s*(\d+)\|", re.M)
 
 
 class BootCMatchGxCgFcgBcmg:
@@ -115,13 +121,10 @@ class BootCMatchGxCgFcgBcmg:
         import scipy.io as sio
 
         n = matrix.shape[0]
-        rng = np.random.default_rng(params.get("seed", 42))
-        # spec's vector_operand: b dense, U(-1,1), fixed seed=42 -- same RNG
-        # call as solvers.ScipyCG.prepare()/spcg's own adapter, so this
-        # artifact is gated against the identical b any other cg-krylov
-        # implementation in this harness would see.
-        b64 = rng.uniform(-1.0, 1.0, size=n)
+        from kernelbench.domains.solvers import cg_rhs
         self._A64 = matrix.csr.astype(np.float64)
+        # same b as every cg-krylov impl (KB_CG_RHS; the paper used f = 1)
+        b64 = cg_rhs(self._A64, params)
         self._b64 = b64
 
         self._workdir = tempfile.mkdtemp(prefix="bcmgx_cg_")
@@ -213,6 +216,15 @@ class BootCMatchGxCgFcgBcmg:
             m = _FINAL_RES_RE.search(info_text)
             if m:
                 p["bcmgx_final_residual_internal"] = float(m.group(1))
+            m = _SOLVE_TIME_RE.search(info_text)
+            if m:
+                p["bcmgx_solve_ms_internal"] = float(m.group(1)) * 1e3
+            m = _SETUP_ROW_RE.search(info_text)
+            if m:
+                p["bcmgx_setup_ms_internal"] = int(m.group(2)) * 1e-6   # MAX ns
+            if "bcmgx_solve_ms_internal" in p and "bcmgx_setup_ms_internal" in p:
+                p["bcmgx_total_ms_internal"] = (p["bcmgx_solve_ms_internal"]
+                                                + p["bcmgx_setup_ms_internal"])
             if "bcmgx_initial_residual_internal" in p and "bcmgx_final_residual_internal" in p:
                 init_r = p["bcmgx_initial_residual_internal"]
                 if init_r > 0:

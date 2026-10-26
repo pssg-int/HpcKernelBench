@@ -147,7 +147,7 @@ _BINARY = os.path.join(_SOURCE, "conjugateGradient", "build", "init", "cg_perks.
 
 _RESULT_RE = re.compile(
     r"PERKS_ADAPTER_RESULT\s+iters=(\d+)\s+time_ms=([-+0-9.eE]+)\s+"
-    r"residual=([-+0-9.eE]+)")
+    r"residual=(\S+)")   # \S+: PERKS can print "-nan" here (2026-10-23 crash)
 
 
 def available() -> tuple[bool, str]:
@@ -181,6 +181,7 @@ class PerksCgFixedIter:
 
     name = IMPL_NAME
     platform = "cuda"
+    DEFAULT_VARIANT = "cached"   # ../perks-baseline sets "baseline"
 
     def __init__(self, precision: str = "fp64"):
         if precision not in ("fp64", "fp32"):
@@ -204,12 +205,11 @@ class PerksCgFixedIter:
 
         n = matrix.shape[0]
         self._n = n
-        rng = np.random.default_rng(params.get("seed", 42))
-        # spec's vector_operand: b dense, U(-1,1), fixed seed=42 -- identical
-        # RNG call to solvers.ScipyCG.prepare(), so PERKS is gated against
-        # the same b any other cg-krylov implementation in this harness sees.
-        b64 = rng.uniform(-1.0, 1.0, size=n)
+        from kernelbench.domains.solvers import cg_rhs, cg_steps
         self._A64 = matrix.csr.astype(np.float64)
+        # same b as every cg-krylov impl: spec default U(-1,1) seed 42, or
+        # the paper micro-benchmark's choice via KB_CG_RHS
+        b64 = cg_rhs(self._A64, params)
         self._b64 = b64
 
         self._workdir = tempfile.mkdtemp(prefix="perks_")
@@ -228,8 +228,8 @@ class PerksCgFixedIter:
 
         self._x_out_path = os.path.join(self._workdir, "x_out.bin")
 
-        maxiter = int(params.get("maxiter", 50))
-        variant = params.get("perks_variant", "cached")
+        maxiter = cg_steps(params, 50)   # KB_CG_STEPS (PERKS paper: 10000)
+        variant = params.get("perks_variant", self.DEFAULT_VARIANT)
         if variant not in ("cached", "baseline"):
             raise ValueError(f"perks_variant must be 'cached' or 'baseline', got {variant!r}")
 
@@ -285,7 +285,8 @@ class PerksCgFixedIter:
         if m:
             p["perks_reported_iters"] = int(m.group(1))
             p["perks_reported_ms"] = float(m.group(2))
-            p["perks_reported_residual_recurrence"] = float(m.group(3))
+            p["perks_reported_residual_recurrence"] = float(m.group(3))  # nan-safe
+            p["perks_reported_ms_per_iter"] = float(m.group(2)) / max(int(m.group(1)), 1)
             p["iterations_actual"] = int(m.group(1))
         else:
             # should not happen given the patch, but never silently assume

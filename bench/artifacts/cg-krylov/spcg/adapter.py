@@ -170,13 +170,10 @@ class SpcgIlu0Cg:
                 "SPCG's own kernel is float32-only (unpatched), clamped to fp32")
 
         n = matrix.shape[0]
-        rng = np.random.default_rng(params.get("seed", 42))
-        # spec's vector_operand: b dense, U(-1,1), fixed seed=42 -- same RNG
-        # call as solvers.ScipyCG.prepare() and reference_cg's implicit
-        # convention, so this artifact is gated against the identical b any
-        # other cg-krylov implementation in this harness would see.
-        b64 = rng.uniform(-1.0, 1.0, size=n)
+        from kernelbench.domains.solvers import cg_rhs
         self._A64 = matrix.csr.astype(np.float64)
+        # same b as every cg-krylov impl (KB_CG_RHS; SPCG's paper used ones)
+        b64 = cg_rhs(self._A64, params)
         self._b64 = b64
 
         self._workdir = tempfile.mkdtemp(prefix="spcg_")

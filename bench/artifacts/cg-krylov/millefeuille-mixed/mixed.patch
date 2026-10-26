@@ -1,5 +1,5 @@
 diff --git a/src/main-cg-mixed.cu b/src/main-cg-mixed.cu
-index 1e989a9..84cab05 100644
+index 1e989a9..4a93029 100644
 --- a/src/main-cg-mixed.cu
 +++ b/src/main-cg-mixed.cu
 @@ -1,6 +1,7 @@
@@ -23,21 +23,23 @@ index 1e989a9..84cab05 100644
      int *balance_tile_ptr_new = (int *)malloc(sizeof(int) * (index + 1));
      memset(balance_tile_ptr_new, 0, sizeof(int) * (index + 1));
      int *balance_tile_ptr_shared_end = (int *)malloc(sizeof(int) * (index + 1));
-@@ -2949,6 +2955,13 @@ extern "C" void cg_solve_inc(int *RowPtr, int *ColIdx, MAT_VAL_TYPE *Val, MAT_VA
+@@ -2949,6 +2955,15 @@ extern "C" void cg_solve_inc(int *RowPtr, int *ColIdx, MAT_VAL_TYPE *Val, MAT_VA
          sum_ori = sum_ori + (b[i] * b[i]);
      }
      double l2_norm = sqrt(sum) / sqrt(sum_ori);
-+    // HPC-KernelBench Patch M2: print the artifact's own timers. time_cg is
-+    // the gettimeofday bracket around the single solve kernel; the kernels
-+    // run a hard-coded `for (iter = 1; iter <= 100; iter++)` (convergence
-+    // check commented out upstream), hence the literal 100. time_format is
-+    // the CSR -> tile-format conversion, timed separately upstream.
-+    printf("MF_MIXED_RESULT time_cg=%f iterations=100 time_format=%f l2_norm=%e snew=%e\n",
-+           time_cg, time_format, l2_norm, sqrt(snew));
++    // HPC-KernelBench Patch M2: print the artifact's own timers. time_spmv
++    // is the upstream gettimeofday bracket (t3..t4, synchronized) around the
++    // single solve kernel alone; time_cg (t1..t2) additionally covers the
++    // cudaMalloc/cudaMemset/cudaMemcpy block that sets up the kernel's
++    // buffers. The kernels run a hard-coded `for (iter = 1; iter <= 100;
++    // iter++)` (convergence check commented out upstream), hence the literal
++    // 100. time_format is the CSR -> tile-format conversion, timed upstream.
++    printf("MF_MIXED_RESULT time_cg=%f iterations=100 time_format=%f l2_norm=%e snew=%e time_kernel=%f\n",
++           time_cg, time_format, l2_norm, sqrt(snew), time_spmv);
      char *s = (char *)malloc(sizeof(char) * 200);
      sprintf(s, "%d,%.3f,%d,%e,%e\n", 100, time_cg, nnzR, l2_norm,sqrt(snew));
      FILE *file1 = fopen("data/cg_performance.csv", "a");
-@@ -3038,5 +3051,24 @@ int main(int argc, char **argv)
+@@ -3038,5 +3053,24 @@ int main(int argc, char **argv)
          {
              Y_golden[i] += Val[j] * X[ColIdx[j]];
          }

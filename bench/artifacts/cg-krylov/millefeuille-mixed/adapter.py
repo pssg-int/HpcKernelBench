@@ -37,8 +37,12 @@ own time_cg (gettimeofday around the single solve kernel) and time_format
 
 Timing boundary: one subprocess per run(), timed by a wall clock, so the
 harness number includes process start, .mtx parsing and the tile
-conversion. Use millefeuille_reported_ms / _per_iter (the artifact's own
-time_cg) for speed comparisons.
+conversion. Use millefeuille_reported_ms / _per_iter for speed comparisons:
+the artifact's own synchronized timer around the solve kernel alone
+(upstream `time_spmv`, printed as time_kernel). Upstream's time_cg also
+covers the kernel's buffer cudaMalloc/memcpy block; it is kept as
+millefeuille_time_cg_ms. A hung kernel is cut off after KB_MF_TIMEOUT
+seconds (default 600).
 
 Gate: fixed-iteration rule, same as ../millefeuille and ScipyCG: relres =
 ||b - A x|| / ||b|| recomputed in fp64, pass iff finite and < 1. Because
@@ -65,7 +69,8 @@ _BLOCK_SIZE = 16          # src/common.h
 _KERNEL_ITERS = 100       # hard-coded loop in the *_mix_precision kernels
 _RESULT_RE = re.compile(
     r"MF_MIXED_RESULT\s+time_cg=([-+0-9.eE]+)\s+iterations=(\d+)\s+"
-    r"time_format=([-+0-9.eE]+)\s+l2_norm=(\S+)\s+snew=(\S+)")
+    r"time_format=([-+0-9.eE]+)\s+l2_norm=(\S+)\s+snew=(\S+)"
+    r"(?:\s+time_kernel=([-+0-9.eE]+))?")
 
 
 def available() -> tuple[bool, str]:
@@ -116,8 +121,10 @@ class MilleFeuilleMixedCG:
                 f"N={n} is not a multiple of {_BLOCK_SIZE}: the binary drops the last "
                 f"{n - n_trunc} rows; gated against the top-left {n_trunc}x{n_trunc} block")
 
-        rng = np.random.default_rng(params.get("seed", 42))
-        b = rng.uniform(-1.0, 1.0, size=n_trunc).astype(np.float64)
+        from kernelbench.domains.solvers import cg_rhs
+        A_trunc = A[:n_trunc, :n_trunc].tocsr()
+        # KB_CG_RHS: spec default U(-1,1) seed 42; the paper used Aones
+        b = cg_rhs(A_trunc, params)
 
         tmpdir = tempfile.mkdtemp(prefix="millefeuille_mixed_")
         # the binary appends to ./data/cg_performance.csv; run in tmpdir so
@@ -130,7 +137,7 @@ class MilleFeuilleMixedCG:
 
         self._tmpdir = tmpdir
         self._params = params
-        self._A_trunc = A[:n_trunc, :n_trunc].tocsr()
+        self._A_trunc = A_trunc
         self._b = b
         self._n_trunc = n_trunc
         return {"mtx": mtx_path, "rhs": rhs_path,
@@ -143,7 +150,8 @@ class MilleFeuilleMixedCG:
         if os.path.exists(h["x_out"]):
             os.remove(h["x_out"])
         proc = subprocess.run([_BINARY, h["mtx"]], cwd=self._tmpdir, env=env,
-                              capture_output=True, text=True, timeout=1800)
+                              capture_output=True, text=True,
+                              timeout=int(os.environ.get("KB_MF_TIMEOUT", 600)))
         self._last_stdout = proc.stdout
         if "MF_MIXED_SKIPPED" in proc.stdout:
             raise NotImplementedError(
@@ -158,9 +166,19 @@ class MilleFeuilleMixedCG:
         m = _RESULT_RE.search(proc.stdout)
         p = self._params
         if m:
-            p["millefeuille_reported_ms"] = float(m.group(1))
-            p["iterations_actual"] = int(m.group(2))
-            p["millefeuille_reported_ms_per_iter"] = float(m.group(1)) / int(m.group(2))
+            iters = int(m.group(2))
+            p["iterations_actual"] = iters
+            # time_cg: kernel + its buffer allocation/copies (upstream bracket)
+            p["millefeuille_time_cg_ms"] = float(m.group(1))
+            if m.group(6) is not None:
+                # time_kernel: the single solve kernel alone -- the number
+                # that tests the paper's claim
+                p["millefeuille_reported_ms"] = float(m.group(6))
+                p["millefeuille_reported_ms_per_iter"] = float(m.group(6)) / iters
+            else:
+                p["millefeuille_reported_ms"] = float(m.group(1))
+                p["millefeuille_reported_ms_per_iter"] = float(m.group(1)) / iters
+                p["millefeuille_timer_note"] = "old mixed.patch: time_cg includes buffer setup" 
             p["millefeuille_format_ms"] = float(m.group(3))
             p["millefeuille_reported_relres"] = m.group(4)
         else:

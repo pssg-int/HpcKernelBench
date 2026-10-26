@@ -111,8 +111,8 @@ class CusparseCG:
         if np.any(csr.diagonal() == 0):
             # ILU(0) and the legacy samples both need every diagonal stored
             raise NotImplementedError(f"{self.name}: matrix has zero/missing diagonal entries")
-        rng = np.random.default_rng(params.get("seed", 42))
-        b64 = rng.uniform(-1.0, 1.0, size=n)   # same b as every cg-krylov impl
+        from kernelbench.domains.solvers import cg_rhs, cg_steps
+        b64 = cg_rhs(csr, params)   # same b as every cg-krylov impl (KB_CG_RHS)
         self._A64, self._b64, self._n = csr, b64, n
 
         rowptr = np.ascontiguousarray(csr.indptr, dtype=np.int32)
@@ -126,7 +126,7 @@ class CusparseCG:
 
         params["mode"] = self.MODE
         if self.MODE == "fixed-iter":
-            params["maxiter"] = int(params.get("maxiter", self.DEFAULT_MAXITER))
+            params["maxiter"] = cg_steps(params, self.DEFAULT_MAXITER)   # KB_CG_STEPS
             params["rtol"] = 0.0
         else:
             params["maxiter"] = int(params.get("maxiter", 2000))

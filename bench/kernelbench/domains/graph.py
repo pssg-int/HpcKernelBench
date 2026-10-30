@@ -259,6 +259,40 @@ def _load_image_workload(name: str) -> Image2D:
                    _smoke_binary_image(seed, (256, 256), 0.15), seed)
 
 
+# Named input sets; `--matrices sweep:<id>` expands to the list (same hook as
+# solvers/stencil). bfs-papers = graphs from BLEST's (ICS'26) and efg's
+# (IPDPS'23) own evaluations, SuiteSparse names:
+#   GAP-web        50M v / 1.9B e   both papers (BLEST "GAP-web", efg "sk-05")
+#   com-Friendster 65M v / 3.6B e   both papers; nnz > 2^31 (gunrock-bfs cannot
+#                                   run it) and ~200 GB host RAM to load
+#   twitter7       41.6M v / 1.47B e efg's "twitter" (BLEST used GAP-twitter,
+#                                   a different packaging of the same crawl)
+#   uk-2005        39M v / 936M e   BLEST
+#   com-Orkut      3.1M v / 234M e  efg
+#   GAP-road       23M v / 57M e    BLEST (high-diameter road network)
+SWEEPS = {
+    "bfs-papers": ["com-Orkut", "GAP-road", "uk-2005", "twitter7", "GAP-web",
+                   "com-Friendster"],
+    "bfs-quick": ["com-Orkut", "GAP-road"],                       # < 1 h
+    "bfs-large": ["uk-2005", "twitter7", "GAP-web"],              # one job each
+    "bfs-shared": ["GAP-web", "com-Friendster"],                  # in both papers
+}
+
+
+def expand_workloads(names: list[str]) -> list[str]:
+    """Runner hook: replace every `sweep:<id>` with that sweep's workload names."""
+    out = []
+    for n in names:
+        if n.startswith("sweep:"):
+            key = n[len("sweep:"):]
+            if key not in SWEEPS:
+                raise ValueError(f"graph: unknown sweep {key!r}; have {sorted(SWEEPS)}")
+            out.extend(SWEEPS[key])
+        else:
+            out.append(n)
+    return out
+
+
 def load_workload(name: str) -> Graph:
     """
     Fetch a named real graph from the SuiteSparse collection (many of the
@@ -1103,6 +1137,30 @@ DEFAULT_PRECISION = {
     "connected-components": "int64",
     "graph-pattern-mining": "int64",
 }
+
+# Each integrated bfs paper's OWN baselines, as named in its evaluation, and
+# the implementation that stands in for each here (None = not integrated,
+# with the reason). Library baselines live in bench/artifacts/bfs/{gunrock,
+# gap,cugraph}/ (ROLE = "baseline").
+PAPER_BASELINES = {"bfs": {
+    "blest-tensorcore-bfs": {
+        "paper": "BLEST (ICS'26)",
+        "baselines": [
+            ("BerryBees (bit-tensor-core BFS)", None, "not integrated in this harness"),
+            ("Gunrock", "gunrock-bfs", ""),
+            ("GSWITCH", None, "not integrated in this harness"),
+            ("GAP (CPU, direction-optimizing)", "gap-dobfs", ""),
+        ]},
+    "efg-elias-fano-bfs": {
+        "paper": "efg (IPDPS'23)",
+        "baselines": [
+            ("cuGraph CSR BFS", "cugraph-bfs", ""),
+            ("CGR (compressed graph traversal)", None, "not integrated in this harness"),
+            ("Ligra+ (CPU, top-down)", None, "not integrated in this harness"),
+        ]},
+}}
+
+BASELINE_IMPLS = {"bfs": ["cugraph-bfs", "gunrock-bfs", "gap-dobfs", "scipy-bfs"]}
 
 CPU_IMPLS = {
     "bfs": {"scipy-bfs": ScipyBFS},

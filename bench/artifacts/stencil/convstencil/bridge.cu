@@ -51,9 +51,19 @@
 // (main.cu's naive_box2d1r convention; radius-1 shapes are zero-padded into
 // the 7x7 by the adapter).
 //
+// Temporal fusion (2026-11-17): the paper runs radius-1 shapes as a 3-step
+// fused kernel -- main.cu builds the 7x7 weights as the 3-fold
+// self-convolution of the 3x3 and its `times` counts launches (README example:
+// box2d1r 10240^2, 10240 launches -> 188 GStencil/s only with 3 steps per
+// launch). The adapter does the same: for a radius-1 shape it passes the
+// 3-fold kernel as params_main and runs T/3 launches, plus one tail launch
+// with the (T % 3)-fold kernel. Radius-2/3 shapes are not fused (the 3-fold
+// kernel would not fit in 7x7), same as the paper.
+//
 // param_matrix_d is a module-level __constant__, so only one prepared handle
 // is valid at a time (the harness prepares, runs and frees one at a time).
 
+#include <cstring>
 #include "gpu.cu"
 #include "../periodic_halo.cuh"
 
@@ -65,13 +75,12 @@ struct CsHandle {
     double *init;
     int *lt1, *lt2;
     int m, n, rows, cols, cur;
+    double pm[2][2][52 * 8];   // packed param_matrix_d images: [0] main, [1] tail
 };
 
-extern "C" {
-
-void *convstencil2d_prepare(const double *field, const double *params, int m, int n) {
-    // --- gpu_box_2d1r's parameter-matrix packing, verbatim (gpu.cu) --------
-    double param_matrix_h[2][52 * 8] = {0.0};
+// gpu_box_2d1r's parameter-matrix packing, verbatim (gpu.cu), factored into
+// a helper so the bridge can hold two packed weight sets (fused + tail).
+static void cs_pack_params(const double *params, double (*param_matrix_h)[52 * 8]) {
     for (int col = 0; col < TENSOR_CORE_M; col++) {
         for(int i = 0; i < UNIT_LENGTH; i++) {
             for(int j = 0; j < UNIT_LENGTH; j++) {
@@ -90,9 +99,21 @@ void *convstencil2d_prepare(const double *field, const double *params, int m, in
             }
         }
     }
-    CUDA_CHECK(cudaMemcpyToSymbol(param_matrix_d, param_matrix_h, 2 * 8 * 52 * sizeof(double)));
+}
 
+extern "C" {
+
+// params_main: 7x7 weights of one launch in the main loop (for radius-1
+//   shapes the 3-step fused kernel, else the plain 7x7 / zero-padded stencil).
+// params_tail: 7x7 weights of the single tail launch (r-fold fused kernel for
+//   the T % 3 = r leftover steps); may equal params_main.
+void *convstencil2d_prepare(const double *field, const double *params_main,
+                            const double *params_tail, int m, int n) {
     CsHandle *h = new CsHandle();
+    memset(h->pm, 0, sizeof(h->pm));
+    cs_pack_params(params_main, h->pm[0]);
+    cs_pack_params(params_tail, h->pm[1]);
+    CUDA_CHECK(cudaMemcpyToSymbol(param_matrix_d, h->pm[0], sizeof(h->pm[0])));
     h->m = m; h->n = n; h->cur = 0;
     h->rows = m + 2 * HALO;
     h->cols = n + 2 * HALO + 2;
@@ -136,9 +157,14 @@ void *convstencil2d_prepare(const double *field, const double *params, int m, in
     return h;
 }
 
-// T periodic-wrap steps, all on the device. Asynchronous: the caller's CUDA
-// event timer brackets it and synchronizes on its stop event.
-void convstencil2d_run(void *handle, int timesteps) {
+// n_main launches with the main weights, then n_tail (0 or 1) launches with
+// the tail weights, all on the device; each launch is followed by a periodic
+// halo refresh. With temporal fusion (radius-1 shapes, as in the paper) one
+// main launch advances 3 real steps. Asynchronous: the caller's CUDA event
+// timer brackets it and synchronizes on its stop event. param_matrix_d is
+// re-uploaded at the start of every call (6.6 KB, async) because a previous
+// call may have left the tail weights in it.
+void convstencil2d_run(void *handle, int n_main, int n_tail) {
     CsHandle *h = (CsHandle *)handle;
     const size_t bytes = (size_t)h->rows * h->cols * sizeof(double);
     CUDA_CHECK(cudaMemcpyAsync(h->buf[0], h->init, bytes, cudaMemcpyDeviceToDevice, 0));
@@ -147,11 +173,17 @@ void convstencil2d_run(void *handle, int timesteps) {
                      (h->n + BLOCK_SIZE_COL - 1) / BLOCK_SIZE_COL);
     dim3 block_config(32 * WARP_PER_BLOCK);
     int cur = 0;
-    for (int t = 0; t < timesteps; t++) {
-        kernel2d<<<grid_config, block_config>>>(h->buf[cur], h->buf[1 - cur], h->cols,
-                                                h->lt1, h->lt2);
-        kb_periodic_halo(h->buf[1 - cur], h->cols, h->m, h->n, CS_ROW0, CS_COL0, HALO, HALO);
-        cur = 1 - cur;
+    for (int phase = 0; phase < 2; phase++) {
+        const int launches = phase == 0 ? n_main : n_tail;
+        if (launches <= 0) continue;
+        CUDA_CHECK(cudaMemcpyToSymbolAsync(param_matrix_d, h->pm[phase], sizeof(h->pm[phase]),
+                                           0, cudaMemcpyHostToDevice, 0));
+        for (int t = 0; t < launches; t++) {
+            kernel2d<<<grid_config, block_config>>>(h->buf[cur], h->buf[1 - cur], h->cols,
+                                                    h->lt1, h->lt2);
+            kb_periodic_halo(h->buf[1 - cur], h->cols, h->m, h->n, CS_ROW0, CS_COL0, HALO, HALO);
+            cur = 1 - cur;
+        }
     }
     CUDA_CHECK(cudaGetLastError());
     h->cur = cur;

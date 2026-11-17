@@ -888,9 +888,13 @@ def _native_stencil(impl_name: str, w: StencilWorkload, params: dict,
             "notes": [
                 "The artifact prints input_m*input_n*times*3 for radius-1 shapes because "
                 "each launch there is a 3-step fused kernel (7x7 = 3-fold self-convolution "
-                "of the 3x3, main.cu param_box_2d1r); `times` counts launches. This adapter "
-                "runs ONE unfused step per launch, so T already counts real steps and no "
-                "multiplier applies -- same Eq. 16 quantity.",
+                "of the 3x3, main.cu param_box_2d1r); `times` counts launches. Since "
+                "2026-11-17 this adapter fuses the same way (params.temporal_fusion = 3, "
+                "T // 3 launches plus one (T % 3)-fold tail launch; params.kernel_launches), "
+                "but T here always counts REAL steps, so no multiplier applies -- same "
+                "Eq. 16 quantity. Results before 2026-11-17 (or with "
+                "KB_CONVSTENCIL_FUSION=0) ran one unfused step per launch and so read "
+                "~3x low on radius-1 shapes.",
                 _HALO_REFRESH_NOTE,
             ],
         }

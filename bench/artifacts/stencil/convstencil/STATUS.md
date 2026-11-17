@@ -2,6 +2,34 @@
 
 **Outcome: BUILT+GATED (2D only) — gate PASSES on the one shape wired up; 3D/1D not integrated (time budget)**
 
+## Temporal fusion, as in the paper (2026-11-17) -- NOT YET BUILT OR GATED
+
+**Why.** ConvStencil's kernel always computes a fixed 7x7 weight block, so a
+launch costs the same for every shape. On zaratan A100 every shape measured
+~61 GCUP/s (e.g. 16384^2, T=1000: 4.4 s for star2d1r, box2d1r, star2d3r and
+box2d3r alike). The paper uses the empty space: for radius-1 shapes main.cu
+builds the 7x7 as the 3-fold self-convolution of the 3x3 (param_box_2d1r),
+so one launch = 3 real steps, and its GStencil/s formula multiplies `times`
+by 3 (README example: box2d1r 10240^2, 10240 launches, 188 GStencil/s, which
+only reproduces with 30720 real steps). We ran one step per launch with the
+3x3 zero-padded, so radius-1 shapes read ~3x low.
+
+**Change.** `adapter.py` now builds the 3-fold kernel (`_self_convolve`) for
+radius-1 shapes and runs T // 3 fused launches plus one (T % 3)-fold tail
+launch; `bridge.cu` holds both packed weight sets and re-uploads
+`param_matrix_d` (6.6 KB, async) per phase. T still counts real steps, so
+GCUP/s is directly comparable with every other implementation. Radius-2/3
+shapes are unchanged (1 step per launch, same as the paper). Kernel code
+untouched. Result JSON params: `temporal_fusion` (3 or 1),
+`kernel_launches`. `KB_CONVSTENCIL_FUSION=0` restores the old mode.
+
+**Verified (macOS, no GPU):** numpy model of the launch sequence (fused
+weights, periodic np.roll) vs `reference_stencil` for star2d1r/box2d1r at
+T=1,2,3,7,10: max err <= 6.7e-16; star2d3r/box2d3r unchanged path, <= 6.7e-16.
+**Not yet verified:** compile + GPU gate. Steps: `bench/STENCIL_ON_ZARATAN.md`
+STEP 4c. All ConvStencil radius-1 numbers with T > 1 recorded before this
+date are one-step-per-launch numbers.
+
 ## Bridge rewrite: GPU-resident T-step run (2026-09-23) -- NOT YET BUILT OR GATED
 
 `bridge.cu` was rewritten so a T-step run stays on the GPU. Before, `run()`

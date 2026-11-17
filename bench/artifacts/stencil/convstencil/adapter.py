@@ -26,8 +26,17 @@ file's docstring for the full reasoning. Short version:
 
 Coverage: 2D ONLY. ConvStencil's kernel always operates on a fixed 7x7
 (radius-3) support internally (HALO=3 hardcoded in gpu.cu regardless of
-shape name); radius-1 shapes (star2d1r, box2d1r) are expressed by
-zero-padding the unused outer ring of the 7x7, done in _build_params(). 1D
+shape name), so every launch costs the same whatever the shape.
+
+Temporal fusion (2026-11-17, matches the paper): for radius-1 shapes
+(star2d1r, box2d1r) each launch applies the 3-fold self-convolution of the
+3x3 weights, i.e. 3 real time steps per launch, exactly what the artifact's
+main.cu does (param_box_2d1r) and what its GStencil/s formula (times*3)
+assumes. T % 3 leftover steps run as one extra launch with the (T % 3)-fold
+kernel. Radius-2/3 shapes run one step per launch (zero-padded into 7x7 for
+radius 2). KB_CONVSTENCIL_FUSION=0 restores the old one-step-per-launch
+mode. Before this change every shape measured ~61 GCell/s on an A100,
+because the radius-1 shapes wasted 2/3 of each launch. 1D
 (source/src/1d) and 3D (source/src/3d) were NOT wired up in this
 integration pass's time budget -- their kernel/buffer layouts were not
 reverse-engineered, so prepare() raises NotImplementedError for
@@ -79,15 +88,46 @@ def _load_lib():
     lib = ctypes.CDLL(_SO_PATH)
     dp = ctypes.POINTER(ctypes.c_double)
     vp = ctypes.c_void_p
-    lib.convstencil2d_prepare.argtypes = [dp, dp, ctypes.c_int, ctypes.c_int]
+    lib.convstencil2d_prepare.argtypes = [dp, dp, dp, ctypes.c_int, ctypes.c_int]
     lib.convstencil2d_prepare.restype = vp
-    lib.convstencil2d_run.argtypes = [vp, ctypes.c_int]
+    lib.convstencil2d_run.argtypes = [vp, ctypes.c_int, ctypes.c_int]
     lib.convstencil2d_run.restype = None
     lib.convstencil2d_copy_out.argtypes = [vp, dp]
     lib.convstencil2d_copy_out.restype = None
     lib.convstencil2d_free.argtypes = [vp]
     lib.convstencil2d_free.restype = None
     return lib
+
+
+_FUSE = 3  # steps per launch for radius-1 shapes (paper: 7x7 = 3-fold 3x3)
+
+
+def _fusion_enabled() -> bool:
+    # KB_CONVSTENCIL_FUSION=0 restores the old one-step-per-launch mode
+    # (useful to compare against pre-2026-11-17 results).
+    return os.environ.get("KB_CONVSTENCIL_FUSION", "1") != "0"
+
+
+def _self_convolve(weights: dict, k: int) -> dict:
+    """Weights of k consecutive applications of the stencil, as ONE stencil.
+
+    out[x] = sum_d w[d] in[x+d] applied twice gives sum_{d1,d2} w[d1] w[d2]
+    in[x+d1+d2], so the k-step weight at offset d is the k-fold convolution
+    of the weight table. Exact on a periodic grid (up to fp rounding order).
+    """
+    out = {(0, 0): 1.0}
+    for _ in range(k):
+        nxt: dict = {}
+        for (a, b), wa in out.items():
+            for (c, d), wb in weights.items():
+                key = (a + c, b + d)
+                nxt[key] = nxt.get(key, 0.0) + wa * wb
+        out = nxt
+    return out
+
+
+def _radius(weights: dict) -> int:
+    return max((max(abs(dr), abs(dc)) for dr, dc in weights), default=0)
 
 
 def _build_params(weights: dict) -> np.ndarray:
@@ -134,18 +174,34 @@ class ConvStencilTCU:
                 f"blocks with no tail guard; grid_shape must be a multiple of "
                 f"({_ROW_MULT},{_COL_MULT}), got ({m},{n})")
         field = np.ascontiguousarray(workload_.initial_field(dtype=np.float64))
-        params49 = _build_params(workload_.weights)
+        timesteps = int(params.get("timesteps", workload_.timesteps))
+        w = workload_.weights
+        # Paper-faithful temporal fusion: radius-1 shapes run 3 real steps per
+        # launch with the 3-fold self-convolved 7x7 kernel (main.cu
+        # param_box_2d1r; README's box2d1r example only reproduces with
+        # times*3 steps). T % 3 leftover steps run as ONE extra launch with
+        # the (T % 3)-fold kernel. Radius 2-3 shapes are not fused (the paper
+        # does not either: their 3-fold kernel would not fit in 7x7).
+        fuse = _FUSE if (_fusion_enabled() and _radius(w) <= 1) else 1
+        n_main, rem = divmod(timesteps, fuse)
+        p_main = _build_params(_self_convolve(w, fuse) if fuse > 1 else w)
+        p_tail = _build_params(_self_convolve(w, rem)) if rem else p_main
+        n_tail = 1 if rem else 0
+        params["temporal_fusion"] = fuse
+        params["kernel_launches"] = n_main + n_tail
         dp = ctypes.POINTER(ctypes.c_double)
         handle = self.lib.convstencil2d_prepare(
-            field.ctypes.data_as(dp), params49.ctypes.data_as(dp), m, n)
+            field.ctypes.data_as(dp), p_main.ctypes.data_as(dp),
+            p_tail.ctypes.data_as(dp), m, n)
         if not handle:
             raise RuntimeError("convstencil2d_prepare returned a null handle")
-        return {"handle": handle, "m": m, "n": n,
-                "timesteps": int(params.get("timesteps", workload_.timesteps))}
+        return {"handle": handle, "m": m, "n": n, "timesteps": timesteps,
+                "n_main": n_main, "n_tail": n_tail}
 
     def run(self, h):
-        # all T steps on the device; the CUDA event timer syncs on its stop event
-        self.lib.convstencil2d_run(h["handle"], h["timesteps"])
+        # all T real steps on the device (n_main fused launches + an optional
+        # tail launch); the CUDA event timer syncs on its stop event
+        self.lib.convstencil2d_run(h["handle"], h["n_main"], h["n_tail"])
         return h
 
     def to_host(self, out):

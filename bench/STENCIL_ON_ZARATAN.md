@@ -111,6 +111,8 @@ with the reason -- a coverage fact, not a failure):
                             coefficients; fixed boundary.
     convstencil-tcu         any 2D stencil up to radius 3; grid a multiple of
                             32 x 64 (only star2d1r has ever been gated).
+                            Radius-1 shapes run 3 steps per launch since
+                            2026-11-17 (see STEP 4c).
     lorastencil-star2d3r    star2d3r only; grid a multiple of 32 x 64.
     flashfftstencil-box2d1r box2d1r only; square, width a multiple of 6; T=1.
     spider-box2d7r-sptc     its own radius-7 box, one step, fp16; grid a
@@ -234,9 +236,58 @@ FlashFFTStencil unsupported on box2d3r. LoRAStencil at T=1 has never been
 run: if it declines, record the reason; if it crashes or fails its gate,
 report that with evidence. Record the same per-job lines as step 4.
 
+STEP 4c: CONVSTENCIL TEMPORAL FUSION RE-RUN (added 2026-11-17)
+WHY. ConvStencil's kernel always computes a fixed 7x7 weight block, so one
+launch costs the same for every shape. The paper uses that: for radius-1
+shapes (star2d1r, box2d1r) main.cu builds the 7x7 as the 3-fold
+self-convolution of the 3x3, so ONE launch = 3 real time steps (its
+GStencil/s formula multiplies by 3; the README's box2d1r 10240^2 example,
+188 GStencil/s, only reproduces that way). Our adapter used to run one step
+per launch with the 3x3 zero-padded into the 7x7, so every shape measured
+~61 GCUP/s and radius-1 shapes read ~3x low. The adapter now fuses like the
+paper: T // 3 fused launches + one (T % 3)-fold tail launch; T in the
+result still counts real steps. Radius-2/3 shapes are unchanged (1 step per
+launch, as in the paper). The result JSON records params.temporal_fusion
+(3 or 1) and params.kernel_launches. KB_CONVSTENCIL_FUSION=0 restores the
+old mode. Verified on CPU only (numpy, fused vs reference, star2d1r/box2d1r
+at T=1,2,3,7,10: max err <= 7e-16); bridge.cu changed, so it is NOT yet
+built or gated on a GPU.
+DO:
+  1. Rebuild and smoke-gate convstencil (MIG slice):
+       bench/gpu_run.sh -t 30 -- 'bash artifacts/stencil/convstencil/build.sh'
+       bench/gpu_run.sh -t 30 -- '$PY -m kernelbench.runner --kernel stencil \
+           --variant stencil-cpu-gpu-kernel-fp64 --impl convstencil-tcu \
+           --matrices star2d1r@256x256:T=7,box2d1r@256x256:T=7,star2d3r@256x256:T=7,box2d3r@256x256:T=7 \
+           --keep-going'
+     All four must PASS the gate (fp64 tolerance 1e-5) and the JSON must
+     show temporal_fusion 3 for the radius-1 shapes, 1 for radius-3. If a
+     gate fails, STOP and report the error value; do not re-run the matrix.
+     (If --matrices rejects this syntax, use the --smoke gate from STEP 3
+     plus any one radius-1 sweep workload, and say so.)
+  2. Keep the old radius-1 results for comparison, then re-run only the
+     radius-1 jobs (--force overwrites the result file; --only filters by
+     workload prefix):
+       mkdir -p bench/results/stencil_pre_fusion
+       cp bench/results/stencil_{cross,group}-*{star,box}2d1r*.json \
+          bench/results/stencil_pre_fusion/ 2>/dev/null
+       $PY bench/artifacts/stencil/cross_jobs.py --run --force --only star2d1r \
+           --sweep cross-an5d --sweep cross-tcu-2d --sweep group-plus
+       $PY bench/artifacts/stencil/cross_jobs.py --run --force --only box2d1r \
+           --sweep cross-an5d --sweep cross-tcu-2d --sweep group-square-steps
+     T=1 workloads (cross-flashfft, group-square, group-plus T=1) cannot
+     fuse (one step = one launch); their old ConvStencil numbers stay valid
+     (group-plus T=1 is re-run anyway by the --only filter; that is fine).
+  3. Expect ConvStencil radius-1 throughput around 3x its old ~61 GCUP/s
+     (paper README: box2d1r 10240^2 = 188 GStencil/s on an A100), and
+     radius-3 unchanged. In the summary give a before/after table for
+     convstencil-tcu (old from stencil_pre_fusion/, new from the re-run) and
+     note the change in table (a)/(b)/(c). If the speedup is far from ~3x,
+     report it with the numbers; do not tune anything.
+
 STEP 5: RECORD
 Append to each artifact's STATUS.md (an5d, convstencil, lorastencil,
-flashfftstencil, spider, cudnn) a section
+flashfftstencil, spider, cudnn) a section (for convstencil also record the
+STEP 4c rebuild, gate and before/after numbers)
   ## Shared-configuration runs on zaratan A100 (<YYYY-MM-DD>)
 with: build outcome; smoke-gate outcome; per workload it ran: GCUP/s, the
 paper's own metric, correctness error and gated step count
